@@ -1,0 +1,6 @@
+<resources>
+	<declare-styleable name="SegmentView">
+		<attr name="segmentThemeColor"
+		      format="color"/>
+	</declare-styleable>
+</resources>

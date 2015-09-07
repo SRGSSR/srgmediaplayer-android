@@ -1,0 +1,1 @@
+include ':srgmediaplayer', ':srgmediaplayer-extras', ':segmentOverlay', ':srgmediaplayer-service'

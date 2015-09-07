@@ -1,0 +1,5 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="ch.srg.mediaplayer">
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+	<application/>
+</manifest>

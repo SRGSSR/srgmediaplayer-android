@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:id="@+id/simple_player_control_controls"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="false"
+        android:layout_below="@+id/simple_player_control_time_text"
+        android:layout_centerHorizontal="true"
+        android:orientation="horizontal"
+        android:layout_marginTop="-6dp">
+
+        <Button
+            android:id="@+id/simple_player_control_button_previous"
+            android:layout_width="@dimen/simple_player_control_button_size"
+            android:layout_height="@dimen/simple_player_control_button_size"
+            android:background="@drawable/player_control_start"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+        <Button
+            android:id="@+id/simple_player_control_button_play"
+            android:layout_width="@dimen/simple_player_control_button_size"
+            android:layout_height="@dimen/simple_player_control_button_size"
+            android:layout_marginLeft="@dimen/simple_player_control_margin_inner"
+            android:background="@drawable/player_control_play"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+        <Button
+            android:id="@+id/simple_player_control_button_pause"
+            android:layout_width="@dimen/simple_player_control_button_size"
+            android:layout_height="@dimen/simple_player_control_button_size"
+            android:layout_marginLeft="@dimen/simple_player_control_margin_inner"
+            android:background="@drawable/player_control_pause"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+        <Button
+            android:id="@+id/simple_player_control_button_stop"
+            android:layout_width="@dimen/simple_player_control_button_size"
+            android:layout_height="@dimen/simple_player_control_button_size"
+            android:layout_marginLeft="@dimen/simple_player_control_margin_inner"
+            android:background="@drawable/player_control_stop"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+        <Button
+            android:id="@+id/simple_player_control_button_next"
+            android:layout_width="@dimen/simple_player_control_button_size"
+            android:layout_height="@dimen/simple_player_control_button_size"
+            android:layout_marginLeft="@dimen/simple_player_control_margin_inner"
+            android:background="@drawable/player_control_end"
+            android:visibility="gone"
+            tools:visibility="visible" />
+    </LinearLayout>
+
+    <RelativeLayout
+        android:id="@+id/simple_player_control_time_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/simple_player_control_time_left"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="@dimen/simple_player_control_margin_inner"
+            android:text="--:--"
+            android:textColor="#7bffffff"
+            android:textSize="10dp" />
+
+        <SeekBar
+            android:id="@+id/simple_player_control_seekbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="false"
+            android:layout_centerVertical="true"
+            android:layout_toLeftOf="@+id/simple_player_control_time_right"
+            android:layout_toRightOf="@+id/simple_player_control_time_left"
+            android:secondaryProgressTint="#bb999999"
+            />
+
+        <TextView
+            android:id="@+id/simple_player_control_time_right"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="@dimen/simple_player_control_margin_inner"
+            android:text="--:--"
+            android:textColor="#7bffffff"
+            android:textSize="10dp" />
+
+    </RelativeLayout>
+
+
+</RelativeLayout>
