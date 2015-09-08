@@ -22,7 +22,7 @@ import ch.srg.segmentoverlay.controller.SegmentController;
  */
 public class AbstractPlayerTests extends ActivityInstrumentationTestCase2<DemoSegmentMediaPlayerActivity> {
     public static final String TEST_1 = "dummy:SPECIMEN";
-    public static final int DURATION_TEST_1 = 1897000;
+    public static final int DURATION_TEST_1 = 3568000;
     protected static final int NETWORK_TIMEOUT = 10000;
     private static final long PLAYER_TIME_TOLERANCE = 1000;
     protected static final int PLAYER_TIMEOUT = NETWORK_TIMEOUT;
@@ -31,6 +31,7 @@ public class AbstractPlayerTests extends ActivityInstrumentationTestCase2<DemoSe
     protected boolean mediaCompletedReceived;
     protected Solo solo;
     private SRGMediaPlayerController.Listener playerEventListener;
+    private DemoSegmentMediaPlayerActivity activity;
 
     public AbstractPlayerTests(Class<DemoSegmentMediaPlayerActivity> activityClass) {
         super(activityClass);
@@ -41,7 +42,8 @@ public class AbstractPlayerTests extends ActivityInstrumentationTestCase2<DemoSe
     public void setUp() throws Exception {
         super.setUp();
         injectInstrumentation(InstrumentationRegistry.getInstrumentation());
-        solo = new Solo(getInstrumentation(), getActivity());
+        activity = getActivity();
+        solo = new Solo(getInstrumentation(), activity);
         lastError = null;
         mediaCompletedReceived = false;
         Log.d("PlayerTest", "Listening to player " + getMediaPlayer().getControllerId());
@@ -138,7 +140,7 @@ public class AbstractPlayerTests extends ActivityInstrumentationTestCase2<DemoSe
     }
 
     protected SRGMediaPlayerController getMediaPlayer() {
-        return getActivity().getSrgMediaPlayer();
+        return activity.getSrgMediaPlayer();
     }
 
     protected SRGMediaPlayerView getPlayerView() {
@@ -146,7 +148,7 @@ public class AbstractPlayerTests extends ActivityInstrumentationTestCase2<DemoSe
     }
 
     protected SegmentController getSegmentController() {
-        return getActivity().getSegmentController();
+        return activity.getSegmentController();
     }
 
     protected void waitForPlayerSettledDown() {
