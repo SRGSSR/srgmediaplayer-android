@@ -1,0 +1,107 @@
+apply plugin: 'com.android.application'
+apply plugin: 'de.felixschulze.gradle.hockeyapp'
+
+android {
+	compileSdkVersion 21
+	buildToolsVersion "21.1.2"
+
+	defaultConfig {
+		applicationId "ch.srg.mediaplayer.demo"
+		minSdkVersion 16
+		targetSdkVersion 21
+
+		def buildNumber = System.getenv().BUILD_NUMBER as Integer ?: 0
+		versionCode buildNumber
+		versionName "1.2." + buildNumber
+
+		resValue "string", "APP_ID", "314785ad94ebbae30a802a8a1eadf3df"
+
+		testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+	}
+
+	signingConfigs {
+		release {
+			storeFile file(property("ch.srg.srgplayer.rts.keystore"))
+			storePassword property("ch.srg.srgplayer.rts.password")
+			keyAlias property("ch.srg.srgplayer.rts.alias")
+			keyPassword property("ch.srg.srgplayer.rts.password")
+		}
+	}
+
+	buildTypes {
+		release {
+			minifyEnabled false
+			proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+			signingConfig signingConfigs.release
+		}
+	}
+	compileOptions {
+		sourceCompatibility JavaVersion.VERSION_1_7
+		targetCompatibility JavaVersion.VERSION_1_7
+	}
+
+	dexOptions {
+		javaMaxHeapSize "4g"
+	}
+	packagingOptions {
+		pickFirst 'META-INF/services/javax.ws.rs.ext.MessageBodyReader'
+		pickFirst 'META-INF/services/javax.ws.rs.ext.MessageBodyWriter'
+		exclude 'META-INF/DEPENDENCIES'
+		exclude 'META-INF/LICENSE'
+		exclude 'META-INF/LICENSE.txt'
+		exclude 'META-INF/license.txt'
+		exclude 'META-INF/NOTICE'
+		exclude 'META-INF/NOTICE.txt'
+		exclude 'META-INF/notice.txt'
+		exclude 'META-INF/ASL2.0'
+		exclude 'LICENSE.txt'
+	}
+}
+
+dependencies {
+	compile fileTree(include: ['*.jar'], dir: 'libs')
+
+	compile 'com.squareup.dagger:dagger:1.2.1'
+	provided 'com.squareup.dagger:dagger-compiler:1.2.1'
+
+	compile 'com.android.support:appcompat-v7:22.2.1'
+	compile 'com.github.bumptech.glide:glide:3.6.1'
+	compile project(':srgmediaplayer')
+	compile project(':segmentOverlay')
+	compile project(':srgmediaplayer-extras')
+	compile project(':srgmediaplayer-service')
+
+	androidTestCompile 'com.android.support:support-annotations:22.2.1'
+
+	androidTestCompile('com.android.support.test:runner:0.3') {
+		exclude module: 'support-annotations'
+	}
+	androidTestCompile 'com.android.support.test:rules:0.3'
+	androidTestCompile('com.jayway.android.robotium:robotium-solo:5.4.1') {
+		exclude group: 'com.squareup.dagger'
+		exclude group: 'org.hamcrest'
+		exclude group: 'com.google.guava'
+	}
+
+	compile 'net.hockeyapp.android:HockeySDK:3.5.0'
+}
+
+hockeyapp {
+	apiToken = "d0094bbdf41348b282430bd70b8ac255";
+
+	teamCityLog = true;
+
+	notes = "${gitLastCommit()}"
+}
+
+def gitLastCommit() {
+	if (System.getenv('GIT_PREVIOUS_COMMIT')) {
+		// Within Jenkins
+		return ('git log --no-merges --abbrev-commit --pretty=oneline ' + System.getenv().GIT_PREVIOUS_COMMIT + '..HEAD').execute().text.trim()
+	} else {
+		// From developer's desk
+		return 'git log -1 --no-merges --pretty=oneline --abbrev-commit'.execute().text.trim() + "\n" + "git status -s".execute().text.trim()
+	}
+}
+
+apply from: '../utilities.gradle'

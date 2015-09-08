@@ -1,0 +1,184 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="ch.srg.mediaplayer.DemoMediaPlayerActivity">
+
+    <TextView
+        android:id="@+id/top_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:backgroundTintMode="multiply"
+        android:text="DEMO RTS MEDIA PLAYER"
+        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+    <ch.srg.mediaplayer.SRGMediaPlayerView
+        android:id="@+id/demo_video_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/top_text"
+        android:animateLayoutChanges="true"
+        android:background="#ff222222"
+        app:containerAspectRatio="auto"
+        app:videoScale="center_inside"
+        tools:layout_height="400dp"
+        tools:layout_width="match_parent">
+
+        <!-- Loading Progress -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            app:overlay_mode="loading" />
+
+
+        <!--Bottom anchor-->
+        <Space
+            android:id="@+id/bottomAnchor"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            app:overlay_mode="unmanaged" />
+
+        <!--Controls-->
+        <ch.srg.mediaplayer.extras.overlay.control.SimplePlayerControlView
+            android:id="@+id/media_control"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/bottomAnchor"
+            android:layout_centerHorizontal="true"
+            app:overlay_mode="control"
+            app:themeColor="#6b001eff" />
+        <!--Some text over the controls that stay-->
+
+        <TextView
+            android:id="@+id/textView4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/media_control"
+            android:layout_centerHorizontal="true"
+            android:text="UPPER LINE"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textColor="#fffff600"
+            android:textStyle="bold"
+            app:overlay_mode="always_shown" />
+
+        <!-- Middle Floating Texts -->
+        <TextView
+            android:id="@+id/textView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="5dp"
+            android:background="#dd333333"
+            android:text="UN TEXT FLOTANT"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textColor="#ffffffff"
+            android:textStyle="bold"
+            app:overlay_mode="always_shown" />
+
+        <TextView
+            android:id="@+id/textView2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/textView"
+            android:layout_centerHorizontal="true"
+            android:background="#cc444444"
+            android:text="SUB LINE 1"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textColor="#ff098aff"
+            app:overlay_mode="control" />
+
+        <TextView
+            android:id="@+id/textView3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/textView2"
+            android:layout_centerHorizontal="true"
+            android:background="#cc444444"
+            android:text="SUB LINE 2"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textColor="#ff00ff57"
+            app:overlay_mode="always_shown" />
+
+        <ch.srg.mediaplayer.extras.overlay.error.SimpleErrorMessage
+            android:id="@+id/error_message"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:overlay_mode="unmanaged" />
+    </ch.srg.mediaplayer.SRGMediaPlayerView>
+
+    <TextView
+        android:id="@+id/status_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/demo_video_container"
+        android:layout_centerHorizontal="true"
+        android:text="Status"
+        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+    <Button
+        android:id="@+id/button_overlay"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:text="Overlay" />
+
+    <Button
+        android:id="@+id/button_surface"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_toEndOf="@+id/button_overlay"
+        android:layout_toRightOf="@+id/button_overlay"
+        android:text="Surface" />
+
+    <Button
+        android:id="@+id/button_video1"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/button_surface"
+        android:layout_toEndOf="@+id/button_surface"
+        android:layout_toRightOf="@+id/button_surface"
+        android:text="Vid1" />
+
+    <Button
+        android:id="@+id/button_video2"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/button_video1"
+        android:layout_toEndOf="@+id/button_video1"
+        android:layout_toRightOf="@+id/button_video1"
+        android:text="Vid2" />
+
+    <Button
+        android:id="@+id/button_video3"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/button_video2"
+        android:layout_toEndOf="@+id/button_video2"
+        android:layout_toRightOf="@+id/button_video2"
+        android:text="Vid3" />
+
+    <Button
+        android:id="@+id/button_video4"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/button_video3"
+        android:layout_toEndOf="@+id/button_video3"
+        android:layout_toRightOf="@+id/button_video3"
+        android:text="InvalidStream" />
+</RelativeLayout>

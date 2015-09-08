@@ -1,0 +1,159 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                tools:context="ch.srg.mediaplayer.DemoSegmentMediaPlayerActivity">
+
+    <ch.srg.mediaplayer.SRGMediaPlayerView
+        android:id="@+id/demo_video_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:animateLayoutChanges="true"
+        android:background="#ff222222"
+        android:keepScreenOn="true"
+        app:containerAspectRatio="auto"
+        app:videoScale="center_inside"
+        tools:layout_height="match_parent"
+        tools:layout_width="match_parent">
+        <!-- Loading Progress -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            app:overlay_mode="loading"/>
+
+        <!--Bottom anchor-->
+        <Space
+            android:id="@+id/bottomAnchor"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            app:overlay_mode="unmanaged"/>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fitsSystemWindows="true"
+            app:overlay_mode="control">
+
+            <!--Controls-->
+            <ch.srg.segmentoverlay.view.SegmentView
+                android:id="@+id/segment_demo_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_above="@+id/media_control"
+                android:layout_centerHorizontal="true"
+                android:layout_toRightOf="@id/uri_list"
+                app:overlay_mode="control"/>
+            <!--Some text over the controls that stay-->
+
+            <!--Controls-->
+            <ch.srg.view.LivePlayerControlView
+                android:id="@+id/media_control"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_centerHorizontal="true"
+                android:background="@color/black_shadow"
+                app:overlay_mode="control"/>
+            <!--Some text over the controls that stay-->
+
+            <ch.srg.mediaplayer.extras.overlay.error.SimpleErrorMessage
+                android:id="@+id/error_message"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:overlay_mode="unmanaged"/>
+
+            <ListView
+                android:id="@+id/uri_list"
+                android:layout_width="400dp"
+                android:layout_height="match_parent"
+                android:layout_above="@id/media_control"
+                android:layout_alignParentLeft="true"
+                android:background="@color/black_shadow"
+                android:choiceMode="singleChoice"
+                android:listSelector="@drawable/list_item_background"/>
+
+            <LinearLayout
+                android:id="@+id/group_seek_buttons"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:layout_toRightOf="@id/uri_list"
+                android:background="@color/black_shadow"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/button_seek_one_hour"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="-1hour"/>
+
+                <Button
+                    android:id="@+id/button_seek_half_hour"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="-1/2hour"/>
+
+                <Button
+                    android:id="@+id/button_seek_one_minute"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="-1minute"/>
+
+                <Button
+                    android:id="@+id/button_seek_live"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="live"/>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/status_label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/group_seek_buttons"
+                android:layout_toRightOf="@id/uri_list"
+                android:background="@color/black_shadow"
+                android:lines="2"
+                android:text="Status"
+                android:textAppearance="?android:attr/textAppearanceSmall"/>
+
+            <LinearLayout
+                android:id="@+id/checkbox_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/status_label"
+                android:layout_toRightOf="@id/uri_list"
+                android:background="@color/black_shadow"
+                android:orientation="horizontal">
+
+                <CheckBox
+                    android:id="@+id/checkbox_audio"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:checked="true"
+                    android:text="Audio"/>
+
+                <CheckBox
+                    android:id="@+id/checkbox_video"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:checked="true"
+                    android:text="Video"/>
+            </LinearLayout>
+
+        </RelativeLayout>
+
+    </ch.srg.mediaplayer.SRGMediaPlayerView>
+
+</RelativeLayout>

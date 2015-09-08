@@ -75,4 +75,13 @@ public class MultiDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
 	public int getMediaType(String mediaIdentifier) throws SRGMediaPlayerException {
 		return getProvider(mediaIdentifier).getMediaType(getIdentifier(mediaIdentifier));
 	}
+
+	public boolean isSupported(String mediaIdentifier) {
+		try {
+			getProvider(mediaIdentifier);
+			return true;
+		} catch (IllegalArgumentException e) {
+			return false;
+		}
+	}
 }

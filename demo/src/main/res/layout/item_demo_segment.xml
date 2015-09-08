@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="@dimen/segment_player_control_recycler_view_item_width"
+    android:layout_height="@dimen/segment_player_control_recycler_view_item_height"
+    android:background="@color/grey">
+
+    <ImageView
+        android:id="@+id/item_segment_thumbnail1"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:layout_alignParentTop="true" />
+
+    <TextView
+        android:id="@+id/item_segment_duration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@id/item_segment_thumbnail1"
+        android:layout_alignParentRight="true"
+        android:layout_marginBottom="8dp"
+        android:background="@color/black"
+        android:padding="8dp"
+        android:textColor="@color/white"
+        tools:text="--:--" />
+
+    <ProgressBar
+        android:id="@+id/item_segment_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
+        android:layout_below="@+id/item_segment_thumbnail1"
+        android:layout_marginTop="1dp"
+        android:progressDrawable="@drawable/segment_seekbar_background" />
+
+    <TextView
+        android:id="@+id/item_segment_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_below="@id/item_segment_progress"
+        android:gravity="center_vertical"
+        android:lines="2"
+        android:maxLines="2"
+        android:minLines="2"
+        android:padding="8dp"
+        android:text="line1\nline2"
+        android:textColor="@color/white" />
+
+    <View
+        android:id="@+id/item_segment_darkener"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignBottom="@id/item_segment_thumbnail1"
+        android:layout_alignRight="@id/item_segment_thumbnail1"
+        android:background="#80000000" />
+
+</RelativeLayout>

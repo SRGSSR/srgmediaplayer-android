@@ -1,0 +1,50 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              android:paddingBottom="@dimen/activity_vertical_margin"
+              android:paddingLeft="@dimen/activity_horizontal_margin"
+              android:paddingRight="@dimen/activity_horizontal_margin"
+              android:paddingTop="@dimen/activity_vertical_margin"
+              tools:context=".MainActivity"
+              tools:ignore="HardcodedText,SmallSp">
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:src="@mipmap/ic_launcher"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="50dp"
+        android:text="@string/app_name"
+        android:textSize="20sp"/>
+
+    <Button
+        android:id="@+id/audio"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:drawableStart="@drawable/ic_action_volume_up"
+        android:text="Audio"
+        android:visibility="visible"
+        android:textColor="#60e060"/>
+
+    <Button
+        android:id="@+id/demo_segment_media_player"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:drawableStart="@drawable/ic_action_videocam"
+        android:text="Videos: Segment"
+        android:textColor="#60e060"/>
+
+    <Button
+        android:id="@+id/demo_multi_rts_media_player"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Multi"
+        android:visibility="gone"/>
+</LinearLayout>
