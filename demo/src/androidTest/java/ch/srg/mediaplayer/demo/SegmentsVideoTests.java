@@ -15,11 +15,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import ch.srg.dataProvider.integrationlayer.dependencies.Dagger;
 import ch.srg.mediaplayer.DemoSegmentMediaPlayerActivity;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
-import ch.srg.mediaplayer.demo.test.DisablePerfomanceProfileModule;
 import ch.srg.segmentoverlay.controller.SegmentController;
 
 /**
@@ -53,7 +51,6 @@ public class SegmentsVideoTests extends AbstractPlayerTests {
         super.setUp();
         injectInstrumentation(InstrumentationRegistry.getInstrumentation());
         solo = new Solo(getInstrumentation(), getActivity());
-        Dagger.setObjectGraph(Dagger.getObjectGraph().plus(new DisablePerfomanceProfileModule()));
         lastError = null;
         mediaCompletedReceived = false;
         listener = new SRGMediaPlayerController.Listener() {

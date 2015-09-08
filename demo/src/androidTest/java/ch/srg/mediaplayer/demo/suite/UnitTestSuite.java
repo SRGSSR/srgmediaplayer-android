@@ -10,5 +10,5 @@ import ch.srg.mediaplayer.demo.VideoPlayTests;
  * Runs all unit tests.
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({VideoPlayTests.class, StatisticsPlayTests.class, SegmentsVideoTests.class})
+@Suite.SuiteClasses({VideoPlayTests.class, SegmentsVideoTests.class})
 public class UnitTestSuite {}
