@@ -4,7 +4,7 @@ SRG Media Player
 Building
 --------
 * install Android Studio from http://developer.android.com/sdk/installing/studio.html (stable build)
-* checkout the project from bitbucket
+* checkout the project from github
 * plug a device in ADB debug mode
 * select Run/Run 'demo'
 * select your device
@@ -42,20 +42,13 @@ Features
 * LIVE streams
 * custom overlays
 * offer management of segments for a video. Display as smart overlays, control of streams through segments (segment-overlay module)
-* support for fetching from any source (JSON, custom playlist, etc...), including geolocation checking (ildatasources private module)
 * support for URL rewriting
-* support for token handling
-* support for statistics (analytics module)
-* handle different network qualities and offer to choose one to save data plan (Swisscom Wifi hotspot
-for example)
 
 Roadmap
 ----------------
 * Offer a full featured and customizable Activity or a lightweight Fragment to used in others app
 
 * Offer a full featured playlist management. Display, navigation, business logic.
-
-* Telemetry: offers a full featured telemetry system.
 
 * Handle multiple formats: HLS, DASH, ...
 
@@ -65,7 +58,7 @@ Roadmap
 
 Implementation
 -----------------
-* The fist step for integrate the SRG Media Player in your project is to configure your own dataProvider for bind your model to the API. In the demo application we have build a DummyDataProvider for handle data from web and specific videos. The class implements basic interface for dataProvider, analytics and segments.
+* The fist step for integrate the SRG Media Player in your project is to configure your own dataProvider for bind your model to the API. In the demo application we have build a DummyDataProvider for handle data from web and specific videos. The class implements basic interface for dataProvider, and segments.
 
 ```
 #!java

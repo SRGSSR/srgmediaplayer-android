@@ -1,5 +1,10 @@
 === Service ===
 
-This idea here is to have a way to encapsulate an srgmediaplayer in a Service.
-The current implementation proposes a clean API but the internals use an old AAC / MP3 player not yet
- using the srgmediaplayer module.
+Encapsulate an srgmediaplayer in a Service.
+- Handles notification with metadata and images
+- player lifecycle
+- change of item
+- remote control
+
+A delegate can be injected to create and configure a media player delegate specific for a given media
+identifier.
