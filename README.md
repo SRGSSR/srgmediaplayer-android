@@ -60,8 +60,7 @@ Implementation
 -----------------
 * The fist step for integrate the SRG Media Player in your project is to configure your own dataProvider for bind your model to the API. In the demo application we have build a DummyDataProvider for handle data from web and specific videos. The class implements basic interface for dataProvider, and segments.
 
-```
-#!java
+```java
   private static Map<String, String> data = new HashMap<String, String>() {
 	    {
 		    put("SPECIMEN", "http://stream-i.rts.ch/i/specm/2014/specm_20141203_full_f_817794-,101,701,1201,k.mp4.csmil/master.m3u8");
@@ -91,8 +90,7 @@ Implementation
 
 * If you want to specify the media type you will play and set a delegate for it. You need to provide a PlayerDelegateFactory and set it to the player controller.
 
-```
-#!java
+```java
     playerDelegateFactory = new PlayerDelegateFactory() {
       @Override
       public PlayerDelegate getDelegateForMediaIdentifier(PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, String mediaIdentifier) {
@@ -116,8 +114,7 @@ Implementation
 
 Next step is to add the SRGMediaPlayerView in your layout.
 
-```
-#!xml
+```xml
 <ch.srg.mediaplayer.SRGMediaPlayerView
     android:id="@+id/demo_video_container"
     android:layout_width="match_parent"
@@ -166,8 +163,7 @@ for synchronize this view visibility with player events.
 
 In your Activity (or fragment) you have to coordinate all the view with the player controller. Your activity or fragment should implement SRGMediaPlayerController.Listener if you want to listen player events.
 
-```
-#!java
+```java
     private SRGMediaPlayerController srgMediaPlayerController;
     private SRGMediaPlayerView videoContainer;
     private MultiDataProvider dataProvider;
