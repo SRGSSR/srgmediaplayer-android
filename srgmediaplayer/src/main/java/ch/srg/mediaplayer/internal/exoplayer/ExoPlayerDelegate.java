@@ -11,6 +11,7 @@ import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.View;
 
+import com.google.android.exoplayer.DummyTrackRenderer;
 import com.google.android.exoplayer.ExoPlaybackException;
 import com.google.android.exoplayer.ExoPlayer;
 import com.google.android.exoplayer.MediaCodecAudioTrackRenderer;
@@ -148,8 +149,19 @@ public class ExoPlayerDelegate implements
         if (!videoTrack) {
             renderers[TYPE_VIDEO] = null;
         }
+        for (int i = 0; i < RENDERER_COUNT; i++) {
+            if (renderers[i] == null) {
+                // Convert a null renderer to a dummy renderer.
+                renderers[i] = new DummyTrackRenderer();
+            }
+        }
+        this.videoRenderer = renderers[TYPE_VIDEO];
+        this.audioRenderer = renderers[TYPE_AUDIO];
+        Log.v(TAG,
+                "Using renderers: video:" + videoRenderer + " audio:" + audioRenderer);
         pushSurface(false);
-        exoPlayer.setRendererEnabled(TYPE_VIDEO, true);
+        exoPlayer.setSelectedTrack(TYPE_AUDIO, ExoPlayer.TRACK_DEFAULT);
+        exoPlayer.setSelectedTrack(TYPE_VIDEO, ExoPlayer.TRACK_DEFAULT);
         exoPlayer.setPlayWhenReady(true);
         exoPlayer.prepare(renderers);
     }
