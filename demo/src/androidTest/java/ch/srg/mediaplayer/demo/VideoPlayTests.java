@@ -11,7 +11,7 @@ import junit.framework.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import ch.srg.mediaplayer.DemoSegmentMediaPlayerActivity;
+import ch.srg.mediaplayer.DemoMediaPlayerActivity;
 
 /**
  * Created by seb on 24/07/15.
@@ -21,7 +21,7 @@ public class VideoPlayTests extends AbstractPlayerTests {
     public static final String TAG = "VODTest";
 
     public VideoPlayTests() {
-        super(DemoSegmentMediaPlayerActivity.class);
+        super(DemoMediaPlayerActivity.class);
     }
 
     @FlakyTest(tolerance=10)

@@ -27,7 +27,7 @@
             android:label="@string/title_activity_demo_media_player">
         </activity>
         <activity
-            android:name="ch.srg.mediaplayer.DemoSegmentMediaPlayerActivity"
+            android:name="ch.srg.mediaplayer.DemoMediaPlayerActivity"
             android:label="@string/title_activity_demo_media_player">
         </activity>
         <activity

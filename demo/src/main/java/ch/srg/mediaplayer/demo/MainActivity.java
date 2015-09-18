@@ -11,11 +11,12 @@ import android.widget.Button;
 import net.hockeyapp.android.CrashManager;
 import net.hockeyapp.android.UpdateManager;
 
-import ch.srg.mediaplayer.DemoSegmentMediaPlayerActivity;
+import ch.srg.mediaplayer.DemoMediaPlayerActivity;
 
 public class MainActivity extends Activity implements View.OnClickListener {
 	private Button buttonAudio;
 	private Button buttonDemoSegmentMediaPlayer;
+	private Button buttonDemoLiveMediaPlayer;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -27,6 +28,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 		buttonDemoSegmentMediaPlayer = (Button) findViewById(R.id.demo_segment_media_player);
 		buttonDemoSegmentMediaPlayer.setOnClickListener(this);
+		buttonDemoLiveMediaPlayer = (Button) findViewById(R.id.demo_live_media_player);
+		buttonDemoLiveMediaPlayer.setOnClickListener(this);
 
 		checkForUpdates();
 	}
@@ -80,7 +83,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			Intent intent = new Intent(this, AudioListActivity.class);
 			startActivity(intent);
 		} else if (v == buttonDemoSegmentMediaPlayer) {
-			Intent intent = new Intent(this, DemoSegmentMediaPlayerActivity.class);
+			Intent intent = new Intent(this, DemoMediaPlayerActivity.class);
+			startActivity(intent);
+		} else if (v == buttonDemoLiveMediaPlayer) {
+			Intent intent = new Intent(this, DemoMediaPlayerActivity.class);
+			intent.putExtra(DemoMediaPlayerActivity.ARG_LIVE, true);
 			startActivity(intent);
 		}
 	}
