@@ -9,6 +9,9 @@ import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import java.text.DateFormat;
+import java.util.Date;
+
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.segmentoverlay.R;
 
@@ -16,6 +19,7 @@ import ch.srg.segmentoverlay.R;
  * Created by npietri on 20.05.15.
  */
 public class LivePlayerControlView extends RelativeLayout implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, SRGMediaPlayerController.Listener {
+    private final DateFormat liveTimeFormat;
     private SRGMediaPlayerController playerController;
 
     private SeekBar seekBar;
@@ -25,9 +29,6 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
 
     private TextView leftTime;
     private TextView rightTime;
-
-    private long time;
-    private long duration;
 
     private long seekBarSeekToMs;
 
@@ -56,6 +57,8 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
 
         leftTime = (TextView) findViewById(R.id.segment_player_control_time_left);
         rightTime = (TextView) findViewById(R.id.segment_player_control_time_right);
+
+        liveTimeFormat = DateFormat.getTimeInstance();
     }
 
     public void attachToController(SRGMediaPlayerController playerController) {
@@ -93,49 +96,43 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
         }
     }
 
-    private void update(long time) {
+    private void update() {
         if (playerController != null) {
-	        duration = playerController.getMediaDuration();
-
-            updateTimes(time, duration);
+            updateTimes(playerController.getLiveRangeMs(), playerController.getWallClockPosition());
 
             playButton.setVisibility(playerController.isPlaying() ? GONE : VISIBLE);
             pauseButton.setVisibility(playerController.isPlaying() ? VISIBLE : GONE);
         } else {
-            updateTimes(-1, -1);
+            updateTimes(new long[2], 0);
             playButton.setVisibility(VISIBLE);
             pauseButton.setVisibility(GONE);
         }
     }
 
-    private void updateTimes(long position, long duration) {
-        int bufferPercent = playerController.getBufferPercentage();
-        if (bufferPercent > 0) {
-            seekBar.setSecondaryProgress((int) duration * bufferPercent / 100);
-        } else {
-            seekBar.setSecondaryProgress(0);
-        }
+    private void updateTimes(long[] timeRange, long position) {
+        // TODO Buffer indication
+//        int bufferPercent = playerController.getBufferPercentage();
+//        if (bufferPercent > 0) {
+//            seekBar.setSecondaryProgress((int) duration * bufferPercent / 100);
+//        } else {
+//            seekBar.setSecondaryProgress(0);
+//        }
+        long startTime = timeRange[0];
+        long endTime = timeRange[1];
+        long duration = endTime - startTime;
         seekBar.setMax((int) duration);
-        seekBar.setProgress((int) position);
+        seekBar.setProgress((int) (position - startTime));
 
         leftTime.setText(stringForTimeInMs(position));
-        rightTime.setText(stringForTimeInMs(duration));
+        rightTime.setText(stringForTimeInMs(endTime));
     }
 
     private String stringForTimeInMs(long millis) {
-        int totalAbsSeconds = Math.abs((int) millis / 1000);
-        int seconds = totalAbsSeconds % 60;
-        int minutes = (totalAbsSeconds / 60) % 60;
-        int hours = (int) (totalAbsSeconds / 3600 * Math.signum(millis));
-        if (hours > 0) {
-            return String.format("%d:%02d:%02d", hours, minutes, seconds);
-        } else {
-            return String.format("%02d:%02d", minutes, seconds);
-        }
+        return liveTimeFormat.format(new Date(millis));
     }
 
     @Override
     public void onMediaPlayerEvent(SRGMediaPlayerController mp, SRGMediaPlayerController.Event event) {
-        update(event.mediaPosition);
+        update();
     }
 }

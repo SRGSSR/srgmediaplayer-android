@@ -335,4 +335,14 @@ public class NativePlayerDelegate implements
 	}
 
 	// TODO Add time observer to send "stalled" events
+
+	@Override
+	public long[] getLiveRangeMs() {
+		return new long[2];
+	}
+
+	@Override
+	public long getWallClockPosition() {
+		return 0;
+	}
 }

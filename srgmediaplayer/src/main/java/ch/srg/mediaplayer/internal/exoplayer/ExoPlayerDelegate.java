@@ -268,6 +268,9 @@ public class ExoPlayerDelegate implements
 
     @Override
     public void setMuted(boolean muted) {
+        if (audioRenderer == null) {
+            throw new IllegalStateException("Called mute without a registered audio renderer");
+        }
         exoPlayer.sendMessage(audioRenderer, MediaCodecAudioTrackRenderer.MSG_SET_VOLUME, muted ? 0f : 1f);
     }
 
@@ -415,6 +418,21 @@ public class ExoPlayerDelegate implements
 
     public static boolean isSupported() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN;
+    }
+
+    @Override
+    public long[] getLiveRangeMs() {
+        return exoPlayer.getLiveRangeMs();
+    }
+
+    @Override
+    public long getWallClockPosition() {
+        long wallClockPosition = exoPlayer.getWallClockPosition();
+        if (wallClockPosition == ExoPlayer.UNKNOWN_TIME) {
+            return UNKNOWN_TIME;
+        } else {
+            return wallClockPosition;
+        }
     }
 }
 

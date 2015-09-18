@@ -105,4 +105,7 @@ public interface PlayerDelegate {
 
 	void release() throws IllegalStateException;
 
+	long[] getLiveRangeMs();
+
+	long getWallClockPosition();
 }

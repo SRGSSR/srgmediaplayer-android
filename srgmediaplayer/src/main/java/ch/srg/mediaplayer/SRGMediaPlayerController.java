@@ -35,9 +35,12 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     public static final String TAG = "SRGMediaPlayer";
     public static final String NAME = "SRGMediaPlayer";
     public static final String VERSION = "0.0.2";
-    private boolean duckedVolume;
+    private static final long[] EMPTY_TIME_RANGE = new long[2];
 
-    /** True when audio focus has been requested, does not reflect current focus (LOSS / DUCKED). */
+    private boolean duckedVolume;
+    /**
+     * True when audio focus has been requested, does not reflect current focus (LOSS / DUCKED).
+     */
     private boolean audioFocusRequested;
     private long currentSeekTarget;
     private boolean debugMode;
@@ -322,7 +325,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * Try to play a video with a mediaIdentifier, you can't replay the current playing video.
      * will throw an exception if you haven't setup a data provider or if the media is not present
      * in the provider.
-     *
+     * <p/>
      * The corresponding events are triggered when the video loading start and is ready.
      *
      * @param mediaIdentifier
@@ -353,7 +356,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     /*package*/ void onUriLoaded(Uri uri) {
-		assertCommandHandlerThread();
+        assertCommandHandlerThread();
 
         sendMessage(MSG_PREPARE_FOR_URI, uri);
 
@@ -566,7 +569,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             Log.e(TAG, getControllerId() + " " + msg, e);
         }
     }
-    
+
     private void releaseDelegateInternal() {
         if (currentMediaPlayerDelegate != null) {
             fireEvent(Event.Type.MEDIA_STOPPED);
@@ -1075,7 +1078,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         this.debugMode = debugMode;
     }
 
-    /*package*/ static Event createTestEvent(Event.Type eventType, SRGMediaPlayerController controller, SRGMediaPlayerException eventException) {
+    /*package*/
+    static Event createTestEvent(Event.Type eventType, SRGMediaPlayerController controller, SRGMediaPlayerException eventException) {
         return new Event(eventType, controller, eventException);
     }
 
@@ -1089,5 +1093,21 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     public void updateOverlayVisibilities() {
         overlayController.propagateControlVisibility();
+    }
+
+    public long[] getLiveRangeMs() {
+        if (currentMediaPlayerDelegate != null) {
+            return currentMediaPlayerDelegate.getLiveRangeMs();
+        } else {
+            return EMPTY_TIME_RANGE;
+        }
+    }
+
+    public long getWallClockPosition() {
+        if (currentMediaPlayerDelegate != null) {
+            return currentMediaPlayerDelegate.getWallClockPosition();
+        } else {
+            return UNKNOWN_TIME;
+        }
     }
 }
