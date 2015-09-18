@@ -11,7 +11,7 @@ import junit.framework.Assert;
 
 import org.junit.Before;
 
-import ch.srg.mediaplayer.DemoSegmentMediaPlayerActivity;
+import ch.srg.mediaplayer.DemoMediaPlayerActivity;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerView;
@@ -20,7 +20,7 @@ import ch.srg.segmentoverlay.controller.SegmentController;
 /**
  * Created by seb on 11/08/15.
  */
-public class AbstractPlayerTests extends ActivityInstrumentationTestCase2<DemoSegmentMediaPlayerActivity> {
+public class AbstractPlayerTests extends ActivityInstrumentationTestCase2<DemoMediaPlayerActivity> {
     public static final String TEST_1 = "dummy:SPECIMEN";
     public static final int DURATION_TEST_1 = 3568000;
     protected static final int NETWORK_TIMEOUT = 10000;
@@ -31,9 +31,9 @@ public class AbstractPlayerTests extends ActivityInstrumentationTestCase2<DemoSe
     protected boolean mediaCompletedReceived;
     protected Solo solo;
     private SRGMediaPlayerController.Listener playerEventListener;
-    private DemoSegmentMediaPlayerActivity activity;
+    private DemoMediaPlayerActivity activity;
 
-    public AbstractPlayerTests(Class<DemoSegmentMediaPlayerActivity> activityClass) {
+    public AbstractPlayerTests(Class<DemoMediaPlayerActivity> activityClass) {
         super(activityClass);
     }
 

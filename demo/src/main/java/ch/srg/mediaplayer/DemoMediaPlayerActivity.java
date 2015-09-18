@@ -34,9 +34,12 @@ import ch.srg.segmentoverlay.controller.SegmentController;
 import ch.srg.segmentoverlay.model.Segment;
 import ch.srg.segmentoverlay.view.PlayerControlView;
 import ch.srg.segmentoverlay.view.SegmentView;
+import ch.srg.view.LivePlayerControlView;
 
-public class DemoSegmentMediaPlayerActivity extends AppCompatActivity implements
+public class DemoMediaPlayerActivity extends AppCompatActivity implements
         SRGMediaPlayerController.Listener {
+    public static final String ARG_LIVE = "live";
+
     /**
      * This List URL can be changed on http://pastebin.com/UdDn1Jp2 with SpaTeam / spateam00 account.
      */
@@ -48,12 +51,17 @@ public class DemoSegmentMediaPlayerActivity extends AppCompatActivity implements
     public static final String PLAYER_TAG = "main";
     private static final String TAG = "DemoSegment";
 
+
     private SRGMediaPlayerController srgMediaPlayer;
 
     private SRGMediaPlayerView playerView;
 
+    @Nullable
     private SegmentView segmentView;
-    private PlayerControlView playerControlView;
+    @Nullable
+    private PlayerControlView segmentPlayerControlView;
+    @Nullable
+    private LivePlayerControlView livePlayerControlView;
 
     private DemoSegmentAdapter adapter;
 
@@ -81,14 +89,22 @@ public class DemoSegmentMediaPlayerActivity extends AppCompatActivity implements
             commentedIdentifierList = savedInstanceState.getStringArrayList(VIDEO_LIST);
         }
 
-        setContentView(R.layout.activity_demo_segment_media_player);
+        if (getIntent().getBooleanExtra(ARG_LIVE, false)) {
+            setContentView(R.layout.activity_demo_live_media_player);
+        } else {
+            setContentView(R.layout.activity_demo_segment_media_player);
+        }
         playerView = (SRGMediaPlayerView) findViewById(R.id.demo_video_container);
 
         errorMessage = (SimpleErrorMessage) findViewById(R.id.error_message);
         statusLabel = (TextView) findViewById(R.id.status_label);
 
-        segmentView = (SegmentView) findViewById(R.id.segment_demo_view);
-        playerControlView = (PlayerControlView) findViewById(R.id.media_control);
+        View mediaControl = findViewById(R.id.media_control);
+        if (mediaControl instanceof PlayerControlView) {
+            segmentPlayerControlView = (PlayerControlView) mediaControl;
+        } else if (mediaControl instanceof LivePlayerControlView) {
+            livePlayerControlView = (LivePlayerControlView) mediaControl;
+        }
 
         dataProvider = DemoApplication.multiDataProvider;
 
@@ -113,23 +129,31 @@ public class DemoSegmentMediaPlayerActivity extends AppCompatActivity implements
 
         srgMediaPlayer.bindToMediaPlayerView(playerView);
 
-        segmentView.attachToController(srgMediaPlayer);
         errorMessage.attachToController(srgMediaPlayer);
-        playerControlView.attachToController(srgMediaPlayer);
         srgMediaPlayer.registerEventListener(this);
 
         adapter = new DemoSegmentAdapter(this, new ArrayList<Segment>());
 
         segmentView = (SegmentView) findViewById(R.id.segment_demo_view);
-        segmentView.setBaseAdapter(adapter);
 
         segmentController = new SegmentController(this, srgMediaPlayer);
-        segmentView.setSegmentController(segmentController);
-        playerControlView.setSegmentController(segmentController);
+        if (segmentView != null) {
+            segmentView.setBaseAdapter(adapter);
+            segmentView.setSegmentController(segmentController);
+            segmentView.attachToController(srgMediaPlayer);
+        }
+        if (segmentPlayerControlView != null) {
+            segmentPlayerControlView.attachToController(srgMediaPlayer);
+            segmentPlayerControlView.setSegmentController(segmentController);
+        }
         adapter.setSegmentListListener(segmentController);
 
         if (segments != null && !segments.isEmpty()) {
             segmentController.setSegmentList(segments);
+        }
+
+        if (livePlayerControlView != null) {
+            livePlayerControlView.attachToController(srgMediaPlayer);
         }
 
         identifierListView = (ListView) findViewById(R.id.uri_list);
@@ -403,14 +427,6 @@ public class DemoSegmentMediaPlayerActivity extends AppCompatActivity implements
 
     public SRGMediaPlayerView getPlayerView() {
         return playerView;
-    }
-
-    public SegmentView getSegmentView() {
-        return segmentView;
-    }
-
-    public PlayerControlView getPlayerControlView() {
-        return playerControlView;
     }
 
     public SegmentController getSegmentController() {

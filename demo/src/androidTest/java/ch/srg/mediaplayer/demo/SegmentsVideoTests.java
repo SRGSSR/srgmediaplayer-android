@@ -15,7 +15,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import ch.srg.mediaplayer.DemoSegmentMediaPlayerActivity;
+import ch.srg.mediaplayer.DemoMediaPlayerActivity;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.segmentoverlay.controller.SegmentController;
@@ -42,7 +42,7 @@ public class SegmentsVideoTests extends AbstractPlayerTests {
     private SRGMediaPlayerController.Listener listener;
 
     public SegmentsVideoTests() {
-        super(DemoSegmentMediaPlayerActivity.class);
+        super(DemoMediaPlayerActivity.class);
     }
 
     @Before

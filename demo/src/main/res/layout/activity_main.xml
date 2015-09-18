@@ -42,6 +42,14 @@
         android:textColor="#60e060"/>
 
     <Button
+        android:id="@+id/demo_live_media_player"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:drawableStart="@drawable/ic_action_videocam"
+        android:text="Videos: Live"
+        android:textColor="#60e060"/>
+
+    <Button
         android:id="@+id/demo_multi_rts_media_player"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
