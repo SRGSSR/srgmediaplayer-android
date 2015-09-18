@@ -256,8 +256,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         playerDelegateFactory = new PlayerDelegateFactory() {
             @Override
             public PlayerDelegate getDelegateForMediaIdentifier(PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, String mediaIdentifier) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-                    return new ExoPlayerDelegate(SRGMediaPlayerController.this.context, SRGMediaPlayerController.this);
+                if (ExoPlayerDelegate.isSupported()) {
+                    return new ExoPlayerDelegate(SRGMediaPlayerController.this.context,
+                            SRGMediaPlayerController.this);
                 } else {
                     return new NativePlayerDelegate(SRGMediaPlayerController.this);
                 }

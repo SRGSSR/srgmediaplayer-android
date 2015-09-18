@@ -4,6 +4,7 @@ package ch.srg.mediaplayer.internal.exoplayer;
 import android.content.Context;
 import android.media.MediaCodec;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.util.Log;
 import android.view.Surface;
@@ -424,6 +425,10 @@ public class ExoPlayerDelegate implements
     public void setVideoTrack(boolean videoTrack) {
         checkStateForTrackActivation();
         this.videoTrack = videoTrack;
+    }
+
+    public static boolean isSupported() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN;
     }
 }
 
