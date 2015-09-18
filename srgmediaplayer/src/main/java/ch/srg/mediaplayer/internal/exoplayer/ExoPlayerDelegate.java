@@ -11,7 +11,6 @@ import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.View;
 
-import com.google.android.exoplayer.DummyTrackRenderer;
 import com.google.android.exoplayer.ExoPlaybackException;
 import com.google.android.exoplayer.ExoPlayer;
 import com.google.android.exoplayer.MediaCodecAudioTrackRenderer;
@@ -22,7 +21,6 @@ import com.google.android.exoplayer.audio.AudioCapabilities;
 import com.google.android.exoplayer.audio.AudioCapabilitiesReceiver;
 import com.google.android.exoplayer.audio.AudioTrack;
 import com.google.android.exoplayer.chunk.Format;
-import com.google.android.exoplayer.chunk.MultiTrackChunkSource;
 import com.google.android.exoplayer.hls.HlsSampleSource;
 import com.google.android.exoplayer.upstream.BandwidthMeter;
 
@@ -142,42 +140,18 @@ public class ExoPlayerDelegate implements
         }
     }
 
-
     @Override
-    public void onRenderers(String[][] trackNames, MultiTrackChunkSource[] multiTrackSources, TrackRenderer[] renderers, BandwidthMeter bandwidthMeter) {
-        // Normalize the results.
-        if (trackNames == null) {
-            trackNames = new String[2][];
-        }
-        if (multiTrackSources == null) {
-            multiTrackSources = new MultiTrackChunkSource[RENDERER_COUNT];
-        }
+    public void onRenderers(TrackRenderer[] renderers, BandwidthMeter bandwidthMeter) {
         if (!audioTrack) {
             renderers[TYPE_AUDIO] = null;
         }
         if (!videoTrack) {
             renderers[TYPE_VIDEO] = null;
         }
-        for (int i = 0; i < RENDERER_COUNT; i++) {
-            if (renderers[i] == null) {
-                // Convert a null renderer to a dummy renderer.
-                renderers[i] = new DummyTrackRenderer();
-            } else if (trackNames[i] == null) {
-                // We have a renderer so we must have at least one track, but the names are unknown.
-                // Initialize the correct number of null track names.
-                int trackCount = multiTrackSources[i] == null ? 1 : multiTrackSources[i].getTrackCount();
-                trackNames[i] = new String[trackCount];
-            }
-        }
-        this.videoRenderer = renderers[TYPE_VIDEO];
-        this.audioRenderer = renderers[TYPE_AUDIO];
-        Log.v(TAG,
-                "Using renderers: video:" + videoRenderer + " audio:" + audioRenderer);
         pushSurface(false);
         exoPlayer.setRendererEnabled(TYPE_VIDEO, true);
         exoPlayer.setPlayWhenReady(true);
         exoPlayer.prepare(renderers);
-
     }
 
     @Override
@@ -341,7 +315,7 @@ public class ExoPlayerDelegate implements
     }
 
     @Override
-    public void onVideoSizeChanged(int width, int height, float pixelWidthHeightRatio) {
+    public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
         Log.v(TAG, "video size changed: " + width + "x" + height + " pixelRatio:" + pixelWidthHeightRatio);
         videoSourceHeight = height;
         videoSourceAspectRatio = width / (float) height; // TODO Shouldn't we take into account pixelWidthHeightRatio?
@@ -363,7 +337,7 @@ public class ExoPlayerDelegate implements
     }
 
     @Override
-    public void onDecoderError(MediaCodec.CodecException e) {
+    public void onDecoderError(IllegalStateException e) {
         Log.e(TAG, "onDecoderError: " + e);
     }
 
