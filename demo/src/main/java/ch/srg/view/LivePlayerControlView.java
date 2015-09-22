@@ -14,6 +14,7 @@ import java.util.Date;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.segmentoverlay.R;
+import it.moondroid.seekbarhint.library.SeekBarHint;
 
 /**
  * Created by npietri on 20.05.15.
@@ -22,7 +23,7 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
     private final DateFormat liveTimeFormat;
     private SRGMediaPlayerController playerController;
 
-    private SeekBar seekBar;
+    private SeekBarHint seekBar;
 
     private Button pauseButton;
     private Button playButton;
@@ -31,8 +32,9 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
     private TextView rightTime;
 
     private long seekBarSeekToMs;
+    private long[] liveRangeMs;
 
-	public LivePlayerControlView(Context context) {
+    public LivePlayerControlView(Context context) {
         this(context, null);
     }
 
@@ -44,10 +46,18 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
         super(context, attrs, defStyleAttr);
 
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        inflater.inflate(R.layout.segment_player_control, this, true);
+        inflater.inflate(R.layout.dvr_player_control, this, true);
 
-        seekBar = (SeekBar) findViewById(R.id.segment_player_control_seekbar);
+        seekBar = (SeekBarHint) findViewById(R.id.dvr_player_control_seekbar);
         seekBar.setOnSeekBarChangeListener(this);
+        seekBar.setOnProgressChangeListener(new SeekBarHint.OnSeekBarHintProgressChangeListener() {
+            @Override
+            public String onHintTextChanged(SeekBarHint seekBarHint, int i) {
+                return stringForTimeInMs(liveRangeMs[0] + i);
+            }
+        });
+        seekBar.setPopupStyle(SeekBarHint.POPUP_FOLLOW);
+        liveRangeMs = new long[2];
 
         pauseButton = (Button) findViewById(R.id.segment_player_control_button_pause);
         playButton = (Button) findViewById(R.id.segment_player_control_button_play);
@@ -98,7 +108,7 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
 
     private void update() {
         if (playerController != null) {
-            updateTimes(playerController.getLiveRangeMs(), playerController.getWallClockPosition());
+            updateTimes(liveRangeMs, playerController.getWallClockPosition());
 
             playButton.setVisibility(playerController.isPlaying() ? GONE : VISIBLE);
             pauseButton.setVisibility(playerController.isPlaying() ? VISIBLE : GONE);
@@ -133,6 +143,9 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
 
     @Override
     public void onMediaPlayerEvent(SRGMediaPlayerController mp, SRGMediaPlayerController.Event event) {
-        update();
+        if (mp == playerController) {
+            liveRangeMs = playerController.getLiveRangeMs();
+            update();
+        }
     }
 }

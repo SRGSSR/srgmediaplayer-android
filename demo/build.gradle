@@ -84,6 +84,7 @@ dependencies {
 	}
 
 	compile 'net.hockeyapp.android:HockeySDK:3.5.0'
+	        compile 'com.github.SRGSSR:SeekBarHint:16a4891'
 }
 
 hockeyapp {
