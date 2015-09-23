@@ -34,7 +34,10 @@ public class RawHttpDataProvider implements SRGMediaPlayerDataProvider {
             public Uri onHttpURLConnectionSuccess(InputStreamReader in) throws IOException {
                 Scanner s = new Scanner(in).useDelimiter("\\A");
                 if (s.hasNext()) {
-                    return Uri.parse(s.next());
+                    String item = s.next();
+                    Scanner s2 = new Scanner(item).useDelimiter("\"");
+                    item = s2.next();
+                    return Uri.parse(item);
                 }
                 else {
                     return null;
