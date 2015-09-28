@@ -13,7 +13,7 @@ import android.widget.TextView;
 import java.text.DateFormat;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
-import ch.srg.segmentoverlay.R;
+import ch.srg.mediaplayer.demo.R;
 import it.moondroid.seekbarhint.library.SeekBarHint;
 
 /**
