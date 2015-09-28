@@ -158,4 +158,13 @@ public class MockDelegate implements PlayerDelegate {
         controller.onPlayerDelegateError(this, e);
     }
 
+    @Override
+    public boolean isLive() {
+        return false;
+    }
+
+    @Override
+    public long getPlaylistStartTime() {
+        return 0;
+    }
 }
