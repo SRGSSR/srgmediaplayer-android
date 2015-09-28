@@ -9,6 +9,7 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Process;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -115,12 +116,12 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             PLAYING_STATE_CHANGE,
             WILL_SEEK,
 
-            EXTERNAL_EVENT
+            EXTERNAL_EVENT;
         }
-
         public final Type type;
 
         public final String mediaIdentifier;
+
         public final String mediaUrl;
         public final String mediaSessionId;
         public final long mediaPosition;
@@ -129,6 +130,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         public final boolean mediaMuted;
         public final String videoViewDimension;
         public final String tag;
+        public final long mediaPlaylistOffset;
+        public final boolean mediaLive;
+
 
         public final State state;
         public final SRGMediaPlayerException exception;
@@ -153,6 +157,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             mediaDuration = controller.getMediaDuration();
             mediaPlaying = controller.isPlaying();
             mediaMuted = controller.muted;
+            mediaLive = controller.isLive();
+            mediaPlaylistOffset = controller.getPlaylistStartTimeUs();
             videoViewDimension = controller.mediaPlayerView != null ? controller.mediaPlayerView.getVideoRenderingViewSizeString() : SRGMediaPlayerView.UNKNOWN_DIMENSION;
             tag = controller.tag;
             state = controller.state;
@@ -220,6 +226,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private boolean muted = false;
     private PlayerDelegateFactory playerDelegateFactory;
 
+    @Nullable
     private PlayerDelegate currentMediaPlayerDelegate;
     private SRGMediaPlayerView mediaPlayerView;
 
@@ -451,11 +458,13 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 fireEvent(Event.Type.MEDIA_READY_TO_PLAY);
                 try {
                     createPlayerDelegateInternal(currentMediaIdentifier);
-                    if (mediaPlayerView != null) {
-                        internalUpdateMediaPlayerViewBound();
+                    if (currentMediaPlayerDelegate != null) {
+                        if (mediaPlayerView != null) {
+                            internalUpdateMediaPlayerViewBound();
+                        }
+                        currentMediaPlayerDelegate.playIfReady(playWhenReady);
+                        currentMediaPlayerDelegate.prepare(uri);
                     }
-                    currentMediaPlayerDelegate.playIfReady(playWhenReady);
-                    currentMediaPlayerDelegate.prepare(uri);
                 } catch (SRGMediaPlayerException e) {
                     logE("onUriLoaded", e);
                     handleFatalExceptionInternal(e);
@@ -664,8 +673,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     /**
      * Return the current mediaIdentifier played.
-     *
-     * @return
      */
     public String getMediaIdentifier() {
         return currentMediaIdentifier;
@@ -821,7 +828,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         } else
             // mediaPlayerView null, just unbind delegate
             if (mediaPlayerView == null) {
-                currentMediaPlayerDelegate.unbindRenderingView();
+                if (currentMediaPlayerDelegate != null) {
+                    currentMediaPlayerDelegate.unbindRenderingView();
+                }
             }
         //Other cases are :
         // - both mediaPlayerView and delegate null, do nothing
@@ -1095,19 +1104,11 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         overlayController.propagateControlVisibility();
     }
 
-    public long[] getLiveRangeMs() {
-        if (currentMediaPlayerDelegate != null) {
-            return currentMediaPlayerDelegate.getLiveRangeMs();
-        } else {
-            return EMPTY_TIME_RANGE;
-        }
+    private long getPlaylistStartTimeUs() {
+        return currentMediaPlayerDelegate != null ? currentMediaPlayerDelegate.getPlaylistStartTime() : 0;
     }
 
-    public long getWallClockPosition() {
-        if (currentMediaPlayerDelegate != null) {
-            return currentMediaPlayerDelegate.getWallClockPosition();
-        } else {
-            return UNKNOWN_TIME;
-        }
+    private boolean isLive() {
+        return currentMediaPlayerDelegate != null && currentMediaPlayerDelegate.isLive();
     }
 }

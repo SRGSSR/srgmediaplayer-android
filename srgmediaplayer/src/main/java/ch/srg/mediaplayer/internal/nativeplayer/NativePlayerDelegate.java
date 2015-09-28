@@ -334,15 +334,13 @@ public class NativePlayerDelegate implements
 		}
 	}
 
-	// TODO Add time observer to send "stalled" events
-
 	@Override
-	public long[] getLiveRangeMs() {
-		return new long[2];
+	public boolean isLive() {
+		return false;
 	}
 
 	@Override
-	public long getWallClockPosition() {
+	public long getPlaylistStartTime() {
 		return 0;
 	}
 }

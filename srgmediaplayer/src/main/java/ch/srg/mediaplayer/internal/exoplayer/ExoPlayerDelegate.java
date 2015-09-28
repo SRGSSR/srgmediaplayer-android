@@ -22,6 +22,7 @@ import com.google.android.exoplayer.audio.AudioCapabilities;
 import com.google.android.exoplayer.audio.AudioCapabilitiesReceiver;
 import com.google.android.exoplayer.audio.AudioTrack;
 import com.google.android.exoplayer.chunk.Format;
+import com.google.android.exoplayer.hls.HlsChunkSource;
 import com.google.android.exoplayer.hls.HlsSampleSource;
 import com.google.android.exoplayer.upstream.BandwidthMeter;
 
@@ -41,10 +42,12 @@ public class ExoPlayerDelegate implements
         PlayerDelegate,
         ExoPlayer.Listener,
         HlsSampleSource.EventListener,
+        HlsChunkSource.EventListener,
         MediaCodecVideoTrackRenderer.EventListener,
         MediaCodecAudioTrackRenderer.EventListener,
         AudioCapabilitiesReceiver.Listener,
         RendererBuilderCallback {
+
 
     public enum SourceType {
         HLS,
@@ -76,6 +79,10 @@ public class ExoPlayerDelegate implements
     private OnPlayerDelegateListener controller;
     private boolean audioTrack = true;
     private boolean videoTrack = true;
+
+    private boolean live;
+
+    private long playlistStartTimeMs;
 
     public ExoPlayerDelegate(Context context, OnPlayerDelegateListener controller) {
         this(context, controller, SourceType.HLS);
@@ -400,6 +407,22 @@ public class ExoPlayerDelegate implements
         controller.onPlayerDelegateError(this, new SRGMediaPlayerException(e));
     }
 
+    @Override
+    public void onPlaylistInformation(boolean live, long playlistStartTimeUs) {
+        this.live = live;
+        this.playlistStartTimeMs = playlistStartTimeUs / 1000;
+    }
+
+    @Override
+    public boolean isLive() {
+        return live;
+    }
+
+    @Override
+    public long getPlaylistStartTime() {
+        return playlistStartTimeMs;
+    }
+
     private void checkStateForTrackActivation() {
         if (exoPlayer.getPlaybackState() != ExoPlayer.STATE_IDLE) {
             throw new IllegalStateException("track activation change after init not supported");
@@ -420,19 +443,5 @@ public class ExoPlayerDelegate implements
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN;
     }
 
-    @Override
-    public long[] getLiveRangeMs() {
-        return exoPlayer.getLiveRangeMs();
-    }
-
-    @Override
-    public long getWallClockPosition() {
-        long wallClockPosition = exoPlayer.getWallClockPosition();
-        if (wallClockPosition == ExoPlayer.UNKNOWN_TIME) {
-            return UNKNOWN_TIME;
-        } else {
-            return wallClockPosition;
-        }
-    }
 }
 

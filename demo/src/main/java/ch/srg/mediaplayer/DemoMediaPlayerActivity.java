@@ -37,7 +37,7 @@ import ch.srg.segmentoverlay.view.SegmentView;
 import ch.srg.view.LivePlayerControlView;
 
 public class DemoMediaPlayerActivity extends AppCompatActivity implements
-        SRGMediaPlayerController.Listener {
+        SRGMediaPlayerController.Listener, View.OnClickListener {
     public static final String ARG_LIVE = "live";
 
     /**
@@ -105,6 +105,11 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
         } else if (mediaControl instanceof LivePlayerControlView) {
             livePlayerControlView = (LivePlayerControlView) mediaControl;
         }
+
+        findViewById(R.id.button_seek_one_hour).setOnClickListener(this);
+        findViewById(R.id.button_seek_half_hour).setOnClickListener(this);
+        findViewById(R.id.button_seek_one_minute).setOnClickListener(this);
+        findViewById(R.id.button_seek_live).setOnClickListener(this);
 
         dataProvider = DemoApplication.multiDataProvider;
 
@@ -255,6 +260,25 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
                 }
             }
         }.execute(LIST_URL);
+    }
+
+    @Override
+    public void onClick(View v) {
+        long duration = srgMediaPlayer.getMediaDuration();
+        switch (v.getId()) {
+            case R.id.button_seek_one_hour:
+                srgMediaPlayer.seekTo(duration - 1000 * 3600);
+                break;
+            case R.id.button_seek_half_hour:
+                srgMediaPlayer.seekTo(duration - 1000 * 1800);
+                break;
+            case R.id.button_seek_one_minute:
+                srgMediaPlayer.seekTo(duration - 1000 * 60);
+                break;
+            case R.id.button_seek_live:
+                srgMediaPlayer.seekTo(duration);
+                break;
+        }
     }
 
     public interface URLConnectionProcessor<T> {

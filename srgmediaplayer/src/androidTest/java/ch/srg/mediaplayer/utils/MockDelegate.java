@@ -158,13 +158,4 @@ public class MockDelegate implements PlayerDelegate {
         controller.onPlayerDelegateError(this, e);
     }
 
-    @Override
-    public long[] getLiveRangeMs() {
-        return new long[2];
-    }
-
-    @Override
-    public long getWallClockPosition() {
-        return 0;
-    }
 }
