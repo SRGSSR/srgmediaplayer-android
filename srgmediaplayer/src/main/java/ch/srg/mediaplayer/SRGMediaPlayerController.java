@@ -130,7 +130,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         public final boolean mediaMuted;
         public final String videoViewDimension;
         public final String tag;
-        public final long mediaPlaylistOffset;
+        public final long mediaPlaylistStartTime;
         public final boolean mediaLive;
 
 
@@ -158,7 +158,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             mediaPlaying = controller.isPlaying();
             mediaMuted = controller.muted;
             mediaLive = controller.isLive();
-            mediaPlaylistOffset = controller.getPlaylistStartTimeUs();
+            mediaPlaylistStartTime = controller.getPlaylistStartTime();
             videoViewDimension = controller.mediaPlayerView != null ? controller.mediaPlayerView.getVideoRenderingViewSizeString() : SRGMediaPlayerView.UNKNOWN_DIMENSION;
             tag = controller.tag;
             state = controller.state;
@@ -678,6 +678,10 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         return currentMediaIdentifier;
     }
 
+    /**
+     *
+     * @return media position relative to MPST (see {@link #getMediaPlaylistStartTime} )
+     */
     public long getMediaPosition() {
         if (currentMediaPlayerDelegate != null) {
             return currentMediaPlayerDelegate.getCurrentPosition();
@@ -686,9 +690,35 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
     }
 
+    /**
+     *
+     * @return Media duration relative to 0.
+     */
     public long getMediaDuration() {
         if (currentMediaPlayerDelegate != null) {
             return currentMediaPlayerDelegate.getDuration();
+        } else {
+            return UNKNOWN_TIME;
+        }
+    }
+
+    /**
+     * Media playlist start time (MPST) is a relative offset for the available seekable range,
+     * used in sliding window live playlist.
+     * The range [0..MPST] is not available for seeking.
+     *
+     * <pre>
+     * 0 --------------- MPST --------- POSITION ------------------------------------- LIVE
+     *                    \---------------------------DURATION---------------------------/
+     * </pre>
+     *
+     * MPST stays constant with a value of 0 when playing a static video.
+     *
+     * @return MPST in ms
+     */
+    public long getMediaPlaylistStartTime() {
+        if (currentMediaPlayerDelegate != null) {
+            return currentMediaPlayerDelegate.getPlaylistStartTime();
         } else {
             return UNKNOWN_TIME;
         }
@@ -1104,7 +1134,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         overlayController.propagateControlVisibility();
     }
 
-    private long getPlaylistStartTimeUs() {
+    private long getPlaylistStartTime() {
         return currentMediaPlayerDelegate != null ? currentMediaPlayerDelegate.getPlaylistStartTime() : 0;
     }
 

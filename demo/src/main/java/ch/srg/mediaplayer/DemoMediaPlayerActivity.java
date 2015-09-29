@@ -134,6 +134,10 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
 
         srgMediaPlayer.bindToMediaPlayerView(playerView);
 
+        if (livePlayerControlView != null) {
+            livePlayerControlView.setPlayerController(srgMediaPlayer);
+        }
+
         errorMessage.attachToController(srgMediaPlayer);
         srgMediaPlayer.registerEventListener(this);
 
@@ -155,10 +159,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
 
         if (segments != null && !segments.isEmpty()) {
             segmentController.setSegmentList(segments);
-        }
-
-        if (livePlayerControlView != null) {
-            livePlayerControlView.attachToController(srgMediaPlayer);
         }
 
         identifierListView = (ListView) findViewById(R.id.uri_list);
@@ -214,6 +214,9 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
         srgMediaPlayer.bindToMediaPlayerView(playerView);
 
         segmentController.startListening();
+        if (livePlayerControlView != null) {
+            livePlayerControlView.startListening();
+        }
     }
 
     private void loadIdentifiers() {
@@ -394,6 +397,10 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
     protected void onPause() {
         srgMediaPlayer.unbindFromMediaPlayerView();
         segmentController.stopListening();
+
+        if (livePlayerControlView != null) {
+            livePlayerControlView.stopListening();
+        }
 
         super.onPause();
     }

@@ -1,6 +1,7 @@
 package ch.srg.view;
 
 import android.content.Context;
+import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -19,7 +20,9 @@ import it.moondroid.seekbarhint.library.SeekBarHint;
 /**
  * Created by npietri on 20.05.15.
  */
-public class LivePlayerControlView extends RelativeLayout implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, SRGMediaPlayerController.Listener {
+public class LivePlayerControlView extends RelativeLayout implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, SRGMediaPlayerController.Listener, Runnable {
+    private static final long PERIODIC_UPDATE_DELAY = 250;
+
     private static final String TAG = "Live PlayerControl";
     private final DateFormat liveTimeFormat;
     private SRGMediaPlayerController playerController;
@@ -36,6 +39,8 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
     private long duration;
     private long position;
     private long mediaPlaylistOffset;
+    private Handler handler;
+    private boolean userChangingProgress;
 
     public LivePlayerControlView(Context context) {
         this(context, null);
@@ -71,11 +76,8 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
         rightTime = (TextView) findViewById(R.id.segment_player_control_time_right);
 
         liveTimeFormat = DateFormat.getTimeInstance();
-    }
 
-    public void attachToController(SRGMediaPlayerController playerController) {
-        this.playerController = playerController;
-        playerController.registerEventListener(this);
+        handler = new Handler();
     }
 
     @Override
@@ -98,10 +100,12 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
 
     @Override
     public void onStartTrackingTouch(SeekBar seekBar) {
+        userChangingProgress = true;
     }
 
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
+        userChangingProgress = false;
         if (seekBarSeekToMs >= 0) {
             playerController.seekTo(seekBarSeekToMs);
             seekBarSeekToMs = -1;
@@ -110,7 +114,11 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
 
     private void update() {
         if (playerController != null) {
-            Log.v(TAG, "PlayerEvent: " + position + "+" + mediaPlaylistOffset + " / " + duration);
+            position = playerController.getMediaPosition();
+            duration = playerController.getMediaDuration();
+            mediaPlaylistOffset = playerController.getMediaPlaylistStartTime();
+
+            Log.v(TAG, "Update: " + position + "+" + mediaPlaylistOffset + " / " + duration);
 
             updateTimes(position - mediaPlaylistOffset, duration);
 
@@ -137,6 +145,12 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
         rightTime.setText(stringForTimeInMs(duration));
     }
 
+    private void updateIfNotUserTracked() {
+        if (!userChangingProgress) {
+            update();
+        }
+    }
+
     private String stringForTimeInMs(long millis) {
         String sign;
         if (millis < 0) {
@@ -160,11 +174,28 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
     public void onMediaPlayerEvent(SRGMediaPlayerController mp, SRGMediaPlayerController.Event event) {
         if (mp == playerController) {
             Log.v(TAG, "PlayerEvent: " + position + "+" + mediaPlaylistOffset + " / " + duration);
-            position = event.mediaPosition;
-            duration = event.mediaDuration;
-            mediaPlaylistOffset = event.mediaPlaylistOffset;
 
             update();
         }
+    }
+
+    public void startListening() {
+        playerController.registerEventListener(this);
+        handler.postDelayed(this, PERIODIC_UPDATE_DELAY);
+    }
+
+    public void stopListening() {
+        playerController.unregisterEventListener(this);
+        handler.removeCallbacks(this);
+    }
+
+    public void setPlayerController(SRGMediaPlayerController playerController) {
+        this.playerController = playerController;
+    }
+
+    @Override
+    public void run() {
+        updateIfNotUserTracked();
+        handler.postDelayed(this, PERIODIC_UPDATE_DELAY);
     }
 }
