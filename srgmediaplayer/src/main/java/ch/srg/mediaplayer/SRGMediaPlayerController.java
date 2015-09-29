@@ -378,19 +378,26 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     /**
+     * <p>
      * Try to seek to the provided position, if this position is not reachable
-     * will throw an exception
-     *
-     * @param positionInMillis
-     * @throws IllegalStateException
+     * will throw an exception.
+     * Seek position is stored when the player is preparing and the stream will start at the last seekTo value.
+     * </p>
+     * <h2>Live stream</h2>
+     * <p>
+     * When playing a live stream, a value of 0 represents the live most position.
+     * A value of 1..duration represents the relative position in the live stream.
+     *</p>
+     * @param positionMs position in ms
+     * @throws IllegalStateException player error
      */
-    public void seekTo(long positionInMillis) throws IllegalStateException {
-        currentSeekTarget = positionInMillis;
+    public void seekTo(long positionMs) throws IllegalStateException {
+        currentSeekTarget = positionMs;
         if (state == State.PREPARING) {
-            seekToWhenReady = positionInMillis;
+            seekToWhenReady = positionMs;
         } else {
             seekToWhenReady = null;
-            sendMessage(MSG_SEEK_TO, positionInMillis);
+            sendMessage(MSG_SEEK_TO, positionMs);
         }
     }
 

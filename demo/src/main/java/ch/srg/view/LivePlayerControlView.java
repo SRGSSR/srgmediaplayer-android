@@ -107,7 +107,7 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
     public void onStopTrackingTouch(SeekBar seekBar) {
         userChangingProgress = false;
         if (seekBarSeekToMs >= 0) {
-            playerController.seekTo(seekBarSeekToMs);
+            playerController.seekTo(Math.max(1, seekBarSeekToMs));
             seekBarSeekToMs = -1;
         }
     }
