@@ -106,11 +106,19 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
             livePlayerControlView = (LivePlayerControlView) mediaControl;
         }
 
-        findViewById(R.id.button_seek_window_start).setOnClickListener(this);
-        findViewById(R.id.button_seek_one_hour).setOnClickListener(this);
-        findViewById(R.id.button_seek_half_hour).setOnClickListener(this);
-        findViewById(R.id.button_seek_one_minute).setOnClickListener(this);
-        findViewById(R.id.button_seek_live).setOnClickListener(this);
+        int[] buttonIds = {
+                R.id.button_seek_window_start,
+                R.id.button_seek_one_hour,
+                R.id.button_seek_half_hour,
+                R.id.button_seek_one_minute,
+                R.id.button_seek_live
+        };
+        for (int buttonId: buttonIds) {
+            View button = findViewById(buttonId);
+            if (button != null) {
+                button.setOnClickListener(this);
+            }
+        }
 
         dataProvider = DemoApplication.multiDataProvider;
 
