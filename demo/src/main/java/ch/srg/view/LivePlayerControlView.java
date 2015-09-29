@@ -84,6 +84,9 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
     public void onClick(View v) {
         if (playerController != null) {
             if (v == playButton) {
+                if (playerController.getMediaPosition() < playerController.getMediaPlaylistStartTime()) {
+                    playerController.seekTo(1);
+                }
                 playerController.start();
             } else if (v == pauseButton) {
                 playerController.pause();
@@ -120,7 +123,7 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
 
             Log.v(TAG, "Update: " + position + "+" + mediaPlaylistOffset + " / " + duration);
 
-            updateTimes(position - mediaPlaylistOffset, duration);
+            updateTimes(Math.max(0, position - mediaPlaylistOffset), duration);
 
             playButton.setVisibility(playerController.isPlaying() ? GONE : VISIBLE);
             pauseButton.setVisibility(playerController.isPlaying() ? VISIBLE : GONE);
