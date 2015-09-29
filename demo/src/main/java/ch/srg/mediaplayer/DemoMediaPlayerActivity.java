@@ -106,6 +106,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
             livePlayerControlView = (LivePlayerControlView) mediaControl;
         }
 
+        findViewById(R.id.button_seek_window_start).setOnClickListener(this);
         findViewById(R.id.button_seek_one_hour).setOnClickListener(this);
         findViewById(R.id.button_seek_half_hour).setOnClickListener(this);
         findViewById(R.id.button_seek_one_minute).setOnClickListener(this);
@@ -269,6 +270,9 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
     public void onClick(View v) {
         long duration = srgMediaPlayer.getMediaDuration();
         switch (v.getId()) {
+            case R.id.button_seek_window_start:
+                srgMediaPlayer.seekTo(1);
+                break;
             case R.id.button_seek_one_hour:
                 srgMediaPlayer.seekTo(duration - 1000 * 3600);
                 break;
