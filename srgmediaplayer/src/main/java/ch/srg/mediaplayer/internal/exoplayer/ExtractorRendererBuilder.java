@@ -63,7 +63,7 @@ public class ExtractorRendererBuilder implements RendererBuilder {
         TrackRenderer[] renderers = new TrackRenderer[ExoPlayerDelegate.RENDERER_COUNT];
         renderers[ExoPlayerDelegate.TYPE_VIDEO] = videoRenderer;
         renderers[ExoPlayerDelegate.TYPE_AUDIO] = audioRenderer;
-        callback.onRenderers(null, null, renderers, bandwidthMeter);
+        callback.onRenderers(renderers, bandwidthMeter);
     }
 
 }

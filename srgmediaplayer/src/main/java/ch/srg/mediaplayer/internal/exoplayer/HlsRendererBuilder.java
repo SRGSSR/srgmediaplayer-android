@@ -45,7 +45,6 @@ import java.io.IOException;
  */
 
 public class HlsRendererBuilder implements RendererBuilder, ManifestCallback<HlsPlaylist> {
-
     private static final int BUFFER_SEGMENT_SIZE = 256 * 1024;
     private static final int BUFFER_SEGMENTS = 64;
 
@@ -85,7 +84,7 @@ public class HlsRendererBuilder implements RendererBuilder, ManifestCallback<Hls
         DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
 
         DataSource dataSource = new DefaultUriDataSource(context, bandwidthMeter, userAgent);
-        HlsChunkSource chunkSource = new HlsChunkSource(dataSource, url, manifest, bandwidthMeter, null, HlsChunkSource.ADAPTIVE_MODE_SPLICE, audioCapabilities);
+        HlsChunkSource chunkSource = new HlsChunkSource(dataSource, url, manifest, bandwidthMeter, null, HlsChunkSource.ADAPTIVE_MODE_SPLICE, player);
         HlsSampleSource sampleSource = new HlsSampleSource(chunkSource, loadControl, BUFFER_SEGMENTS * BUFFER_SEGMENT_SIZE, player.getMainHandler(), player, ExoPlayerDelegate.TYPE_VIDEO);
         MediaCodecVideoTrackRenderer videoRenderer = new MediaCodecVideoTrackRenderer(sampleSource, MediaCodec.VIDEO_SCALING_MODE_SCALE_TO_FIT, 5000, player.getMainHandler(), player, 50);
         MediaCodecAudioTrackRenderer audioRenderer = new MediaCodecAudioTrackRenderer(sampleSource);
@@ -93,7 +92,7 @@ public class HlsRendererBuilder implements RendererBuilder, ManifestCallback<Hls
         TrackRenderer[] renderers = new TrackRenderer[ExoPlayerDelegate.RENDERER_COUNT];
         renderers[ExoPlayerDelegate.TYPE_VIDEO] = videoRenderer;
         renderers[ExoPlayerDelegate.TYPE_AUDIO] = audioRenderer;
-        callback.onRenderers(null, null, renderers, bandwidthMeter);
+        callback.onRenderers(renderers, bandwidthMeter);
     }
 
 }

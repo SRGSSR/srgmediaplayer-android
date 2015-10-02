@@ -22,7 +22,7 @@ import com.google.android.exoplayer.audio.AudioCapabilities;
 import com.google.android.exoplayer.audio.AudioCapabilitiesReceiver;
 import com.google.android.exoplayer.audio.AudioTrack;
 import com.google.android.exoplayer.chunk.Format;
-import com.google.android.exoplayer.chunk.MultiTrackChunkSource;
+import com.google.android.exoplayer.hls.HlsChunkSource;
 import com.google.android.exoplayer.hls.HlsSampleSource;
 import com.google.android.exoplayer.upstream.BandwidthMeter;
 
@@ -42,10 +42,12 @@ public class ExoPlayerDelegate implements
         PlayerDelegate,
         ExoPlayer.Listener,
         HlsSampleSource.EventListener,
+        HlsChunkSource.EventListener,
         MediaCodecVideoTrackRenderer.EventListener,
         MediaCodecAudioTrackRenderer.EventListener,
         AudioCapabilitiesReceiver.Listener,
         RendererBuilderCallback {
+
 
     public enum SourceType {
         HLS,
@@ -77,6 +79,10 @@ public class ExoPlayerDelegate implements
     private OnPlayerDelegateListener controller;
     private boolean audioTrack = true;
     private boolean videoTrack = true;
+
+    private boolean live;
+
+    private long playlistStartTimeMs;
 
     public ExoPlayerDelegate(Context context, OnPlayerDelegateListener controller) {
         this(context, controller, SourceType.HLS);
@@ -142,16 +148,8 @@ public class ExoPlayerDelegate implements
         }
     }
 
-
     @Override
-    public void onRenderers(String[][] trackNames, MultiTrackChunkSource[] multiTrackSources, TrackRenderer[] renderers, BandwidthMeter bandwidthMeter) {
-        // Normalize the results.
-        if (trackNames == null) {
-            trackNames = new String[2][];
-        }
-        if (multiTrackSources == null) {
-            multiTrackSources = new MultiTrackChunkSource[RENDERER_COUNT];
-        }
+    public void onRenderers(TrackRenderer[] renderers, BandwidthMeter bandwidthMeter) {
         if (!audioTrack) {
             renderers[TYPE_AUDIO] = null;
         }
@@ -162,11 +160,6 @@ public class ExoPlayerDelegate implements
             if (renderers[i] == null) {
                 // Convert a null renderer to a dummy renderer.
                 renderers[i] = new DummyTrackRenderer();
-            } else if (trackNames[i] == null) {
-                // We have a renderer so we must have at least one track, but the names are unknown.
-                // Initialize the correct number of null track names.
-                int trackCount = multiTrackSources[i] == null ? 1 : multiTrackSources[i].getTrackCount();
-                trackNames[i] = new String[trackCount];
             }
         }
         this.videoRenderer = renderers[TYPE_VIDEO];
@@ -174,10 +167,10 @@ public class ExoPlayerDelegate implements
         Log.v(TAG,
                 "Using renderers: video:" + videoRenderer + " audio:" + audioRenderer);
         pushSurface(false);
-        exoPlayer.setRendererEnabled(TYPE_VIDEO, true);
+        exoPlayer.setSelectedTrack(TYPE_AUDIO, ExoPlayer.TRACK_DEFAULT);
+        exoPlayer.setSelectedTrack(TYPE_VIDEO, ExoPlayer.TRACK_DEFAULT);
         exoPlayer.setPlayWhenReady(true);
         exoPlayer.prepare(renderers);
-
     }
 
     @Override
@@ -282,6 +275,9 @@ public class ExoPlayerDelegate implements
 
     @Override
     public void setMuted(boolean muted) {
+        if (audioRenderer == null) {
+            throw new IllegalStateException("Called mute without a registered audio renderer");
+        }
         exoPlayer.sendMessage(audioRenderer, MediaCodecAudioTrackRenderer.MSG_SET_VOLUME, muted ? 0f : 1f);
     }
 
@@ -341,7 +337,7 @@ public class ExoPlayerDelegate implements
     }
 
     @Override
-    public void onVideoSizeChanged(int width, int height, float pixelWidthHeightRatio) {
+    public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
         Log.v(TAG, "video size changed: " + width + "x" + height + " pixelRatio:" + pixelWidthHeightRatio);
         videoSourceHeight = height;
         videoSourceAspectRatio = width / (float) height; // TODO Shouldn't we take into account pixelWidthHeightRatio?
@@ -363,7 +359,7 @@ public class ExoPlayerDelegate implements
     }
 
     @Override
-    public void onDecoderError(MediaCodec.CodecException e) {
+    public void onDecoderError(IllegalStateException e) {
         Log.e(TAG, "onDecoderError: " + e);
     }
 
@@ -411,6 +407,22 @@ public class ExoPlayerDelegate implements
         controller.onPlayerDelegateError(this, new SRGMediaPlayerException(e));
     }
 
+    @Override
+    public void onPlaylistInformation(boolean live, long playlistStartTimeUs) {
+        this.live = live;
+        this.playlistStartTimeMs = playlistStartTimeUs / 1000;
+    }
+
+    @Override
+    public boolean isLive() {
+        return live;
+    }
+
+    @Override
+    public long getPlaylistStartTime() {
+        return playlistStartTimeMs;
+    }
+
     private void checkStateForTrackActivation() {
         if (exoPlayer.getPlaybackState() != ExoPlayer.STATE_IDLE) {
             throw new IllegalStateException("track activation change after init not supported");
@@ -430,5 +442,6 @@ public class ExoPlayerDelegate implements
     public static boolean isSupported() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN;
     }
+
 }
 

@@ -334,5 +334,13 @@ public class NativePlayerDelegate implements
 		}
 	}
 
-	// TODO Add time observer to send "stalled" events
+	@Override
+	public boolean isLive() {
+		return false;
+	}
+
+	@Override
+	public long getPlaylistStartTime() {
+		return 0;
+	}
 }

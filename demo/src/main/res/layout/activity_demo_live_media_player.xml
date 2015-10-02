@@ -72,19 +72,25 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="-1hour"
+            android:text="start"
+            android:id="@+id/button_seek_window_start"/>
+        <Button
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="-1h"
             android:id="@+id/button_seek_one_hour"/>
         <Button
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="-1/2hour"
+            android:text="-1/2h"
             android:id="@+id/button_seek_half_hour"/>
         <Button
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="-1minute"
+            android:text="-1min"
             android:id="@+id/button_seek_one_minute"/>
         <Button
             android:layout_width="0dp"

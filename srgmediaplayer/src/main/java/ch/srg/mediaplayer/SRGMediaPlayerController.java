@@ -9,6 +9,7 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Process;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -35,9 +36,12 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     public static final String TAG = "SRGMediaPlayer";
     public static final String NAME = "SRGMediaPlayer";
     public static final String VERSION = "0.0.2";
-    private boolean duckedVolume;
+    private static final long[] EMPTY_TIME_RANGE = new long[2];
 
-    /** True when audio focus has been requested, does not reflect current focus (LOSS / DUCKED). */
+    private boolean duckedVolume;
+    /**
+     * True when audio focus has been requested, does not reflect current focus (LOSS / DUCKED).
+     */
     private boolean audioFocusRequested;
     private long currentSeekTarget;
     private boolean debugMode;
@@ -112,12 +116,12 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             PLAYING_STATE_CHANGE,
             WILL_SEEK,
 
-            EXTERNAL_EVENT
+            EXTERNAL_EVENT;
         }
-
         public final Type type;
 
         public final String mediaIdentifier;
+
         public final String mediaUrl;
         public final String mediaSessionId;
         public final long mediaPosition;
@@ -126,6 +130,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         public final boolean mediaMuted;
         public final String videoViewDimension;
         public final String tag;
+        public final long mediaPlaylistStartTime;
+        public final boolean mediaLive;
+
 
         public final State state;
         public final SRGMediaPlayerException exception;
@@ -150,6 +157,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             mediaDuration = controller.getMediaDuration();
             mediaPlaying = controller.isPlaying();
             mediaMuted = controller.muted;
+            mediaLive = controller.isLive();
+            mediaPlaylistStartTime = controller.getPlaylistStartTime();
             videoViewDimension = controller.mediaPlayerView != null ? controller.mediaPlayerView.getVideoRenderingViewSizeString() : SRGMediaPlayerView.UNKNOWN_DIMENSION;
             tag = controller.tag;
             state = controller.state;
@@ -217,6 +226,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private boolean muted = false;
     private PlayerDelegateFactory playerDelegateFactory;
 
+    @Nullable
     private PlayerDelegate currentMediaPlayerDelegate;
     private SRGMediaPlayerView mediaPlayerView;
 
@@ -322,7 +332,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * Try to play a video with a mediaIdentifier, you can't replay the current playing video.
      * will throw an exception if you haven't setup a data provider or if the media is not present
      * in the provider.
-     *
+     * <p/>
      * The corresponding events are triggered when the video loading start and is ready.
      *
      * @param mediaIdentifier
@@ -353,7 +363,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     /*package*/ void onUriLoaded(Uri uri) {
-		assertCommandHandlerThread();
+        assertCommandHandlerThread();
 
         sendMessage(MSG_PREPARE_FOR_URI, uri);
 
@@ -368,19 +378,26 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     /**
+     * <p>
      * Try to seek to the provided position, if this position is not reachable
-     * will throw an exception
-     *
-     * @param positionInMillis
-     * @throws IllegalStateException
+     * will throw an exception.
+     * Seek position is stored when the player is preparing and the stream will start at the last seekTo value.
+     * </p>
+     * <h2>Live stream</h2>
+     * <p>
+     * When playing a live stream, a value of 0 represents the live most position.
+     * A value of 1..duration represents the relative position in the live stream.
+     *</p>
+     * @param positionMs position in ms
+     * @throws IllegalStateException player error
      */
-    public void seekTo(long positionInMillis) throws IllegalStateException {
-        currentSeekTarget = positionInMillis;
+    public void seekTo(long positionMs) throws IllegalStateException {
+        currentSeekTarget = positionMs;
         if (state == State.PREPARING) {
-            seekToWhenReady = positionInMillis;
+            seekToWhenReady = positionMs;
         } else {
             seekToWhenReady = null;
-            sendMessage(MSG_SEEK_TO, positionInMillis);
+            sendMessage(MSG_SEEK_TO, positionMs);
         }
     }
 
@@ -448,11 +465,13 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 fireEvent(Event.Type.MEDIA_READY_TO_PLAY);
                 try {
                     createPlayerDelegateInternal(currentMediaIdentifier);
-                    if (mediaPlayerView != null) {
-                        internalUpdateMediaPlayerViewBound();
+                    if (currentMediaPlayerDelegate != null) {
+                        if (mediaPlayerView != null) {
+                            internalUpdateMediaPlayerViewBound();
+                        }
+                        currentMediaPlayerDelegate.playIfReady(playWhenReady);
+                        currentMediaPlayerDelegate.prepare(uri);
                     }
-                    currentMediaPlayerDelegate.playIfReady(playWhenReady);
-                    currentMediaPlayerDelegate.prepare(uri);
                 } catch (SRGMediaPlayerException e) {
                     logE("onUriLoaded", e);
                     handleFatalExceptionInternal(e);
@@ -566,7 +585,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             Log.e(TAG, getControllerId() + " " + msg, e);
         }
     }
-    
+
     private void releaseDelegateInternal() {
         if (currentMediaPlayerDelegate != null) {
             fireEvent(Event.Type.MEDIA_STOPPED);
@@ -661,13 +680,15 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     /**
      * Return the current mediaIdentifier played.
-     *
-     * @return
      */
     public String getMediaIdentifier() {
         return currentMediaIdentifier;
     }
 
+    /**
+     *
+     * @return media position relative to MPST (see {@link #getMediaPlaylistStartTime} )
+     */
     public long getMediaPosition() {
         if (currentMediaPlayerDelegate != null) {
             return currentMediaPlayerDelegate.getCurrentPosition();
@@ -676,9 +697,35 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
     }
 
+    /**
+     *
+     * @return Media duration relative to 0.
+     */
     public long getMediaDuration() {
         if (currentMediaPlayerDelegate != null) {
             return currentMediaPlayerDelegate.getDuration();
+        } else {
+            return UNKNOWN_TIME;
+        }
+    }
+
+    /**
+     * Media playlist start time (MPST) is a relative offset for the available seekable range,
+     * used in sliding window live playlist.
+     * The range [0..MPST] is not available for seeking.
+     *
+     * <pre>
+     * 0 --------------- MPST --------- POSITION ------------------------------------- LIVE
+     *                    \---------------------------DURATION---------------------------/
+     * </pre>
+     *
+     * MPST stays constant with a value of 0 when playing a static video.
+     *
+     * @return MPST in ms
+     */
+    public long getMediaPlaylistStartTime() {
+        if (currentMediaPlayerDelegate != null) {
+            return currentMediaPlayerDelegate.getPlaylistStartTime();
         } else {
             return UNKNOWN_TIME;
         }
@@ -818,7 +865,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         } else
             // mediaPlayerView null, just unbind delegate
             if (mediaPlayerView == null) {
-                currentMediaPlayerDelegate.unbindRenderingView();
+                if (currentMediaPlayerDelegate != null) {
+                    currentMediaPlayerDelegate.unbindRenderingView();
+                }
             }
         //Other cases are :
         // - both mediaPlayerView and delegate null, do nothing
@@ -1075,7 +1124,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         this.debugMode = debugMode;
     }
 
-    /*package*/ static Event createTestEvent(Event.Type eventType, SRGMediaPlayerController controller, SRGMediaPlayerException eventException) {
+    /*package*/
+    static Event createTestEvent(Event.Type eventType, SRGMediaPlayerController controller, SRGMediaPlayerException eventException) {
         return new Event(eventType, controller, eventException);
     }
 
@@ -1089,5 +1139,13 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     public void updateOverlayVisibilities() {
         overlayController.propagateControlVisibility();
+    }
+
+    private long getPlaylistStartTime() {
+        return currentMediaPlayerDelegate != null ? currentMediaPlayerDelegate.getPlaylistStartTime() : 0;
+    }
+
+    private boolean isLive() {
+        return currentMediaPlayerDelegate != null && currentMediaPlayerDelegate.isLive();
     }
 }

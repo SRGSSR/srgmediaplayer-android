@@ -1,7 +1,9 @@
 package ch.srg.view;
 
 import android.content.Context;
+import android.os.Handler;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -9,16 +11,23 @@ import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import java.text.DateFormat;
+
 import ch.srg.mediaplayer.SRGMediaPlayerController;
-import ch.srg.segmentoverlay.R;
+import ch.srg.mediaplayer.demo.R;
+import it.moondroid.seekbarhint.library.SeekBarHint;
 
 /**
  * Created by npietri on 20.05.15.
  */
-public class LivePlayerControlView extends RelativeLayout implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, SRGMediaPlayerController.Listener {
+public class LivePlayerControlView extends RelativeLayout implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, SRGMediaPlayerController.Listener, Runnable {
+    private static final long PERIODIC_UPDATE_DELAY = 250;
+
+    private static final String TAG = "Live PlayerControl";
+    private final DateFormat liveTimeFormat;
     private SRGMediaPlayerController playerController;
 
-    private SeekBar seekBar;
+    private SeekBarHint seekBar;
 
     private Button pauseButton;
     private Button playButton;
@@ -26,12 +35,14 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
     private TextView leftTime;
     private TextView rightTime;
 
-    private long time;
-    private long duration;
-
     private long seekBarSeekToMs;
+    private long duration;
+    private long position;
+    private long mediaPlaylistOffset;
+    private Handler handler;
+    private boolean userChangingProgress;
 
-	public LivePlayerControlView(Context context) {
+    public LivePlayerControlView(Context context) {
         this(context, null);
     }
 
@@ -43,10 +54,17 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
         super(context, attrs, defStyleAttr);
 
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        inflater.inflate(R.layout.segment_player_control, this, true);
+        inflater.inflate(R.layout.dvr_player_control, this, true);
 
-        seekBar = (SeekBar) findViewById(R.id.segment_player_control_seekbar);
+        seekBar = (SeekBarHint) findViewById(R.id.dvr_player_control_seekbar);
         seekBar.setOnSeekBarChangeListener(this);
+        seekBar.setOnProgressChangeListener(new SeekBarHint.OnSeekBarHintProgressChangeListener() {
+            @Override
+            public String onHintTextChanged(SeekBarHint seekBarHint, int i) {
+                return stringForTimeInMs(i - duration);
+            }
+        });
+        seekBar.setPopupStyle(SeekBarHint.POPUP_FOLLOW);
 
         pauseButton = (Button) findViewById(R.id.segment_player_control_button_pause);
         playButton = (Button) findViewById(R.id.segment_player_control_button_play);
@@ -56,17 +74,19 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
 
         leftTime = (TextView) findViewById(R.id.segment_player_control_time_left);
         rightTime = (TextView) findViewById(R.id.segment_player_control_time_right);
-    }
 
-    public void attachToController(SRGMediaPlayerController playerController) {
-        this.playerController = playerController;
-        playerController.registerEventListener(this);
+        liveTimeFormat = DateFormat.getTimeInstance();
+
+        handler = new Handler();
     }
 
     @Override
     public void onClick(View v) {
         if (playerController != null) {
             if (v == playButton) {
+                if (playerController.getMediaPosition() < playerController.getMediaPlaylistStartTime()) {
+                    playerController.seekTo(1);
+                }
                 playerController.start();
             } else if (v == pauseButton) {
                 playerController.pause();
@@ -83,59 +103,102 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
 
     @Override
     public void onStartTrackingTouch(SeekBar seekBar) {
+        userChangingProgress = true;
     }
 
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
+        userChangingProgress = false;
         if (seekBarSeekToMs >= 0) {
-            playerController.seekTo(seekBarSeekToMs);
+            playerController.seekTo(Math.max(1, seekBarSeekToMs));
             seekBarSeekToMs = -1;
         }
     }
 
-    private void update(long time) {
+    private void update() {
         if (playerController != null) {
-	        duration = playerController.getMediaDuration();
+            position = playerController.getMediaPosition();
+            duration = playerController.getMediaDuration();
+            mediaPlaylistOffset = playerController.getMediaPlaylistStartTime();
 
-            updateTimes(time, duration);
+            Log.v(TAG, "Update: " + position + "+" + mediaPlaylistOffset + " / " + duration);
+
+            updateTimes(Math.max(0, position - mediaPlaylistOffset), duration);
 
             playButton.setVisibility(playerController.isPlaying() ? GONE : VISIBLE);
             pauseButton.setVisibility(playerController.isPlaying() ? VISIBLE : GONE);
         } else {
-            updateTimes(-1, -1);
             playButton.setVisibility(VISIBLE);
             pauseButton.setVisibility(GONE);
         }
     }
 
     private void updateTimes(long position, long duration) {
-        int bufferPercent = playerController.getBufferPercentage();
-        if (bufferPercent > 0) {
-            seekBar.setSecondaryProgress((int) duration * bufferPercent / 100);
-        } else {
-            seekBar.setSecondaryProgress(0);
-        }
+        // TODO Buffer indication
+//        int bufferPercent = playerController.getBufferPercentage();
+//        if (bufferPercent > 0) {
+//            seekBar.setSecondaryProgress((int) duration * bufferPercent / 100);
+//        } else {
+//            seekBar.setSecondaryProgress(0);
+//        }
         seekBar.setMax((int) duration);
-        seekBar.setProgress((int) position);
+        seekBar.setProgress((int) (position));
 
         leftTime.setText(stringForTimeInMs(position));
         rightTime.setText(stringForTimeInMs(duration));
     }
 
+    private void updateIfNotUserTracked() {
+        if (!userChangingProgress) {
+            update();
+        }
+    }
+
     private String stringForTimeInMs(long millis) {
-        int totalAbsSeconds = Math.abs((int) millis / 1000);
-        int seconds = totalAbsSeconds % 60;
-        int minutes = (totalAbsSeconds / 60) % 60;
-        int hours = (int) (totalAbsSeconds / 3600 * Math.signum(millis));
-        if (hours > 0) {
-            return String.format("%d:%02d:%02d", hours, minutes, seconds);
+        String sign;
+        if (millis < 0) {
+            sign = "-";
+            millis = -millis;
         } else {
-            return String.format("%02d:%02d", minutes, seconds);
+            sign = "";
+        }
+        int totalSeconds = (int) millis / 1000;
+        int seconds = totalSeconds % 60;
+        int minutes = (totalSeconds / 60) % 60;
+        int hours = totalSeconds / 3600;
+        if (hours > 0) {
+            return String.format("%s%d:%02d:%02d", sign, hours, minutes, seconds);
+        } else {
+            return String.format("%s%02d:%02d", sign, minutes, seconds);
         }
     }
 
     @Override
     public void onMediaPlayerEvent(SRGMediaPlayerController mp, SRGMediaPlayerController.Event event) {
-        update(event.mediaPosition);
+        if (mp == playerController) {
+            Log.v(TAG, "PlayerEvent: " + position + "+" + mediaPlaylistOffset + " / " + duration);
+
+            update();
+        }
+    }
+
+    public void startListening() {
+        playerController.registerEventListener(this);
+        handler.postDelayed(this, PERIODIC_UPDATE_DELAY);
+    }
+
+    public void stopListening() {
+        playerController.unregisterEventListener(this);
+        handler.removeCallbacks(this);
+    }
+
+    public void setPlayerController(SRGMediaPlayerController playerController) {
+        this.playerController = playerController;
+    }
+
+    @Override
+    public void run() {
+        updateIfNotUserTracked();
+        handler.postDelayed(this, PERIODIC_UPDATE_DELAY);
     }
 }
