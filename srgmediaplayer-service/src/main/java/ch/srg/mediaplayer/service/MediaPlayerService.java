@@ -18,6 +18,7 @@ import android.media.AudioManager;
 import android.media.MediaMetadataRetriever;
 import android.media.RemoteControlClient;
 import android.os.AsyncTask;
+import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -101,6 +102,18 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 	private static boolean debugMode;
 
 	ServiceNotificationBuilder currentServiceNotification;
+
+	private LocalBinder binder = new LocalBinder();
+
+	public SRGMediaPlayerController getMediaController() {
+		return player;
+	}
+
+	public class LocalBinder extends Binder {
+		public MediaPlayerService getService() {
+			return MediaPlayerService.this;
+		}
+	}
 
 	@Override
 	public void onCreate() {
@@ -187,7 +200,11 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 					}
 					else if (!TextUtils.isEmpty(newMediaIdentifier))
 					{
-						play(newMediaIdentifier);
+						try {
+							play(newMediaIdentifier);
+						} catch (SRGMediaPlayerException e) {
+							Log.e(TAG, "Player play " + newMediaIdentifier, e);
+						}
 					}
 					break;
 
@@ -272,17 +289,13 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 		handler.post(statusUpdater);
 	}
 
-	private void play(String mediaIdentifier) {
+	public void play(String mediaIdentifier) throws SRGMediaPlayerException {
 		if (player != null) {
 			player.release();
 		}
 		createPlayer();
 
-		try {
-			player.play(mediaIdentifier);
-		} catch (SRGMediaPlayerException e) {
-			Log.e(TAG, "Player play " + mediaIdentifier, e);
-		}
+		player.play(mediaIdentifier);
 
 		if ((flags & FLAG_LIVE) != 0)
 		{
@@ -478,7 +491,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
 	@Override
 	public IBinder onBind(Intent intent) {
-		return null;
+		return binder;
 	}
 
 	private void registerMediaButtonEvent() {
