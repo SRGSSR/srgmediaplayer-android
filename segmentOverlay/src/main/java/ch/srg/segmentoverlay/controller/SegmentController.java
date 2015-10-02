@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Set;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
+import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.segmentoverlay.adapter.SegmentClickListener;
 import ch.srg.segmentoverlay.model.Segment;
 
@@ -98,12 +99,20 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 
     @Override
     public void onClick(View v, Segment segment, float x, float y) {
-        Log.i("SegmentController", "OnClick :" + segment.getMarkIn());
+        Log.i("SegmentController", "OnClick :" + segment);
 	    if (!segment.isBlocked()) {
 		    segmentBeingSkipped = null;
 
 			playerController.postEvent(new Event(playerController, Event.Type.SEGMENT_SELECTED, segment));
-		    playerController.seekTo(segment.getMarkIn());
+			if (playerController.getMediaIdentifier().equals(segment.getUrn())) {
+				playerController.seekTo(segment.getMarkIn());
+			} else {
+				try {
+					playerController.play(segment.getUrn());
+				} catch (SRGMediaPlayerException e) {
+					e.printStackTrace();
+				}
+			}
 			currentSegment = segment;
 	    } else {
 			playerController.postEvent(new Event(playerController, Event.Type.SEGMENT_USER_SEEK_BLOCKED, segment, segment.getBlockingReason()));

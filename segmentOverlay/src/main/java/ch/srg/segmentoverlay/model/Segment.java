@@ -9,7 +9,9 @@ import android.os.Parcelable;
  */
 public class Segment implements Comparable<Segment>, Parcelable {
 
+	/** URN is the target urn of the media to be played. */
 	private String urn;
+	/** Unique identifier for this particular segment, not used for playing. */
 	private String identifier;
 	private String title;
 	private String description;
@@ -157,9 +159,17 @@ public class Segment implements Comparable<Segment>, Parcelable {
 	@Override
 	public String toString() {
 		return "Segment{" +
+				"urn='" + urn + '\'' +
 				", identifier='" + identifier + '\'' +
+				", title='" + title + '\'' +
+				", description='" + description + '\'' +
+				", imageUrl='" + imageUrl + '\'' +
+				", blockingReason='" + blockingReason + '\'' +
 				", markIn=" + markIn +
 				", markOut=" + markOut +
+				", progress=" + progress +
+				", isCurrent=" + isCurrent +
+				", publishedTimestamp=" + publishedTimestamp +
 				", displayable=" + displayable +
 				'}';
 	}
