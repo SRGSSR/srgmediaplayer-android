@@ -104,11 +104,11 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 		    segmentBeingSkipped = null;
 
 			playerController.postEvent(new Event(playerController, Event.Type.SEGMENT_SELECTED, segment));
-			if (playerController.getMediaIdentifier().equals(segment.getUrn())) {
+			if (playerController.getMediaIdentifier().equals(segment.getMediaIdentifier())) {
 				playerController.seekTo(segment.getMarkIn());
 			} else {
 				try {
-					playerController.play(segment.getUrn());
+					playerController.play(segment.getMediaIdentifier());
 				} catch (SRGMediaPlayerException e) {
 					e.printStackTrace();
 				}
@@ -119,9 +119,9 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 		}
     }
 
-	private void notifyPositionChange(long time) {
+	private void notifyPositionChange(String mediaIdentifier, long time) {
 		for (Listener l : listeners) {
-			l.onPositionChange(time);
+			l.onPositionChange(mediaIdentifier, time);
 		}
 	}
 
@@ -129,7 +129,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 		// TODO handle if progress time is valid with segment
 		userChangingProgress = true;
 
-		notifyPositionChange(time);
+		notifyPositionChange(playerController.getMediaIdentifier(), time);
 	}
 
 	public void stopUserTrackingProgress() {
@@ -170,7 +170,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	}
 
 	public interface Listener {
-		void onPositionChange(long position);
+		void onPositionChange(String mediaIdentifier, long position);
 
 		void onSegmentListChanged(List<Segment> segments);
 	}
@@ -214,7 +214,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 			}
 			currentSegment = newSegment;
 		}
-		notifyPositionChange(mediaPosition);
+		notifyPositionChange(playerController.getMediaIdentifier(), mediaPosition);
 	}
 
 	@Nullable

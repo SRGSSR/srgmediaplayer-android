@@ -82,10 +82,10 @@ public class SegmentView extends FrameLayout implements SegmentController.Listen
     }
 
     @Override
-    public void onPositionChange(long time) {
-        if (adapter.updateProgressSegments(time)) {
+    public void onPositionChange(String mediaIdentifier, long time) {
+        if (adapter.updateProgressSegments(mediaIdentifier, time)) {
             // TODO Do not do this when using is scrolling the segment view
-            recyclerView.scrollToPosition(adapter.getSegmentIndexForTime(time));
+            recyclerView.scrollToPosition(adapter.getSegmentIndex(mediaIdentifier, time));
         }
     }
 

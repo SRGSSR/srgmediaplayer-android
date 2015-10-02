@@ -1,13 +1,9 @@
 package ch.srg.segmentoverlay.model;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
-
 /**
  * Created by zapek on 2014-05-07.
  */
-public class Segment implements Comparable<Segment>, Parcelable {
+public class Segment implements Comparable<Segment> {
 
 	/** URN is the target urn of the media to be played. */
 	private String urn;
@@ -19,13 +15,14 @@ public class Segment implements Comparable<Segment>, Parcelable {
 	private String blockingReason;
 	private long markIn;
 	private long markOut;
+	private long duration;
 	private int progress;
 	private boolean isCurrent;
 	private long publishedTimestamp;
 	private boolean displayable;
 
 	public Segment(String identifier, String title, String description, String imageUrl,
-	               long markIn, long markOut, String blocking, long publishedTimestamp,
+	               long markIn, long markOut, long duration, String blocking, long publishedTimestamp,
 	               boolean displayable, String urn) {
 		this.identifier = identifier;
 		this.title = title;
@@ -33,65 +30,35 @@ public class Segment implements Comparable<Segment>, Parcelable {
 		this.imageUrl = imageUrl;
 		this.markIn = markIn;
 		this.markOut = markOut;
+		this.duration = duration;
 		this.publishedTimestamp = publishedTimestamp;
 		this.displayable = displayable;
 		this.urn = urn;
 		blockingReason = blocking;
 	}
 
-	public Segment(Parcel in) {
-		readFromParcel(in);
-	}
-
-	@Override
-	public void writeToParcel(Parcel dest, int flags) {
-		dest.writeString(identifier);
-		dest.writeString(title);
-		dest.writeString(description);
-		dest.writeString(imageUrl);
-		dest.writeString(blockingReason);
-		dest.writeLong(markIn);
-		dest.writeLong(markOut);
-		dest.writeLong(publishedTimestamp);
-		dest.writeString(urn);
-		dest.writeByte((byte) (displayable ? 1 : 0));
-	}
-
-	private void readFromParcel(Parcel in) {
-		identifier = in.readString();
-		title = in.readString();
-		description = in.readString();
-		imageUrl = in.readString();
-		blockingReason = in.readString();
-		markIn = in.readLong();
-		markOut = in.readLong();
-		publishedTimestamp = in.readLong();
-		urn = in.readString();
-		displayable = in.readByte() != 0;
-	}
-
 	public String getTitle() {
-		return (title);
+		return title;
 	}
 
 	public String getDescription() {
-		return (description);
+		return description;
 	}
 
 	public String getImageUrl() {
-		return (imageUrl);
+		return imageUrl;
 	}
 
 	public long getMarkIn() {
-		return (markIn);
+		return markIn;
 	}
 
 	public long getMarkOut() {
-		return (markOut);
+		return markOut;
 	}
 
 	public long getDuration() {
-		return (markOut - markIn);
+		return duration;
 	}
 
 	public void setProgress(int value) {
@@ -99,7 +66,7 @@ public class Segment implements Comparable<Segment>, Parcelable {
 	}
 
 	public int getProgress() {
-		return (progress);
+		return progress;
 	}
 
 	public void setIsCurrent(boolean value) {
@@ -107,7 +74,7 @@ public class Segment implements Comparable<Segment>, Parcelable {
 	}
 
 	public boolean isCurrent() {
-		return (isCurrent);
+		return isCurrent;
 	}
 
 	public long getPublishedTimestamp() {
@@ -115,7 +82,7 @@ public class Segment implements Comparable<Segment>, Parcelable {
 	}
 
 	public String getBlockingReason() {
-		return (blockingReason);
+		return blockingReason;
 	}
 
 	public boolean isBlocked() {
@@ -130,7 +97,7 @@ public class Segment implements Comparable<Segment>, Parcelable {
 		return displayable;
 	}
 
-	public String getUrn() {
+	public String getMediaIdentifier() {
 		return urn;
 	}
 
@@ -138,23 +105,6 @@ public class Segment implements Comparable<Segment>, Parcelable {
 	public int compareTo(Segment another) {
 		return ((int) (markIn - another.getMarkIn()));
 	}
-
-	@Override
-	public int describeContents() {
-		return 0;
-	}
-
-	public static final Creator<Segment> CREATOR = new Creator<Segment>() {
-		@Override
-		public Segment createFromParcel(Parcel in) {
-			return new Segment(in);
-		}
-
-		@Override
-		public Segment[] newArray(int size) {
-			return new Segment[size];
-		}
-	};
 
 	@Override
 	public String toString() {
@@ -167,6 +117,7 @@ public class Segment implements Comparable<Segment>, Parcelable {
 				", blockingReason='" + blockingReason + '\'' +
 				", markIn=" + markIn +
 				", markOut=" + markOut +
+				", duration=" + duration +
 				", progress=" + progress +
 				", isCurrent=" + isCurrent +
 				", publishedTimestamp=" + publishedTimestamp +

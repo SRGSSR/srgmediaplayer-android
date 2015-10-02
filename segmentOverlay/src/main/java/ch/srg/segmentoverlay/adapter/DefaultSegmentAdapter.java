@@ -30,14 +30,14 @@ public class DefaultSegmentAdapter extends BaseSegmentAdapter<DefaultSegmentAdap
     }
 
     @Override
-    public boolean updateProgressSegments(long time) {
+    public boolean updateProgressSegments(String mediaIdentifier, long time) {
         boolean segmentChange = false;
         if (time != currentTime) {
             currentTime = time;
             if (currentSegment != -1) {
                 notifyItemChanged(currentSegment);
             }
-            int newSegment = getSegmentIndexForTime(time);
+            int newSegment = getSegmentIndex(mediaIdentifier, time);
             segmentChange = newSegment != currentSegment;
             if (segmentChange) {
                 int start = Math.max(0, Math.min(currentSegment, newSegment));

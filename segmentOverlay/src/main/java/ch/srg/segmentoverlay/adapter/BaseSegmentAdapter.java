@@ -15,7 +15,7 @@ import ch.srg.segmentoverlay.model.Segment;
 public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> extends RecyclerView.Adapter<T> {
     public SegmentClickListener clickListener;
 
-	public abstract boolean updateProgressSegments(long time);
+	public abstract boolean updateProgressSegments(String mediaIdentifier, long time);
 
 	protected Context context;
 
@@ -58,10 +58,31 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
 		return segments.get(position).getIdentifier();
 	}
 
-	public int getSegmentIndexForTime(long time) {
+	public int getSegmentIndex(String mediaIdentifier, long time) {
+		int segmentIndex;
+		segmentIndex = findLogicalSegment(mediaIdentifier, time);
+		if (segmentIndex == -1) {
+			segmentIndex = findPhysicalSegment(mediaIdentifier);
+		}
+		return segmentIndex;
+	}
+
+	public int findPhysicalSegment(String mediaIdentifier) {
 		for (int i = 0; i < segments.size(); i++) {
 			Segment segment = segments.get(i);
-			if (time >= segment.getMarkIn() && time <= segment.getMarkOut()) {
+			if (mediaIdentifier.equals(segment.getMediaIdentifier())
+					&& segment.getMarkIn() == 0 && segment.getMarkOut() == 0) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	public int findLogicalSegment(String mediaIdentifier, long time) {
+		for (int i = 0; i < segments.size(); i++) {
+			Segment segment = segments.get(i);
+			if (mediaIdentifier.equals(segment.getMediaIdentifier())
+					&& time >= segment.getMarkIn() && time <= segment.getMarkOut()) {
 				return i;
 			}
 		}
