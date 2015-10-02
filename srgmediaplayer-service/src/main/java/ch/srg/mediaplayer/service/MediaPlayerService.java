@@ -291,6 +291,10 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
 	public void play(String mediaIdentifier) throws SRGMediaPlayerException {
 		if (player != null) {
+			if (mediaIdentifier.equals(player.getMediaIdentifier())) {
+				player.start();
+				return;
+			}
 			player.release();
 		}
 		createPlayer();
