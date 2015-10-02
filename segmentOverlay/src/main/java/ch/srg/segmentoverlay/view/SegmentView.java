@@ -94,7 +94,7 @@ public class SegmentView extends FrameLayout implements SegmentController.Listen
         setSegmentList(segments);
     }
 
-    public void setSegmentList(@Nullable List<Segment> segments) {
+    private void setSegmentList(@Nullable List<Segment> segments) {
         adapter.setSegmentList(segments);
         if (adapter.getSegmentsList().size() <= 1) {
             setVisibility(View.GONE);
