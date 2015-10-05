@@ -9,37 +9,50 @@ Building
 * select Run/Run 'demo'
 * select your device
 
-Using
------
-To use SRG Media Player in your project, add this in your build.gradle:
-
-    repositories {
-    	maven {
-    		url "http://maven.ecetest.rts.ch/content/repositories/releases/"
-    	}
-    	maven {
-    		url "http://maven.ecetest.rts.ch/content/repositories/snapshots/"
-    	}
-    }
-
-Then use:
-
-    compile 'ch.srg.mediaplayer:srgmediaplayer:1.0.+@aar'
-
-in your dependencies.
-
 Device requirements
 -------------------
 * Android 4.0.3 or higher (API 15+)
 
+Setup for a custom project
+---------------
+- Create a project in a folder along side SRGMediaPlayer-Android to have the following directory structure:
+
+```
+mediaplayerProjects/SRGMediaPlayer-Android
+mediaplayerProjects/myProject
+```
+- Edit your settings.gradle:
+
+```
+include 'MY_PROJECT', ':srgmediaplayer', ':segmentOverlay', ':srgmediaplayer-extras', ':srgmediaplayer-service'
+
+project(':srgmediaplayer').projectDir = new File(settingsDir, '../SRGMediaPlayer-Android/srgmediaplayer')
+project(':segmentOverlay').projectDir = new File(settingsDir, '../SRGMediaPlayer-Android/segmentOverlay')
+project(':srgmediaplayer-extras').projectDir = new File(settingsDir, '../SRGMediaPlayer-Android/srgmediaplayer-extras')
+project(':srgmediaplayer-service').projectDir = new File(settingsDir, '../SRGMediaPlayer-Android/srgmediaplayer-service')
+```
+
+- Edit your build.gradle:
+
+```groovy
+dependencies {
+// ...
+  compile project(':srgmediaplayer')
+  compile project(':srgmediaplayer-extras')
+  compile project(':srgmediaplayer-service')
+  compile project(':segmentOverlay')
+// ...
+}
+```
+
 Features
 --------
-* has multiple selectable player engines: Android internal, Exoplayer and more
+* has multiple selectable player engines: Android internal, ExoPlayer and more
 * audio and video
 * basic controls: play/pause/stop/seek
 * fluid rotation (stream continuity)
 * HLS VOD
-* LIVE streams
+* LIVE and DVR streams in HLS
 * custom overlays
 * offer management of segments for a video. Display as smart overlays, control of streams through segments (segment-overlay module)
 * support for URL rewriting
@@ -54,11 +67,9 @@ Roadmap
 
 * UI can be easily customized with Theme or full custom layouts
 
-* Offer timeshift by streams with DVR.
-
 Implementation
 -----------------
-* The fist step for integrate the SRG Media Player in your project is to configure your own dataProvider for bind your model to the API. In the demo application we have build a DummyDataProvider for handle data from web and specific videos. The class implements basic interface for dataProvider, and segments.
+* The fist step for integrate the SRG Media Player in your project is to configure your own dataProvider for bind your model to the API. In the demo application we have build a DummyDataProvider to handle data from web and specific videos. The class implements basic interface for dataProvider, and segments.
 
 ```java
   private static Map<String, String> data = new HashMap<String, String>() {
@@ -110,7 +121,7 @@ Implementation
 
 * A default PlayerDelegateFactory is already implemented, we use ExoPlayer for JellyBean and HLS content and NativePlayer for versions before JellyBean.
 
-* We have currently two delegates implemented, one for ExoPlayer and one for NativePlayer. You can create your custom delegate if you need to use a different kind of media player. Be sure to implement PlayerDelegate interface for handle communication between the player and the component.
+* We have currently two delegates implemented, one for ExoPlayer and one for NativePlayer. You can create your custom delegate if you need to use a different kind of media player. Be sure to implement PlayerDelegate interface to handle communication between the player and the component.
 
 Next step is to add the SRGMediaPlayerView in your layout.
 
