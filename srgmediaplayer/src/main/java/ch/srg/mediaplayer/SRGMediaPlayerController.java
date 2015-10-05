@@ -669,7 +669,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     public void releaseInternal() {
         setStateInternal(State.RELEASED);
         abandonAudioFocus();
-        eventListeners.clear();
         releaseDelegateInternal();
         stopBackgroundThread();
     }
@@ -895,7 +894,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
         if (this.state != state) {
             this.state = state;
-            fireCurrentStateEvent();
+            fireCurrentStateEventInternal();
         }
     }
 
@@ -947,7 +946,10 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         postEvent(Event.buildErrorEvent(this, fatalError, e));
     }
 
-    private void fireCurrentStateEvent() {
+    private void fireCurrentStateEventInternal() {
+        if (debugMode) {
+            assertCommandHandlerThread();
+        }
         postEvent(Event.buildStateEvent(this));
     }
 
