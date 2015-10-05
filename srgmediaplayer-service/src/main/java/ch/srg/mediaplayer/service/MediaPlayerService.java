@@ -325,6 +325,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 				/* XXX: we can also put the artwork (artwork has to be fetched asynchronously..) */
 		remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_PLAYING);
 		startUpdates();
+		setForeground(true);
 	}
 
 	private void createPlayer() {
