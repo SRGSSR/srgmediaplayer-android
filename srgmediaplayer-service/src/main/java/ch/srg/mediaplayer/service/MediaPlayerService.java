@@ -306,7 +306,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 				/* XXX: we can also put the artwork (artwork has to be fetched asynchronously..) */
         remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_PLAYING);
         startUpdates();
-        setForeground(true);
     }
 
     private void createPlayer() {
@@ -323,15 +322,21 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private void updateNotification() {
         if (hasNonDeadPlayer()) {
-            NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            ServiceNotificationBuilder builder = createNotificationBuilder();
-            if (builder != currentServiceNotification) {
-                currentServiceNotification = builder;
-                notificationManager.notify(NOTIFICATION_ID, builder.buildNotification(this, notificationPendingIntent));
+            if (!isForeground) {
+                setForeground(true);
+            } else {
+                NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                ServiceNotificationBuilder builder = createNotificationBuilder();
+                if (builder != currentServiceNotification) {
+                    currentServiceNotification = builder;
+                    notificationManager.notify(NOTIFICATION_ID, builder.buildNotification(this, notificationPendingIntent));
+                }
             }
         } else {
-            Log.v(TAG, "No player when updating notification. Going to background");
-            setForeground(false);
+            if (isForeground) {
+                Log.v(TAG, "No player when updating notification. Going to background");
+                setForeground(false);
+            }
         }
     }
 
