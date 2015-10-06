@@ -166,10 +166,17 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     setForeground(true);
                     resume();
                     break;
-                case ACTION_PLAY:
+                case ACTION_PLAY: {
                     setForeground(true);
 
                     String newMediaIdentifier = intent.getStringExtra(ARG_MEDIA_IDENTIFIER);
+
+                    Long position;
+                    if (intent.hasExtra(ARG_POSITION)) {
+                        position = intent.getLongExtra(ARG_POSITION, 0);
+                    } else {
+                        position = null;
+                    }
                     if (newMediaIdentifier == null) {
                         Log.e(TAG, "ACTION_PLAY without mediaIdentifier, recovering");
                         newMediaIdentifier = getCurrentMediaIdentifier();
@@ -193,12 +200,12 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                         resume();
                     } else if (!TextUtils.isEmpty(newMediaIdentifier)) {
                         try {
-                            play(newMediaIdentifier);
+                            play(newMediaIdentifier, position);
                         } catch (SRGMediaPlayerException e) {
                             Log.e(TAG, "Player play " + newMediaIdentifier, e);
                         }
                     }
-                    break;
+                    } break;
 
                 case ACTION_PAUSE:
                     pause();
@@ -212,7 +219,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     unregisterMediaButtonEvent();
                     break;
 
-                case ACTION_SEEK:
+                case ACTION_SEEK: {
                     long position = intent.getLongExtra(ARG_POSITION, -1);
                     if (position == -1) {
                         throw new IllegalArgumentException("Undefined position for seek");
@@ -221,7 +228,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                             seekTo(position);
                         }
                     }
-                    break;
+                }   break;
 
                 case ACTION_TOGGLE_PLAYBACK:
                     toggle();
@@ -274,17 +281,20 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         handler.post(statusUpdater);
     }
 
-    public void play(String mediaIdentifier) throws SRGMediaPlayerException {
+    public void play(String mediaIdentifier, Long startPosition) throws SRGMediaPlayerException {
         if (player != null) {
             if (mediaIdentifier.equals(player.getMediaIdentifier())) {
                 player.start();
+                if (startPosition != null) {
+                    player.seekTo(startPosition);
+                }
                 return;
             }
             player.release();
         }
         createPlayer();
 
-        player.play(mediaIdentifier);
+        player.play(mediaIdentifier, startPosition);
 
         if ((flags & FLAG_LIVE) != 0) {
             remoteControlClient.setTransportControlFlags(RemoteControlClient.FLAG_KEY_MEDIA_PLAY | RemoteControlClient.FLAG_KEY_MEDIA_STOP);
