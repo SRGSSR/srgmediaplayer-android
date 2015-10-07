@@ -45,7 +45,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
      */
     public static final String LIST_URL = "http://pastebin.com/raw.php?i=UdDn1Jp2";
     public static final String FRAGMENT_TAG = "media";
-    private static final String SEGMENTS_LIST = "ch.srg.mediaplayer.demo.segments.list";
     private static final String VIDEO_LIST = "ch.srg.mediaplayer.demo.video.list";
 
     public static final String PLAYER_TAG = "main";
@@ -85,7 +84,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
 
         if (savedInstanceState != null) {
-            segments = savedInstanceState.getParcelableArrayList(SEGMENTS_LIST);
             commentedIdentifierList = savedInstanceState.getStringArrayList(VIDEO_LIST);
         }
 
@@ -437,9 +435,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        if (segments != null) {
-            outState.putParcelableArrayList(SEGMENTS_LIST, new ArrayList<>(segments));
-        }
         if (commentedIdentifierList != null) {
             outState.putStringArrayList(VIDEO_LIST, new ArrayList<>(commentedIdentifierList));
         }

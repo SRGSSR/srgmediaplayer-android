@@ -44,15 +44,19 @@ public class DummyDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
 
 	@Override
 	public List<Segment> getSegments(String mediaIdentifier) {
-		String dummyImageUrl = "http://buygapinsurance.co.uk/wp-content/uploads/2011/08/crash_test_dummy.jpg";
 		List<Segment> segments = new ArrayList<>();
-		segments.add(new Segment("1", "Segment 1", "1min", dummyImageUrl, 1000, 60000, null, 0, true, ""));
-		segments.add(new Segment("HB2", "Hidden 2", "2min",dummyImageUrl,  60000,  65000, "blocked", 0, false, ""));
-		segments.add(new Segment("2", "Segment 2", "2min", dummyImageUrl, 115000, 120000, null, 0, true, ""));
-		segments.add(new Segment("B2", "Blocked 2", "2min",dummyImageUrl, 120000, 150000, "blocked", 0, true, ""));
-		segments.add(new Segment("3", "Segment 3", "3min", dummyImageUrl, 150000, 180000, null, 0, true, ""));
-		segments.add(new Segment("4", "Segment 4", "4min", dummyImageUrl, 180000, 240000, null, 0, true, ""));
+		segments.add(createSegment("1", "Segment 1", 1000, 60000, false, true));
+		segments.add(createSegment("HB2", "Hidden 2", 60000,  65000, true, false));
+		segments.add(createSegment("2", "Segment 2", 115000, 120000, false, true));
+		segments.add(createSegment("B2", "Blocked 2", 120000, 150000, true, true));
+		segments.add(createSegment("3", "Segment 3", 150000, 180000, false, true));
+		segments.add(createSegment("4", "Segment 4", 180000, 240000, false, true));
 		return segments;
+	}
+
+	public static Segment createSegment(String id, String name, long markIn, long markOut, boolean blocked, boolean displayable) {
+		String dummyImageUrl = "http://buygapinsurance.co.uk/wp-content/uploads/2011/08/crash_test_dummy.jpg";
+		return new Segment(id, name, "Description " + id, dummyImageUrl, markIn, markOut, markOut - markIn, blocked ? "blocked" : null, 0, displayable, "");
 	}
 
 	@Override
