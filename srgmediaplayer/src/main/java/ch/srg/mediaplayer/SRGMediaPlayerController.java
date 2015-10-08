@@ -348,11 +348,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         } else {
             Log.v(TAG, "Audio focus request failed");
         }
-        //Seek is made even for the same mediaidentifier
         if (startPositionMs != null) {
             seekTo(startPositionMs);
-        } else {
-            seekToWhenReady = null;
         }
         return audioFocus;
     }
@@ -452,6 +449,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 }
                 dataProviderAsyncTask = new DataProviderAsyncTask(this, mediaPlayerDataProvider);
                 dataProviderAsyncTask.execute(mediaIdentifier);
+                seekToWhenReady = null;
                 return true;
             }
             case MSG_PREPARE_FOR_URI: {
