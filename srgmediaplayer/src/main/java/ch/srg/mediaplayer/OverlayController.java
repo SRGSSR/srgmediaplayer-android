@@ -236,4 +236,9 @@ import android.view.ViewGroup;
             }
         }
     }
+
+    public boolean isShowingControlOverlays() {
+        return showingControlOverlays;
+    }
+
 }

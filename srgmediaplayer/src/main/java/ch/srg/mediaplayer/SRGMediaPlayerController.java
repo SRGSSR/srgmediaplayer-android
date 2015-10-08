@@ -1160,4 +1160,12 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private boolean isLive() {
         return currentMediaPlayerDelegate != null && currentMediaPlayerDelegate.isLive();
     }
+
+    public boolean isShowingControlOverlays() {
+        if (overlayController != null) {
+            return overlayController.isShowingControlOverlays();
+        }
+        return true;
+    }
+
 }
