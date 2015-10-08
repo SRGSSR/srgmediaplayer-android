@@ -49,6 +49,10 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
 		notifyDataSetChanged();
 	}
 
+	public int getDisplayableSegmentsListSize(){
+		return segments.size();
+	}
+
 	@Override
 	public long getItemId(int position) {
 		return segments.get(position).getIdentifier().hashCode();
