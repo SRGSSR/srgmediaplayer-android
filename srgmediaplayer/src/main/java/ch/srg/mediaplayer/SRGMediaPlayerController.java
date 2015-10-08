@@ -393,12 +393,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      */
     public void seekTo(long positionMs) throws IllegalStateException {
         currentSeekTarget = positionMs;
-        if (state == State.PREPARING) {
-            seekToWhenReady = positionMs;
-        } else {
-            seekToWhenReady = null;
-            sendMessage(MSG_SEEK_TO, positionMs);
-        }
+        sendMessage(MSG_SEEK_TO, positionMs);
     }
 
     public void mute() {
@@ -488,9 +483,19 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 return true;
             }
             case MSG_SEEK_TO: {
-                if (currentMediaPlayerDelegate != null) {
-                    fireEvent(Event.Type.WILL_SEEK);
-                    currentMediaPlayerDelegate.seekTo((Long) msg.obj);
+                Long positionMs = (Long) msg.obj;
+                if (positionMs == null) {
+                    throw new IllegalArgumentException("Missing position for seek to");
+                } else {
+                    if (state == State.PREPARING) {
+                        seekToWhenReady = positionMs;
+                    } else {
+                        fireEvent(Event.Type.WILL_SEEK);
+                        if (currentMediaPlayerDelegate != null) {
+                            currentMediaPlayerDelegate.seekTo(positionMs);
+                        }
+                        seekToWhenReady = null;
+                    }
                 }
                 return true;
             }
@@ -509,6 +514,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     currentMediaPlayerDelegate.playIfReady(playWhenReady);
                     if (seekToWhenReady != null) {
                         fireEvent(Event.Type.WILL_SEEK);
+                        Log.v(TAG, "Apply state / Seeking to " + seekToWhenReady);
                         currentMediaPlayerDelegate.seekTo(seekToWhenReady);
                         seekToWhenReady = null;
                     }
@@ -690,7 +696,11 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      */
     public long getMediaPosition() {
         if (currentMediaPlayerDelegate != null) {
-            return currentMediaPlayerDelegate.getCurrentPosition();
+            if (seekToWhenReady != null) {
+                return seekToWhenReady;
+            } else {
+                return currentMediaPlayerDelegate.getCurrentPosition();
+            }
         } else {
             return UNKNOWN_TIME;
         }

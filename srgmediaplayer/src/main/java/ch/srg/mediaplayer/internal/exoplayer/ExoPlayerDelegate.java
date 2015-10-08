@@ -204,6 +204,9 @@ public class ExoPlayerDelegate implements
     public void seekTo(long positionInMillis) throws IllegalStateException {
         long seekPosition = exoPlayer.getDuration() == ExoPlayer.UNKNOWN_TIME ? 0
                 : Math.min(Math.max(0, positionInMillis), getDuration());
+        if (positionInMillis != seekPosition) {
+            Log.d(TAG, "seek position " + positionInMillis + " adjusted to " + seekPosition);
+        }
         exoPlayer.seekTo(seekPosition);
     }
 
