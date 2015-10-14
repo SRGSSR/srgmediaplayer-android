@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 
@@ -104,7 +105,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 		    segmentBeingSkipped = null;
 
 			playerController.postEvent(new Event(playerController, Event.Type.SEGMENT_SELECTED, segment));
-			if (playerController.getMediaIdentifier().equals(segment.getMediaIdentifier())) {
+			if (!TextUtils.isEmpty(playerController.getMediaIdentifier()) && playerController.getMediaIdentifier().equals(segment.getMediaIdentifier())) {
 				playerController.seekTo(segment.getMarkIn());
 			} else {
 				try {
@@ -188,7 +189,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	}
 
 	private void update() {
-		if (playerController.isSeekPending()) {
+		if (playerController == null || playerController.isReleased() || playerController.isSeekPending()) {
 			return;
 		}
 		long mediaPosition = playerController.getMediaPosition();
