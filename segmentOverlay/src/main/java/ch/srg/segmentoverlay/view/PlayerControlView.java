@@ -10,6 +10,7 @@ import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
@@ -39,6 +40,8 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
     private long duration;
 
     private long seekBarSeekToMs;
+
+    private ArrayList<PlayerControlView.Listener> listeners = new ArrayList<>();
 
     public PlayerControlView(Context context) {
         this(context, null);
@@ -89,11 +92,8 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
             } else if (v == pauseButton) {
                 playerController.pause();
             } else if (v == replayButton) {
-                String mediaIdentifier = playerController.getMediaIdentifier();
-                try {
-                    playerController.play(mediaIdentifier, (long) 0);
-                } catch (SRGMediaPlayerException e) {
-                    e.printStackTrace();
+                for (PlayerControlView.Listener listener : listeners){
+                    listener.onReplayClick();
                 }
             }
         }
@@ -140,9 +140,9 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
             }
         } else {
             updateTimes(-1, -1);
-            playButton.setVisibility(VISIBLE);
+            playButton.setVisibility(GONE);
             pauseButton.setVisibility(GONE);
-            replayButton.setVisibility(View.GONE);
+            replayButton.setVisibility(View.VISIBLE);
         }
     }
 
@@ -184,4 +184,17 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
     @Override
     public void onSegmentListChanged(List<Segment> segments) {
     }
+
+    public interface Listener {
+        void onReplayClick();
+    }
+
+    public void addReplayListener(@NonNull PlayerControlView.Listener listener){
+        listeners.add(listener);
+    }
+
+    public void removeReplayListener(@NonNull PlayerControlView.Listener listener){
+        listeners.remove(listener);
+    }
+
 }
