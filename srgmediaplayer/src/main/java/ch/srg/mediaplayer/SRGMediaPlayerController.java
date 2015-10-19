@@ -684,6 +684,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     /**
      * Return the current mediaIdentifier played.
      */
+    @Nullable
     public String getMediaIdentifier() {
         return currentMediaIdentifier;
     }
