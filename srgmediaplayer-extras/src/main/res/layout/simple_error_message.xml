@@ -20,20 +20,23 @@
         android:id="@+id/debug_message"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/cancel"
+        android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="4dp"
         android:background="@android:color/black"
         android:padding="10dp"
         android:visibility="gone"
         tools:text="Debug only message"
-        tools:visibility="visible" />
+        tools:visibility="visible"
+        android:textColor="@android:color/white"/>
 
     <Button
         android:id="@+id/cancel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
         android:layout_centerHorizontal="true"
         android:padding="10dp"
         android:text="Cancel"
