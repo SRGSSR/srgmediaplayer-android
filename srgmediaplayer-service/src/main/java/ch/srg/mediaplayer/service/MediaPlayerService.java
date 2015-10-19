@@ -64,7 +64,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     public static final String ACTION_BROADCAST_STATUS_BUNDLE = PREFIX + ".broadcast.STATUS_BUNDLE";
 
     public static final String ARG_MEDIA_IDENTIFIER = "mediaIdentifier";
-    public static final String ARG_NOTIFICATION_ICON = "notificationIcon";
     public static final String ARG_POSITION = "position";
     public static final String ARG_FLAGS = "flags";
     public static final String ARG_FROM_NOTIFICATION = "fromNotification";
@@ -177,33 +176,18 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     } else {
                         position = null;
                     }
-                    if (newMediaIdentifier == null) {
+                    if (TextUtils.isEmpty(newMediaIdentifier)) {
                         Log.e(TAG, "ACTION_PLAY without mediaIdentifier, recovering");
                         newMediaIdentifier = getCurrentMediaIdentifier();
                     }
                     if (intent.hasExtra(ARG_FLAGS)) {
                         flags = intent.getIntExtra(ARG_FLAGS, 0);
                     }
-                    int largeIconId = intent.getIntExtra(ARG_NOTIFICATION_ICON, R.drawable.ic_media_play);
-                    createBitmapForNotification(largeIconId);
 
-                    String currentMediaIdentifier = getCurrentMediaIdentifier();
-
-					/*
-					 * Make sure we don't take the token into account when comparing
-					 * both uris.
-					 */
-                    if (newMediaIdentifier.equals(currentMediaIdentifier) && hasNonDeadPlayer()) {
-						/*
-						 * We are already playing this URL. Just resume or keep playing.
-						 */
-                        resume();
-                    } else if (!TextUtils.isEmpty(newMediaIdentifier)) {
-                        try {
-                            prepare(newMediaIdentifier, position, true);
-                        } catch (SRGMediaPlayerException e) {
-                            Log.e(TAG, "Player play " + newMediaIdentifier, e);
-                        }
+                    try {
+                        prepare(newMediaIdentifier, position, true);
+                    } catch (SRGMediaPlayerException e) {
+                        Log.e(TAG, "Player play " + newMediaIdentifier, e);
                     }
                     } break;
 
@@ -286,8 +270,20 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
         if (player.play(mediaIdentifier, startPosition)) {
             setupRemoteControlClient();
+            setupNotification();
             startUpdates();
         }
+    }
+
+    private void setupNotification() {
+        int notificationIconId;
+        if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
+            notificationIconId = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).getNotificationIconResourceId(getCurrentMediaIdentifier());
+        } else {
+            notificationIconId = 0;
+        }
+
+        createBitmapForNotification(notificationIconId);
     }
 
     private void setupRemoteControlClient() {
