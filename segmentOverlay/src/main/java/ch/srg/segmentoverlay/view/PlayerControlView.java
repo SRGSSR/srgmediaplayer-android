@@ -2,6 +2,7 @@ package ch.srg.segmentoverlay.view;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -178,7 +179,7 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
     }
 
     @Override
-    public void onPositionChange(String mediaIdentifier, long position) {
+    public void onPositionChange(@Nullable String mediaIdentifier, long position) {
         update(position);
     }
 
