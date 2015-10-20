@@ -31,6 +31,7 @@ dependencies {
     // Testing-only dependencies
     androidTestCompile 'com.android.support.test:runner:0.3'
     androidTestCompile 'com.android.support.test:rules:0.3'
+    compile 'com.google.android.gms:play-services-cast:8.1.0'
 }
 
 apply from: '../utilities.gradle'

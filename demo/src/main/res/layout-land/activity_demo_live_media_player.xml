@@ -39,6 +39,13 @@
             android:fitsSystemWindows="true"
             app:overlay_mode="control">
 
+            <android.support.v7.widget.Toolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/colorPrimary"
+                android:minHeight="?attr/actionBarSize"/>
+
             <!--Controls-->
             <ch.srg.segmentoverlay.view.SegmentView
                 android:id="@+id/segment_demo_view"
@@ -73,6 +80,7 @@
                 android:layout_height="match_parent"
                 android:layout_above="@id/media_control"
                 android:layout_alignParentLeft="true"
+                android:layout_below="@+id/toolbar"
                 android:background="@color/black_shadow"
                 android:choiceMode="singleChoice"
                 android:listSelector="@drawable/list_item_background"/>
@@ -81,17 +89,17 @@
                 android:id="@+id/group_seek_buttons"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_alignParentTop="true"
+                android:layout_below="@+id/toolbar"
                 android:layout_toRightOf="@id/uri_list"
                 android:background="@color/black_shadow"
                 android:orientation="horizontal">
 
                 <Button
+                    android:id="@+id/button_seek_window_start"
                     android:layout_width="0dp"
-                    android:layout_weight="1"
                     android:layout_height="wrap_content"
-                    android:text="start"
-                    android:id="@+id/button_seek_window_start"/>
+                    android:layout_weight="1"
+                    android:text="start"/>
 
                 <Button
                     android:id="@+id/button_seek_one_hour"
