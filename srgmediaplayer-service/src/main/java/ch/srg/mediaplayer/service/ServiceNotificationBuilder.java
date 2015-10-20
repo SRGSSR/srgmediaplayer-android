@@ -33,7 +33,9 @@ public class ServiceNotificationBuilder {
         if (live != that.live) return false;
         if (playing != that.playing) return false;
         if (title != null ? !title.equals(that.title) : that.title != null) return false;
-        return !(notificationBitmap != null ? !notificationBitmap.equals(that.notificationBitmap) : that.notificationBitmap != null);
+        if (notificationBitmap != null ? !notificationBitmap.equals(that.notificationBitmap) : that.notificationBitmap != null) return false;
+
+        return true;
 
     }
 
