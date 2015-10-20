@@ -18,4 +18,10 @@ public interface SRGMediaPlayerServiceMetaDataProvider {
      * @return drawable id to be displayed in service notification
      */
     int getNotificationIconResourceId(String mediaIdentifier);
+
+    /**
+     * @param mediaIdentifier media identifier
+     * @return true if notification should be in live mode
+     */
+    boolean isLive(String mediaIdentifier);
 }

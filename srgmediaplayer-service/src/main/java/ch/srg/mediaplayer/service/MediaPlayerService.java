@@ -91,7 +91,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     private final Handler handler = new Handler();
 
     private SRGMediaPlayerController.State currentState;
-    private long lastPosition;
 
     public boolean isDestroyed;
 
@@ -248,8 +247,16 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     private ServiceNotificationBuilder createNotificationBuilder() {
-        String title = dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider ? ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).getTitle(getCurrentMediaIdentifier()) : null;
-        return new ServiceNotificationBuilder(isLive(), isPlaying(), title, notificationBitmap);
+        String title;
+        boolean live = false;
+        if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
+            String mediaIdentifier = getCurrentMediaIdentifier();
+            title = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).getTitle(mediaIdentifier);
+            live = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).isLive(mediaIdentifier);
+        } else {
+            title = null;
+        }
+        return new ServiceNotificationBuilder(live, isPlaying(), title, notificationBitmap);
     }
 
     private void startUpdates() {
@@ -269,7 +276,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         createPlayer();
 
         if (player.play(mediaIdentifier, startPosition)) {
-            setupRemoteControlClient();
+            setupRemoteControlClient(mediaIdentifier);
             setupNotification();
             startUpdates();
         }
@@ -286,19 +293,21 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         createBitmapForNotification(notificationIconId);
     }
 
-    private void setupRemoteControlClient() {
-        if ((flags & FLAG_LIVE) != 0) {
-            remoteControlClient.setTransportControlFlags(RemoteControlClient.FLAG_KEY_MEDIA_PLAY | RemoteControlClient.FLAG_KEY_MEDIA_STOP);
-        } else {
-            remoteControlClient.setTransportControlFlags(RemoteControlClient.FLAG_KEY_MEDIA_PLAY_PAUSE | RemoteControlClient.FLAG_KEY_MEDIA_STOP);
+    private void setupRemoteControlClient(String mediaIdentifier) {
+        boolean live = false;
+        if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
+            live = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).isLive(mediaIdentifier);
         }
+        remoteControlClient.setTransportControlFlags(
+                (live ? RemoteControlClient.FLAG_KEY_MEDIA_PLAY : RemoteControlClient.FLAG_KEY_MEDIA_PLAY_PAUSE)
+                        | RemoteControlClient.FLAG_KEY_MEDIA_STOP);
         RemoteControlClient.MetadataEditor meta = remoteControlClient.editMetadata(true);
         if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
             String title = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).
                     getTitle(getCurrentMediaIdentifier());
             meta.putString(MediaMetadataRetriever.METADATA_KEY_TITLE, title);
         }
-        if ((flags & FLAG_LIVE) == 0) {
+        if (!live) {
             meta.putLong(MediaMetadataRetriever.METADATA_KEY_DURATION, getDuration());
         }
 				/* XXX: that won't work and we need to do it from the asynctask too */
@@ -397,11 +406,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         }
     }
 
-
-    private boolean isLive() {
-        return (flags & FLAG_LIVE) != 0;
-    }
-
     public void resume() {
         if (player != null) {
             player.start();
@@ -453,10 +457,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private long getPosition() {
         // Return position only for AOD when we have an active player.
-        if (player != null && (flags & FLAG_LIVE) == 0) {
-            long playerPosition = player.getMediaPosition();
-            lastPosition = playerPosition < 0 ? lastPosition : playerPosition;
-            return Math.max(0, playerPosition);
+        if (player != null) {
+            return Math.max(0, player.getMediaPosition());
         } else {
             return 0;
         }
