@@ -1,6 +1,7 @@
 package ch.srg.segmentoverlay.adapter;
 
 import android.content.Context;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
 
@@ -15,7 +16,7 @@ import ch.srg.segmentoverlay.model.Segment;
 public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> extends RecyclerView.Adapter<T> {
     public SegmentClickListener clickListener;
 
-	public abstract boolean updateProgressSegments(String mediaIdentifier, long time);
+	public abstract boolean updateProgressSegments(@NonNull String mediaIdentifier, long time);
 
 	protected Context context;
 
@@ -62,7 +63,7 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
 		return segments.get(position).getIdentifier();
 	}
 
-	public int getSegmentIndex(String mediaIdentifier, long time) {
+	public int getSegmentIndex(@NonNull String mediaIdentifier, long time) {
 		int segmentIndex;
 		segmentIndex = findLogicalSegment(mediaIdentifier, time);
 		if (segmentIndex == -1) {
@@ -71,7 +72,7 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
 		return segmentIndex;
 	}
 
-	public int findPhysicalSegment(String mediaIdentifier) {
+	public int findPhysicalSegment(@NonNull String mediaIdentifier) {
 		for (int i = 0; i < segments.size(); i++) {
 			Segment segment = segments.get(i);
 			if (mediaIdentifier.equals(segment.getMediaIdentifier())
@@ -82,7 +83,7 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
 		return -1;
 	}
 
-	public int findLogicalSegment(String mediaIdentifier, long time) {
+	public int findLogicalSegment(@NonNull String mediaIdentifier, long time) {
 		for (int i = 0; i < segments.size(); i++) {
 			Segment segment = segments.get(i);
 			if (mediaIdentifier.equals(segment.getMediaIdentifier())

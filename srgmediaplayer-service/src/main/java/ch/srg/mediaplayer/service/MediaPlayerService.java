@@ -91,12 +91,10 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     private final Handler handler = new Handler();
 
     private SRGMediaPlayerController.State currentState;
-    private long lastPosition;
 
     public boolean isDestroyed;
 
     private Runnable statusUpdater;
-    private static PendingIntent notificationPendingIntent;
     private static PlayerDelegateFactory playerDelegateFactory;
     private static boolean debugMode;
 
@@ -248,8 +246,19 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     private ServiceNotificationBuilder createNotificationBuilder() {
-        String title = dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider ? ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).getTitle(getCurrentMediaIdentifier()) : null;
-        return new ServiceNotificationBuilder(isLive(), isPlaying(), title, notificationBitmap);
+        String title;
+        boolean live = false;
+        PendingIntent pendingIntent = null;
+        if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
+            String mediaIdentifier = getCurrentMediaIdentifier();
+            SRGMediaPlayerServiceMetaDataProvider serviceMetaDataProvider = (SRGMediaPlayerServiceMetaDataProvider) MediaPlayerService.dataProvider;
+            title = serviceMetaDataProvider.getTitle(mediaIdentifier);
+            live = serviceMetaDataProvider.isLive(mediaIdentifier);
+            pendingIntent = serviceMetaDataProvider.getNotificationPendingIntent(mediaIdentifier);
+        } else {
+            title = null;
+        }
+        return new ServiceNotificationBuilder(live, isPlaying(), title, notificationBitmap, pendingIntent);
     }
 
     private void startUpdates() {
@@ -269,7 +278,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         createPlayer();
 
         if (player.play(mediaIdentifier, startPosition)) {
-            setupRemoteControlClient();
+            setupRemoteControlClient(mediaIdentifier);
             setupNotification();
             startUpdates();
         }
@@ -286,19 +295,21 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         createBitmapForNotification(notificationIconId);
     }
 
-    private void setupRemoteControlClient() {
-        if ((flags & FLAG_LIVE) != 0) {
-            remoteControlClient.setTransportControlFlags(RemoteControlClient.FLAG_KEY_MEDIA_PLAY | RemoteControlClient.FLAG_KEY_MEDIA_STOP);
-        } else {
-            remoteControlClient.setTransportControlFlags(RemoteControlClient.FLAG_KEY_MEDIA_PLAY_PAUSE | RemoteControlClient.FLAG_KEY_MEDIA_STOP);
+    private void setupRemoteControlClient(String mediaIdentifier) {
+        boolean live = false;
+        if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
+            live = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).isLive(mediaIdentifier);
         }
+        remoteControlClient.setTransportControlFlags(
+                (live ? RemoteControlClient.FLAG_KEY_MEDIA_PLAY : RemoteControlClient.FLAG_KEY_MEDIA_PLAY_PAUSE)
+                        | RemoteControlClient.FLAG_KEY_MEDIA_STOP);
         RemoteControlClient.MetadataEditor meta = remoteControlClient.editMetadata(true);
         if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
             String title = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).
                     getTitle(getCurrentMediaIdentifier());
             meta.putString(MediaMetadataRetriever.METADATA_KEY_TITLE, title);
         }
-        if ((flags & FLAG_LIVE) == 0) {
+        if (!live) {
             meta.putLong(MediaMetadataRetriever.METADATA_KEY_DURATION, getDuration());
         }
 				/* XXX: that won't work and we need to do it from the asynctask too */
@@ -351,7 +362,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 ServiceNotificationBuilder builder = createNotificationBuilder();
                 if (builder != currentServiceNotification) {
                     currentServiceNotification = builder;
-                    notificationManager.notify(NOTIFICATION_ID, builder.buildNotification(this, notificationPendingIntent));
+                    notificationManager.notify(NOTIFICATION_ID, builder.buildNotification(this));
                 }
             }
         } else {
@@ -384,7 +395,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 if (foreground) {
                     ServiceNotificationBuilder builder = createNotificationBuilder();
                     currentServiceNotification = builder;
-                    startForeground(NOTIFICATION_ID, builder.buildNotification(this, notificationPendingIntent));
+                    startForeground(NOTIFICATION_ID, builder.buildNotification(this));
                 } else {
                     stopForeground(true);
                     currentServiceNotification = null;
@@ -395,11 +406,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             // We ignore exception for tests (bug in ServiceTestCase that does not include a mock
             // activity manager). See http://code.google.com/p/android/issues/detail?id=12122
         }
-    }
-
-
-    private boolean isLive() {
-        return (flags & FLAG_LIVE) != 0;
     }
 
     public void resume() {
@@ -453,10 +459,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private long getPosition() {
         // Return position only for AOD when we have an active player.
-        if (player != null && (flags & FLAG_LIVE) == 0) {
-            long playerPosition = player.getMediaPosition();
-            lastPosition = playerPosition < 0 ? lastPosition : playerPosition;
-            return Math.max(0, playerPosition);
+        if (player != null) {
+            return Math.max(0, player.getMediaPosition());
         } else {
             return 0;
         }
@@ -524,10 +528,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     public static void setPlayerDelegateFactory(PlayerDelegateFactory playerDelegateFactory) {
         MediaPlayerService.playerDelegateFactory = playerDelegateFactory;
-    }
-
-    public static void setNotificationPendingIntent(PendingIntent pendingIntent) {
-        notificationPendingIntent = pendingIntent;
     }
 
     public static void setDebugMode(boolean debugMode) {

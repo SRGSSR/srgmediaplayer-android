@@ -104,8 +104,9 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	    if (!segment.isBlocked()) {
 		    segmentBeingSkipped = null;
 
-			playerController.postEvent(new Event(playerController, Event.Type.SEGMENT_SELECTED, segment));
-			if (!TextUtils.isEmpty(playerController.getMediaIdentifier()) && playerController.getMediaIdentifier().equals(segment.getMediaIdentifier())) {
+			String mediaIdentifier = playerController.getMediaIdentifier();
+			if (!TextUtils.isEmpty(mediaIdentifier) && mediaIdentifier.equals(segment.getMediaIdentifier())) {
+				playerController.postEvent(new Event(playerController, Event.Type.SEGMENT_SELECTED, segment));
 				playerController.seekTo(segment.getMarkIn());
 			} else {
 				try {
@@ -171,7 +172,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	}
 
 	public interface Listener {
-		void onPositionChange(String mediaIdentifier, long position);
+		void onPositionChange(@Nullable String mediaIdentifier, long position);
 
 		void onSegmentListChanged(List<Segment> segments);
 	}

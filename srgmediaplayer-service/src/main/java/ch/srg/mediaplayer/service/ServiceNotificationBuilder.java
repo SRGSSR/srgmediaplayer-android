@@ -15,12 +15,14 @@ public class ServiceNotificationBuilder {
     boolean playing;
     String title;
     Bitmap notificationBitmap;
+    PendingIntent pendingIntent;
 
-    public ServiceNotificationBuilder(boolean live, boolean playing, String title, Bitmap notificationBitmap) {
+    public ServiceNotificationBuilder(boolean live, boolean playing, String title, Bitmap notificationBitmap, PendingIntent pendingIntent) {
         this.live = live;
         this.playing = playing;
         this.title = title;
         this.notificationBitmap = notificationBitmap;
+        this.pendingIntent = pendingIntent;
     }
 
     @Override
@@ -33,11 +35,14 @@ public class ServiceNotificationBuilder {
         if (live != that.live) return false;
         if (playing != that.playing) return false;
         if (title != null ? !title.equals(that.title) : that.title != null) return false;
-        return !(notificationBitmap != null ? !notificationBitmap.equals(that.notificationBitmap) : that.notificationBitmap != null);
+        if (notificationBitmap != null ? !notificationBitmap.equals(that.notificationBitmap) : that.notificationBitmap != null) return false;
+        if (pendingIntent != null ? !pendingIntent.equals(that.pendingIntent) : that.pendingIntent != null) return false;
+
+        return true;
 
     }
 
-    public Notification buildNotification(Context context, PendingIntent notificationPendingIntent) {
+    public Notification buildNotification(Context context) {
         /* XXX: stackbuilder needed for back navigation */
 
         Intent pauseIntent = new Intent(context, MediaPlayerService.class);
@@ -51,7 +56,7 @@ public class ServiceNotificationBuilder {
         String appName = AppUtils.getApplicationName(context);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
-        builder.setContentIntent(notificationPendingIntent);
+        builder.setContentIntent(pendingIntent);
 
         if (!live) {
             if (playing) {
