@@ -652,7 +652,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
 
                                                 if (srgMediaPlayer.isPlaying()) {
                                                     GoogleCastDelegate googleCatDelegate = new GoogleCastDelegate(mSessionId, mApiClient);
-                                                    srgMediaPlayer.setPlayerDelegateFactory();
+                                                    //srgMediaPlayer.setPlayerDelegateFactory();
                                                 }
 
                                             } else {
