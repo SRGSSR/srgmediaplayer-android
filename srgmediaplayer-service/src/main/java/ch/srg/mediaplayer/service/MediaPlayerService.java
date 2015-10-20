@@ -95,7 +95,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     public boolean isDestroyed;
 
     private Runnable statusUpdater;
-    private static PendingIntent notificationPendingIntent;
     private static PlayerDelegateFactory playerDelegateFactory;
     private static boolean debugMode;
 
@@ -249,14 +248,17 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     private ServiceNotificationBuilder createNotificationBuilder() {
         String title;
         boolean live = false;
+        PendingIntent pendingIntent = null;
         if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
             String mediaIdentifier = getCurrentMediaIdentifier();
-            title = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).getTitle(mediaIdentifier);
-            live = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).isLive(mediaIdentifier);
+            SRGMediaPlayerServiceMetaDataProvider serviceMetaDataProvider = (SRGMediaPlayerServiceMetaDataProvider) MediaPlayerService.dataProvider;
+            title = serviceMetaDataProvider.getTitle(mediaIdentifier);
+            live = serviceMetaDataProvider.isLive(mediaIdentifier);
+            pendingIntent = serviceMetaDataProvider.getNotificationPendingIntent(mediaIdentifier);
         } else {
             title = null;
         }
-        return new ServiceNotificationBuilder(live, isPlaying(), title, notificationBitmap);
+        return new ServiceNotificationBuilder(live, isPlaying(), title, notificationBitmap, pendingIntent);
     }
 
     private void startUpdates() {
@@ -360,7 +362,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 ServiceNotificationBuilder builder = createNotificationBuilder();
                 if (builder != currentServiceNotification) {
                     currentServiceNotification = builder;
-                    notificationManager.notify(NOTIFICATION_ID, builder.buildNotification(this, notificationPendingIntent));
+                    notificationManager.notify(NOTIFICATION_ID, builder.buildNotification(this));
                 }
             }
         } else {
@@ -393,7 +395,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 if (foreground) {
                     ServiceNotificationBuilder builder = createNotificationBuilder();
                     currentServiceNotification = builder;
-                    startForeground(NOTIFICATION_ID, builder.buildNotification(this, notificationPendingIntent));
+                    startForeground(NOTIFICATION_ID, builder.buildNotification(this));
                 } else {
                     stopForeground(true);
                     currentServiceNotification = null;
@@ -526,10 +528,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     public static void setPlayerDelegateFactory(PlayerDelegateFactory playerDelegateFactory) {
         MediaPlayerService.playerDelegateFactory = playerDelegateFactory;
-    }
-
-    public static void setNotificationPendingIntent(PendingIntent pendingIntent) {
-        notificationPendingIntent = pendingIntent;
     }
 
     public static void setDebugMode(boolean debugMode) {
