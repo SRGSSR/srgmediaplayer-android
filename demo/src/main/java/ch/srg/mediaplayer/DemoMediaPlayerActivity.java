@@ -30,7 +30,6 @@ import com.google.android.gms.cast.CastDevice;
 import com.google.android.gms.cast.CastMediaControlIntent;
 import com.google.android.gms.cast.MediaInfo;
 import com.google.android.gms.cast.MediaMetadata;
-import com.google.android.gms.cast.MediaStatus;
 import com.google.android.gms.cast.RemoteMediaPlayer;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -52,6 +51,7 @@ import ch.srg.mediaplayer.demo.R;
 import ch.srg.mediaplayer.extras.dataproviders.MultiDataProvider;
 import ch.srg.mediaplayer.extras.fullscreen.helper.SystemUiHelper;
 import ch.srg.mediaplayer.extras.overlay.error.SimpleErrorMessage;
+import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
 import ch.srg.mediaplayer.internal.cast.GoogleCastDelegate;
 import ch.srg.segmentoverlay.controller.SegmentController;
 import ch.srg.segmentoverlay.model.Segment;
@@ -254,8 +254,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
         mMediaRouterCallback = new MyMediaRouterCallback();
         mConnectionCallbacks = new ConnectionCallbacks();
         mConnectionFailedListener = new ConnectionFailedListener();
-
-        mRemoteMediaPlayer = new RemoteMediaPlayer();
     }
 
     public String getTestListItem(int i) {
@@ -264,7 +262,22 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
 
     public void playTestIdentifier(String identifier) {
         if (mApiClient != null && mRemoteMediaPlayer != null && mApplicationStarted) {
-            playMediaOnGoogleCast(identifier, 0);
+            //playMediaOnGoogleCast(identifier, 0);
+
+            Log.d(TAG, "Create new Google cast delegate");
+            final GoogleCastDelegate googleCatDelegate = new GoogleCastDelegate(mSessionId, mApiClient, srgMediaPlayer);
+            srgMediaPlayer.setPlayerDelegateFactory(new PlayerDelegateFactory() {
+                @Override
+                public PlayerDelegate getDelegateForMediaIdentifier(PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, String mediaIdentifier) {
+                    return googleCatDelegate;
+                }
+            });
+            segmentPlayerControlView.attachToController(srgMediaPlayer);
+            try {
+                srgMediaPlayer.play(identifier);
+            } catch (SRGMediaPlayerException e) {
+                e.printStackTrace();
+            }
         } else {
             try {
                 String SEEK_DELIMITER = "@seek:";
@@ -627,39 +640,47 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
                                             if (status.isSuccess()) {
                                                 ApplicationMetadata applicationMetadata =
                                                         result.getApplicationMetadata();
-                                                String sessionId = result.getSessionId();
+                                                mSessionId = result.getSessionId();
                                                 String applicationStatus = result.getApplicationStatus();
                                                 boolean wasLaunched = result.getWasLaunched();
 
                                                 Log.d(TAG, "applicationMetadata: " + String.valueOf(applicationMetadata));
-                                                Log.d(TAG, "sessionId: " + sessionId);
+                                                Log.d(TAG, "sessionId: " + mSessionId);
                                                 Log.d(TAG, "applicationStatus: " + applicationStatus);
                                                 Log.d(TAG, "wasLaunched: " + String.valueOf(wasLaunched));
 
                                                 mApplicationStarted = true;
 
-                                                mRemoteMediaPlayer
-                                                        .requestStatus(mApiClient)
-                                                        .setResultCallback(
-                                                                new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
-                                                                    @Override
-                                                                    public void onResult(RemoteMediaPlayer.MediaChannelResult result) {
-                                                                        if (!result.getStatus().isSuccess()) {
-                                                                            Log.e(TAG, "Failed to request status.");
-                                                                        }
-                                                                    }
-                                                                });
+                                                mRemoteMediaPlayer = new RemoteMediaPlayer();
+
+                                                String mediaIdentifier = srgMediaPlayer.getMediaIdentifier();
+                                                long mediaPosition = srgMediaPlayer.getMediaPosition();
 
                                                 if (srgMediaPlayer.isPlaying()) {
-                                                    GoogleCastDelegate googleCatDelegate = new GoogleCastDelegate(mSessionId, mApiClient);
+                                                    Log.d(TAG, "Create new Google cast delegate");
+                                                    final GoogleCastDelegate googleCatDelegate = new GoogleCastDelegate(mSessionId, mApiClient, srgMediaPlayer);
                                                     //srgMediaPlayer.setPlayerDelegateFactory();
+                                                    PlayerDelegateFactory playerDelegateFactory = new PlayerDelegateFactory() {
+                                                        @Override
+                                                        public PlayerDelegate getDelegateForMediaIdentifier(PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, String mediaIdentifier) {
+                                                            return googleCatDelegate;
+                                                        }
+                                                    };
+                                                    srgMediaPlayer.setPlayerDelegateFactory(playerDelegateFactory);
+                                                    try {
+                                                        srgMediaPlayer.play(mediaIdentifier, mediaPosition);
+                                                    } catch (SRGMediaPlayerException e) {
+                                                        e.printStackTrace();
+                                                    }
                                                 }
 
                                             } else {
                                                 teardown();
                                             }
                                         }
-                                    });
+                                    }
+
+                            );
 
                 } catch (Exception e) {
                     Log.e(TAG, "Failed to launch application", e);
@@ -722,6 +743,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
                         }
                     } else {
                         Log.e(TAG, "dispatchKeyEvent - volume up");
+                        return super.dispatchKeyEvent(event);
                     }
                 }
                 return true;
@@ -739,6 +761,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
                         }
                     } else {
                         Log.e(TAG, "dispatchKeyEvent - volume down");
+                        return super.dispatchKeyEvent(event);
                     }
                 }
                 return true;

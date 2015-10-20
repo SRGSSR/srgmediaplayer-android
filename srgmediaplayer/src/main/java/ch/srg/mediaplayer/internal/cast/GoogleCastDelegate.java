@@ -11,6 +11,7 @@ import com.google.android.gms.cast.MediaMetadata;
 import com.google.android.gms.cast.MediaStatus;
 import com.google.android.gms.cast.RemoteMediaPlayer;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
 
 import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
@@ -22,28 +23,33 @@ import ch.srg.mediaplayer.SRGMediaPlayerView;
 public class GoogleCastDelegate implements PlayerDelegate {
 
     private static final String TAG = "GoogleCastDelegate";
+    private final OnPlayerDelegateListener controller;
+
     private RemoteMediaPlayer mRemoteMediaPlayer;
     private GoogleApiClient mApiClient;
-    private boolean mApplicationStarted;
     private String mSessionId;
+
+    private boolean mApplicationStarted;
     private boolean isPlaying;
 
     private MediaInfo mediaInfo;
 
-    public GoogleCastDelegate(String mSessionId, GoogleApiClient mApiClient) {
+    public GoogleCastDelegate(String mSessionId, GoogleApiClient mApiClient, OnPlayerDelegateListener controller) {
         this.mSessionId = mSessionId;
         this.mApiClient = mApiClient;
+        this.controller = controller;
         mRemoteMediaPlayer = new RemoteMediaPlayer();
+        mRemoteMediaPlayer.setOnStatusUpdatedListener(listener);
     }
 
     @Override
     public boolean canRenderInView(View view) {
-        return false;
+        return true;
     }
 
     @Override
     public View createRenderingView(Context parentContext) {
-        return null;
+        return new View(parentContext);
     }
 
     @Override
@@ -65,11 +71,20 @@ public class GoogleCastDelegate implements PlayerDelegate {
                 .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
                 .setMetadata(mediaMetadata)
                 .build();
+        controller.onPlayerDelegatePreparing(this);
+        controller.onPlayerDelegateReady(GoogleCastDelegate.this);
+        mRemoteMediaPlayer.load(mApiClient, mediaInfo, true).setResultCallback(new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
+            @Override
+            public void onResult(RemoteMediaPlayer.MediaChannelResult mediaChannelResult) {
+                Log.d(TAG, String.valueOf(mediaChannelResult));
+                controller.onPlayerDelegatePlayWhenReadyCommited(GoogleCastDelegate.this);
+            }
+        });
     }
 
     @Override
     public void playIfReady(boolean playIfReady) throws IllegalStateException {
-        if (mRemoteMediaPlayer != null) {
+        if (mRemoteMediaPlayer != null && mediaInfo != null) {
             if (playIfReady) {
                 try {
                     mRemoteMediaPlayer.load(mApiClient, mediaInfo, true);
@@ -78,10 +93,8 @@ public class GoogleCastDelegate implements PlayerDelegate {
                 } catch (Exception e) {
                     Log.e(TAG, "Problem opening media during loading", e);
                 }
-            } else if(isPlaying()){
-                mRemoteMediaPlayer.pause(mApiClient);
             } else {
-                mRemoteMediaPlayer.play(mApiClient);
+                mRemoteMediaPlayer.pause(mApiClient);
             }
         }
     }
@@ -99,7 +112,10 @@ public class GoogleCastDelegate implements PlayerDelegate {
 
     @Override
     public boolean isPlaying() {
-        return mRemoteMediaPlayer != null && mRemoteMediaPlayer.getMediaStatus().getPlayerState() == MediaStatus.PLAYER_STATE_PLAYING;
+        if (mRemoteMediaPlayer != null && mRemoteMediaPlayer.getMediaStatus() != null) {
+            return mRemoteMediaPlayer.getMediaStatus().getPlayerState() == MediaStatus.PLAYER_STATE_PLAYING;
+        }
+        return false;
     }
 
     @Override
@@ -149,6 +165,21 @@ public class GoogleCastDelegate implements PlayerDelegate {
     public long getPlaylistStartTime() {
         return 0;
     }
+
+    RemoteMediaPlayer.OnStatusUpdatedListener listener = new RemoteMediaPlayer.OnStatusUpdatedListener() {
+        @Override
+        public void onStatusUpdated() {
+            MediaStatus status = mRemoteMediaPlayer.getMediaStatus();
+            Log.d(TAG, String.valueOf(status));
+            switch (status.getPlayerState()) {
+                case MediaStatus.PLAYER_STATE_IDLE:
+                    break;
+                case MediaStatus.PLAYER_STATE_BUFFERING:
+                    controller.onPlayerDelegateBuffering(GoogleCastDelegate.this);
+                    break;
+            }
+        }
+    };
 
     private void teardown() {
         Log.d(TAG, "teardown");
