@@ -236,7 +236,13 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	@Override
 	public void onMediaPlayerEvent(SRGMediaPlayerController mp, SRGMediaPlayerController.Event event) {
 		if (mp == playerController) {
-			updateIfNotUserTracked();
+			if (event.type == SRGMediaPlayerController.Event.Type.STATE_CHANGE
+					&& event.state == SRGMediaPlayerController.State.RELEASED) {
+				// Update one last time UI to reflect released state
+				notifyPositionChange(mp.getMediaIdentifier(), 0);
+			} else {
+				updateIfNotUserTracked();
+			}
 		} else {
 			throw new IllegalArgumentException("Unexpected player");
 		}

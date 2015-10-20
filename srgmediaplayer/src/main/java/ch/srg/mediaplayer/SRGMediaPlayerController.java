@@ -335,23 +335,25 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * <p/>
      * The corresponding events are triggered when the video loading start and is ready.
      *
-     * @param mediaIdentifier
-     * @return
+     * @param mediaIdentifier identifier
+     * @param startPositionMs start position in milliseconds or null to prevent seek
+     * @return true when media is preparing and in the process of being started
      * @throws SRGMediaPlayerException
      */
     public boolean play(String mediaIdentifier, Long startPositionMs) throws SRGMediaPlayerException {
-        boolean audioFocus = requestAudioFocus();
-        if (audioFocus) {
+        if (requestAudioFocus()) {
             if (!TextUtils.equals(currentMediaIdentifier, mediaIdentifier)) {
                 sendMessage(MSG_PREPARE_FOR_MEDIA_IDENTIFIER, mediaIdentifier);
+                start();
             }
+            if (startPositionMs != null) {
+                seekTo(startPositionMs);
+            }
+            return true;
         } else {
             Log.v(TAG, "Audio focus request failed");
+            return false;
         }
-        if (startPositionMs != null) {
-            seekTo(startPositionMs);
-        }
-        return audioFocus;
     }
 
     public void keepScreenOn(boolean lock) {
@@ -684,6 +686,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     /**
      * Return the current mediaIdentifier played.
      */
+    @Nullable
     public String getMediaIdentifier() {
         return currentMediaIdentifier;
     }

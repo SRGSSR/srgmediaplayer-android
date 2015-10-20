@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
-import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.segmentoverlay.R;
 import ch.srg.segmentoverlay.controller.SegmentController;
 import ch.srg.segmentoverlay.model.Segment;
@@ -23,6 +22,7 @@ import ch.srg.segmentoverlay.model.Segment;
  * Created by npietri on 20.05.15.
  */
 public class PlayerControlView extends RelativeLayout implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, SegmentController.Listener {
+    private static final long COMPLETION_TOLERANCE_MS = 5000;
 
     private SRGMediaPlayerController playerController;
 
@@ -123,15 +123,16 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
     }
 
     private void update(long time) {
-        if (playerController != null) {
+        if (playerController != null && !playerController.isReleased()) {
+            boolean playing = playerController.isPlaying();
             duration = playerController.getMediaDuration();
-            boolean mediaCompleted = time >= duration;
+            boolean mediaCompleted = !playing && time >= duration - COMPLETION_TOLERANCE_MS;
 
             updateTimes(time, duration);
 
             if (!mediaCompleted) {
-                playButton.setVisibility(playerController.isPlaying() ? GONE : VISIBLE);
-                pauseButton.setVisibility(playerController.isPlaying() ? VISIBLE : GONE);
+                playButton.setVisibility(playing ? GONE : VISIBLE);
+                pauseButton.setVisibility(playing ? VISIBLE : GONE);
                 replayButton.setVisibility(View.GONE);
             } else {
                 playButton.setVisibility(View.GONE);

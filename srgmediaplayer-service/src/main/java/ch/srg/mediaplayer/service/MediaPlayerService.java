@@ -64,7 +64,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     public static final String ACTION_BROADCAST_STATUS_BUNDLE = PREFIX + ".broadcast.STATUS_BUNDLE";
 
     public static final String ARG_MEDIA_IDENTIFIER = "mediaIdentifier";
-    public static final String ARG_NOTIFICATION_ICON = "notificationIcon";
     public static final String ARG_POSITION = "position";
     public static final String ARG_FLAGS = "flags";
     public static final String ARG_FROM_NOTIFICATION = "fromNotification";
@@ -177,33 +176,18 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     } else {
                         position = null;
                     }
-                    if (newMediaIdentifier == null) {
+                    if (TextUtils.isEmpty(newMediaIdentifier)) {
                         Log.e(TAG, "ACTION_PLAY without mediaIdentifier, recovering");
                         newMediaIdentifier = getCurrentMediaIdentifier();
                     }
                     if (intent.hasExtra(ARG_FLAGS)) {
                         flags = intent.getIntExtra(ARG_FLAGS, 0);
                     }
-                    int largeIconId = intent.getIntExtra(ARG_NOTIFICATION_ICON, R.drawable.ic_media_play);
-                    createBitmapForNotification(largeIconId);
 
-                    String currentMediaIdentifier = getCurrentMediaIdentifier();
-
-					/*
-					 * Make sure we don't take the token into account when comparing
-					 * both uris.
-					 */
-                    if (newMediaIdentifier.equals(currentMediaIdentifier) && hasNonDeadPlayer()) {
-						/*
-						 * We are already playing this URL. Just resume or keep playing.
-						 */
-                        resume();
-                    } else if (!TextUtils.isEmpty(newMediaIdentifier)) {
-                        try {
-                            play(newMediaIdentifier, position);
-                        } catch (SRGMediaPlayerException e) {
-                            Log.e(TAG, "Player play " + newMediaIdentifier, e);
-                        }
+                    try {
+                        prepare(newMediaIdentifier, position, true);
+                    } catch (SRGMediaPlayerException e) {
+                        Log.e(TAG, "Player play " + newMediaIdentifier, e);
                     }
                     } break;
 
@@ -281,21 +265,28 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         handler.post(statusUpdater);
     }
 
-    public void play(String mediaIdentifier, Long startPosition) throws SRGMediaPlayerException {
-        if (player != null) {
-            if (mediaIdentifier.equals(player.getMediaIdentifier())) {
-                player.start();
-                if (startPosition != null) {
-                    player.seekTo(startPosition);
-                }
-                return;
-            }
-            player.release();
-        }
+    private void prepare(String mediaIdentifier, Long startPosition) throws SRGMediaPlayerException {
         createPlayer();
 
-        player.play(mediaIdentifier, startPosition);
+        if (player.play(mediaIdentifier, startPosition)) {
+            setupRemoteControlClient();
+            setupNotification();
+            startUpdates();
+        }
+    }
 
+    private void setupNotification() {
+        int notificationIconId;
+        if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
+            notificationIconId = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).getNotificationIconResourceId(getCurrentMediaIdentifier());
+        } else {
+            notificationIconId = 0;
+        }
+
+        createBitmapForNotification(notificationIconId);
+    }
+
+    private void setupRemoteControlClient() {
         if ((flags & FLAG_LIVE) != 0) {
             remoteControlClient.setTransportControlFlags(RemoteControlClient.FLAG_KEY_MEDIA_PLAY | RemoteControlClient.FLAG_KEY_MEDIA_STOP);
         } else {
@@ -315,7 +306,28 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         meta.apply();
 				/* XXX: we can also put the artwork (artwork has to be fetched asynchronously..) */
         remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_PLAYING);
-        startUpdates();
+    }
+
+    public void prepare(String mediaIdentifier, Long startPosition, boolean autoStart) throws SRGMediaPlayerException {
+        if (player != null) {
+            if (mediaIdentifier.equals(player.getMediaIdentifier())) {
+                if (autoStart) {
+                    player.start();
+                }
+                if (startPosition != null) {
+                    player.seekTo(startPosition);
+                }
+                return;
+            } else {
+                player.release();
+            }
+        }
+        prepare(mediaIdentifier, startPosition);
+        if (autoStart) {
+            player.start();
+        } else {
+            player.pause();
+        }
     }
 
     private void createPlayer() {
@@ -390,20 +402,20 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         return (flags & FLAG_LIVE) != 0;
     }
 
-    private void resume() {
+    public void resume() {
         if (player != null) {
             player.start();
         }
     }
 
-    private void pause() {
+    public void pause() {
         if (player != null) {
             player.pause();
         }
         remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_PAUSED);
     }
 
-    private void stopPlayer() {
+    public void stopPlayer() {
         if (player != null) {
             player.release();
             player = null;
