@@ -102,7 +102,20 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     ServiceNotificationBuilder currentServiceNotification;
 
     private LocalBinder binder = new LocalBinder();
-    private Runnable autoRelease;
+
+    private Runnable autoRelease = new Runnable() {
+        @Override
+        public void run() {
+            if (player != null && !player.isPlaying()) {
+                if (player.isBoundToMediaPlayerView()) {
+                    handler.postDelayed(autoRelease, AUTORELEASE_DELAY_MS);
+                } else {
+                    player.release();
+                    player = null;
+                }
+            }
+        }
+    };
 
     public SRGMediaPlayerController getMediaController() {
         return player;
@@ -530,22 +543,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 break;
             case PLAYING_STATE_CHANGE:
                 cancelAutoRelease();
-                if (!event.mediaPlaying) {
-                    autoRelease = new Runnable() {
-                        @Override
-                        public void run() {
-                            if (player != null) {
-                                if (player.isBoundToMediaPlayerView()) {
-                                    handler.postDelayed(autoRelease, AUTORELEASE_DELAY_MS);
-                                } else {
-                                    player.release();
-                                    player = null;
-                                }
-                            }
-                        }
-                    };
-                    handler.postDelayed(autoRelease, AUTORELEASE_DELAY_MS);
-                }
+                handler.postDelayed(autoRelease, AUTORELEASE_DELAY_MS);
                 break;
         }
     }
