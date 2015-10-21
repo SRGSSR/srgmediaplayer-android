@@ -93,7 +93,8 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
             } else if (v == pauseButton) {
                 playerController.pause();
             } else if (v == replayButton) {
-                for (PlayerControlView.Listener listener : listeners){
+                ArrayList<Listener> listeners = new ArrayList<>(this.listeners);
+                for (PlayerControlView.Listener listener : listeners) {
                     listener.onReplayClick();
                 }
             }
