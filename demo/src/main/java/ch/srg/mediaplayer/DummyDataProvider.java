@@ -56,7 +56,7 @@ public class DummyDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
 
 	public static Segment createSegment(String id, String name, long markIn, long markOut, boolean blocked, boolean displayable) {
 		String dummyImageUrl = "http://buygapinsurance.co.uk/wp-content/uploads/2011/08/crash_test_dummy.jpg";
-		return new Segment(id, name, "Description " + id, dummyImageUrl, markIn, markOut, markOut - markIn, blocked ? "blocked" : null, 0, displayable, "");
+		return new Segment(id, name, "Description " + id, dummyImageUrl, markIn, markOut, markOut - markIn, blocked ? "blocked" : null, 0, displayable, "", false);
 	}
 
 	@Override
