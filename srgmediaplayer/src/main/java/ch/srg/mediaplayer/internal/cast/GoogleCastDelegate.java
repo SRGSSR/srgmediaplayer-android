@@ -64,6 +64,7 @@ public class GoogleCastDelegate implements PlayerDelegate {
 
     @Override
     public void prepare(Uri videoUri) throws SRGMediaPlayerException {
+        controller.onPlayerDelegatePreparing(this);
         MediaMetadata mediaMetadata = new MediaMetadata(MediaMetadata.MEDIA_TYPE_MOVIE);
         mediaMetadata.putString(MediaMetadata.KEY_TITLE, "SRGPLAY");
         mediaInfo = new MediaInfo.Builder(String.valueOf(videoUri))
@@ -71,8 +72,6 @@ public class GoogleCastDelegate implements PlayerDelegate {
                 .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
                 .setMetadata(mediaMetadata)
                 .build();
-        controller.onPlayerDelegatePreparing(this);
-        controller.onPlayerDelegateReady(GoogleCastDelegate.this);
         mRemoteMediaPlayer.load(mApiClient, mediaInfo, true).setResultCallback(new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
             @Override
             public void onResult(RemoteMediaPlayer.MediaChannelResult mediaChannelResult) {
@@ -86,6 +85,7 @@ public class GoogleCastDelegate implements PlayerDelegate {
     public void playIfReady(boolean playIfReady) throws IllegalStateException {
         if (mRemoteMediaPlayer != null && mediaInfo != null) {
             if (playIfReady) {
+                controller.onPlayerDelegateReady(GoogleCastDelegate.this);
                 try {
                     mRemoteMediaPlayer.load(mApiClient, mediaInfo, true);
                 } catch (IllegalStateException e) {

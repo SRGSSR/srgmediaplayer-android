@@ -272,7 +272,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
                     return googleCatDelegate;
                 }
             });
-            segmentPlayerControlView.attachToController(srgMediaPlayer);
             try {
                 srgMediaPlayer.play(identifier);
             } catch (SRGMediaPlayerException e) {
