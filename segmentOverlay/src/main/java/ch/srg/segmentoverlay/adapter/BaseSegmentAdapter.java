@@ -30,12 +30,16 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
 		setHasStableIds(true);
 	}
 
-	public void setSegmentListListener(SegmentClickListener clickListener){
+	public void setSegmentListListener(SegmentClickListener clickListener) {
         this.clickListener = clickListener;
     }
 
-	public void addSegmentChangeListener(SegmentChangeListeners listener){
+	public void addSegmentChangeListener(SegmentChangeListeners listener) {
 		segmentChangeListeners.add(listener);
+	}
+
+	public void removeSegmentChangeListener(SegmentChangeListeners listeners) {
+		segmentChangeListeners.remove(listeners);
 	}
 
 	public void setSegmentList(@Nullable List<Segment> segmentList) {
