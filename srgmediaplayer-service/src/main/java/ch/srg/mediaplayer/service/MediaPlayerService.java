@@ -77,6 +77,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private static final int NOTIFICATION_ID = 1;
     public static final int FLAG_LIVE = 1;
+    private static final long AUTORELEASE_DELAY_MS = 10000;
     private static SRGMediaPlayerDataProvider dataProvider;
 
     private SRGMediaPlayerController player;
@@ -101,6 +102,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     ServiceNotificationBuilder currentServiceNotification;
 
     private LocalBinder binder = new LocalBinder();
+    private Runnable autoRelease;
 
     public SRGMediaPlayerController getMediaController() {
         return player;
@@ -320,7 +322,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     public void prepare(String mediaIdentifier, Long startPosition, boolean autoStart) throws SRGMediaPlayerException {
-        if (player != null) {
+        if (player != null && !player.isReleased()) {
             if (mediaIdentifier.equals(player.getMediaIdentifier())) {
                 if (autoStart) {
                     player.start();
@@ -351,6 +353,11 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             player.setPlayerDelegateFactory(MediaPlayerService.playerDelegateFactory);
         }
         player.registerEventListener(this);
+        cancelAutoRelease();
+    }
+
+    private void cancelAutoRelease() {
+        handler.removeCallbacks(autoRelease);
     }
 
     private void updateNotification() {
@@ -514,10 +521,31 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         switch (event.type) {
             case MEDIA_READY_TO_PLAY:
                 registerMediaButtonEvent();
+                cancelAutoRelease();
                 break;
             case MEDIA_COMPLETED:
             case MEDIA_STOPPED:
                 unregisterMediaButtonEvent();
+                cancelAutoRelease();
+                break;
+            case PLAYING_STATE_CHANGE:
+                cancelAutoRelease();
+                if (!event.mediaPlaying) {
+                    autoRelease = new Runnable() {
+                        @Override
+                        public void run() {
+                            if (player != null) {
+                                if (player.isBoundToMediaPlayerView()) {
+                                    handler.postDelayed(autoRelease, AUTORELEASE_DELAY_MS);
+                                } else {
+                                    player.release();
+                                    player = null;
+                                }
+                            }
+                        }
+                    };
+                    handler.postDelayed(autoRelease, AUTORELEASE_DELAY_MS);
+                }
                 break;
         }
     }

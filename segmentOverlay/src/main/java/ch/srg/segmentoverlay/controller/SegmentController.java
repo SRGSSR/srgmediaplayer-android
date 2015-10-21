@@ -190,31 +190,33 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	}
 
 	private void update() {
-		if (playerController == null || playerController.isReleased() || playerController.isSeekPending()) {
+		if (playerController == null || playerController.isReleased()) {
 			return;
 		}
 		long mediaPosition = playerController.getMediaPosition();
-		Segment newSegment = getSegmentForTime(mediaPosition);
+		if (!playerController.isSeekPending()) {
+			Segment newSegment = getSegmentForTime(mediaPosition);
 
-		if (currentSegment != newSegment) {
-			if (currentSegment == null) {
-				playerController.postEvent(new Event(playerController, Event.Type.SEGMENT_START, newSegment));
-			} else if (newSegment == null) {
-				playerController.postEvent(new Event(playerController, Event.Type.SEGMENT_END, newSegment));
-			} else {
-				playerController.postEvent(new Event(playerController, Event.Type.SEGMENT_SWITCH, newSegment));
-			}
-			if (newSegment != null && newSegment.isBlocked()) {
-				if (newSegment != segmentBeingSkipped) {
-					Log.v("SegmentTest", "Skipping over " + newSegment.getIdentifier());
-					segmentBeingSkipped = newSegment;
-					playerController.postEvent(new Event(playerController, Event.Type.SEGMENT_SKIPPED_BLOCKED, newSegment, newSegment.getBlockingReason()));
-					seekTo(newSegment.getMarkOut());
+			if (currentSegment != newSegment) {
+				if (currentSegment == null) {
+					playerController.postEvent(new Event(playerController, Event.Type.SEGMENT_START, newSegment));
+				} else if (newSegment == null) {
+					playerController.postEvent(new Event(playerController, Event.Type.SEGMENT_END, newSegment));
+				} else {
+					playerController.postEvent(new Event(playerController, Event.Type.SEGMENT_SWITCH, newSegment));
 				}
-			} else {
-				segmentBeingSkipped = null;
+				if (newSegment != null && newSegment.isBlocked()) {
+					if (newSegment != segmentBeingSkipped) {
+						Log.v("SegmentTest", "Skipping over " + newSegment.getIdentifier());
+						segmentBeingSkipped = newSegment;
+						playerController.postEvent(new Event(playerController, Event.Type.SEGMENT_SKIPPED_BLOCKED, newSegment, newSegment.getBlockingReason()));
+						seekTo(newSegment.getMarkOut());
+					}
+				} else {
+					segmentBeingSkipped = null;
+				}
+				currentSegment = newSegment;
 			}
-			currentSegment = newSegment;
 		}
 		notifyPositionChange(playerController.getMediaIdentifier(), mediaPosition);
 	}
