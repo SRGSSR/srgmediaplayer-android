@@ -116,7 +116,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
     private String mSessionId;
     private ConnectionCallbacks mConnectionCallbacks;
     private ConnectionFailedListener mConnectionFailedListener;
-    private RemoteMediaPlayer mRemoteMediaPlayer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -261,17 +260,16 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
     }
 
     public void playTestIdentifier(String identifier) {
-        if (mApiClient != null && mRemoteMediaPlayer != null && mApplicationStarted) {
-            //playMediaOnGoogleCast(identifier, 0);
+        if (mApiClient != null && mApplicationStarted) {
 
             Log.d(TAG, "Create new Google cast delegate");
-            final GoogleCastDelegate googleCatDelegate = new GoogleCastDelegate(mSessionId, mApiClient, srgMediaPlayer);
-            srgMediaPlayer.setPlayerDelegateFactory(new PlayerDelegateFactory() {
+            PlayerDelegateFactory playerDelegateFactory = new PlayerDelegateFactory() {
                 @Override
                 public PlayerDelegate getDelegateForMediaIdentifier(PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, String mediaIdentifier) {
-                    return googleCatDelegate;
+                    return new GoogleCastDelegate(mSessionId, mApiClient, srgMediaPlayer);
                 }
-            });
+            };
+            srgMediaPlayer.setPlayerDelegateFactory(playerDelegateFactory);
             try {
                 srgMediaPlayer.play(identifier);
             } catch (SRGMediaPlayerException e) {
@@ -288,33 +286,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
                 }
             } catch (SRGMediaPlayerException e) {
                 Log.e(TAG, "play " + identifier, e);
-            }
-        }
-    }
-
-    private void playMediaOnGoogleCast(String identifier, long position) {
-        String uri = null;
-        try {
-            uri = String.valueOf(dataProvider.getUri(identifier));
-        } catch (SRGMediaPlayerException e) {
-            e.printStackTrace();
-        }
-        MediaMetadata mediaMetadata = new MediaMetadata(MediaMetadata.MEDIA_TYPE_MOVIE);
-        mediaMetadata.putString(MediaMetadata.KEY_TITLE, identifier);
-        MediaInfo mediaInfo = new MediaInfo.Builder(
-                uri)
-                .setContentType("application/vnd.apple.mpegurl")
-                .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
-                .setMetadata(mediaMetadata)
-                .build();
-
-        if (!TextUtils.isEmpty(uri)) {
-            try {
-                mRemoteMediaPlayer.load(mApiClient, mediaInfo, true, position);
-            } catch (IllegalStateException e) {
-                Log.e(TAG, "Problem occurred with media during loading", e);
-            } catch (Exception e) {
-                Log.e(TAG, "Problem opening media during loading", e);
             }
         }
     }
@@ -650,19 +621,16 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
 
                                                 mApplicationStarted = true;
 
-                                                mRemoteMediaPlayer = new RemoteMediaPlayer();
-
-                                                String mediaIdentifier = srgMediaPlayer.getMediaIdentifier();
-                                                long mediaPosition = srgMediaPlayer.getMediaPosition();
-
                                                 if (srgMediaPlayer.isPlaying()) {
+                                                    String mediaIdentifier = srgMediaPlayer.getMediaIdentifier();
+                                                    long mediaPosition = srgMediaPlayer.getMediaPosition();
+                                                    srgMediaPlayer.release();
+                                                    srgMediaPlayer = new SRGMediaPlayerController(DemoMediaPlayerActivity.this, dataProvider, "GoogleCast");
                                                     Log.d(TAG, "Create new Google cast delegate");
-                                                    final GoogleCastDelegate googleCatDelegate = new GoogleCastDelegate(mSessionId, mApiClient, srgMediaPlayer);
-                                                    //srgMediaPlayer.setPlayerDelegateFactory();
                                                     PlayerDelegateFactory playerDelegateFactory = new PlayerDelegateFactory() {
                                                         @Override
                                                         public PlayerDelegate getDelegateForMediaIdentifier(PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, String mediaIdentifier) {
-                                                            return googleCatDelegate;
+                                                            return new GoogleCastDelegate(mSessionId, mApiClient, srgMediaPlayer);
                                                         }
                                                     };
                                                     srgMediaPlayer.setPlayerDelegateFactory(playerDelegateFactory);
@@ -730,7 +698,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
         switch (keyCode) {
             case KeyEvent.KEYCODE_VOLUME_UP:
                 if (action == KeyEvent.ACTION_DOWN) {
-                    if (mRemoteMediaPlayer != null) {
+                    if (mApplicationStarted) {
                         double currentVolume = Cast.CastApi.getVolume(mApiClient);
                         if (currentVolume < 1.0) {
                             try {
@@ -748,7 +716,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
                 return true;
             case KeyEvent.KEYCODE_VOLUME_DOWN:
                 if (action == KeyEvent.ACTION_DOWN) {
-                    if (mRemoteMediaPlayer != null) {
+                    if (mApplicationStarted) {
                         double currentVolume = Cast.CastApi.getVolume(mApiClient);
                         if (currentVolume > 0.0) {
                             try {
