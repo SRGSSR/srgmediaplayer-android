@@ -14,15 +14,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.media.AudioManager;
-import android.media.MediaMetadataRetriever;
-import android.media.RemoteControlClient;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.media.MediaMetadataCompat;
+import android.support.v4.media.session.MediaControllerCompat;
+import android.support.v4.media.session.MediaSessionCompat;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -82,11 +83,11 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private SRGMediaPlayerController player;
     private boolean isForeground;
-    private AudioManager audioManager;
 
     private Bitmap notificationBitmap;
 
-    private RemoteControlClient remoteControlClient;
+    // Media Session implementation
+    private MediaSessionCompat mediaSessionCompat;
 
     private int flags;
     private final Handler handler = new Handler();
@@ -118,7 +119,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     public void onCreate() {
         super.onCreate();
         Log.v(TAG, this.toString() + " onCreate");
-        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 
         //dummyArt = BitmapFactory.decodeResource(getResources(), R.drawable.dummy_album_art);/* XXX: dummy, and should be done in a thread too */
 
@@ -127,14 +127,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 		 */
         MusicControl.pause(this); /* XXX: this is not the proper place for this, should be in the play part */
 
-		/*
-		 * Setup the media buttons for the lock screen component.
-		 */
-        Intent intent = new Intent(Intent.ACTION_MEDIA_BUTTON);
-        intent.setComponent(new ComponentName(this, AudioIntentReceiver.class));
-        remoteControlClient = new RemoteControlClient(PendingIntent.getBroadcast(this, 0, intent, 0));
-        audioManager.registerRemoteControlClient(remoteControlClient);
-        //registerMediaButtonEvent();
     }
 
     @Override
@@ -147,9 +139,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         if (player != null) {
             player.release();
             player = null;
-        }
-        if (remoteControlClient != null) {
-            audioManager.unregisterRemoteControlClient(remoteControlClient);
         }
         unregisterMediaButtonEvent();
     }
@@ -280,7 +269,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         createPlayer();
 
         if (player.play(mediaIdentifier, startPosition)) {
-            setupRemoteControlClient(mediaIdentifier);
+            setupMediaSession(mediaIdentifier);
             setupNotification();
             startUpdates();
         }
@@ -297,28 +286,35 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         createBitmapForNotification(notificationIconId);
     }
 
-    private void setupRemoteControlClient(String mediaIdentifier) {
+    private void setupMediaSession(String mediaIdentifier) {
         boolean live = false;
         if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
             live = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).isLive(mediaIdentifier);
         }
-        remoteControlClient.setTransportControlFlags(
-                (live ? RemoteControlClient.FLAG_KEY_MEDIA_PLAY : RemoteControlClient.FLAG_KEY_MEDIA_PLAY_PAUSE)
-                        | RemoteControlClient.FLAG_KEY_MEDIA_STOP);
-        RemoteControlClient.MetadataEditor meta = remoteControlClient.editMetadata(true);
+		/*
+		 * Setup the media buttons for the lock screen component.
+		 */
+        Intent intent = new Intent(Intent.ACTION_MEDIA_BUTTON);
+        intent.setComponent(new ComponentName(this, AudioIntentReceiver.class));
+        //registerMediaButtonEvent();
+
+        mediaSessionCompat = new MediaSessionCompat(this, "MediaPlayerService", new ComponentName(this, AudioIntentReceiver.class), PendingIntent.getBroadcast(this, 0, intent, 0));
+        mediaSessionCompat.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
+
+        mediaSessionCompat.setCallback(new MyMediaSessionCallback());
+
+        MediaMetadataCompat.Builder meta = new MediaMetadataCompat.Builder();
         if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
             String title = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).
                     getTitle(getCurrentMediaIdentifier());
-            meta.putString(MediaMetadataRetriever.METADATA_KEY_TITLE, title);
+
+            meta.putString(MediaMetadataCompat.METADATA_KEY_TITLE, title);
         }
         if (!live) {
-            meta.putLong(MediaMetadataRetriever.METADATA_KEY_DURATION, getDuration());
+            meta.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, getDuration());
         }
-				/* XXX: that won't work and we need to do it from the asynctask too */
-        //meta.putBitmap(100, dummyArt);
-        meta.apply();
-				/* XXX: we can also put the artwork (artwork has to be fetched asynchronously..) */
-        remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_PLAYING);
+
+        mediaSessionCompat.setMetadata(meta.build());
     }
 
     public void prepare(String mediaIdentifier, Long startPosition, boolean autoStart) throws SRGMediaPlayerException {
@@ -365,11 +361,11 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             if (!isForeground) {
                 setForeground(true);
             } else {
-                NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
                 ServiceNotificationBuilder builder = createNotificationBuilder();
                 if (builder != currentServiceNotification) {
                     currentServiceNotification = builder;
-                    notificationManager.notify(NOTIFICATION_ID, builder.buildNotification(this));
+                    notificationManager.notify(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat));
                 }
             }
         } else {
@@ -402,7 +398,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 if (foreground) {
                     ServiceNotificationBuilder builder = createNotificationBuilder();
                     currentServiceNotification = builder;
-                    startForeground(NOTIFICATION_ID, builder.buildNotification(this));
+                    startForeground(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat));
                 } else {
                     stopForeground(true);
                     currentServiceNotification = null;
@@ -425,7 +421,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         if (player != null) {
             player.pause();
         }
-        remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_PAUSED);
     }
 
     public void stopPlayer() {
@@ -433,7 +428,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             player.release();
             player = null;
         }
-        remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_STOPPED);
     }
 
     private void sendBroadcastStatus(boolean forced) {
@@ -505,12 +499,18 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         return binder;
     }
 
+    @Override
+    public boolean onUnbind(Intent intent) {
+        mediaSessionCompat.release();
+        return super.onUnbind(intent);
+    }
+
     private void registerMediaButtonEvent() {
-        audioManager.registerMediaButtonEventReceiver(new ComponentName(this, AudioIntentReceiver.class.getName()));
+        //audioManager.registerMediaButtonEventReceiver(new ComponentName(this, AudioIntentReceiver.class.getName()));
     }
 
     private void unregisterMediaButtonEvent() {
-        audioManager.unregisterMediaButtonEventReceiver(new ComponentName(this, AudioIntentReceiver.class.getName()));
+        //audioManager.unregisterMediaButtonEventReceiver(new ComponentName(this, AudioIntentReceiver.class.getName()));
     }
 
     @Override
@@ -561,4 +561,25 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     public static void setDebugMode(boolean debugMode) {
         MediaPlayerService.debugMode = debugMode;
     }
+
+    private class MyMediaSessionCallback extends MediaSessionCompat.Callback {
+        @Override
+        public void onPlay() {
+            super.onPlay();
+            resume();
+        }
+
+        @Override
+        public void onPause() {
+            super.onPause();
+            pause();
+        }
+
+        @Override
+        public void onStop() {
+            super.onStop();
+            stopPlayer();
+        }
+    }
+
 }

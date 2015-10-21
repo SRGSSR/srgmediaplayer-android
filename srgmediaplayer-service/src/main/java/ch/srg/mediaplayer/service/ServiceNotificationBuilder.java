@@ -5,7 +5,9 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.support.v4.app.NotificationCompat;
+import android.support.v4.media.session.MediaSessionCompat;
+import android.support.v7.app.NotificationCompat;
+
 import android.text.TextUtils;
 
 import ch.srg.mediaplayer.service.utils.AppUtils;
@@ -42,7 +44,7 @@ public class ServiceNotificationBuilder {
 
     }
 
-    public Notification buildNotification(Context context) {
+    public Notification buildNotification(Context context, MediaSessionCompat mediaSessionCompat) {
         /* XXX: stackbuilder needed for back navigation */
 
         Intent pauseIntent = new Intent(context, MediaPlayerService.class);
@@ -56,6 +58,12 @@ public class ServiceNotificationBuilder {
         String appName = AppUtils.getApplicationName(context);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
+
+        NotificationCompat.MediaStyle style = new NotificationCompat.MediaStyle();
+        style.setMediaSession(mediaSessionCompat.getSessionToken());
+        style.setShowActionsInCompactView(0);
+
+        builder.setStyle(style);
         builder.setContentIntent(pendingIntent);
 
         if (!live) {
