@@ -10,7 +10,7 @@ android {
 		minSdkVersion 16
 		targetSdkVersion 23
 
-		def buildNumber = System.getenv().BUILD_NUMBER as Integer ?: 0
+		def buildNumber = System.getenv().BUILD_NUMBER as Integer ?: 9999
 		versionCode buildNumber
 		versionName "1.2." + buildNumber
 
