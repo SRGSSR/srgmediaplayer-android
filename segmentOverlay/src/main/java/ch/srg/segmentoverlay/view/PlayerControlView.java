@@ -118,8 +118,8 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
         segmentController.stopUserTrackingProgress();
-        if (seekBarSeekToMs >= 0) {
-            segmentController.seekTo(seekBarSeekToMs);
+        if (seekBarSeekToMs >= 0 && playerController != null) {
+            segmentController.seekTo(playerController.getMediaIdentifier(), seekBarSeekToMs);
             seekBarSeekToMs = -1;
         }
     }

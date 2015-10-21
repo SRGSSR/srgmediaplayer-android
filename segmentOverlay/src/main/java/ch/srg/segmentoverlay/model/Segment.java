@@ -20,10 +20,11 @@ public class Segment implements Comparable<Segment> {
 	private boolean isCurrent;
 	private long publishedTimestamp;
 	private boolean displayable;
+	private boolean fullLength;
 
 	public Segment(String identifier, String title, String description, String imageUrl,
-	               long markIn, long markOut, long duration, String blocking, long publishedTimestamp,
-	               boolean displayable, String urn) {
+				   long markIn, long markOut, long duration, String blocking, long publishedTimestamp,
+				   boolean displayable, String urn, boolean fullLength) {
 		this.identifier = identifier;
 		this.title = title;
 		this.description = description;
@@ -34,6 +35,7 @@ public class Segment implements Comparable<Segment> {
 		this.publishedTimestamp = publishedTimestamp;
 		this.displayable = displayable;
 		this.urn = urn;
+		this.fullLength = fullLength;
 		blockingReason = blocking;
 	}
 
@@ -123,5 +125,9 @@ public class Segment implements Comparable<Segment> {
 				", publishedTimestamp=" + publishedTimestamp +
 				", displayable=" + displayable +
 				'}';
+	}
+
+	public boolean isFullLength() {
+		return fullLength;
 	}
 }

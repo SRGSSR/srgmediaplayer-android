@@ -160,10 +160,10 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 		return userChangingProgress;
 	}
 
-	public boolean seekTo(long mediaPosition) {
-		Segment segment = getSegmentForTime(mediaPosition);
+	public boolean seekTo(String mediaIdentifier, long mediaPosition) {
+		Segment segment = getSegment(mediaIdentifier, mediaPosition);
 		if (segment != null && segment.isBlocked()) {
-			seekTo(segment.getMarkOut());
+			seekTo(mediaIdentifier, segment.getMarkOut());
 			return false;
 		} else {
 			playerController.seekTo(mediaPosition);
@@ -195,7 +195,8 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 		}
 		long mediaPosition = playerController.getMediaPosition();
 		if (!playerController.isSeekPending()) {
-			Segment newSegment = getSegmentForTime(mediaPosition);
+			String mediaIdentifier = playerController.getMediaIdentifier();
+			Segment newSegment = getSegment(mediaIdentifier, mediaPosition);
 
 			if (currentSegment != newSegment) {
 				if (currentSegment == null) {
@@ -210,7 +211,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 						Log.v("SegmentTest", "Skipping over " + newSegment.getIdentifier());
 						segmentBeingSkipped = newSegment;
 						playerController.postEvent(new Event(playerController, Event.Type.SEGMENT_SKIPPED_BLOCKED, newSegment, newSegment.getBlockingReason()));
-						seekTo(newSegment.getMarkOut());
+						seekTo(mediaIdentifier, newSegment.getMarkOut());
 					}
 				} else {
 					segmentBeingSkipped = null;
@@ -222,15 +223,18 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	}
 
 	@Nullable
-	public Segment getSegmentForTime(long time) {
+	public Segment getSegment(String mediaIdentifier, long time) {
 		for (Segment segment : segments) {
-			if (time >= segment.getMarkIn() - SEGMENT_HYSTERESIS_MS
-					&& time < segment.getMarkOut()
-					&& segment == currentSegment) {
-				return segment;
-			}
-			if (time >= segment.getMarkIn() && time < segment.getMarkOut()) {
-				return segment;
+			if (TextUtils.equals(segment.getMediaIdentifier(), mediaIdentifier)
+					&& !segment.isFullLength()) {
+				if (time >= segment.getMarkIn() - SEGMENT_HYSTERESIS_MS
+						&& time < segment.getMarkOut()
+						&& segment == currentSegment) {
+					return segment;
+				}
+				if (time >= segment.getMarkIn() && time < segment.getMarkOut()) {
+					return segment;
+				}
 			}
 		}
 		return null;
