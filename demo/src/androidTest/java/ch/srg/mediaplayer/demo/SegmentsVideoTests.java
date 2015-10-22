@@ -97,7 +97,7 @@ public class SegmentsVideoTests extends AbstractPlayerTests {
     public void segmentControllerEndSegment() throws InterruptedException {
         playItem(TEST_DUMMY);
 
-        getSegmentController().seekTo(TIMESTAMP_END_OF_LAST_SEGMENT);
+        getSegmentController().seekTo(TEST_DUMMY, TIMESTAMP_END_OF_LAST_SEGMENT);
 
         waitForSegmentEventSend(SegmentController.Event.Type.SEGMENT_END);
     }
@@ -107,7 +107,7 @@ public class SegmentsVideoTests extends AbstractPlayerTests {
     public void segmentControllerBlockSegment() throws InterruptedException {
         playItem(TEST_DUMMY);
 
-        getSegmentController().seekTo(TIMESTAMP_BLOCKED_SEGMENT);
+        getSegmentController().seekTo(TEST_DUMMY, TIMESTAMP_BLOCKED_SEGMENT);
 
         waitForSegmentEventSend(SegmentController.Event.Type.SEGMENT_SKIPPED_BLOCKED);
     }
