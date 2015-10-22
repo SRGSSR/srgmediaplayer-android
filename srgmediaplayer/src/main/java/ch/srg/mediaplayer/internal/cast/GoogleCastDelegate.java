@@ -39,6 +39,7 @@ public class GoogleCastDelegate implements PlayerDelegate {
     private boolean delegateReady;
     private boolean playIfReady;
     private long pendingSeekTo;
+    private String title;
 
     public GoogleCastDelegate(String mSessionId, GoogleApiClient mApiClient, OnPlayerDelegateListener controller) {
         this.mSessionId = mSessionId;
@@ -81,7 +82,14 @@ public class GoogleCastDelegate implements PlayerDelegate {
         Log.d(TAG, "Prepare: " + videoUri);
         controller.onPlayerDelegatePreparing(this);
         MediaMetadata mediaMetadata = new MediaMetadata(MediaMetadata.MEDIA_TYPE_MOVIE);
-        mediaMetadata.putString(MediaMetadata.KEY_TITLE, "SRGPLAY");
+        String metadataTitle;
+        if (title != null) {
+            metadataTitle = title;
+        } else {
+            Context context = controller.getContext();
+            metadataTitle = context.getString(context.getApplicationInfo().labelRes);
+        }
+        mediaMetadata.putString(MediaMetadata.KEY_TITLE, metadataTitle);
         mediaInfo = new MediaInfo.Builder(String.valueOf(videoUri))
                 .setContentType("application/vnd.apple.mpegurl")
                 .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
@@ -219,4 +227,7 @@ public class GoogleCastDelegate implements PlayerDelegate {
         mSessionId = null;
     }
 
+    public void setMediaTitle(String title) {
+        this.title = title;
+    }
 }
