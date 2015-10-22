@@ -36,6 +36,8 @@ public class GoogleCastDelegate implements PlayerDelegate {
     private MediaInfo mediaInfo;
 
     private int internalStatus;
+    private boolean delegateReady;
+    private boolean playIfReady;
 
     public GoogleCastDelegate(String mSessionId, GoogleApiClient mApiClient, OnPlayerDelegateListener controller) {
         this.mSessionId = mSessionId;
@@ -84,42 +86,41 @@ public class GoogleCastDelegate implements PlayerDelegate {
                 .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
                 .setMetadata(mediaMetadata)
                 .build();
-        controller.onPlayerDelegateReady(this);
-
+        mRemoteMediaPlayer.load(mApiClient, mediaInfo, this.playIfReady).setResultCallback(new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
+            @Override
+            public void onResult(RemoteMediaPlayer.MediaChannelResult mediaChannelResult) {
+                Log.d(TAG, "onPlayerDelegatePlayWhenReadyCommited");
+                delegateReady = true;
+                controller.onPlayerDelegateReady(GoogleCastDelegate.this);
+            }
+        });
     }
 
     @Override
     public void playIfReady(boolean playIfReady) throws IllegalStateException {
-        mRemoteMediaPlayer.requestStatus(mApiClient);
         Log.d(TAG, "PlayIfReady: " + playIfReady);
-        if (mRemoteMediaPlayer != null && mediaInfo != null) {
+
+        mRemoteMediaPlayer.requestStatus(mApiClient);
+        controller.onPlayerDelegatePlayWhenReadyCommited(GoogleCastDelegate.this);
+
+        if (mRemoteMediaPlayer != null && mediaInfo != null && this.playIfReady != playIfReady) {
             if (playIfReady && internalStatus == MediaStatus.PLAYER_STATE_PAUSED) {
+                Log.d(TAG, "remoteMediaPlayer.play");
                 mRemoteMediaPlayer.play(mApiClient);
-            } else if (playIfReady) {
-                try {
-                    mRemoteMediaPlayer.load(mApiClient, mediaInfo, true).setResultCallback(new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
-                        @Override
-                        public void onResult(RemoteMediaPlayer.MediaChannelResult mediaChannelResult) {
-                            Log.d(TAG, "onPlayerDelegatePlayWhenReadyCommited");
-                            controller.onPlayerDelegatePlayWhenReadyCommited(GoogleCastDelegate.this);
-                        }
-                    });
-                } catch (IllegalStateException e) {
-                    Log.e(TAG, "Problem occurred with media during loading", e);
-                } catch (Exception e) {
-                    Log.e(TAG, "Problem opening media during loading", e);
-                }
             } else {
+                Log.d(TAG, "remoteMediaPlayer.pause");
                 mRemoteMediaPlayer.pause(mApiClient);
             }
         }
+        this.playIfReady = playIfReady;
     }
 
     @Override
     public void seekTo(long positionInMillis) throws IllegalStateException {
         Log.d(TAG, "seekTo: " + positionInMillis);
-        if (mRemoteMediaPlayer != null) {
+        if (delegateReady && mRemoteMediaPlayer != null && mSessionId != null && mApiClient != null) {
             controller.onPlayerDelegateBuffering(this);
+            Log.d(TAG, "remoteMediaPlayer.seek");
             mRemoteMediaPlayer.seek(mApiClient, positionInMillis).setResultCallback(new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
                 @Override
                 public void onResult(RemoteMediaPlayer.MediaChannelResult mediaChannelResult) {
@@ -188,9 +189,11 @@ public class GoogleCastDelegate implements PlayerDelegate {
     RemoteMediaPlayer.OnStatusUpdatedListener listener = new RemoteMediaPlayer.OnStatusUpdatedListener() {
         @Override
         public void onStatusUpdated() {
-            MediaStatus status = mRemoteMediaPlayer.getMediaStatus();
-            if (status != null) {
-                internalStatus = status.getPlayerState();
+            if (mRemoteMediaPlayer != null) {
+                MediaStatus status = mRemoteMediaPlayer.getMediaStatus();
+                if (status != null) {
+                    internalStatus = status.getPlayerState();
+                }
             }
         }
     };
@@ -204,6 +207,7 @@ public class GoogleCastDelegate implements PlayerDelegate {
                     mApiClient.disconnect();
                 }
                 mApplicationStarted = false;
+                delegateReady = false;
             }
             mApiClient = null;
         }
