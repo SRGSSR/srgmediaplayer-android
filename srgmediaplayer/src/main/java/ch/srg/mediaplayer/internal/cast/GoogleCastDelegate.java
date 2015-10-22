@@ -38,6 +38,7 @@ public class GoogleCastDelegate implements PlayerDelegate {
     private int internalStatus;
     private boolean delegateReady;
     private boolean playIfReady;
+    private long pendingSeekTo;
 
     public GoogleCastDelegate(String mSessionId, GoogleApiClient mApiClient, OnPlayerDelegateListener controller) {
         this.mSessionId = mSessionId;
@@ -86,7 +87,9 @@ public class GoogleCastDelegate implements PlayerDelegate {
                 .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
                 .setMetadata(mediaMetadata)
                 .build();
-        mRemoteMediaPlayer.load(mApiClient, mediaInfo, this.playIfReady).setResultCallback(new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
+        mRemoteMediaPlayer
+                .load(mApiClient, mediaInfo, this.playIfReady, pendingSeekTo)
+                .setResultCallback(new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
             @Override
             public void onResult(RemoteMediaPlayer.MediaChannelResult mediaChannelResult) {
                 Log.d(TAG, "onPlayerDelegatePlayWhenReadyCommited");
@@ -127,6 +130,8 @@ public class GoogleCastDelegate implements PlayerDelegate {
                     controller.onPlayerDelegateReady(GoogleCastDelegate.this);
                 }
             });
+        } else {
+            pendingSeekTo = positionInMillis;
         }
     }
 

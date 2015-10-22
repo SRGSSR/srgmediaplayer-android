@@ -484,6 +484,13 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                             internalUpdateMediaPlayerViewBound();
                         }
                         currentMediaPlayerDelegate.playIfReady(playWhenReady);
+                        if (seekToWhenReady != null) {
+                            try {
+                                currentMediaPlayerDelegate.seekTo(seekToWhenReady);
+                                seekToWhenReady = null;
+                            } catch (IllegalStateException ignored) {
+                            }
+                        }
                         currentMediaPlayerDelegate.prepare(uri);
                     }
                 } catch (SRGMediaPlayerException e) {
