@@ -57,6 +57,16 @@
             android:layout_height="match_parent"
             app:overlay_mode="unmanaged" />
 
+        <Button
+            android:id="@+id/button_swap_player"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentRight="true"
+            android:text="Native"
+            android:textSize="6sp"
+            app:overlay_mode="control"
+            />
     </ch.srg.mediaplayer.SRGMediaPlayerView>
 
     <!--Controls-->
