@@ -12,7 +12,6 @@ import android.support.v7.app.MediaRouteActionProvider;
 import android.support.v7.media.MediaRouteSelector;
 import android.support.v7.media.MediaRouter;
 import android.support.v7.widget.Toolbar;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -20,6 +19,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -28,9 +28,6 @@ import com.google.android.gms.cast.ApplicationMetadata;
 import com.google.android.gms.cast.Cast;
 import com.google.android.gms.cast.CastDevice;
 import com.google.android.gms.cast.CastMediaControlIntent;
-import com.google.android.gms.cast.MediaInfo;
-import com.google.android.gms.cast.MediaMetadata;
-import com.google.android.gms.cast.RemoteMediaPlayer;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
@@ -53,6 +50,8 @@ import ch.srg.mediaplayer.extras.fullscreen.helper.SystemUiHelper;
 import ch.srg.mediaplayer.extras.overlay.error.SimpleErrorMessage;
 import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
 import ch.srg.mediaplayer.internal.cast.GoogleCastDelegate;
+import ch.srg.mediaplayer.internal.exoplayer.ExoPlayerDelegate;
+import ch.srg.mediaplayer.internal.nativeplayer.NativePlayerDelegate;
 import ch.srg.segmentoverlay.controller.SegmentController;
 import ch.srg.segmentoverlay.model.Segment;
 import ch.srg.segmentoverlay.view.PlayerControlView;
@@ -116,6 +115,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
     private String mSessionId;
     private ConnectionCallbacks mConnectionCallbacks;
     private ConnectionFailedListener mConnectionFailedListener;
+    private Button swapPlayerButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -143,7 +143,11 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
 
         errorMessage = (SimpleErrorMessage) findViewById(R.id.error_message);
         statusLabel = (TextView) findViewById(R.id.status_label);
+        swapPlayerButton = (Button) findViewById(R.id.button_swap_player);
 
+        if (swapPlayerButton != null) {
+            swapPlayerButton.setOnClickListener(this);
+        }
         View mediaControl = findViewById(R.id.media_control);
         if (mediaControl instanceof PlayerControlView) {
             segmentPlayerControlView = (PlayerControlView) mediaControl;
@@ -377,6 +381,26 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
             case R.id.button_seek_live:
                 srgMediaPlayer.seekTo(duration);
                 break;
+            case R.id.button_swap_player:
+                swapPlayer();
+                break;
+        }
+    }
+
+    private void swapPlayer() {
+        PlayerDelegate playerDelegate = srgMediaPlayer.getPlayerDelegate();
+        PlayerDelegate newPlayerDelegate;
+        String buttonText;
+        if (playerDelegate instanceof ExoPlayerDelegate) {
+            newPlayerDelegate = new NativePlayerDelegate(srgMediaPlayer);
+            buttonText = "ExoPlayer";
+        } else {
+            newPlayerDelegate = new ExoPlayerDelegate(this, srgMediaPlayer);
+            buttonText = "NativePlayer";
+        }
+        srgMediaPlayer.swapPlayerDelegate(newPlayerDelegate);
+        if (swapPlayerButton != null) {
+            swapPlayerButton.setText(buttonText);
         }
     }
 
