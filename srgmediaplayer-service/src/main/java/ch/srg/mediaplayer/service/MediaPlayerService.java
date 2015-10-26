@@ -15,8 +15,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.AudioManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Binder;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -30,12 +30,9 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 
-import com.google.android.gms.cast.MediaInfo;
+import com.google.android.gms.cast.Cast;
 import com.google.android.gms.cast.RemoteMediaPlayer;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.images.WebImage;
-
-import java.util.List;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
@@ -104,7 +101,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private SRGMediaPlayerController.State currentState;
 
-    private FetchBitmapTask bitmapDecoderTask;
     private Bitmap mediaArtBitmap;
 
     public boolean isDestroyed;
@@ -126,6 +122,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 } else {
                     player.release();
                     player = null;
+                    clearMediaSession();
+                    teardown();
                 }
             }
         }
@@ -169,6 +167,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
         setForeground(false);
 
+        teardown();
+
         if (player != null) {
             player.release();
             player = null;
@@ -190,6 +190,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 case ACTION_PLAY: {
                     setForeground(true);
 
+                    clearMediaSession();
+
                     String newMediaIdentifier = intent.getStringExtra(ARG_MEDIA_IDENTIFIER);
 
                     Long position;
@@ -205,6 +207,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     if (intent.hasExtra(ARG_FLAGS)) {
                         flags = intent.getIntExtra(ARG_FLAGS, 0);
                     }
+
+                    //setupMediaSession(newMediaIdentifier);
 
                     try {
                         prepare(newMediaIdentifier, position, true);
@@ -284,7 +288,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         } else {
             title = null;
         }
-        return new ServiceNotificationBuilder(live, isPlaying(), title, mediaArtBitmap, pendingIntent);
+        return new ServiceNotificationBuilder(live, isPlaying(), title, pendingIntent);
     }
 
     private void startUpdates() {
@@ -304,47 +308,27 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         createPlayer();
 
         if (player.play(mediaIdentifier, startPosition)) {
-            setupNotification();
             startUpdates();
         }
     }
 
-    private void setupNotification() {
-        if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
-            bitmapDecoderTask = new FetchBitmapTask() {
-                @Override
-                protected void onPostExecute(Bitmap bitmap) {
-                    mediaArtBitmap = bitmap;
-                    if (this == bitmapDecoderTask) {
-                        bitmapDecoderTask = null;
-                    }
-                }
-            };
-            String url = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).getMediaImageUri(getCurrentMediaIdentifier());
-            //bitmapDecoderTask.execute(Uri.parse(url));
-        }
-    }
-
     private void setupMediaSession(String mediaIdentifier) {
+        Log.d(TAG, "setupMediaSession");
         if (mediaSessionCompat == null) {
             boolean live = false;
             if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
                 live = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).isLive(mediaIdentifier);
             }
-        /*
-         * Setup the media buttons for the lock screen component.
-		 */
+            /*
+            * Setup the media buttons for the lock screen component.
+		    */
             Intent intent = new Intent(Intent.ACTION_MEDIA_BUTTON);
             intent.setComponent(new ComponentName(this, AudioIntentReceiver.class));
-            //registerMediaButtonEvent();
 
             mediaSessionCompat = new MediaSessionCompat(this, "MediaPlayerService", new ComponentName(this, AudioIntentReceiver.class), PendingIntent.getBroadcast(this, 0, intent, 0));
             mediaSessionCompat.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
             mediaSessionCompat.setActive(true);
             mediaSessionCompat.setCallback(new SRGMediaSessionCallback());
-
-            audioManager.requestAudioFocus(null, AudioManager.STREAM_MUSIC,
-                    AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK);
 
             mediaSessionCompat.setPlaybackState(new PlaybackStateCompat.Builder()
                     .setState(PlaybackStateCompat.STATE_PLAYING, 0, 1.0f)
@@ -353,7 +337,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             MediaMetadataCompat.Builder meta = new MediaMetadataCompat.Builder();
             if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
                 String title = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).
-                        getTitle(getCurrentMediaIdentifier());
+                        getTitle(mediaIdentifier);
 
                 meta.putString(MediaMetadataCompat.METADATA_KEY_TITLE, title);
             }
@@ -363,9 +347,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
             mediaSessionCompat.setMetadata(meta.build());
 
-            if (remoteMediaPlayer != null) {
-                updateLockScreenImage(remoteMediaPlayer.getMediaInfo());
-            }
+            setupNotification();
 
             if (mediaRouter != null) {
                 mediaRouter.setMediaSessionCompat(mediaSessionCompat);
@@ -415,7 +397,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     private void updateNotification() {
         Log.v(TAG, "updateNotification");
         if (hasNonDeadPlayer()) {
-            setupMediaSession(getCurrentMediaIdentifier());
             if (!isForeground) {
                 setForeground(true);
             } else {
@@ -423,7 +404,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 ServiceNotificationBuilder builder = createNotificationBuilder();
                 if (builder != currentServiceNotification) {
                     currentServiceNotification = builder;
-                    notificationManager.notify(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat));
+                    notificationManager.notify(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat, mediaArtBitmap));
                 }
             }
         } else {
@@ -434,29 +415,13 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         }
     }
 
-    /*private void createBitmapForNotification(int largeIconId) {
-        AsyncTask<Integer, Void, Bitmap> task = new AsyncTask<Integer, Void, Bitmap>() {
-            @Override
-            protected Bitmap doInBackground(Integer... params) {
-                return BitmapFactory.decodeResource(getResources(), params[0]);
-            }
-
-            @Override
-            protected void onPostExecute(Bitmap bitmap) {
-                notificationBitmap = bitmap;
-                updateNotification();
-            }
-        };
-        task.execute(largeIconId);
-    }*/
-
     private void setForeground(boolean foreground) {
         try {
             if (foreground != isForeground) {
                 if (foreground) {
                     ServiceNotificationBuilder builder = createNotificationBuilder();
                     currentServiceNotification = builder;
-                    startForeground(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat));
+                    startForeground(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat, mediaArtBitmap));
                 } else {
                     stopForeground(true);
                     currentServiceNotification = null;
@@ -575,20 +540,22 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     public void onMediaPlayerEvent(SRGMediaPlayerController mp, SRGMediaPlayerController.Event event) {
         sendBroadcastStatus(false);
         // TODO Find a clean way to update notification only when necessary
-        updateNotification();
+        if (mediaSessionCompat != null) {
+            updateNotification();
+        }
         switch (event.type) {
             case MEDIA_READY_TO_PLAY:
+                clearMediaSession();
+                setupMediaSession(mp.getMediaIdentifier());
                 registerMediaButtonEvent();
                 cancelAutoRelease();
                 break;
             case MEDIA_COMPLETED:
             case MEDIA_STOPPED:
-                updateNotification();
                 unregisterMediaButtonEvent();
                 cancelAutoRelease();
                 break;
             case PLAYING_STATE_CHANGE:
-                updateNotification();
                 cancelAutoRelease();
                 handler.postDelayed(autoRelease, AUTORELEASE_DELAY_MS);
                 break;
@@ -640,6 +607,39 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         }
     }
 
+    public void setupCastApi(MediaRouter mediaRouter, RemoteMediaPlayer remoteMediaPlayer, String sessionId, GoogleApiClient apiClient) {
+        this.mediaRouter = mediaRouter;
+        this.remoteMediaPlayer = remoteMediaPlayer;
+        this.sessionId = sessionId;
+        this.apiClient = apiClient;
+    }
+
+    private void setupNotification() {
+        int notificationIconId;
+        if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
+            notificationIconId = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).getNotificationIconResourceId(getCurrentMediaIdentifier());
+        } else {
+            notificationIconId = 0;
+        }
+
+        updateLockScreenImage(notificationIconId);
+    }
+
+    /*
+     * Updates lock screen image
+     */
+    private void updateLockScreenImage(int notificationIconId) {
+        mediaArtBitmap = BitmapFactory.decodeResource(this.getResources(), notificationIconId);
+        MediaMetadataCompat currentMetadata = mediaSessionCompat.getController().getMetadata();
+        MediaMetadataCompat.Builder newBuilder = currentMetadata == null
+                ? new MediaMetadataCompat.Builder()
+                : new MediaMetadataCompat.Builder(currentMetadata);
+        mediaSessionCompat.setMetadata(newBuilder
+                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, mediaArtBitmap)
+                .build());
+        updateNotification();
+    }
+
     /*
      * Clears Media Session
      */
@@ -653,77 +653,15 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         }
     }
 
-    public void setupCastApi(MediaRouter mediaRouter, RemoteMediaPlayer remoteMediaPlayer, String sessionId, GoogleApiClient apiClient) {
-        this.mediaRouter = mediaRouter;
-        this.remoteMediaPlayer = remoteMediaPlayer;
-        this.sessionId = sessionId;
-        this.apiClient = apiClient;
-    }
-
-    /*
-     * Updates lock screen image
-     */
-    private void updateLockScreenImage(final MediaInfo info) {
-        if (info == null) {
-            return;
-        }
-        setBitmapForLockScreen(info);
-    }
-
-    /* Try to get image for media, this is a copy past of CCL for test only
-     *
-     * Sets the appropriate {@link Bitmap} for the right size image for lock screen. In ICS and
-     * JB, the image shown on the lock screen is a small size bitmap but for KitKat, the image is a
-     * full-screen image so we need to separately handle these two cases.
-     */
-    private void setBitmapForLockScreen(final MediaInfo video) {
-        if (video == null || mediaSessionCompat == null) {
-            return;
-        }
-        Uri imgUrl = null;
-        Bitmap bm = null;
-        List<WebImage> images = video.getMetadata().getImages();
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            if (images.size() > 1) {
-                imgUrl = images.get(1).getUrl();
-            } else if (images.size() == 1) {
-                imgUrl = images.get(0).getUrl();
-            } else {
-                // we don't have a url for image so get a placeholder image from resources
-                bm = BitmapFactory.decodeResource(this.getResources(),
-                        R.drawable.album_art_placeholder_large);
+    private void teardown() {
+        Log.d(TAG, "teardown");
+        if (apiClient != null) {
+            if (apiClient.isConnected() || apiClient.isConnecting()) {
+                Cast.CastApi.stopApplication(apiClient, sessionId);
+                apiClient.disconnect();
             }
-        } else if (!images.isEmpty()) {
-            imgUrl = images.get(0).getUrl();
-        } else {
-            // we don't have a url for image so get a placeholder image from resources
-            bm = BitmapFactory.decodeResource(this.getResources(),
-                    R.drawable.album_art_placeholder);
         }
-        if (bm != null) {
-            MediaMetadataCompat currentMetadata = mediaSessionCompat.getController().getMetadata();
-            MediaMetadataCompat.Builder newBuilder = currentMetadata == null
-                    ? new MediaMetadataCompat.Builder()
-                    : new MediaMetadataCompat.Builder(currentMetadata);
-            mediaSessionCompat.setMetadata(newBuilder
-                    .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, bm)
-                    .build());
-        } else {
-            new FetchBitmapTask() {
-                @Override
-                protected void onPostExecute(Bitmap bitmap) {
-                    mediaArtBitmap = bitmap;
-                    MediaMetadataCompat currentMetadata = mediaSessionCompat.getController()
-                            .getMetadata();
-                    MediaMetadataCompat.Builder newBuilder = currentMetadata == null
-                            ? new MediaMetadataCompat.Builder()
-                            : new MediaMetadataCompat.Builder(currentMetadata);
-                    mediaSessionCompat.setMetadata(newBuilder
-                            .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, mediaArtBitmap)
-                            .build());
-                }
-            }.execute(imgUrl);
-        }
+        apiClient = null;
+        sessionId = null;
     }
-
 }
