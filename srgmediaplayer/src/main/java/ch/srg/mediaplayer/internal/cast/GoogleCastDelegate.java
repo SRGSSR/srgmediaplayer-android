@@ -132,8 +132,10 @@ public class GoogleCastDelegate implements PlayerDelegate, GoogleApiClient.Conne
 
         if (connected && mediaInfo != null && this.playIfReady != playIfReady) {
             if (playIfReady) {
-                Log.d(TAG, "remoteMediaPlayer.play");
-                remoteMediaPlayer.play(apiClient);
+                if (internalStatus == MediaStatus.PLAYER_STATE_PAUSED) {
+                    Log.d(TAG, "remoteMediaPlayer.play");
+                    remoteMediaPlayer.play(apiClient);
+                }
             } else {
                 Log.d(TAG, "remoteMediaPlayer.pause");
                 remoteMediaPlayer.pause(apiClient);
