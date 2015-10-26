@@ -255,7 +255,7 @@ public class ExoPlayerDelegate implements
     @Override
     public void unbindRenderingView() {
         surfaceView = null;
-        exoPlayer.blockingSendMessage(videoRenderer, MediaCodecVideoTrackRenderer.MSG_SET_SURFACE, null);
+        exoPlayer.sendMessage(videoRenderer, MediaCodecVideoTrackRenderer.MSG_SET_SURFACE, null);
     }
 
     private void pushSurface(boolean blockForSurfacePush) {
