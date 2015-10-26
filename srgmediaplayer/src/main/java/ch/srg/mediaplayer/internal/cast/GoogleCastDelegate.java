@@ -2,6 +2,8 @@ package ch.srg.mediaplayer.internal.cast;
 
 import android.content.Context;
 import android.net.Uri;
+import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.View;
 
@@ -23,16 +25,15 @@ import ch.srg.mediaplayer.SRGMediaPlayerView;
 /**
  * Created by npietri on 19.10.15.
  */
-public class GoogleCastDelegate implements PlayerDelegate {
+public class GoogleCastDelegate implements PlayerDelegate, GoogleApiClient.ConnectionCallbacks, RemoteMediaPlayer.OnStatusUpdatedListener {
 
     private static final String TAG = "GoogleCastDelegate";
     private final OnPlayerDelegateListener controller;
 
+    @NonNull
     private RemoteMediaPlayer remoteMediaPlayer;
     private GoogleApiClient apiClient;
     private String sessionId;
-
-    private boolean mApplicationStarted;
 
     private MediaInfo mediaInfo;
 
@@ -43,18 +44,26 @@ public class GoogleCastDelegate implements PlayerDelegate {
     private String title;
     private String mediaThumbnailUrl;
 
-    public GoogleCastDelegate(RemoteMediaPlayer remoteMediaPlayer, String sessionId, GoogleApiClient apiClient, OnPlayerDelegateListener controller) {
+    private boolean connected;
+
+    public GoogleCastDelegate(RemoteMediaPlayer remoteMediaPlayer, String sessionId, GoogleApiClient apiClient, OnPlayerDelegateListener controller) throws SRGMediaPlayerException {
         this.sessionId = sessionId;
         this.apiClient = apiClient;
+        apiClient.registerConnectionCallbacks(this);
+        if (!apiClient.isConnected()) {
+            throw new SRGMediaPlayerException("api client not connected");
+        }
         this.controller = controller;
         this.remoteMediaPlayer = remoteMediaPlayer;
         try {
             Cast.CastApi.setMessageReceivedCallbacks(apiClient,
                     this.remoteMediaPlayer.getNamespace(), this.remoteMediaPlayer);
-            this.remoteMediaPlayer.setOnStatusUpdatedListener(onStatusUpdateListener);
+            this.remoteMediaPlayer.setOnStatusUpdatedListener(this);
+            connected = true;
         } catch (IOException e) {
-            Log.e(TAG, "Exception while creating media channel", e);
+            throw new SRGMediaPlayerException("Exception while creating media channel", e);
         }
+
     }
 
     @Override
@@ -121,8 +130,8 @@ public class GoogleCastDelegate implements PlayerDelegate {
         remoteMediaPlayer.requestStatus(apiClient);
         controller.onPlayerDelegatePlayWhenReadyCommited(GoogleCastDelegate.this);
 
-        if (remoteMediaPlayer != null && mediaInfo != null && this.playIfReady != playIfReady) {
-            if (playIfReady && internalStatus == MediaStatus.PLAYER_STATE_PAUSED) {
+        if (connected && mediaInfo != null && this.playIfReady != playIfReady) {
+            if (playIfReady) {
                 Log.d(TAG, "remoteMediaPlayer.play");
                 remoteMediaPlayer.play(apiClient);
             } else {
@@ -130,13 +139,14 @@ public class GoogleCastDelegate implements PlayerDelegate {
                 remoteMediaPlayer.pause(apiClient);
             }
         }
+        controller.onPlayerDelegatePlayWhenReadyCommited(GoogleCastDelegate.this);
         this.playIfReady = playIfReady;
     }
 
     @Override
     public void seekTo(long positionInMillis) throws IllegalStateException {
         Log.d(TAG, "seekTo: " + positionInMillis);
-        if (delegateReady && remoteMediaPlayer != null && sessionId != null && apiClient != null) {
+        if (connected && delegateReady && sessionId != null && apiClient != null) {
             controller.onPlayerDelegateBuffering(this);
             Log.d(TAG, "remoteMediaPlayer.seek");
             remoteMediaPlayer.seek(apiClient, positionInMillis).setResultCallback(new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
@@ -152,27 +162,24 @@ public class GoogleCastDelegate implements PlayerDelegate {
 
     @Override
     public boolean isPlaying() {
-        if (remoteMediaPlayer != null) {
-            return internalStatus == MediaStatus.PLAYER_STATE_PLAYING;
-        }
-        return false;
+        return connected && internalStatus == MediaStatus.PLAYER_STATE_PLAYING;
     }
 
     @Override
     public void setMuted(boolean muted) {
-        if (remoteMediaPlayer != null) {
+        if (connected) {
             remoteMediaPlayer.setStreamMute(apiClient, muted);
         }
     }
 
     @Override
     public long getCurrentPosition() {
-        return remoteMediaPlayer != null ? remoteMediaPlayer.getApproximateStreamPosition() : 0;
+        return connected ? remoteMediaPlayer.getApproximateStreamPosition() : 0;
     }
 
     @Override
     public long getDuration() {
-        return remoteMediaPlayer != null ? remoteMediaPlayer.getStreamDuration() : 0;
+        return connected ? remoteMediaPlayer.getStreamDuration() : 0;
     }
 
     @Override
@@ -193,7 +200,6 @@ public class GoogleCastDelegate implements PlayerDelegate {
     @Override
     public void release() throws IllegalStateException {
         teardown();
-        remoteMediaPlayer = null;
     }
 
     @Override
@@ -206,29 +212,23 @@ public class GoogleCastDelegate implements PlayerDelegate {
         return 0;
     }
 
-    RemoteMediaPlayer.OnStatusUpdatedListener onStatusUpdateListener = new RemoteMediaPlayer.OnStatusUpdatedListener() {
-        @Override
-        public void onStatusUpdated() {
-            if (remoteMediaPlayer != null) {
-                MediaStatus status = remoteMediaPlayer.getMediaStatus();
-                if (status != null) {
-                    internalStatus = status.getPlayerState();
-                }
-            }
+    @Override
+    public void onStatusUpdated() {
+        MediaStatus status = remoteMediaPlayer.getMediaStatus();
+        if (status != null) {
+            internalStatus = status.getPlayerState();
         }
-    };
+    }
 
     private void teardown() {
         Log.d(TAG, "teardown");
         if (apiClient != null) {
-            if (mApplicationStarted) {
-                if (apiClient.isConnected() || apiClient.isConnecting()) {
-                    Cast.CastApi.stopApplication(apiClient, sessionId);
-                    apiClient.disconnect();
-                }
-                mApplicationStarted = false;
-                delegateReady = false;
+            apiClient.unregisterConnectionCallbacks(this);
+            if (apiClient.isConnected() || apiClient.isConnecting()) {
+                Cast.CastApi.stopApplication(apiClient, sessionId);
+                apiClient.disconnect();
             }
+            delegateReady = false;
             apiClient = null;
         }
         sessionId = null;
@@ -240,5 +240,15 @@ public class GoogleCastDelegate implements PlayerDelegate {
 
     public void setMediaThumbnailUrl(String mediaThumbnailUrl) {
         this.mediaThumbnailUrl = mediaThumbnailUrl;
+    }
+
+    public void onConnected(Bundle bundle) {
+        connected = true;
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        controller.onPlayerDelegateError(this, new SRGMediaPlayerException("Google cast disconnected"));
+        connected = false;
     }
 }
