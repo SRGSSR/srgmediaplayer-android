@@ -330,10 +330,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             mediaSessionCompat.setActive(true);
             mediaSessionCompat.setCallback(new SRGMediaSessionCallback());
 
-            mediaSessionCompat.setPlaybackState(new PlaybackStateCompat.Builder()
-                    .setState(PlaybackStateCompat.STATE_PLAYING, 0, 1.0f)
-                    .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE).build());
-
             MediaMetadataCompat.Builder meta = new MediaMetadataCompat.Builder();
             if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
                 String title = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).
@@ -450,6 +446,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         if (player != null) {
             player.release();
             player = null;
+            clearMediaSession();
+            teardown();
         }
     }
 
