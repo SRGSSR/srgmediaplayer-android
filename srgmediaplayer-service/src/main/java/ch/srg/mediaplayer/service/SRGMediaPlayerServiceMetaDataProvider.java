@@ -34,4 +34,6 @@ public interface SRGMediaPlayerServiceMetaDataProvider {
      */
     @Nullable
     PendingIntent getNotificationPendingIntent(String mediaIdentifier);
+
+    String getMediaImageUri(String mediaIdentifier);
 }

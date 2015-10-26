@@ -61,7 +61,7 @@ public class ServiceNotificationBuilder {
 
         NotificationCompat.MediaStyle style = new NotificationCompat.MediaStyle();
         style.setMediaSession(mediaSessionCompat.getSessionToken());
-        style.setShowActionsInCompactView(0);
+        style.setShowActionsInCompactView(0, 1);
 
         builder.setStyle(style);
         builder.setContentIntent(pendingIntent);
