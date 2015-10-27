@@ -42,8 +42,6 @@ public class ServiceNotificationBuilder {
     }
 
     public Notification buildNotification(Context context, MediaSessionCompat mediaSessionCompat, Bitmap notificationBitmap) {
-        /* XXX: stackbuilder needed for back navigation */
-
         Intent pauseIntent = new Intent(context, MediaPlayerService.class);
         pauseIntent.setAction(playing ? MediaPlayerService.ACTION_PAUSE : MediaPlayerService.ACTION_RESUME);
         pauseIntent.putExtra(MediaPlayerService.ARG_FROM_NOTIFICATION, true);
@@ -58,7 +56,6 @@ public class ServiceNotificationBuilder {
 
         NotificationCompat.MediaStyle style = new NotificationCompat.MediaStyle();
         style.setMediaSession(mediaSessionCompat.getSessionToken());
-        style.setShowActionsInCompactView(0, 1);
 
         builder.setStyle(style);
         builder.setContentIntent(pendingIntent);
@@ -69,6 +66,9 @@ public class ServiceNotificationBuilder {
             } else {
                 builder.addAction(R.drawable.ic_play_arrow_white_36dp, context.getString(R.string.service_notification_resume), piPause);
             }
+            style.setShowActionsInCompactView(0, 1);
+        } else {
+            style.setShowActionsInCompactView(0);
         }
 
         builder.addAction(R.drawable.ic_stop_white_36dp, context.getString(R.string.service_notification_stop), piStop);
