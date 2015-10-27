@@ -1237,10 +1237,14 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * @param playerDelegate player delegate or null to use the default one (using current delegate factory)
      */
     public void swapPlayerDelegate(PlayerDelegate playerDelegate) {
-        if (playerDelegate == null) {
+        if (playerDelegate == null && currentMediaIdentifier != null) {
             playerDelegate = playerDelegateFactory.getDelegateForMediaIdentifier(this, currentMediaIdentifier);
         }
         sendMessage(MSG_SWAP_PLAYER_DELEGATE, playerDelegate);
+    }
+
+    public PlayerDelegate getPlayerDelegate() {
+        return currentMediaPlayerDelegate;
     }
 
     public boolean isRemote() {
