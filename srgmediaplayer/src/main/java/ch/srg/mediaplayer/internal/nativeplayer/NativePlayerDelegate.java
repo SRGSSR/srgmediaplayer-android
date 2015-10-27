@@ -201,7 +201,11 @@ public class NativePlayerDelegate implements
 		}
 		surfaceView = (SurfaceView) mediaPlayerView.getVideoRenderingView();
 		if (surfaceView != null && surfaceView.getHolder() != null) {
-			nativeMp.setDisplay(surfaceView.getHolder());
+			try {
+				nativeMp.setDisplay(surfaceView.getHolder());
+			} catch (IllegalArgumentException e) {
+				throw new SRGMediaPlayerException(e);
+			}
 		}
 	}
 
