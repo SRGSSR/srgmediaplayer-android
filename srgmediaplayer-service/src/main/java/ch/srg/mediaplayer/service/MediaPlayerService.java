@@ -14,8 +14,6 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.AudioManager;
-import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
@@ -24,21 +22,17 @@ import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
-import android.support.v4.media.session.PlaybackStateCompat;
 import android.support.v7.media.MediaRouter;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 
-import com.google.android.gms.cast.Cast;
-import com.google.android.gms.cast.RemoteMediaPlayer;
 import com.google.android.gms.common.api.GoogleApiClient;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
-import ch.srg.mediaplayer.service.utils.FetchBitmapTask;
 
 /**
  * MediaPlayerService plays using the SRGMediaPlayerController. The communication works
@@ -123,16 +117,13 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     player.release();
                     player = null;
                     clearMediaSession();
-                    teardown();
                 }
             }
         }
     };
 
-    private String sessionId;
     private GoogleApiClient apiClient;
     private MediaRouter mediaRouter;
-    private RemoteMediaPlayer remoteMediaPlayer;
     private AudioManager audioManager;
 
     public SRGMediaPlayerController getMediaController() {
@@ -166,8 +157,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         isDestroyed = true;
 
         setForeground(false);
-
-        teardown();
 
         if (player != null) {
             player.release();
@@ -447,7 +436,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             player.release();
             player = null;
             clearMediaSession();
-            teardown();
         }
     }
 
@@ -605,10 +593,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         }
     }
 
-    public void setupCastApi(MediaRouter mediaRouter, RemoteMediaPlayer remoteMediaPlayer, String sessionId, GoogleApiClient apiClient) {
+    public void setupCastApi(MediaRouter mediaRouter, GoogleApiClient apiClient) {
         this.mediaRouter = mediaRouter;
-        this.remoteMediaPlayer = remoteMediaPlayer;
-        this.sessionId = sessionId;
         this.apiClient = apiClient;
     }
 
@@ -649,17 +635,5 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             mediaSessionCompat.release();
             mediaSessionCompat = null;
         }
-    }
-
-    private void teardown() {
-        Log.d(TAG, "teardown");
-        if (apiClient != null) {
-            if (apiClient.isConnected() || apiClient.isConnecting()) {
-                Cast.CastApi.stopApplication(apiClient, sessionId);
-                apiClient.disconnect();
-            }
-        }
-        apiClient = null;
-        sessionId = null;
     }
 }

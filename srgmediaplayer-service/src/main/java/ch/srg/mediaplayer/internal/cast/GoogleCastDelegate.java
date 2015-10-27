@@ -21,6 +21,7 @@ import java.io.IOException;
 import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerView;
+import ch.srg.mediaplayer.service.ChromeCastManager;
 
 /**
  * Created by npietri on 19.10.15.
@@ -29,11 +30,7 @@ public class GoogleCastDelegate implements PlayerDelegate, GoogleApiClient.Conne
 
     private static final String TAG = "GoogleCastDelegate";
     private final OnPlayerDelegateListener controller;
-
-    @NonNull
-    private RemoteMediaPlayer remoteMediaPlayer;
-    private GoogleApiClient apiClient;
-    private String sessionId;
+    private final ChromeCastManager chromeCastManager;
 
     private MediaInfo mediaInfo;
 
@@ -47,9 +44,8 @@ public class GoogleCastDelegate implements PlayerDelegate, GoogleApiClient.Conne
 
     private boolean connected;
 
-    public GoogleCastDelegate(RemoteMediaPlayer remoteMediaPlayer, String sessionId, GoogleApiClient apiClient, OnPlayerDelegateListener controller) throws SRGMediaPlayerException {
-        this.sessionId = sessionId;
-        this.apiClient = apiClient;
+    public GoogleCastDelegate(ch.srg.mediaplayer.service.ChromeCastManager chromeCastManager, OnPlayerDelegateListener srgMediaPlayer) {
+        this.chromeCastManager = chromeCastManager;
         apiClient.registerConnectionCallbacks(this);
         if (!apiClient.isConnected()) {
             throw new SRGMediaPlayerException("api client not connected");
@@ -64,6 +60,9 @@ public class GoogleCastDelegate implements PlayerDelegate, GoogleApiClient.Conne
         } catch (IOException e) {
             throw new SRGMediaPlayerException("Exception while creating media channel", e);
         }
+
+    }
+
 
     }
 
@@ -238,16 +237,6 @@ public class GoogleCastDelegate implements PlayerDelegate, GoogleApiClient.Conne
 
     public void setMediaThumbnailUrl(String mediaThumbnailUrl) {
         this.mediaThumbnailUrl = mediaThumbnailUrl;
-    }
-
-    public void onConnected(Bundle bundle) {
-        connected = true;
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-        controller.onPlayerDelegateError(this, new SRGMediaPlayerException("Google cast disconnected"));
-        connected = false;
     }
 
     @Override
