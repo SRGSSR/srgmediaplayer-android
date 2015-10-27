@@ -1243,7 +1243,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         sendMessage(MSG_SWAP_PLAYER_DELEGATE, playerDelegate);
     }
 
-    public PlayerDelegate getPlayerDelegate() {
-        return currentMediaPlayerDelegate;
+    public boolean isRemote() {
+        return currentMediaPlayerDelegate != null && currentMediaPlayerDelegate.isRemote();
     }
 }

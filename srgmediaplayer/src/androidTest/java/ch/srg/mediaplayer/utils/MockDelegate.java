@@ -167,4 +167,9 @@ public class MockDelegate implements PlayerDelegate {
     public long getPlaylistStartTime() {
         return 0;
     }
+
+    @Override
+    public boolean isRemote() {
+        return false;
+    }
 }

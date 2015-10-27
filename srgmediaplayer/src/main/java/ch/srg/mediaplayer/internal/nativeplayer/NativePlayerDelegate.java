@@ -343,4 +343,9 @@ public class NativePlayerDelegate implements
 	public long getPlaylistStartTime() {
 		return 0;
 	}
+
+	@Override
+	public boolean isRemote() {
+		return false;
+	}
 }

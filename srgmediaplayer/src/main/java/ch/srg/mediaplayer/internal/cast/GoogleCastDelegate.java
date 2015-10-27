@@ -253,4 +253,9 @@ public class GoogleCastDelegate implements PlayerDelegate, GoogleApiClient.Conne
         controller.onPlayerDelegateError(this, new SRGMediaPlayerException("Google cast disconnected"));
         connected = false;
     }
+
+    @Override
+    public boolean isRemote() {
+        return true;
+    }
 }

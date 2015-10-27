@@ -108,4 +108,10 @@ public interface PlayerDelegate {
 	boolean isLive();
 
 	long getPlaylistStartTime();
+
+	/**
+	 * Video and audio are displayed remotely instead of locally on the device.
+	 * @return true for chromecast and such, false for local players
+	 */
+	boolean isRemote();
 }
