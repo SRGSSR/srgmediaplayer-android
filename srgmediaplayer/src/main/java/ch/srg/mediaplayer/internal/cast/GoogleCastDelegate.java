@@ -209,7 +209,7 @@ public class GoogleCastDelegate implements PlayerDelegate, GoogleApiClient.Conne
 
     @Override
     public void release() throws IllegalStateException {
-        teardown();
+
     }
 
     @Override
@@ -228,20 +228,6 @@ public class GoogleCastDelegate implements PlayerDelegate, GoogleApiClient.Conne
         if (status != null) {
             internalStatus = status.getPlayerState();
         }
-    }
-
-    private void teardown() {
-        Log.d(TAG, "teardown");
-        if (apiClient != null) {
-            apiClient.unregisterConnectionCallbacks(this);
-            if (apiClient.isConnected() || apiClient.isConnecting()) {
-                Cast.CastApi.stopApplication(apiClient, sessionId);
-                apiClient.disconnect();
-            }
-            delegateReady = false;
-            apiClient = null;
-        }
-        sessionId = null;
     }
 
     public void setMediaTitle(String title) {
