@@ -42,6 +42,7 @@ public class GoogleCastDelegate implements PlayerDelegate, GoogleApiClient.Conne
     private boolean playIfReady;
     private long pendingSeekTo;
     private String title;
+    private String subTitle;
     private String mediaThumbnailUrl;
 
     private boolean connected;
@@ -94,7 +95,7 @@ public class GoogleCastDelegate implements PlayerDelegate, GoogleApiClient.Conne
         controller.onPlayerDelegatePreparing(this);
 
         String metadataTitle;
-        MediaMetadata mediaMetadata = new MediaMetadata(MediaMetadata.MEDIA_TYPE_MOVIE);
+        MediaMetadata mediaMetadata = new MediaMetadata(MediaMetadata.MEDIA_TYPE_GENERIC);
 
         if (title != null) {
             metadataTitle = title;
@@ -102,12 +103,19 @@ public class GoogleCastDelegate implements PlayerDelegate, GoogleApiClient.Conne
             Context context = controller.getContext();
             metadataTitle = context.getString(context.getApplicationInfo().labelRes);
         }
+        mediaMetadata.putString(MediaMetadata.KEY_TITLE, metadataTitle);
+        if (subTitle != null) {
+            mediaMetadata.putString(MediaMetadata.KEY_SUBTITLE, subTitle);
+        }
+
         if (mediaThumbnailUrl != null) {
             mediaMetadata.addImage(new WebImage(Uri.parse(mediaThumbnailUrl)));
         }
-        mediaMetadata.putString(MediaMetadata.KEY_TITLE, metadataTitle);
+
+        String contentType;
+        contentType = "application/vnd.apple.mpegurl";
         mediaInfo = new MediaInfo.Builder(String.valueOf(videoUri))
-                .setContentType("application/vnd.apple.mpegurl")
+                .setContentType(contentType)
                 .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
                 .setMetadata(mediaMetadata)
                 .build();
@@ -238,6 +246,10 @@ public class GoogleCastDelegate implements PlayerDelegate, GoogleApiClient.Conne
 
     public void setMediaTitle(String title) {
         this.title = title;
+    }
+
+    public void setMediaSubTitle(String subTitle) {
+        this.subTitle = subTitle;
     }
 
     public void setMediaThumbnailUrl(String mediaThumbnailUrl) {
