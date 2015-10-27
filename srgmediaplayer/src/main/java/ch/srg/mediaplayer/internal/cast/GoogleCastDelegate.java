@@ -112,10 +112,8 @@ public class GoogleCastDelegate implements PlayerDelegate, GoogleApiClient.Conne
             mediaMetadata.addImage(new WebImage(Uri.parse(mediaThumbnailUrl)));
         }
 
-        String contentType;
-        contentType = "application/vnd.apple.mpegurl";
         mediaInfo = new MediaInfo.Builder(String.valueOf(videoUri))
-                .setContentType(contentType)
+                .setContentType("application/x-mpegurl")
                 .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
                 .setMetadata(mediaMetadata)
                 .build();
