@@ -110,7 +110,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 				playerController.seekTo(segment.getMarkIn());
 			} else {
 				try {
-					playerController.play(segment.getMediaIdentifier());
+					playerController.play(segment.getMediaIdentifier(), segment.getMarkIn());
 				} catch (SRGMediaPlayerException e) {
 					e.printStackTrace();
 				}
