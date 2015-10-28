@@ -405,7 +405,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
 
     @Override
     protected void onPause() {
-        srgMediaPlayer.unbindFromMediaPlayerView();
+        srgMediaPlayer.unbindFromMediaPlayerView(playerView);
         segmentController.stopListening();
 
         if (livePlayerControlView != null) {

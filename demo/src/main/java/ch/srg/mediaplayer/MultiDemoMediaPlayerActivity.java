@@ -147,6 +147,7 @@ public class MultiDemoMediaPlayerActivity extends ActionBarActivity implements
 
 	@Override
 	protected void onPause() {
+		// Unbind from local views only
 		rtsMediaPlayer1.unbindFromMediaPlayerView();
 		rtsMediaPlayer2.unbindFromMediaPlayerView();
 		rtsMediaPlayer3.unbindFromMediaPlayerView();
