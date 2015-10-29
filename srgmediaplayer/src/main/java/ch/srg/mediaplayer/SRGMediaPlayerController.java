@@ -811,11 +811,13 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             if (!currentMediaPlayerDelegate.canRenderInView(mediaPlayerView.getVideoRenderingView())) {
                 // We need to create a new rendering view.
                 final View renderingView = currentMediaPlayerDelegate.createRenderingView(mediaPlayerView.getContext());
+                Log.v(TAG, renderingView + "binding, creating rendering view" + mediaPlayerView);
 
                 if (renderingView instanceof SurfaceView) {
                     ((SurfaceView) renderingView).getHolder().addCallback(new SurfaceHolder.Callback() {
                         @Override
                         public void surfaceCreated(SurfaceHolder holder) {
+                            Log.v(TAG, renderingView + "binding, surfaceCreated" + mediaPlayerView);
                             try {
                                 if (currentMediaPlayerDelegate != null) {
                                     currentMediaPlayerDelegate.bindRenderingViewInUiThread(mediaPlayerView);
@@ -829,18 +831,22 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
                         @Override
                         public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+                            Log.v(TAG, renderingView + "binding, surfaceChanged" + mediaPlayerView);
                         }
 
                         @Override
                         public void surfaceDestroyed(SurfaceHolder holder) {
+                            Log.v(TAG, renderingView + "binding, surfaceDestroyed" + mediaPlayerView);
                             //TODO if a delegate is bound to this surface, we need tu unbind it
                         }
                     });
                 } else {
+                    Log.v(TAG, renderingView + "binding, attaching rendering view" + mediaPlayerView);
+
                     renderingView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
                         @Override
                         public void onViewAttachedToWindow(View v) {
-
+                            Log.v(TAG, renderingView + "binding, attached rendering view" + mediaPlayerView);
                         }
 
                         @Override
@@ -853,6 +859,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     @Override
                     public void run() {
                         if (mediaPlayerView != null) {
+                            Log.v(TAG, "binding, setVideoRenderingView " + mediaPlayerView);
                             mediaPlayerView.setVideoRenderingView(renderingView);
                         }
                     }
@@ -862,6 +869,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     @Override
                     public void run() {
                         try {
+                            Log.v(TAG, "binding, bindRenderingViewInUiThread " + mediaPlayerView);
                             if (currentMediaPlayerDelegate != null) {
                                 currentMediaPlayerDelegate.bindRenderingViewInUiThread(mediaPlayerView);
                             }
@@ -887,16 +895,16 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     /**
      * Clear the current mediaPlayer, unbind the delegate and the overlayController
      *
-     * @param videoContainer video container to unbind from.
+     * @param playerView video container to unbind from.
      */
-    public void unbindFromMediaPlayerView(SRGMediaPlayerView videoContainer) {
-        if (mediaPlayerView == videoContainer) {
-        overlayController.bindToVideoContainer(null);
+    public void unbindFromMediaPlayerView(SRGMediaPlayerView playerView) {
+        if (mediaPlayerView == playerView) {
+            overlayController.bindToVideoContainer(null);
             if (currentMediaPlayerDelegate != null) {
-            currentMediaPlayerDelegate.unbindRenderingView();
+                currentMediaPlayerDelegate.unbindRenderingView();
+            }
+            mediaPlayerView = null;
         }
-        mediaPlayerView = null;
-    }
     }
 
     private void setStateInternal(State state) {
