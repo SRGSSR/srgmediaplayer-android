@@ -890,15 +890,13 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * @param videoContainer video container to unbind from.
      */
     public void unbindFromMediaPlayerView(SRGMediaPlayerView videoContainer) {
+        if (mediaPlayerView == videoContainer) {
         overlayController.bindToVideoContainer(null);
-        if (currentMediaPlayerDelegate != null && mediaPlayerView == videoContainer) {
+            if (currentMediaPlayerDelegate != null) {
             currentMediaPlayerDelegate.unbindRenderingView();
         }
-        //mediaPlayerView.removeAllViews();
-        if (mediaPlayerView != null) {
-            //mediaPlayerView.discardVideoRenderingView();
-        }
         mediaPlayerView = null;
+    }
     }
 
     private void setStateInternal(State state) {
