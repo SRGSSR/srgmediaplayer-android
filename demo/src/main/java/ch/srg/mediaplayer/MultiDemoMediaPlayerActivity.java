@@ -147,9 +147,16 @@ public class MultiDemoMediaPlayerActivity extends ActionBarActivity implements
 
 	@Override
 	protected void onPause() {
-		rtsMediaPlayer1.unbindFromMediaPlayerView();
-		rtsMediaPlayer2.unbindFromMediaPlayerView();
-		rtsMediaPlayer3.unbindFromMediaPlayerView();
+		SRGMediaPlayerView[] views = {SRGMediaPlayerViewBottomLeft, SRGMediaPlayerViewBottomRight, SRGMediaPlayerViewTop};
+		SRGMediaPlayerController[] controllers = {
+		rtsMediaPlayer1,
+		rtsMediaPlayer2,
+		rtsMediaPlayer3 };
+		for (SRGMediaPlayerController controller : controllers) {
+			for (SRGMediaPlayerView view : views) {
+				controller.unbindFromMediaPlayerView(view);
+			}
+		}
 		super.onPause();
 	}
 

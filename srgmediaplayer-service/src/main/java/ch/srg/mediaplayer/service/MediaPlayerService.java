@@ -257,7 +257,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     private boolean hasNonDeadPlayer() {
-        return player != null && !player.isReleased();
+        return player != null && !player.isReleased() && player.getMediaIdentifier() != null;
     }
 
     private String getCurrentMediaIdentifier() {
@@ -413,9 +413,10 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 }
                 isForeground = foreground;
             }
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
             // We ignore exception for tests (bug in ServiceTestCase that does not include a mock
             // activity manager). See http://code.google.com/p/android/issues/detail?id=12122
+            Log.e(TAG, "setForeground", e);
         }
     }
 
