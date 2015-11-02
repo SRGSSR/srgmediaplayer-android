@@ -2,8 +2,6 @@ package ch.srg.mediaplayer.internal.cast;
 
 import android.content.Context;
 import android.net.Uri;
-import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.View;
 
@@ -21,7 +19,7 @@ import java.io.IOException;
 import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerView;
-import ch.srg.mediaplayer.service.ChromeCastManager;
+import ch.srg.mediaplayer.service.cast.ChromeCastManager;
 
 /**
  * Created by npietri on 19.10.15.
@@ -44,7 +42,7 @@ public class GoogleCastDelegate implements PlayerDelegate, GoogleApiClient.Conne
 
     private boolean connected;
 
-    public GoogleCastDelegate(ch.srg.mediaplayer.service.ChromeCastManager chromeCastManager, OnPlayerDelegateListener srgMediaPlayer) {
+    public GoogleCastDelegate(ChromeCastManager chromeCastManager, OnPlayerDelegateListener srgMediaPlayer) {
         this.chromeCastManager = chromeCastManager;
         apiClient.registerConnectionCallbacks(this);
         if (!apiClient.isConnected()) {
