@@ -1,12 +1,11 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 22
-    buildToolsVersion "21.1.2"
+    compileSdkVersion 23
+    buildToolsVersion "23.0.1"
 
     defaultConfig {
         minSdkVersion 15
-        targetSdkVersion 22
         versionCode Integer.parseInt(project.VERSION_CODE)
         versionName project.VERSION_NAME
     }
@@ -22,6 +21,8 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile project(':srgmediaplayer')
     compile project(':srgmediaplayer-extras')
+    compile 'com.android.support:mediarouter-v7:23.1.0'
+    compile 'com.google.android.gms:play-services-cast:8.1.0'
 }
 
 apply from: '../utilities.gradle'
