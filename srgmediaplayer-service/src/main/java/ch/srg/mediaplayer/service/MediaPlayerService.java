@@ -165,6 +165,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
         setForeground(false);
 
+        ChromeCastManager.getInstance().removeListener(this);
+
         if (player != null) {
             player.release();
             player = null;

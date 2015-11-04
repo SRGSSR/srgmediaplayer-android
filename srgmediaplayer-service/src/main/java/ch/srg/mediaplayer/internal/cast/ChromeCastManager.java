@@ -647,6 +647,10 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
             clearMediaSession();
         }
         state = MediaStatus.PLAYER_STATE_IDLE;
+        
+        for (Listener listener : listeners){
+            listener.onApplicationDisconnected();
+        }
     }
 
     /**
