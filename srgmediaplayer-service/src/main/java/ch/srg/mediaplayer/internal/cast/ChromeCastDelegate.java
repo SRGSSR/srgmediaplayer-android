@@ -32,6 +32,8 @@ public class ChromeCastDelegate implements PlayerDelegate {
     private String title;
     private String subTitle;
     private String mediaThumbnailUrl;
+    private long lastKnownPosition;
+    private long lastKnownDuration;
 
     public ChromeCastDelegate(OnPlayerDelegateListener controller) {
         this.chromeCastManager = ChromeCastManager.getInstance();
@@ -156,29 +158,26 @@ public class ChromeCastDelegate implements PlayerDelegate {
     public void setMuted(boolean muted) {
         try {
             chromeCastManager.setMuted(muted);
-        } catch (NoConnectionException e) {
-            e.printStackTrace();
+        } catch (NoConnectionException ignored) {
         }
     }
 
     @Override
     public long getCurrentPosition() {
         try {
-            return chromeCastManager.getMediaPosition();
-        } catch (NoConnectionException e) {
-            e.printStackTrace();
+            lastKnownPosition = chromeCastManager.getMediaPosition();
+        } catch (NoConnectionException ignored) {
         }
-        return 0;
+        return lastKnownPosition;
     }
 
     @Override
     public long getDuration() {
         try {
-            return chromeCastManager.getMediaDuration();
-        } catch (NoConnectionException e) {
-            e.printStackTrace();
+            lastKnownDuration = chromeCastManager.getMediaDuration();
+        } catch (NoConnectionException ignored) {
         }
-        return 0;
+        return lastKnownDuration;
     }
 
     @Override
