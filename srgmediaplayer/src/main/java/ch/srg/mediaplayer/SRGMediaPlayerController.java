@@ -76,6 +76,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private static final int MSG_PLAYER_DELEGATE_PREPARING = 16;
     private static final int MSG_PLAYER_DELEGATE_READY = 17;
     private static final int MSG_PLAYER_DELEGATE_BUFFERING = 18;
+    private static final int MSG_DATA_PROVIDER_EXCEPTION = 19;
 
     public enum State {
         /**
@@ -384,7 +385,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     /*package*/ void onDataProviderException(SRGMediaPlayerException e) {
-        handleFatalExceptionInternal(e);
+        sendMessage(MSG_DATA_PROVIDER_EXCEPTION, e);
     }
 
     public void start() {
@@ -542,7 +543,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 releaseInternal();
                 return true;
             }
-            case MSG_DELEGATE_EXCEPTION: {
+            case MSG_DELEGATE_EXCEPTION:
+            case MSG_DATA_PROVIDER_EXCEPTION: {
                 handleFatalExceptionInternal((SRGMediaPlayerException) msg.obj);
                 return true;
             }
