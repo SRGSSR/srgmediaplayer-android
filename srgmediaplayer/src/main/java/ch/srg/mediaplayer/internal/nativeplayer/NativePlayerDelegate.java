@@ -201,7 +201,11 @@ public class NativePlayerDelegate implements
 		}
 		surfaceView = (SurfaceView) mediaPlayerView.getVideoRenderingView();
 		if (surfaceView != null && surfaceView.getHolder() != null) {
-			nativeMp.setDisplay(surfaceView.getHolder());
+			try {
+				nativeMp.setDisplay(surfaceView.getHolder());
+			} catch (IllegalArgumentException e) {
+				throw new SRGMediaPlayerException(e);
+			}
 		}
 	}
 
@@ -342,5 +346,10 @@ public class NativePlayerDelegate implements
 	@Override
 	public long getPlaylistStartTime() {
 		return 0;
+	}
+
+	@Override
+	public boolean isRemote() {
+		return false;
 	}
 }

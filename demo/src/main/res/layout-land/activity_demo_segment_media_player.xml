@@ -39,6 +39,13 @@
             android:fitsSystemWindows="true"
             app:overlay_mode="control">
 
+            <android.support.v7.widget.Toolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/colorPrimary"
+                android:minHeight="?attr/actionBarSize"/>
+
             <!--Controls-->
             <ch.srg.segmentoverlay.view.SegmentView
                 android:id="@+id/segment_demo_view"
@@ -71,6 +78,7 @@
                 android:layout_width="200dp"
                 android:layout_height="match_parent"
                 android:layout_alignParentLeft="true"
+                android:layout_below="@+id/toolbar"
                 android:layout_above="@id/segment_demo_view"
                 android:background="@color/black_shadow"
                 android:choiceMode="singleChoice"

@@ -1,25 +1,22 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context="ch.srg.mediaplayer.DemoMediaPlayerActivity">
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                tools:context="ch.srg.mediaplayer.DemoMediaPlayerActivity">
 
-    <TextView
-        android:id="@+id/top_text"
-        android:layout_width="wrap_content"
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:backgroundTintMode="multiply"
-        android:text="DEMO LIVE"
-        android:textAppearance="?android:attr/textAppearanceLarge" />
+        android:background="?attr/colorPrimary"
+        android:minHeight="?attr/actionBarSize"/>
 
     <ch.srg.mediaplayer.SRGMediaPlayerView
         android:id="@+id/demo_video_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/top_text"
+        android:layout_below="@+id/toolbar"
         android:animateLayoutChanges="true"
         android:background="#ff222222"
         app:containerAspectRatio="auto"
@@ -33,7 +30,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-            app:overlay_mode="loading" />
+            app:overlay_mode="loading"/>
 
         <!--Bottom anchor-->
         <Space
@@ -42,7 +39,7 @@
             android:layout_height="0dp"
             android:layout_alignParentBottom="true"
             android:layout_centerHorizontal="true"
-            app:overlay_mode="unmanaged" />
+            app:overlay_mode="unmanaged"/>
 
         <!--Controls-->
         <ch.srg.view.LivePlayerControlView
@@ -51,54 +48,60 @@
             android:layout_height="wrap_content"
             android:layout_above="@+id/bottomAnchor"
             android:layout_centerHorizontal="true"
-            app:overlay_mode="control" />
+            app:overlay_mode="control"/>
         <!--Some text over the controls that stay-->
 
         <ch.srg.mediaplayer.extras.overlay.error.SimpleErrorMessage
             android:id="@+id/error_message"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            app:overlay_mode="unmanaged" />
+            app:overlay_mode="unmanaged"/>
 
     </ch.srg.mediaplayer.SRGMediaPlayerView>
 
     <LinearLayout
+        android:id="@+id/group_seek_buttons"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:layout_below="@id/demo_video_container"
-        android:id="@+id/group_seek_buttons">
+        android:orientation="horizontal">
+
         <Button
+            android:id="@+id/button_seek_window_start"
             android:layout_width="0dp"
-            android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="start"
-            android:id="@+id/button_seek_window_start"/>
+            android:layout_weight="1"
+            android:text="start"/>
+
         <Button
+            android:id="@+id/button_seek_one_hour"
             android:layout_width="0dp"
-            android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="-1h"
-            android:id="@+id/button_seek_one_hour"/>
+            android:layout_weight="1"
+            android:text="-1h"/>
+
         <Button
+            android:id="@+id/button_seek_half_hour"
             android:layout_width="0dp"
-            android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="-1/2h"
-            android:id="@+id/button_seek_half_hour"/>
+            android:layout_weight="1"
+            android:text="-1/2h"/>
+
         <Button
+            android:id="@+id/button_seek_one_minute"
             android:layout_width="0dp"
-            android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="-1min"
-            android:id="@+id/button_seek_one_minute"/>
+            android:layout_weight="1"
+            android:text="-1min"/>
+
         <Button
+            android:id="@+id/button_seek_live"
             android:layout_width="0dp"
-            android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="live"
-            android:id="@+id/button_seek_live"/>
+            android:layout_weight="1"
+            android:text="live"/>
     </LinearLayout>
+
     <TextView
         android:id="@+id/status_label"
         android:layout_width="match_parent"
@@ -106,37 +109,39 @@
         android:layout_below="@+id/group_seek_buttons"
         android:lines="2"
         android:text="Status"
-        android:textAppearance="?android:attr/textAppearanceSmall" />
+        android:textAppearance="?android:attr/textAppearanceSmall"/>
 
     <LinearLayout
+        android:id="@+id/checkbox_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/status_label"
-        android:id="@+id/checkbox_container"
         android:orientation="horizontal">
+
         <CheckBox
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"
             android:id="@+id/checkbox_audio"
-            android:text="Audio"
-            android:checked="true"/>
-        <CheckBox
             android:layout_width="0dp"
-            android:layout_weight="1"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:checked="true"
+            android:text="Audio"/>
+
+        <CheckBox
             android:id="@+id/checkbox_video"
-            android:text="Video"
-            android:checked="true"/>
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:checked="true"
+            android:text="Video"/>
     </LinearLayout>
 
     <ListView
         android:id="@+id/uri_list"
-        android:layout_below="@id/checkbox_container"
         android:layout_width="wrap_content"
         android:layout_height="0dp"
         android:layout_alignParentBottom="true"
+        android:layout_below="@id/checkbox_container"
         android:choiceMode="singleChoice"
-        android:listSelector="@drawable/list_item_background" />
+        android:listSelector="@drawable/list_item_background"/>
 
 </RelativeLayout>

@@ -27,10 +27,10 @@ repositories {
 
 dependencies {
     compile files("libs/exoplayer-r1.0.12-921-g28dc9fa.jar");
-    compile 'com.android.support:appcompat-v7:22.2.1'
     // Testing-only dependencies
     androidTestCompile 'com.android.support.test:runner:0.3'
     androidTestCompile 'com.android.support.test:rules:0.3'
+    compile 'com.google.android.gms:play-services-cast:8.1.0'
 }
 
 apply from: '../utilities.gradle'

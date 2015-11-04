@@ -1,35 +1,34 @@
 /*
  * Created by David Gerber
- * 
+ *
  * Copyright (c) 2012 Radio Télévision Suisse
  * All Rights Reserved
  */
 package ch.srg.mediaplayer.service;
 
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.media.AudioManager;
-import android.media.MediaMetadataRetriever;
-import android.media.RemoteControlClient;
-import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.media.MediaMetadataCompat;
+import android.support.v4.media.session.MediaSessionCompat;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.KeyEvent;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
+import ch.srg.mediaplayer.internal.cast.ChromeCastManager;
 
 /**
  * MediaPlayerService plays using the SRGMediaPlayerController. The communication works
@@ -46,7 +45,7 @@ import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
  * - <b>ACTION_BROADCAST_STATUS_BUNDLE:</b> with <i>KEY_STATE:</i> player status; <i>KEY_POSITION:</i> position within the stream in milliseconds;
  * <i>KEY_DURATION:</i> duration of the stream in milliseconds;
  */
-public class MediaPlayerService extends Service implements SRGMediaPlayerController.Listener {
+public class MediaPlayerService extends Service implements SRGMediaPlayerController.Listener, ChromeCastManager.Listener {
     public static final String TAG = "MediaPlayerService";
 
     private static final String PREFIX = "ch.srg.mediaplayer.service";
@@ -82,16 +81,17 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private SRGMediaPlayerController player;
     private boolean isForeground;
-    private AudioManager audioManager;
 
-    private Bitmap notificationBitmap;
 
-    private RemoteControlClient remoteControlClient;
+    // Media Session implementation
+    private MediaSessionCompat mediaSessionCompat;
 
     private int flags;
     private final Handler handler = new Handler();
 
     private SRGMediaPlayerController.State currentState;
+
+    private Bitmap mediaArtBitmap;
 
     public boolean isDestroyed;
 
@@ -112,6 +112,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 } else {
                     player.release();
                     player = null;
+                    clearMediaSession();
                 }
             }
         }
@@ -119,6 +120,20 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     public SRGMediaPlayerController getMediaController() {
         return player;
+    }
+
+    @Override
+    public void onApplicationConnected() {
+        if (player != null){
+            player.swapPlayerDelegate(null);
+        }
+    }
+
+    @Override
+    public void onApplicationDisconnected() {
+        if (player != null){
+            player.swapPlayerDelegate(null);
+        }
     }
 
     public class LocalBinder extends Binder {
@@ -131,7 +146,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     public void onCreate() {
         super.onCreate();
         Log.v(TAG, this.toString() + " onCreate");
-        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 
         //dummyArt = BitmapFactory.decodeResource(getResources(), R.drawable.dummy_album_art);/* XXX: dummy, and should be done in a thread too */
 
@@ -140,14 +154,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 		 */
         MusicControl.pause(this); /* XXX: this is not the proper place for this, should be in the play part */
 
-		/*
-		 * Setup the media buttons for the lock screen component.
-		 */
-        Intent intent = new Intent(Intent.ACTION_MEDIA_BUTTON);
-        intent.setComponent(new ComponentName(this, AudioIntentReceiver.class));
-        remoteControlClient = new RemoteControlClient(PendingIntent.getBroadcast(this, 0, intent, 0));
-        audioManager.registerRemoteControlClient(remoteControlClient);
-        //registerMediaButtonEvent();
+        ChromeCastManager.getInstance().addListener(this);
+
     }
 
     @Override
@@ -157,12 +165,11 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
         setForeground(false);
 
+        ChromeCastManager.getInstance().removeListener(this);
+
         if (player != null) {
             player.release();
             player = null;
-        }
-        if (remoteControlClient != null) {
-            audioManager.unregisterRemoteControlClient(remoteControlClient);
         }
         unregisterMediaButtonEvent();
     }
@@ -181,6 +188,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 case ACTION_PLAY: {
                     setForeground(true);
 
+                    clearMediaSession();
+
                     String newMediaIdentifier = intent.getStringExtra(ARG_MEDIA_IDENTIFIER);
 
                     Long position;
@@ -197,12 +206,15 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                         flags = intent.getIntExtra(ARG_FLAGS, 0);
                     }
 
+                    //setupMediaSession(newMediaIdentifier);
+
                     try {
                         prepare(newMediaIdentifier, position, true);
                     } catch (SRGMediaPlayerException e) {
                         Log.e(TAG, "Player play " + newMediaIdentifier, e);
                     }
-                    } break;
+                }
+                break;
 
                 case ACTION_PAUSE:
                     pause();
@@ -225,7 +237,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                             seekTo(position);
                         }
                     }
-                }   break;
+                }
+                break;
 
                 case ACTION_TOGGLE_PLAYBACK:
                     toggle();
@@ -244,8 +257,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     throw new IllegalArgumentException("Unknown action: " + action);
             }
         } else {
-			/*
-			 * We don't want to be restarted by the system.
+            /*
+             * We don't want to be restarted by the system.
 			 */
             stopSelf();
         }
@@ -273,7 +286,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         } else {
             title = null;
         }
-        return new ServiceNotificationBuilder(live, isPlaying(), title, notificationBitmap, pendingIntent);
+        return new ServiceNotificationBuilder(live, isPlaying(), title, pendingIntent);
     }
 
     private void startUpdates() {
@@ -293,45 +306,44 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         createPlayer();
 
         if (player.play(mediaIdentifier, startPosition)) {
-            setupRemoteControlClient(mediaIdentifier);
-            setupNotification();
             startUpdates();
         }
     }
 
-    private void setupNotification() {
-        int notificationIconId;
-        if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
-            notificationIconId = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).getNotificationIconResourceId(getCurrentMediaIdentifier());
-        } else {
-            notificationIconId = 0;
-        }
+    private void setupMediaSession(String mediaIdentifier) {
+        Log.d(TAG, "setupMediaSession");
+        if (mediaSessionCompat == null) {
+            boolean live = false;
+            if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
+                live = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).isLive(mediaIdentifier);
+            }
+            /*
+            * Setup the media buttons for the lock screen component.
+		    */
+            Intent intent = new Intent(Intent.ACTION_MEDIA_BUTTON);
+            intent.setComponent(new ComponentName(this, AudioIntentReceiver.class));
 
-        createBitmapForNotification(notificationIconId);
-    }
+            mediaSessionCompat = new MediaSessionCompat(this, "MediaPlayerService", new ComponentName(this, AudioIntentReceiver.class), PendingIntent.getBroadcast(this, 0, intent, 0));
+            mediaSessionCompat.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
+            mediaSessionCompat.setActive(true);
+            mediaSessionCompat.setCallback(new SRGMediaSessionCallback());
 
-    private void setupRemoteControlClient(String mediaIdentifier) {
-        boolean live = false;
-        if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
-            live = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).isLive(mediaIdentifier);
+            MediaMetadataCompat.Builder meta = new MediaMetadataCompat.Builder();
+            if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
+                String title = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).
+                        getTitle(mediaIdentifier);
+
+                meta.putString(MediaMetadataCompat.METADATA_KEY_TITLE, title);
+            }
+            if (!live) {
+                meta.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, getDuration());
+            }
+
+            mediaSessionCompat.setMetadata(meta.build());
+
+            setupNotification();
+
         }
-        remoteControlClient.setTransportControlFlags(
-                (live ? RemoteControlClient.FLAG_KEY_MEDIA_PLAY : RemoteControlClient.FLAG_KEY_MEDIA_PLAY_PAUSE)
-                        | RemoteControlClient.FLAG_KEY_MEDIA_STOP);
-        RemoteControlClient.MetadataEditor meta = remoteControlClient.editMetadata(true);
-        if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
-            String title = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).
-                    getTitle(getCurrentMediaIdentifier());
-            meta.putString(MediaMetadataRetriever.METADATA_KEY_TITLE, title);
-        }
-        if (!live) {
-            meta.putLong(MediaMetadataRetriever.METADATA_KEY_DURATION, getDuration());
-        }
-				/* XXX: that won't work and we need to do it from the asynctask too */
-        //meta.putBitmap(100, dummyArt);
-        meta.apply();
-				/* XXX: we can also put the artwork (artwork has to be fetched asynchronously..) */
-        remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_PLAYING);
     }
 
     public void prepare(String mediaIdentifier, Long startPosition, boolean autoStart) throws SRGMediaPlayerException {
@@ -374,15 +386,16 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     private void updateNotification() {
+        Log.v(TAG, "updateNotification");
         if (hasNonDeadPlayer()) {
             if (!isForeground) {
                 setForeground(true);
             } else {
-                NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
                 ServiceNotificationBuilder builder = createNotificationBuilder();
                 if (builder != currentServiceNotification) {
                     currentServiceNotification = builder;
-                    notificationManager.notify(NOTIFICATION_ID, builder.buildNotification(this));
+                    notificationManager.notify(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat, mediaArtBitmap));
                 }
             }
         } else {
@@ -393,29 +406,13 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         }
     }
 
-    private void createBitmapForNotification(int largeIconId) {
-        AsyncTask<Integer, Void, Bitmap> task = new AsyncTask<Integer, Void, Bitmap>() {
-            @Override
-            protected Bitmap doInBackground(Integer... params) {
-                return BitmapFactory.decodeResource(getResources(), params[0]);
-            }
-
-            @Override
-            protected void onPostExecute(Bitmap bitmap) {
-                notificationBitmap = bitmap;
-                updateNotification();
-            }
-        };
-        task.execute(largeIconId);
-    }
-
     private void setForeground(boolean foreground) {
         try {
             if (foreground != isForeground) {
                 if (foreground) {
                     ServiceNotificationBuilder builder = createNotificationBuilder();
                     currentServiceNotification = builder;
-                    startForeground(NOTIFICATION_ID, builder.buildNotification(this));
+                    startForeground(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat, mediaArtBitmap));
                 } else {
                     stopForeground(true);
                     currentServiceNotification = null;
@@ -439,15 +436,14 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         if (player != null) {
             player.pause();
         }
-        remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_PAUSED);
     }
 
     public void stopPlayer() {
         if (player != null) {
             player.release();
             player = null;
+            clearMediaSession();
         }
-        remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_STOPPED);
     }
 
     private void sendBroadcastStatus(boolean forced) {
@@ -519,21 +515,31 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         return binder;
     }
 
+    @Override
+    public boolean onUnbind(Intent intent) {
+        clearMediaSession();
+        return super.onUnbind(intent);
+    }
+
     private void registerMediaButtonEvent() {
-        audioManager.registerMediaButtonEventReceiver(new ComponentName(this, AudioIntentReceiver.class.getName()));
+        //audioManager.registerMediaButtonEventReceiver(new ComponentName(this, AudioIntentReceiver.class.getName()));
     }
 
     private void unregisterMediaButtonEvent() {
-        audioManager.unregisterMediaButtonEventReceiver(new ComponentName(this, AudioIntentReceiver.class.getName()));
+        //audioManager.unregisterMediaButtonEventReceiver(new ComponentName(this, AudioIntentReceiver.class.getName()));
     }
 
     @Override
     public void onMediaPlayerEvent(SRGMediaPlayerController mp, SRGMediaPlayerController.Event event) {
         sendBroadcastStatus(false);
         // TODO Find a clean way to update notification only when necessary
-        updateNotification();
+        if (mediaSessionCompat != null) {
+            updateNotification();
+        }
         switch (event.type) {
             case MEDIA_READY_TO_PLAY:
+                clearMediaSession();
+                setupMediaSession(mp.getMediaIdentifier());
                 registerMediaButtonEvent();
                 cancelAutoRelease();
                 break;
@@ -559,5 +565,76 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     public static void setDebugMode(boolean debugMode) {
         MediaPlayerService.debugMode = debugMode;
+    }
+
+    private class SRGMediaSessionCallback extends MediaSessionCompat.Callback {
+
+        @Override
+        public boolean onMediaButtonEvent(Intent mediaButtonIntent) {
+            KeyEvent keyEvent = mediaButtonIntent
+                    .getParcelableExtra(Intent.EXTRA_KEY_EVENT);
+            if (keyEvent != null && (keyEvent.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PAUSE)) {
+                pause();
+            } else if (keyEvent != null && keyEvent.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PLAY) {
+                resume();
+            }
+            return true;
+        }
+
+        @Override
+        public void onPlay() {
+            super.onPlay();
+            resume();
+        }
+
+        @Override
+        public void onPause() {
+            super.onPause();
+            pause();
+        }
+
+        @Override
+        public void onStop() {
+            super.onStop();
+            stopPlayer();
+        }
+    }
+
+    private void setupNotification() {
+        int notificationIconId;
+        if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
+            notificationIconId = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).getNotificationIconResourceId(getCurrentMediaIdentifier());
+        } else {
+            notificationIconId = 0;
+        }
+
+        updateLockScreenImage(notificationIconId);
+    }
+
+    /*
+     * Updates lock screen image
+     */
+    private void updateLockScreenImage(int notificationIconId) {
+        mediaArtBitmap = BitmapFactory.decodeResource(this.getResources(), notificationIconId);
+        MediaMetadataCompat currentMetadata = mediaSessionCompat.getController().getMetadata();
+        MediaMetadataCompat.Builder newBuilder = currentMetadata == null
+                ? new MediaMetadataCompat.Builder()
+                : new MediaMetadataCompat.Builder(currentMetadata);
+        mediaSessionCompat.setMetadata(newBuilder
+                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, mediaArtBitmap)
+                .build());
+        updateNotification();
+    }
+
+    /*
+     * Clears Media Session
+     */
+    public void clearMediaSession() {
+        Log.d(TAG, "clearMediaSession()");
+        if (mediaSessionCompat != null) {
+            mediaSessionCompat.setActive(false);
+            mediaSessionCompat.release();
+            mediaSessionCompat = null;
+        }
     }
 }

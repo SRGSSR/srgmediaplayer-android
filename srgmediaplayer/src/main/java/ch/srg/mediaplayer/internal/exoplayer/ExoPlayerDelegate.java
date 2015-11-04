@@ -202,12 +202,7 @@ public class ExoPlayerDelegate implements
 
     @Override
     public void seekTo(long positionInMillis) throws IllegalStateException {
-        long seekPosition = exoPlayer.getDuration() == ExoPlayer.UNKNOWN_TIME ? 0
-                : Math.min(Math.max(0, positionInMillis), getDuration());
-        if (positionInMillis != seekPosition) {
-            Log.d(TAG, "seek position " + positionInMillis + " adjusted to " + seekPosition);
-        }
-        exoPlayer.seekTo(seekPosition);
+        exoPlayer.seekTo(positionInMillis);
     }
 
     @Override
@@ -255,7 +250,7 @@ public class ExoPlayerDelegate implements
     @Override
     public void unbindRenderingView() {
         surfaceView = null;
-        exoPlayer.blockingSendMessage(videoRenderer, MediaCodecVideoTrackRenderer.MSG_SET_SURFACE, null);
+        exoPlayer.sendMessage(videoRenderer, MediaCodecVideoTrackRenderer.MSG_SET_SURFACE, null);
     }
 
     private void pushSurface(boolean blockForSurfacePush) {
@@ -446,5 +441,9 @@ public class ExoPlayerDelegate implements
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN;
     }
 
+    @Override
+    public boolean isRemote() {
+        return false;
+    }
 }
 

@@ -5,21 +5,18 @@
     android:layout_height="match_parent"
     tools:context="ch.srg.mediaplayer.DemoMediaPlayerActivity">
 
-    <TextView
-        android:id="@+id/top_text"
-        android:layout_width="wrap_content"
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:backgroundTintMode="multiply"
-        android:text="DEMO SEGMENTS"
-        android:textAppearance="?android:attr/textAppearanceLarge" />
+        android:background="?attr/colorPrimary"
+        android:minHeight="?attr/actionBarSize"/>
 
     <ch.srg.mediaplayer.SRGMediaPlayerView
         android:id="@+id/demo_video_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/top_text"
+        android:layout_below="@+id/toolbar"
         android:animateLayoutChanges="true"
         android:background="#ff222222"
         app:containerAspectRatio="auto"
@@ -60,6 +57,16 @@
             android:layout_height="match_parent"
             app:overlay_mode="unmanaged" />
 
+        <Button
+            android:id="@+id/button_swap_player"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentRight="true"
+            android:text="Native"
+            android:textSize="6sp"
+            app:overlay_mode="control"
+            />
     </ch.srg.mediaplayer.SRGMediaPlayerView>
 
     <!--Controls-->

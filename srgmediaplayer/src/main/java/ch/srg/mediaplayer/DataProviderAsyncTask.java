@@ -11,10 +11,14 @@ public class DataProviderAsyncTask extends AsyncTask<String, Integer, Void> {
 	private final SRGMediaPlayerDataProvider dataProvider;
 
 	private final SRGMediaPlayerController controller;
+	private final PlayerDelegate playerDelegate;
 
-	public DataProviderAsyncTask(SRGMediaPlayerController controller, SRGMediaPlayerDataProvider dataProvider) {
+	public DataProviderAsyncTask(SRGMediaPlayerController controller,
+								 SRGMediaPlayerDataProvider dataProvider,
+								 PlayerDelegate playerDelegate) {
 		this.controller = controller;
 		this.dataProvider = dataProvider;
+		this.playerDelegate = playerDelegate;
 	}
 
 	@Override
@@ -26,23 +30,18 @@ public class DataProviderAsyncTask extends AsyncTask<String, Integer, Void> {
 			String mediaIdentifier = params[0];
 			Uri uri = dataProvider.getUri(mediaIdentifier);
 			if (uri != null) {
-				controller.sendMessage(SRGMediaPlayerController.MSG_DATA_PROVIDER_URI_LOADED, uri);
+				controller.onUriLoaded(uri, playerDelegate);
 			} else {
-				sendException(new SRGMediaPlayerException("Null uri for mediaIdentifier " + mediaIdentifier));
+				controller.onDataProviderException(new SRGMediaPlayerException("Null uri for mediaIdentifier " + mediaIdentifier));
 			}
 		} catch (SRGMediaPlayerException e) {
-			sendException(e);
+			controller.onDataProviderException(e);
 		}
 		return null;
 	}
 
-	private void sendException(SRGMediaPlayerException e) {
-		controller.sendMessage(SRGMediaPlayerController.MSG_DATA_PROVIDER_EXCEPTION, e);
-	}
-
 	@Override
 	protected void onPostExecute(Void nothing) {
-
 	}
 
 	@Override
@@ -55,4 +54,7 @@ public class DataProviderAsyncTask extends AsyncTask<String, Integer, Void> {
 		super.onCancelled();
 	}
 
+	public PlayerDelegate getPlayerDelegate() {
+		return playerDelegate;
+	}
 }

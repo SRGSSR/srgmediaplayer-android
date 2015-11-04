@@ -5,7 +5,9 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.support.v4.app.NotificationCompat;
+import android.support.v4.media.session.MediaSessionCompat;
+import android.support.v7.app.NotificationCompat;
+
 import android.text.TextUtils;
 
 import ch.srg.mediaplayer.service.utils.AppUtils;
@@ -14,14 +16,12 @@ public class ServiceNotificationBuilder {
     boolean live;
     boolean playing;
     String title;
-    Bitmap notificationBitmap;
     PendingIntent pendingIntent;
 
-    public ServiceNotificationBuilder(boolean live, boolean playing, String title, Bitmap notificationBitmap, PendingIntent pendingIntent) {
+    public ServiceNotificationBuilder(boolean live, boolean playing, String title, PendingIntent pendingIntent) {
         this.live = live;
         this.playing = playing;
         this.title = title;
-        this.notificationBitmap = notificationBitmap;
         this.pendingIntent = pendingIntent;
     }
 
@@ -35,16 +35,13 @@ public class ServiceNotificationBuilder {
         if (live != that.live) return false;
         if (playing != that.playing) return false;
         if (title != null ? !title.equals(that.title) : that.title != null) return false;
-        if (notificationBitmap != null ? !notificationBitmap.equals(that.notificationBitmap) : that.notificationBitmap != null) return false;
         if (pendingIntent != null ? !pendingIntent.equals(that.pendingIntent) : that.pendingIntent != null) return false;
 
         return true;
 
     }
 
-    public Notification buildNotification(Context context) {
-        /* XXX: stackbuilder needed for back navigation */
-
+    public Notification buildNotification(Context context, MediaSessionCompat mediaSessionCompat, Bitmap notificationBitmap) {
         Intent pauseIntent = new Intent(context, MediaPlayerService.class);
         pauseIntent.setAction(playing ? MediaPlayerService.ACTION_PAUSE : MediaPlayerService.ACTION_RESUME);
         pauseIntent.putExtra(MediaPlayerService.ARG_FROM_NOTIFICATION, true);
@@ -56,24 +53,32 @@ public class ServiceNotificationBuilder {
         String appName = AppUtils.getApplicationName(context);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
+
+        NotificationCompat.MediaStyle style = new NotificationCompat.MediaStyle();
+        style.setMediaSession(mediaSessionCompat.getSessionToken());
+
+        builder.setStyle(style);
         builder.setContentIntent(pendingIntent);
 
         if (!live) {
             if (playing) {
-                builder.addAction(R.drawable.av_pause_notif, context.getString(R.string.service_notification_pause), piPause);
+                builder.addAction(R.drawable.ic_pause_white_36dp, context.getString(R.string.service_notification_pause), piPause);
             } else {
-                builder.addAction(R.drawable.av_play_notif, context.getString(R.string.service_notification_resume), piPause);
+                builder.addAction(R.drawable.ic_play_arrow_white_36dp, context.getString(R.string.service_notification_resume), piPause);
             }
+            style.setShowActionsInCompactView(0, 1);
+        } else {
+            style.setShowActionsInCompactView(0);
         }
 
-        builder.addAction(R.drawable.av_stop_notif, context.getString(R.string.service_notification_stop), piStop);
+        builder.addAction(R.drawable.ic_stop_white_36dp, context.getString(R.string.service_notification_stop), piStop);
         builder.setContentTitle(appName);
 
         if (!TextUtils.isEmpty(title)) {
             builder.setContentText(title);
         }
 
-        builder.setSmallIcon(R.drawable.ic_media_play);
+        builder.setSmallIcon(R.drawable.ic_play_arrow_white_24dp);
         if (notificationBitmap != null) {
             builder.setLargeIcon(notificationBitmap);
         }
