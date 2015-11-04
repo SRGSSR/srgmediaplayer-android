@@ -88,7 +88,7 @@ public class ChromeCastDelegate implements PlayerDelegate {
                 .setMetadata(mediaMetadata)
                 .build();
         try {
-            chromeCastManager.loadMedia(mediaInfo, true, pendingSeekTo);
+            chromeCastManager.loadMedia(mediaInfo, playIfReady, pendingSeekTo);
         } catch (NoConnectionException e) {
             e.printStackTrace();
             throw new SRGMediaPlayerException(e);
