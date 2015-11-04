@@ -1,6 +1,6 @@
 /*
  * Created by David Gerber
- * 
+ *
  * Copyright (c) 2012 Radio Télévision Suisse
  * All Rights Reserved
  */
@@ -9,11 +9,9 @@ package ch.srg.mediaplayer.service;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.media.AudioManager;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
@@ -22,17 +20,15 @@ import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
-import android.support.v7.media.MediaRouter;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
-
-import com.google.android.gms.common.api.GoogleApiClient;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
+import ch.srg.mediaplayer.internal.cast.ChromeCastManager;
 
 /**
  * MediaPlayerService plays using the SRGMediaPlayerController. The communication works
@@ -49,7 +45,7 @@ import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
  * - <b>ACTION_BROADCAST_STATUS_BUNDLE:</b> with <i>KEY_STATE:</i> player status; <i>KEY_POSITION:</i> position within the stream in milliseconds;
  * <i>KEY_DURATION:</i> duration of the stream in milliseconds;
  */
-public class MediaPlayerService extends Service implements SRGMediaPlayerController.Listener {
+public class MediaPlayerService extends Service implements SRGMediaPlayerController.Listener, ChromeCastManager.Listener {
     public static final String TAG = "MediaPlayerService";
 
     private static final String PREFIX = "ch.srg.mediaplayer.service";
@@ -122,12 +118,22 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         }
     };
 
-    private GoogleApiClient apiClient;
-    private MediaRouter mediaRouter;
-    private AudioManager audioManager;
-
     public SRGMediaPlayerController getMediaController() {
         return player;
+    }
+
+    @Override
+    public void onApplicationConnected() {
+        if (player != null){
+            player.swapPlayerDelegate(null);
+        }
+    }
+
+    @Override
+    public void onApplicationDisconnected() {
+        if (player != null){
+            player.swapPlayerDelegate(null);
+        }
     }
 
     public class LocalBinder extends Binder {
@@ -148,7 +154,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 		 */
         MusicControl.pause(this); /* XXX: this is not the proper place for this, should be in the play part */
 
-        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        ChromeCastManager.getInstance().addListener(this);
+
     }
 
     @Override
@@ -334,9 +341,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
             setupNotification();
 
-            if (mediaRouter != null) {
-                mediaRouter.setMediaSessionCompat(mediaSessionCompat);
-            }
         }
     }
 
@@ -594,11 +598,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         }
     }
 
-    public void setupCastApi(MediaRouter mediaRouter, GoogleApiClient apiClient) {
-        this.mediaRouter = mediaRouter;
-        this.apiClient = apiClient;
-    }
-
     private void setupNotification() {
         int notificationIconId;
         if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
@@ -630,7 +629,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
      */
     public void clearMediaSession() {
         Log.d(TAG, "clearMediaSession()");
-        audioManager.abandonAudioFocus(null);
         if (mediaSessionCompat != null) {
             mediaSessionCompat.setActive(false);
             mediaSessionCompat.release();
