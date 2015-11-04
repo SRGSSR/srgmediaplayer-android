@@ -55,6 +55,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
     public static final int DISCONNECT_REASON_EXPLICIT = 3;
 
     public static final int NO_APPLICATION_ERROR = 0;
+    private static final double VOLUME_INCREMENT = 1.0;
 
     private static ChromeCastManager instance;
     private AudioManager audioManager;
@@ -738,7 +739,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
     @Override
     public void onConnected(Bundle bundle) {
         Log.d(TAG, "onConnected() reached with prior suspension: " + connectionSuspended);
-        if (connectionSuspended) {
+        if (connectionSuspended || apiClient == null) {
             connectionSuspended = false;
             if (bundle != null && bundle.getBoolean(Cast.EXTRA_APP_NO_LONGER_RUNNING)) {
                 // the same app is not running any more
@@ -877,6 +878,28 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
             Log.d(TAG, "onRouteUnselected: route=" + route);
             chromeCastManager.onDeviceSelected(null);
         }
+    }
 
+    public boolean incrementVolume() {
+        return changeVolume(VOLUME_INCREMENT);
+    }
+
+    public boolean decrementVolume() {
+        return changeVolume(- VOLUME_INCREMENT);
+    }
+
+    public boolean changeVolume(double volumeIncrement) {
+        if (isConnected()) {
+            try {
+                double currentVolume = Cast.CastApi.getVolume(apiClient);
+                Cast.CastApi.setVolume(apiClient,
+                        Math.max(Math.min(currentVolume + volumeIncrement, 1), 0));
+            } catch (Exception e) {
+                Log.e(TAG, "unable to set volume", e);
+            }
+            return true;
+        } else {
+            return false;
+        }
     }
 }
