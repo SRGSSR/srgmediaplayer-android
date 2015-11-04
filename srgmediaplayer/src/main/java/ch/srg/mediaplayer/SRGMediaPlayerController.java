@@ -563,7 +563,11 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                         seekToWhenReady = oldDelegate.getCurrentPosition();
                     }
                     oldDelegate.unbindRenderingView();
-                    oldDelegate.release();
+                    try {
+                        oldDelegate.release();
+                    } catch (IllegalStateException e) {
+                        Log.e(TAG, "Illegal state exception when releasing delegate");
+                    }
                     prepareForIdentifierInternal(currentMediaIdentifier, newDelegate);
                 }
                 return true;

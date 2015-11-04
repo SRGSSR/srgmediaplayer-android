@@ -198,7 +198,13 @@ public class ChromeCastDelegate implements PlayerDelegate {
 
     @Override
     public void release() throws IllegalStateException {
-
+        if (chromeCastManager.isConnected()) {
+            try {
+                chromeCastManager.stop();
+            } catch (NoConnectionException e) {
+                throw new IllegalStateException(e);
+            }
+        }
     }
 
     @Override
