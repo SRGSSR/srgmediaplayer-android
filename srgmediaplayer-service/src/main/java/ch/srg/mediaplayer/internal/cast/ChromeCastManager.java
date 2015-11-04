@@ -152,7 +152,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
                         @Override
                         public void onResult(RemoteMediaPlayer.MediaChannelResult result) {
                             if (!result.getStatus().isSuccess()) {
-                                Log.e(TAG, "Impossible to get request status: " + result.getStatus().getStatusCode());
+                                Log.e(TAG, "Application connected, remote media player status code: " + result.getStatus().getStatusCode());
                             }
 
                         }
