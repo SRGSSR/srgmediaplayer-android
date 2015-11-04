@@ -7,7 +7,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.media.session.MediaSessionCompat;
@@ -58,7 +57,6 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
     private static final double VOLUME_INCREMENT = 1.0;
 
     private static ChromeCastManager instance;
-    private AudioManager audioManager;
     private RemoteMediaPlayer remoteMediaPlayer;
     private MediaSessionCompat mediaSessionCompat;
     private int state = MediaStatus.PLAYER_STATE_IDLE;
@@ -93,8 +91,6 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         mediaRouter.addCallback(mediaRouteSelector, mediaRouterCallback,
                 MediaRouter.CALLBACK_FLAG_REQUEST_DISCOVERY);
         Log.d(TAG, "VideoCastManager is instantiated");
-
-        audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
     }
 
     public static synchronized ChromeCastManager initialize(Context context) {
@@ -254,9 +250,6 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
             });
         }
 
-        audioManager.requestAudioFocus(null, AudioManager.STREAM_MUSIC,
-                AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK);
-
         mediaSessionCompat.setPlaybackState(new PlaybackStateCompat.Builder()
                 .setState(PlaybackStateCompat.STATE_PLAYING, 0, 1.0f)
                 .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE).build());
@@ -272,7 +265,6 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
 
     public void clearMediaSession() {
         Log.d(TAG, "clearMediaSession()");
-        audioManager.abandonAudioFocus(null);
         if (mediaSessionCompat != null) {
             mediaSessionCompat.setActive(false);
             mediaSessionCompat.release();
