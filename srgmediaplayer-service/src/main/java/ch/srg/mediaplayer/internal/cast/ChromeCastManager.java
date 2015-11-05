@@ -9,6 +9,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.support.v4.view.MenuItemCompat;
@@ -293,22 +294,19 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
     public void loadIfNecessaryAndPlay() throws NoConnectionException {
         if (state == MediaStatus.PLAYER_STATE_IDLE
                 && idleReason == MediaStatus.IDLE_REASON_FINISHED) {
-            loadMedia(getRemoteMediaInformation(), true, 0);
+            MediaInfo remoteMediaInformation = getRemoteMediaInformation();
+            if (remoteMediaInformation != null) {
+                loadMedia(remoteMediaInformation, true, 0);
+            }
         } else {
             play();
         }
     }
 
-    public void loadMedia(MediaInfo media, boolean autoPlay, long position) throws NoConnectionException {
-        Log.d(TAG, "loadMedia ");
+    public void loadMedia(@NonNull MediaInfo media, boolean autoPlay, long position) throws NoConnectionException {
+        Log.d(TAG, "loadMedia " + media.getContentId());
         checkConnectivity();
-        if (media == null) {
-            return;
-        }
-        if (remoteMediaPlayer == null) {
-            Log.e(TAG, "Trying to load a video with no active media session");
-            throw new NoConnectionException();
-        }
+        checkRemoteMediaPlayerAvailable();
 
         remoteMediaPlayer.load(apiClient, media, autoPlay, position)
                 .setResultCallback(new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
