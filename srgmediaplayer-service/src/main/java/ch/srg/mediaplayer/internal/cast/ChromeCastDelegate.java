@@ -2,6 +2,7 @@ package ch.srg.mediaplayer.internal.cast;
 
 import android.content.Context;
 import android.net.Uri;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 
@@ -59,7 +60,6 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
 
     @Override
     public void unbindRenderingView() {
-
     }
 
 
@@ -94,7 +94,6 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
         try {
             chromeCastManager.loadMedia(mediaInfo, playIfReady, pendingSeekTo);
         } catch (NoConnectionException e) {
-            e.printStackTrace();
             throw new SRGMediaPlayerException(e);
         }
         Log.d(TAG, "onPlayerDelegatePlayWhenReadyCommited");
@@ -136,7 +135,7 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
         Log.d(TAG, "seekTo: " + positionInMillis);
         if (delegateReady) {
             try {
-                if (chromeCastManager.isRemoteMediaPlaying()) {
+                if (isActive() && chromeCastManager.isRemoteMediaPlaying()) {
                     controller.onPlayerDelegateBuffering(this);
                     Log.d(TAG, "remoteMediaPlayer.seek");
                     chromeCastManager.seek(positionInMillis);
@@ -154,13 +153,15 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
 
     @Override
     public boolean isPlaying() {
-        return chromeCastManager.getMediaStatus() == MediaStatus.PLAYER_STATE_PLAYING;
+        return isActive() && chromeCastManager.getMediaStatus() == MediaStatus.PLAYER_STATE_PLAYING;
     }
 
     @Override
     public void setMuted(boolean muted) {
         try {
-            chromeCastManager.setMuted(muted);
+            if (isActive()) {
+                chromeCastManager.setMuted(muted);
+            }
         } catch (NoConnectionException ignored) {
         }
     }
@@ -168,7 +169,7 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
     @Override
     public long getCurrentPosition() {
         try {
-            if (chromeCastManager.isRemoteMediaPlaying()) {
+            if (isActive() && chromeCastManager.isRemoteMediaPlaying()) {
                 // Check is necessary otherwise we get a 0 from the Google API
                 lastKnownPosition = chromeCastManager.getMediaPosition();
             }
@@ -180,7 +181,9 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
     @Override
     public long getDuration() {
         try {
-            lastKnownDuration = chromeCastManager.getMediaDuration();
+            if (isActive()) {
+                lastKnownDuration = chromeCastManager.getMediaDuration();
+            }
         } catch (NoConnectionException ignored) {
         }
         return lastKnownDuration;
@@ -203,7 +206,7 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
 
     @Override
     public void release() throws IllegalStateException {
-        if (chromeCastManager.isConnected()) {
+        if (isActive()) {
             try {
                 chromeCastManager.stop();
             } catch (NoConnectionException e) {
@@ -211,6 +214,16 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
             }
         }
         chromeCastManager.removeListener(this);
+    }
+
+    private boolean isActive() {
+        try {
+            MediaInfo remoteMediaInformation = chromeCastManager.getRemoteMediaInformation();
+            return remoteMediaInformation != null && mediaInfo != null
+                    && TextUtils.equals(remoteMediaInformation.getContentId(), mediaInfo.getContentId());
+        } catch (NoConnectionException e) {
+            return false;
+        }
     }
 
     @Override
@@ -250,35 +263,37 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
 
     @Override
     public void onChromeCastPlayerStatusUpdated(int state, int idleReason) {
-        switch (state) {
-            case MediaStatus.PLAYER_STATE_PLAYING:
-                controller.onPlayerDelegatePlayWhenReadyCommited(this);
-                break;
-            case MediaStatus.PLAYER_STATE_PAUSED:
-                controller.onPlayerDelegatePlayWhenReadyCommited(this);
-                break;
-            case MediaStatus.PLAYER_STATE_IDLE:
-                Log.d(TAG, "onRemoteMediaPlayerStatusUpdated(): Player status = idle");
-                switch (idleReason) {
-                    case MediaStatus.IDLE_REASON_FINISHED:
-                        controller.onPlayerDelegateCompleted(this);
-                        break;
-                    case MediaStatus.IDLE_REASON_ERROR:
-                    case MediaStatus.IDLE_REASON_CANCELED:
-                    case MediaStatus.IDLE_REASON_INTERRUPTED:
-                        controller.onPlayerDelegateError(this, new SRGMediaPlayerException("ChromeCast " + idleReason));
-                        break;
-                    default:
-                        Log.e(TAG, "onRemoteMediaPlayerStatusUpdated(): Unexpected Idle Reason "
-                                + idleReason);
-                }
-                break;
-            case MediaStatus.PLAYER_STATE_BUFFERING:
-                controller.onPlayerDelegateBuffering(this);
-                break;
-            default:
-                Log.d(TAG, "onRemoteMediaPlayerStatusUpdated(): Player status = unknown");
-                break;
+        if (isActive()) {
+            switch (state) {
+                case MediaStatus.PLAYER_STATE_PLAYING:
+                    controller.onPlayerDelegatePlayWhenReadyCommited(this);
+                    break;
+                case MediaStatus.PLAYER_STATE_PAUSED:
+                    controller.onPlayerDelegatePlayWhenReadyCommited(this);
+                    break;
+                case MediaStatus.PLAYER_STATE_IDLE:
+                    Log.d(TAG, "onRemoteMediaPlayerStatusUpdated(): Player status = idle");
+                    switch (idleReason) {
+                        case MediaStatus.IDLE_REASON_FINISHED:
+                            controller.onPlayerDelegateCompleted(this);
+                            break;
+                        case MediaStatus.IDLE_REASON_ERROR:
+                        case MediaStatus.IDLE_REASON_CANCELED:
+                        case MediaStatus.IDLE_REASON_INTERRUPTED:
+                            controller.onPlayerDelegateError(this, new SRGMediaPlayerException("ChromeCast " + idleReason));
+                            break;
+                        default:
+                            Log.e(TAG, "onRemoteMediaPlayerStatusUpdated(): Unexpected Idle Reason "
+                                    + idleReason);
+                    }
+                    break;
+                case MediaStatus.PLAYER_STATE_BUFFERING:
+                    controller.onPlayerDelegateBuffering(this);
+                    break;
+                default:
+                    Log.d(TAG, "onRemoteMediaPlayerStatusUpdated(): Player status = unknown");
+                    break;
+            }
         }
     }
 }
