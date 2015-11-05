@@ -76,7 +76,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private static final int MSG_PLAYER_DELEGATE_PREPARING = 16;
     private static final int MSG_PLAYER_DELEGATE_READY = 17;
     private static final int MSG_PLAYER_DELEGATE_BUFFERING = 18;
-    private static final int MSG_DATA_PROVIDER_EXCEPTION = 19;
+    private static final int MSG_PLAYER_DELEGATE_COMPLETED = 19;
+    private static final int MSG_DATA_PROVIDER_EXCEPTION = 20;
 
     public enum State {
         /**
@@ -584,6 +585,10 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             case MSG_PLAYER_DELEGATE_BUFFERING:
                 setStateInternal(State.BUFFERING);
                 return true;
+            case MSG_PLAYER_DELEGATE_COMPLETED:
+                setStateInternal(State.READY);
+                fireEvent(Event.Type.MEDIA_COMPLETED);
+                return true;
             default: {
                 String message = "Unknown message: " + msg.what + " / " + msg.obj;
                 if (isDebugMode()) {
@@ -714,10 +719,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     public void onPlayerDelegateCompleted(PlayerDelegate delegate) {
         manageKeepScreenOnInternal();
         if (delegate == currentMediaPlayerDelegate) {
-            setStateInternal(State.READY);
-            fireEvent(Event.Type.MEDIA_COMPLETED);
-        } else {
-            logE("Ignored onPlayerDelegateCompleted from " + currentMediaPlayerDelegate);
+            sendMessage(MSG_PLAYER_DELEGATE_COMPLETED);
         }
     }
 
