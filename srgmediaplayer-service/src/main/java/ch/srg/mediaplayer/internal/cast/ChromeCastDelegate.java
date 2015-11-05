@@ -36,6 +36,8 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
     private String mediaThumbnailUrl;
     private long lastKnownPosition;
     private long lastKnownDuration;
+    private String contentType;
+    private boolean live;
 
     public ChromeCastDelegate(OnPlayerDelegateListener controller) {
         this.chromeCastManager = ChromeCastManager.getInstance();
@@ -87,8 +89,8 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
         }
 
         mediaInfo = new MediaInfo.Builder(String.valueOf(videoUri))
-                .setContentType("application/x-mpegurl")
-                .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
+                .setContentType(contentType)
+                .setStreamType(live ? MediaInfo.STREAM_TYPE_LIVE : MediaInfo.STREAM_TYPE_BUFFERED)
                 .setMetadata(mediaMetadata)
                 .build();
         try {
@@ -246,6 +248,14 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
 
     public void setMediaThumbnailUrl(String mediaThumbnailUrl) {
         this.mediaThumbnailUrl = mediaThumbnailUrl;
+    }
+
+    public void setContentType(String contentType) {
+        this.contentType = contentType;
+    }
+
+    public void setLive(boolean live) {
+        this.live = live;
     }
 
     @Override

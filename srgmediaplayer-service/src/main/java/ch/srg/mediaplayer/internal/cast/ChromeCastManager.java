@@ -683,8 +683,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
      *
      * @throws NoConnectionException If no connectivity to the device exists
      */
-    public final void checkConnectivity() throws
-            NoConnectionException {
+    public final void checkConnectivity() throws NoConnectionException {
         if (!isConnected()) {
             throw new NoConnectionException();
         }
