@@ -80,6 +80,10 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
 
     private boolean connectionSuspended;
     protected int applicationErrorCode = NO_APPLICATION_ERROR;
+    private int stoppingCounter;
+    private final Object stoppingLock = new Object();
+    private boolean applicationConnected;
+    private int castDiscoveryCounter;
 
     protected ChromeCastManager(Context context) {
         this.context = context.getApplicationContext();
@@ -89,8 +93,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
                 CastMediaControlIntent.categoryForCast(CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID)).build();
 
         mediaRouterCallback = new CastMediaRouterCallback(this);
-        mediaRouter.addCallback(mediaRouteSelector, mediaRouterCallback,
-                MediaRouter.CALLBACK_FLAG_REQUEST_DISCOVERY);
+
         Log.d(TAG, "VideoCastManager is instantiated");
     }
 
@@ -124,6 +127,9 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
     private void onApplicationDisconnected(int errorCode) {
         Log.d(TAG, "onApplicationDisconnected() reached with error code: " + errorCode);
         applicationErrorCode = errorCode;
+
+        applicationConnected = false;
+
         updateMediaSession(false);
         if (mediaSessionCompat != null) {
             mediaRouter.setMediaSessionCompat(null);
@@ -138,12 +144,19 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
             }
         }
         onDeviceSelected(null);
+
+        for (Listener listener : listeners){
+            listener.onChromeCastApplicationDisconnected();
+        }
     }
 
     protected void onApplicationConnected(ApplicationMetadata appMetadata,
                                           String applicationStatus, String sessionId, boolean wasLaunched) {
         Log.d(TAG, "onApplicationConnected() reached with sessionId: " + sessionId);
         applicationErrorCode = NO_APPLICATION_ERROR;
+
+        applicationConnected = true;
+
         try {
             attachMediaChannel();
             this.sessionId = sessionId;
@@ -158,6 +171,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
 
                         }
                     });
+            HashSet<Listener> listeners = new HashSet<>(this.listeners);
             for (Listener listener : listeners){
                 listener.onChromeCastApplicationConnected();
             }
@@ -177,12 +191,20 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
     }
 
     public final void startCastDiscovery() {
-        mediaRouter.addCallback(mediaRouteSelector, mediaRouterCallback,
-                MediaRouter.CALLBACK_FLAG_REQUEST_DISCOVERY);
+        if (castDiscoveryCounter == 0) {
+            mediaRouter.addCallback(mediaRouteSelector, mediaRouterCallback,
+                    MediaRouter.CALLBACK_FLAG_REQUEST_DISCOVERY);
+        }
+        castDiscoveryCounter++;
     }
 
     public final void stopCastDiscovery() {
-        mediaRouter.removeCallback(mediaRouterCallback);
+        castDiscoveryCounter--;
+        if (castDiscoveryCounter == 0) {
+            mediaRouter.removeCallback(mediaRouterCallback);
+        } else if (castDiscoveryCounter < 0) {
+            throw new IllegalStateException("Mismatched calls to stopCastDiscovery / startCastDiscovery");
+        }
     }
 
     /*
@@ -190,7 +212,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
      */
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     private void updateMediaSession(boolean playing) {
-        if (!isConnected()) {
+        if (!isApplicationConnected()) {
             return;
         }
         try {
@@ -308,6 +330,8 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         checkConnectivity();
         checkRemoteMediaPlayerAvailable();
 
+        waitForStopping();
+
         remoteMediaPlayer.load(apiClient, media, autoPlay, position)
                 .setResultCallback(new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
 
@@ -316,6 +340,23 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
 
                     }
                 });
+    }
+
+    public void waitForStopping() {
+        boolean waited = false;
+        synchronized (stoppingLock) {
+            while (stoppingCounter > 0) {
+                waited = true;
+                Log.d(TAG, "Waiting for stopped");
+                try {
+                    stoppingLock.wait();
+                } catch (InterruptedException ignored) {
+                }
+            }
+        }
+        if (waited) {
+            Log.d(TAG, "Done waiting");
+        }
     }
 
 
@@ -380,6 +421,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
 
     public void stop() throws NoConnectionException {
         Log.d(TAG, "stop()");
+        stoppingCounter++;
         checkConnectivity();
         checkRemoteMediaPlayerAvailable();
         remoteMediaPlayer.stop(apiClient).setResultCallback(
@@ -390,8 +432,12 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
                         if (!result.getStatus().isSuccess()) {
                             Log.e(TAG, "Impossible to stop remotePlayer: " + result.getStatus().getStatusCode());
                         }
+                        synchronized (stoppingLock) {
+                            Log.d(TAG, "Stopped " + stoppingCounter);
+                            stoppingCounter--;
+                            stoppingLock.notify();
+                        }
                     }
-
                 }
         );
     }
@@ -440,11 +486,11 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
     }
 
     private void launchApp() throws NoConnectionException {
-        Log.d(TAG, "launchApp() is called");
-        if (!isConnected()) {
-            checkConnectivity();
-        }
         Log.d(TAG, "Launching app");
+        if (apiClient == null || !apiClient.isConnected()) {
+            throw new NoConnectionException();
+        }
+
         Cast.CastApi.launchApplication(apiClient, CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID)
                 .setResultCallback(
                         new ResultCallback<Cast.ApplicationConnectionResult>() {
@@ -583,8 +629,8 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         } else {
             Log.d(TAG, "onRemoteMediaPlayerStatusUpdated(): Player status = unknown");
         }
-        for (Listener listener :
-                listeners) {
+        HashSet<Listener> listeners = new HashSet<>(this.listeners);
+        for (Listener listener : listeners) {
             listener.onChromeCastPlayerStatusUpdated(state, idleReason);
         }
 
@@ -595,7 +641,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
     }
 
     public final void disconnect() {
-        if (isConnected() || isConnecting()) {
+        if (isApplicationConnected() || isConnecting()) {
             disconnectDevice(true, true);
         }
     }
@@ -628,7 +674,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
 
         Log.d(TAG, "connectionSuspended: " + connectionSuspended);
         try {
-            if ((isConnected() || isConnecting())) {
+            if ((isApplicationConnected() || isConnecting())) {
                 Log.d(TAG, "Calling stopApplication");
                 stopApplication();
             }
@@ -655,10 +701,6 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
             clearMediaSession();
         }
         state = MediaStatus.PLAYER_STATE_IDLE;
-        
-        for (Listener listener : listeners){
-            listener.onChromeCastApplicationDisconnected();
-        }
     }
 
     /**
@@ -684,7 +726,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
      * @throws NoConnectionException If no connectivity to the device exists
      */
     public final void checkConnectivity() throws NoConnectionException {
-        if (!isConnected()) {
+        if (!isApplicationConnected()) {
             throw new NoConnectionException();
         }
     }
@@ -731,8 +773,8 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
      *
      * @return <code>true</code> if connected, <code>false</code> otherwise.
      */
-    public final boolean isConnected() {
-        return (apiClient != null) && apiClient.isConnected();
+    public final boolean isApplicationConnected() {
+        return applicationConnected && apiClient != null && apiClient.isConnected();
     }
 
     /**
@@ -764,6 +806,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
 
     @Override
     public void onConnectionSuspended(int i) {
+        HashSet<Listener> listeners = new HashSet<>(this.listeners);
         for (Listener listener : listeners) {
             listener.onChromeCastApplicationDisconnected();
         }
@@ -828,14 +871,14 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         int keyCode = event.getKeyCode();
         switch (keyCode) {
             case KeyEvent.KEYCODE_VOLUME_UP:
-                if (isConnected()) {
+                if (isApplicationConnected()) {
                     incrementVolume();
                     return true;
                 } else {
                     return false;
                 }
             case KeyEvent.KEYCODE_VOLUME_DOWN:
-                if (isConnected()) {
+                if (isApplicationConnected()) {
                     decrementVolume();
                     return true;
                 } else {
@@ -887,8 +930,6 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
     }
 
     public static class CastMediaRouterCallback extends MediaRouter.Callback{
-        private static final String TAG = "CastMediaRouterCallback";
-
         private final ChromeCastManager chromeCastManager;
 
         public CastMediaRouterCallback(ChromeCastManager chromeCastManager) {
@@ -919,7 +960,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
     }
 
     public boolean changeVolume(double volumeIncrement) {
-        if (isConnected()) {
+        if (isApplicationConnected()) {
             try {
                 double currentVolume = Cast.CastApi.getVolume(apiClient);
                 Cast.CastApi.setVolume(apiClient,
