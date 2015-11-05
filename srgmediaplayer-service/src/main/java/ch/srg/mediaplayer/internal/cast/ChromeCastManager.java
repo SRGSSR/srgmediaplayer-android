@@ -55,7 +55,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
     public static final int DISCONNECT_REASON_EXPLICIT = 3;
 
     public static final int NO_APPLICATION_ERROR = 0;
-    private static final double VOLUME_INCREMENT = 1.0;
+    private static final double VOLUME_INCREMENT = 0.075;
 
     private static ChromeCastManager instance;
     private RemoteMediaPlayer remoteMediaPlayer;
@@ -823,6 +823,28 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
 
     public int getMediaStatus() {
         return state;
+    }
+
+    public boolean handleKeyEvent(KeyEvent event) {
+        int keyCode = event.getKeyCode();
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_VOLUME_UP:
+                if (isConnected()) {
+                    incrementVolume();
+                    return true;
+                } else {
+                    return false;
+                }
+            case KeyEvent.KEYCODE_VOLUME_DOWN:
+                if (isConnected()) {
+                    decrementVolume();
+                    return true;
+                } else {
+                    return false;
+                }
+            default:
+                return false;
+        }
     }
 
     public interface Listener {
