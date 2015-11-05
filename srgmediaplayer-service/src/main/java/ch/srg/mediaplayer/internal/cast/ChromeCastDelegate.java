@@ -135,13 +135,16 @@ public class ChromeCastDelegate implements PlayerDelegate {
     public void seekTo(long positionInMillis) throws IllegalStateException {
         Log.d(TAG, "seekTo: " + positionInMillis);
         if (delegateReady) {
-            controller.onPlayerDelegateBuffering(this);
-            Log.d(TAG, "remoteMediaPlayer.seek");
             try {
-                chromeCastManager.seek(positionInMillis);
-                controller.onPlayerDelegateReady(this);
+                if (chromeCastManager.isRemoteMediaPlaying()) {
+                    controller.onPlayerDelegateBuffering(this);
+                    Log.d(TAG, "remoteMediaPlayer.seek");
+                    chromeCastManager.seek(positionInMillis);
+                    controller.onPlayerDelegateReady(this);
+                } else {
+                    chromeCastManager.loadMedia(mediaInfo, playIfReady, positionInMillis);
+                }
             } catch (NoConnectionException e) {
-                e.printStackTrace();
                 throw new IllegalStateException(e);
             }
         } else {
@@ -165,7 +168,10 @@ public class ChromeCastDelegate implements PlayerDelegate {
     @Override
     public long getCurrentPosition() {
         try {
-            lastKnownPosition = chromeCastManager.getMediaPosition();
+            if (chromeCastManager.isRemoteMediaPlaying()) {
+                // Check is necessary otherwise we get a 0 from the Google API
+                lastKnownPosition = chromeCastManager.getMediaPosition();
+            }
         } catch (NoConnectionException ignored) {
         }
         return lastKnownPosition;
