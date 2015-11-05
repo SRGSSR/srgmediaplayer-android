@@ -223,26 +223,29 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
                 public boolean onMediaButtonEvent(Intent mediaButtonIntent) {
                     KeyEvent keyEvent = mediaButtonIntent
                             .getParcelableExtra(Intent.EXTRA_KEY_EVENT);
-                    if (keyEvent != null && (keyEvent.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PAUSE
-                            || keyEvent.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PLAY)) {
-                        toggle();
+                    if (keyEvent != null) {
+                        if (keyEvent.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PAUSE) {
+                            onPause();
+                        } else if (keyEvent.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PLAY) {
+                            onPlay();
+                        }
                     }
                     return true;
                 }
 
                 @Override
                 public void onPlay() {
-                    toggle();
+                    try {
+                        loadIfNecessaryAndPlay();
+                    } catch (NoConnectionException e) {
+                        Log.e(TAG, "MediaSessionCompat.Callback(): Failed to toggle playback", e);
+                    }
                 }
 
                 @Override
                 public void onPause() {
-                    toggle();
-                }
-
-                private void toggle() {
                     try {
-                        togglePlayback();
+                        pause();
                     } catch (NoConnectionException e) {
                         Log.e(TAG, "MediaSessionCompat.Callback(): Failed to toggle playback", e);
                     }
@@ -263,7 +266,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         mediaRouter.setMediaSessionCompat(mediaSessionCompat);
     }
 
-    public void clearMediaSession() {
+    private void clearMediaSession() {
         Log.d(TAG, "clearMediaSession()");
         if (mediaSessionCompat != null) {
             mediaSessionCompat.setActive(false);
@@ -283,12 +286,16 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         if (isPlaying) {
             pause();
         } else {
-            if (state == MediaStatus.PLAYER_STATE_IDLE
-                    && idleReason == MediaStatus.IDLE_REASON_FINISHED) {
-                loadMedia(getRemoteMediaInformation(), true, 0);
-            } else {
-                play();
-            }
+            loadIfNecessaryAndPlay();
+        }
+    }
+
+    public void loadIfNecessaryAndPlay() throws NoConnectionException {
+        if (state == MediaStatus.PLAYER_STATE_IDLE
+                && idleReason == MediaStatus.IDLE_REASON_FINISHED) {
+            loadMedia(getRemoteMediaInformation(), true, 0);
+        } else {
+            play();
         }
     }
 
