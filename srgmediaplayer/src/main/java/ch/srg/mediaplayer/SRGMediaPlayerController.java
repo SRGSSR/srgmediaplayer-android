@@ -1048,6 +1048,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     private void doPostEvent(Event event) {
+
+        // TODO Make this internal as well as any modification to eventListeners.
+        
         logV("Sending event to global(" + globalEventListeners.size() + ") : " + event);
         // (reminder) It is necessary to copy before using the iteration as event listeners might modify
         // the listener lists and multiple threads access those two lists.
