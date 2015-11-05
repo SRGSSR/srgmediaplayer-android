@@ -158,7 +158,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
                         }
                     });
             for (Listener listener : listeners){
-                listener.onApplicationConnected();
+                listener.onChromeCastApplicationConnected();
             }
         } catch (NoConnectionException e) {
             Log.e(TAG, "Failed to attach media/data channel due to network issues", e);
@@ -293,7 +293,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
     }
 
     public void loadMedia(MediaInfo media, boolean autoPlay, long position) throws NoConnectionException {
-        Log.d(TAG, "loadMedia");
+        Log.d(TAG, "loadMedia ");
         checkConnectivity();
         if (media == null) {
             return;
@@ -578,6 +578,11 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         } else {
             Log.d(TAG, "onRemoteMediaPlayerStatusUpdated(): Player status = unknown");
         }
+        for (Listener listener :
+                listeners) {
+            listener.onChromeCastPlayerStatusUpdated(state, idleReason);
+        }
+
         /*for (VideoCastConsumer consumer : mVideoConsumers) {
             consumer.onRemoteMediaPlayerStatusUpdated();
             consumer.onVolumeChanged(volume, isMute);
@@ -647,7 +652,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         state = MediaStatus.PLAYER_STATE_IDLE;
         
         for (Listener listener : listeners){
-            listener.onApplicationDisconnected();
+            listener.onChromeCastApplicationDisconnected();
         }
     }
 
@@ -756,7 +761,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
     @Override
     public void onConnectionSuspended(int i) {
         for (Listener listener : listeners) {
-            listener.onApplicationDisconnected();
+            listener.onChromeCastApplicationDisconnected();
         }
     }
 
@@ -816,9 +821,11 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
     }
 
     public interface Listener {
-        void onApplicationConnected();
+        void onChromeCastApplicationConnected();
 
-        void onApplicationDisconnected();
+        void onChromeCastApplicationDisconnected();
+
+        void onChromeCastPlayerStatusUpdated(int state, int idleReason);
     }
 
     public void addListener(Listener listener) {

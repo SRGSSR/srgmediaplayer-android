@@ -123,17 +123,21 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     @Override
-    public void onApplicationConnected() {
+    public void onChromeCastApplicationConnected() {
         if (player != null){
             player.swapPlayerDelegate(null);
         }
     }
 
     @Override
-    public void onApplicationDisconnected() {
+    public void onChromeCastApplicationDisconnected() {
         if (player != null){
             player.swapPlayerDelegate(null);
         }
+    }
+
+    @Override
+    public void onChromeCastPlayerStatusUpdated(int state, int idleReason) {
     }
 
     public class LocalBinder extends Binder {
