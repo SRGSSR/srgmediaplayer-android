@@ -518,11 +518,15 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     if (state == State.PREPARING) {
                         seekToWhenReady = positionMs;
                     } else {
+                        seekToWhenReady = positionMs;
                         fireEvent(Event.Type.WILL_SEEK);
                         if (currentMediaPlayerDelegate != null) {
-                            currentMediaPlayerDelegate.seekTo(positionMs);
+                            try {
+                                currentMediaPlayerDelegate.seekTo(seekToWhenReady);
+                                seekToWhenReady = null;
+                            } catch (IllegalStateException ignored) {
+                            }
                         }
-                        seekToWhenReady = null;
                     }
                 }
                 return true;
@@ -608,8 +612,11 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             if (seekToWhenReady != null) {
                 fireEvent(Event.Type.WILL_SEEK);
                 Log.v(TAG, "Apply state / Seeking to " + seekToWhenReady);
-                currentMediaPlayerDelegate.seekTo(seekToWhenReady);
-                seekToWhenReady = null;
+                try {
+                    currentMediaPlayerDelegate.seekTo(seekToWhenReady);
+                    seekToWhenReady = null;
+                } catch (IllegalStateException ignored) {
+                }
             }
         }
     }
