@@ -276,6 +276,7 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
         if (isActive()) {
             switch (state) {
                 case MediaStatus.PLAYER_STATE_PLAYING:
+                    controller.onPlayerDelegateReady(this);
                     controller.onPlayerDelegatePlayWhenReadyCommited(this);
                     break;
                 case MediaStatus.PLAYER_STATE_PAUSED:
