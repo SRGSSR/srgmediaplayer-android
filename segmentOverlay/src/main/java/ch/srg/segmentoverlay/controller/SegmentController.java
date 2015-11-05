@@ -210,7 +210,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 				if (currentSegment == null) {
 					postEvent(Event.Type.SEGMENT_START, newSegment);
 				} else if (newSegment == null) {
-					postEvent(Event.Type.SEGMENT_END, newSegment);
+					postEvent(Event.Type.SEGMENT_END, null);
 				} else {
 					postEvent(Event.Type.SEGMENT_SWITCH, newSegment);
 				}
