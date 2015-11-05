@@ -363,9 +363,14 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
                     }
 
                 };
-        remoteMediaPlayer.seek(apiClient,
-                position,
-                RemoteMediaPlayer.RESUME_STATE_PLAY).setResultCallback(resultCallback);
+        try {
+            remoteMediaPlayer.seek(apiClient,
+                    position,
+                    RemoteMediaPlayer.RESUME_STATE_PLAY).setResultCallback(resultCallback);
+        } catch (IllegalStateException e) {
+            Log.e(TAG, "Illegal state when seeking to " + position, e);
+            throw new NoConnectionException(e);
+        }
     }
 
     public void stop() throws NoConnectionException {
