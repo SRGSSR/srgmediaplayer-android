@@ -867,6 +867,10 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         return state;
     }
 
+    public MediaSessionCompat getMediaSessionCompat() {
+        return mediaSessionCompat;
+    }
+
     public boolean handleKeyEvent(KeyEvent event) {
         int keyCode = event.getKeyCode();
         switch (keyCode) {

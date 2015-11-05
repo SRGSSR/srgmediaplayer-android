@@ -11,7 +11,7 @@ import android.app.Service;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
@@ -29,6 +29,8 @@ import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
 import ch.srg.mediaplayer.internal.cast.ChromeCastManager;
+import ch.srg.mediaplayer.service.utils.AppUtils;
+import ch.srg.mediaplayer.service.utils.FetchBitmapTask;
 
 /**
  * MediaPlayerService plays using the SRGMediaPlayerController. The communication works
@@ -100,9 +102,13 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     private static PlayerDelegateFactory playerDelegateFactory;
     private static boolean debugMode;
 
-    ServiceNotificationBuilder currentServiceNotification;
+    private ChromeCastManager chromeCastManager;
 
+    ServiceNotificationBuilder currentServiceNotification;
     private LocalBinder binder = new LocalBinder();
+
+    private FetchBitmapTask bitmapDecoderTask;
+    private int dimensionInPixels;
 
     private Runnable autoRelease = new Runnable() {
         @Override
@@ -129,14 +135,14 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     @Override
     public void onChromeCastApplicationConnected() {
-        if (player != null){
+        if (player != null) {
             player.swapPlayerDelegate(null);
         }
     }
 
     @Override
     public void onChromeCastApplicationDisconnected() {
-        if (player != null){
+        if (player != null) {
             player.swapPlayerDelegate(null);
         }
     }
@@ -163,7 +169,11 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 		 */
         MusicControl.pause(this); /* XXX: this is not the proper place for this, should be in the play part */
 
-        ChromeCastManager.getInstance().addListener(this);
+        chromeCastManager = ChromeCastManager.getInstance();
+        chromeCastManager.addListener(this);
+
+        dimensionInPixels = AppUtils.convertDpToPixel(MediaPlayerService.this,
+                getResources().getDimension(R.dimen.notification_image_size));
 
     }
 
@@ -174,7 +184,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
         setForeground(false);
 
-        ChromeCastManager.getInstance().removeListener(this);
+        chromeCastManager.removeListener(this);
 
         if (player != null) {
             player.release();
@@ -295,7 +305,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         } else {
             title = null;
         }
-        return new ServiceNotificationBuilder(live, isPlaying(), title, pendingIntent);
+        return new ServiceNotificationBuilder(live, isPlaying(), title, pendingIntent, mediaArtBitmap);
     }
 
     private void startUpdates() {
@@ -312,45 +322,11 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     private void prepare(String mediaIdentifier, Long startPosition) throws SRGMediaPlayerException {
+        clearMediaSession();
         createPlayer();
 
         if (player.play(mediaIdentifier, startPosition)) {
             startUpdates();
-        }
-    }
-
-    private void setupMediaSession(String mediaIdentifier) {
-        Log.d(TAG, "setupMediaSession");
-        if (mediaSessionCompat == null) {
-            boolean live = false;
-            if (serviceDataProvider != null) {
-                live = serviceDataProvider.isLive(mediaIdentifier);
-            }
-            /*
-            * Setup the media buttons for the lock screen component.
-		    */
-            Intent intent = new Intent(Intent.ACTION_MEDIA_BUTTON);
-            intent.setComponent(new ComponentName(this, AudioIntentReceiver.class));
-
-            mediaSessionCompat = new MediaSessionCompat(this, "MediaPlayerService", new ComponentName(this, AudioIntentReceiver.class), PendingIntent.getBroadcast(this, 0, intent, 0));
-            mediaSessionCompat.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
-            mediaSessionCompat.setActive(true);
-            mediaSessionCompat.setCallback(new SRGMediaSessionCallback());
-
-            MediaMetadataCompat.Builder meta = new MediaMetadataCompat.Builder();
-            if (serviceDataProvider != null) {
-                String title = serviceDataProvider.getTitle(mediaIdentifier);
-
-                meta.putString(MediaMetadataCompat.METADATA_KEY_TITLE, title);
-            }
-            if (!live) {
-                meta.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, getDuration());
-            }
-
-            mediaSessionCompat.setMetadata(meta.build());
-
-            setupNotification();
-
         }
     }
 
@@ -393,6 +369,76 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         handler.removeCallbacks(autoRelease);
     }
 
+    private void setupMediaSession(String mediaIdentifier) {
+        Log.d(TAG, "setupMediaSession");
+
+        String mediaThumbnail = "";
+        if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
+            mediaThumbnail = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).getMediaImageUri(mediaIdentifier);
+        }
+
+        if (mediaSessionCompat == null && chromeCastManager.getMediaSessionCompat() == null) {
+            boolean live = false;
+            if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
+                live = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).isLive(mediaIdentifier);
+            }
+            /*
+            * Setup the media buttons for the lock screen component.
+		    */
+            Intent intent = new Intent(Intent.ACTION_MEDIA_BUTTON);
+            intent.setComponent(new ComponentName(this, AudioIntentReceiver.class));
+
+            mediaSessionCompat = new MediaSessionCompat(this, "MediaPlayerService", new ComponentName(this, AudioIntentReceiver.class), PendingIntent.getBroadcast(this, 0, intent, 0));
+            mediaSessionCompat.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
+            mediaSessionCompat.setActive(true);
+            mediaSessionCompat.setCallback(new SRGMediaSessionCallback());
+
+            MediaMetadataCompat.Builder meta = new MediaMetadataCompat.Builder();
+            if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
+                String title = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).
+                        getTitle(mediaIdentifier);
+
+                meta.putString(MediaMetadataCompat.METADATA_KEY_TITLE, title);
+            }
+            if (!live) {
+                meta.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, getDuration());
+            }
+
+            mediaSessionCompat.setMetadata(meta.build());
+
+            setUpNotification(mediaThumbnail);
+
+        } else if (mediaSessionCompat == null) {
+            mediaSessionCompat = chromeCastManager.getMediaSessionCompat();
+            setUpNotification(mediaThumbnail);
+        }
+    }
+
+    private void setUpNotification(String mediaThumbnail) {
+        if (TextUtils.isEmpty(mediaThumbnail)) {
+            updateNotification();
+            return;
+        }
+        if (bitmapDecoderTask != null) {
+            bitmapDecoderTask.cancel(false);
+        }
+        Uri imgUri = Uri.parse(mediaThumbnail);
+
+        bitmapDecoderTask = new FetchBitmapTask() {
+            @Override
+            protected void onPostExecute(Bitmap bitmap) {
+                mediaArtBitmap = AppUtils.scaleAndFitBitmap(bitmap, dimensionInPixels,
+                        dimensionInPixels);
+                updateNotification();
+                updateLockScreenImage(bitmap);
+                if (this == bitmapDecoderTask) {
+                    bitmapDecoderTask = null;
+                }
+            }
+        };
+        bitmapDecoderTask.execute(imgUri);
+    }
+
     private void updateNotification() {
         Log.v(TAG, "updateNotification");
         if (hasNonDeadPlayer()) {
@@ -403,7 +449,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 ServiceNotificationBuilder builder = createNotificationBuilder();
                 if (builder != currentServiceNotification) {
                     currentServiceNotification = builder;
-                    notificationManager.notify(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat, mediaArtBitmap));
+                    notificationManager.notify(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat));
                 }
             }
         } else {
@@ -420,7 +466,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 if (foreground) {
                     ServiceNotificationBuilder builder = createNotificationBuilder();
                     currentServiceNotification = builder;
-                    startForeground(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat, mediaArtBitmap));
+                    startForeground(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat));
                 } else {
                     stopForeground(true);
                     currentServiceNotification = null;
@@ -612,22 +658,10 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         }
     }
 
-    private void setupNotification() {
-        int notificationIconId;
-        if (serviceDataProvider != null) {
-            notificationIconId = serviceDataProvider.getNotificationIconResourceId(getCurrentMediaIdentifier());
-        } else {
-            notificationIconId = 0;
-        }
-
-        updateLockScreenImage(notificationIconId);
-    }
-
     /*
      * Updates lock screen image
      */
-    private void updateLockScreenImage(int notificationIconId) {
-        mediaArtBitmap = BitmapFactory.decodeResource(this.getResources(), notificationIconId);
+    private void updateLockScreenImage(Bitmap mediaArtBitmap) {
         MediaMetadataCompat currentMetadata = mediaSessionCompat.getController().getMetadata();
         MediaMetadataCompat.Builder newBuilder = currentMetadata == null
                 ? new MediaMetadataCompat.Builder()

@@ -17,12 +17,14 @@ public class ServiceNotificationBuilder {
     boolean playing;
     String title;
     PendingIntent pendingIntent;
+    private Bitmap notificationBitmap;
 
-    public ServiceNotificationBuilder(boolean live, boolean playing, String title, PendingIntent pendingIntent) {
+    public ServiceNotificationBuilder(boolean live, boolean playing, String title, PendingIntent pendingIntent, Bitmap notificationBitmap) {
         this.live = live;
         this.playing = playing;
         this.title = title;
         this.pendingIntent = pendingIntent;
+        this.notificationBitmap = notificationBitmap;
     }
 
     @Override
@@ -35,13 +37,14 @@ public class ServiceNotificationBuilder {
         if (live != that.live) return false;
         if (playing != that.playing) return false;
         if (title != null ? !title.equals(that.title) : that.title != null) return false;
+        if (notificationBitmap != that.notificationBitmap) return false;
         if (pendingIntent != null ? !pendingIntent.equals(that.pendingIntent) : that.pendingIntent != null) return false;
 
         return true;
 
     }
 
-    public Notification buildNotification(Context context, MediaSessionCompat mediaSessionCompat, Bitmap notificationBitmap) {
+    public Notification buildNotification(Context context, MediaSessionCompat mediaSessionCompat) {
         Intent pauseIntent = new Intent(context, MediaPlayerService.class);
         pauseIntent.setAction(playing ? MediaPlayerService.ACTION_PAUSE : MediaPlayerService.ACTION_RESUME);
         pauseIntent.putExtra(MediaPlayerService.ARG_FROM_NOTIFICATION, true);
@@ -87,4 +90,5 @@ public class ServiceNotificationBuilder {
 
         return builder.build();
     }
+
 }
