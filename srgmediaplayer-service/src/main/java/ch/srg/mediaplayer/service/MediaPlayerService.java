@@ -405,6 +405,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             }
 
             mediaSessionCompat.setMetadata(meta.build());
+            chromeCastManager.setMediaSessionCompat(mediaSessionCompat);
 
             setUpNotification(mediaThumbnail);
 
@@ -669,6 +670,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         mediaSessionCompat.setMetadata(newBuilder
                 .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, mediaArtBitmap)
                 .build());
+        chromeCastManager.setMediaSessionCompat(mediaSessionCompat);
         updateNotification();
     }
 

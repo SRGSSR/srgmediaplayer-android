@@ -893,6 +893,13 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         }
     }
 
+    public void setMediaSessionCompat(MediaSessionCompat mediaSessionCompat) {
+        this.mediaSessionCompat = mediaSessionCompat;
+        if (mediaRouter != null) {
+            mediaRouter.setMediaSessionCompat(mediaSessionCompat);
+        }
+    }
+
     public interface Listener {
         void onChromeCastApplicationConnected();
 
