@@ -14,11 +14,11 @@ if (isReleaseBuild()) {
 }
 
 def getRepositoryUsername() {
-    return sonatypeUsername
+    return project.hasProperty("sonatypeUsername") ? sonatypeUsername : ""
 }
 
 def getRepositoryPassword() {
-    return sonatypePassword
+    return project.hasProperty("sonatypePassword") ? sonatypePassword : ""
 }
 
 uploadArchives {
