@@ -128,7 +128,8 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
         if (playerController != null && !playerController.isReleased()) {
             boolean playing = playerController.isPlaying();
             duration = playerController.getMediaDuration();
-            boolean mediaCompleted = !playing && time >= duration - COMPLETION_TOLERANCE_MS;
+            boolean mediaCompleted =
+                    !playing && duration != 0 && time >= duration - COMPLETION_TOLERANCE_MS;
 
             updateTimes(time, duration);
 
