@@ -38,6 +38,7 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
     private long lastKnownDuration;
     private String contentType;
     private boolean live;
+    private int currentState;
 
     public ChromeCastDelegate(OnPlayerDelegateListener controller) {
         this.chromeCastManager = ChromeCastManager.getInstance();
@@ -273,7 +274,7 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
 
     @Override
     public void onChromeCastPlayerStatusUpdated(int state, int idleReason) {
-        if (isActive()) {
+        if (isActive() && state != currentState) {
             switch (state) {
                 case MediaStatus.PLAYER_STATE_PLAYING:
                     controller.onPlayerDelegateReady(this);
@@ -305,6 +306,7 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
                     Log.d(TAG, "onRemoteMediaPlayerStatusUpdated(): Player status = unknown");
                     break;
             }
+            currentState = state;
         }
     }
 }
