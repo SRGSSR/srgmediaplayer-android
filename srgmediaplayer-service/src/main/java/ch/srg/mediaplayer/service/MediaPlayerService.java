@@ -294,16 +294,17 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private ServiceNotificationBuilder createNotificationBuilder() {
         String title;
-        boolean live = false;
-        PendingIntent pendingIntent = null;
+        boolean live;
+        PendingIntent pendingIntent;
         if (serviceDataProvider != null) {
             String mediaIdentifier = getCurrentMediaIdentifier();
-            SRGMediaPlayerServiceMetaDataProvider serviceMetaDataProvider = (SRGMediaPlayerServiceMetaDataProvider) MediaPlayerService.dataProvider;
-            title = serviceMetaDataProvider.getTitle(mediaIdentifier);
-            live = serviceMetaDataProvider.isLive(mediaIdentifier);
-            pendingIntent = serviceMetaDataProvider.getNotificationPendingIntent(mediaIdentifier);
+            title = serviceDataProvider.getTitle(mediaIdentifier);
+            live = serviceDataProvider.isLive(mediaIdentifier);
+            pendingIntent = serviceDataProvider.getNotificationPendingIntent(mediaIdentifier);
         } else {
             title = null;
+            live = false;
+            pendingIntent = null;
         }
         return new ServiceNotificationBuilder(live, isPlaying(), title, pendingIntent, mediaArtBitmap);
     }
@@ -373,14 +374,14 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         Log.d(TAG, "setupMediaSession");
 
         String mediaThumbnail = "";
-        if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
-            mediaThumbnail = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).getMediaImageUri(mediaIdentifier);
+        if (serviceDataProvider != null) {
+            mediaThumbnail = serviceDataProvider.getMediaImageUri(mediaIdentifier);
         }
 
         if (mediaSessionCompat == null && chromeCastManager.getMediaSessionCompat() == null) {
             boolean live = false;
-            if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
-                live = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).isLive(mediaIdentifier);
+            if (serviceDataProvider != null) {
+                live = serviceDataProvider.isLive(mediaIdentifier);
             }
             /*
             * Setup the media buttons for the lock screen component.
@@ -394,9 +395,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             mediaSessionCompat.setCallback(new SRGMediaSessionCallback());
 
             MediaMetadataCompat.Builder meta = new MediaMetadataCompat.Builder();
-            if (dataProvider instanceof SRGMediaPlayerServiceMetaDataProvider) {
-                String title = ((SRGMediaPlayerServiceMetaDataProvider) dataProvider).
-                        getTitle(mediaIdentifier);
+            if (serviceDataProvider != null) {
+                String title = serviceDataProvider.getTitle(mediaIdentifier);
 
                 meta.putString(MediaMetadataCompat.METADATA_KEY_TITLE, title);
             }
