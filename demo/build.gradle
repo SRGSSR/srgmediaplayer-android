@@ -21,10 +21,12 @@ android {
 
 	signingConfigs {
 		release {
-			storeFile file(property("ch.srg.srgplayer.rts.keystore"))
-			storePassword property("ch.srg.srgplayer.rts.password")
-			keyAlias property("ch.srg.srgplayer.rts.alias")
-			keyPassword property("ch.srg.srgplayer.rts.password")
+			if (project.hasProperty("ch.srg.srgplayer.rts.keystore")) {
+				storeFile file(property("ch.srg.srgplayer.rts.keystore"))
+				storePassword property("ch.srg.srgplayer.rts.password")
+				keyAlias property("ch.srg.srgplayer.rts.alias")
+				keyPassword property("ch.srg.srgplayer.rts.password")
+			}
 		}
 	}
 
