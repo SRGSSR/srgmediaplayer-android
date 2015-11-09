@@ -6,16 +6,10 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.app.MediaRouteActionProvider;
-import android.support.v7.media.MediaRouteSelector;
-import android.support.v7.media.MediaRouter;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -23,15 +17,6 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import com.google.android.gms.cast.ApplicationMetadata;
-import com.google.android.gms.cast.Cast;
-import com.google.android.gms.cast.CastDevice;
-import com.google.android.gms.cast.CastMediaControlIntent;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Status;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -48,8 +33,6 @@ import ch.srg.mediaplayer.demo.R;
 import ch.srg.mediaplayer.extras.dataproviders.MultiDataProvider;
 import ch.srg.mediaplayer.extras.fullscreen.helper.SystemUiHelper;
 import ch.srg.mediaplayer.extras.overlay.error.SimpleErrorMessage;
-import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
-import ch.srg.mediaplayer.internal.cast.GoogleCastDelegate;
 import ch.srg.mediaplayer.internal.exoplayer.ExoPlayerDelegate;
 import ch.srg.mediaplayer.internal.nativeplayer.NativePlayerDelegate;
 import ch.srg.segmentoverlay.controller.SegmentController;
@@ -104,17 +87,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
     private int toastCount;
     private int orientation;
 
-    //Cast objects
-    private MediaRouter mMediaRouter;
-    private MediaRouteSelector mMediaRouteSelector;
-    private MyMediaRouterCallback mMediaRouterCallback;
-    private GoogleApiClient mApiClient;
-    private boolean mWaitingForReconnect;
-    private boolean mApplicationStarted;
-    private CastDevice mSelectedDevice;
-    private String mSessionId;
-    private ConnectionCallbacks mConnectionCallbacks;
-    private ConnectionFailedListener mConnectionFailedListener;
     private Button swapPlayerButton;
 
     @Override
@@ -136,8 +108,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-
-        initGoogleCast();
 
         playerView = (SRGMediaPlayerView) findViewById(R.id.demo_video_container);
 
@@ -248,49 +218,21 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
         }
     }
 
-    private void initGoogleCast() {
-        mMediaRouter = MediaRouter.getInstance(getApplicationContext());
-        mMediaRouteSelector = new MediaRouteSelector.Builder()
-                .addControlCategory(CastMediaControlIntent.categoryForCast(CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID))
-                .build();
-
-        mMediaRouterCallback = new MyMediaRouterCallback();
-        mConnectionCallbacks = new ConnectionCallbacks();
-        mConnectionFailedListener = new ConnectionFailedListener();
-    }
-
     public String getTestListItem(int i) {
         return identifierList.get(i);
     }
 
     public void playTestIdentifier(String identifier) {
-        if (mApiClient != null && mApplicationStarted) {
-
-            Log.d(TAG, "Create new Google cast delegate");
-            PlayerDelegateFactory playerDelegateFactory = new PlayerDelegateFactory() {
-                @Override
-                public PlayerDelegate getDelegateForMediaIdentifier(PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, String mediaIdentifier) {
-                    return new GoogleCastDelegate(mSessionId, mApiClient, srgMediaPlayer);
-                }
-            };
-            srgMediaPlayer.setPlayerDelegateFactory(playerDelegateFactory);
-            try {
+        try {
+            String SEEK_DELIMITER = "@seek:";
+            if (identifier.contains(SEEK_DELIMITER)) {
+                Long time = Long.parseLong(identifier.substring(identifier.indexOf(SEEK_DELIMITER) + SEEK_DELIMITER.length())) * 1000;
+                srgMediaPlayer.play(identifier, time);
+            } else {
                 srgMediaPlayer.play(identifier);
-            } catch (SRGMediaPlayerException e) {
-                e.printStackTrace();
             }
-        } else {
-            try {
-                String SEEK_DELIMITER = "@seek:";
-                if (identifier.contains(SEEK_DELIMITER)) {
-                    Long time = Long.parseLong(identifier.substring(identifier.indexOf(SEEK_DELIMITER) + SEEK_DELIMITER.length())) * 1000;
-                    srgMediaPlayer.play(identifier, time);
-                } else {
-                    srgMediaPlayer.play(identifier);
-                }
-            } catch (SRGMediaPlayerException e) {
-                Log.e(TAG, "play " + identifier, e);
-            }
+        } catch (SRGMediaPlayerException e) {
+            Log.e(TAG, "play " + identifier, e);
         }
     }
 
@@ -309,10 +251,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
         getMenuInflater().inflate(R.menu.demo_segment_media_player_activity, menu);
-        MenuItem mediaRouteMenuItem = menu.findItem(R.id.media_route_menu_item);
-        MediaRouteActionProvider mediaRouteActionProvider =
-                (MediaRouteActionProvider) MenuItemCompat.getActionProvider(mediaRouteMenuItem);
-        mediaRouteActionProvider.setRouteSelector(mMediaRouteSelector);
         return true;
     }
 
@@ -509,8 +447,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
     @Override
     protected void onStart() {
         super.onStart();
-        mMediaRouter.addCallback(mMediaRouteSelector, mMediaRouterCallback,
-                MediaRouter.CALLBACK_FLAG_REQUEST_DISCOVERY);
     }
 
     @Override
@@ -527,7 +463,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
 
     @Override
     protected void onStop() {
-        mMediaRouter.removeCallback(mMediaRouterCallback);
         super.onStop();
     }
 
@@ -584,198 +519,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
 
     public MultiDataProvider getDataProvider() {
         return dataProvider;
-    }
-
-
-    private class MyMediaRouterCallback extends MediaRouter.Callback {
-
-        @Override
-        public void onRouteSelected(MediaRouter router, MediaRouter.RouteInfo info) {
-            mSelectedDevice = CastDevice.getFromBundle(info.getExtras());
-            String routeId = info.getId();
-
-            Log.d(TAG, routeId);
-
-            Cast.CastOptions.Builder apiOptionsBuilder = Cast.CastOptions
-                    .builder(mSelectedDevice, mCastClientListener).setVerboseLoggingEnabled(true);
-
-            mApiClient = new GoogleApiClient.Builder(DemoMediaPlayerActivity.this)
-                    .addApi(Cast.API, apiOptionsBuilder.build())
-                    .addConnectionCallbacks(mConnectionCallbacks)
-                    .addOnConnectionFailedListener(mConnectionFailedListener)
-                    .build();
-
-            mApiClient.connect();
-        }
-
-        @Override
-        public void onRouteUnselected(MediaRouter router, MediaRouter.RouteInfo info) {
-            teardown();
-            mSelectedDevice = null;
-        }
-    }
-
-    private class ConnectionCallbacks implements
-            GoogleApiClient.ConnectionCallbacks {
-        @Override
-        public void onConnected(Bundle connectionHint) {
-            if (mWaitingForReconnect) {
-                mWaitingForReconnect = false;
-                Log.e(TAG, "Need to reconnect channels");
-                //reconnectChannels();
-            } else {
-                try {
-                    Cast.CastApi.launchApplication(mApiClient, CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID, false)
-                            .setResultCallback(
-                                    new ResultCallback<Cast.ApplicationConnectionResult>() {
-                                        @Override
-                                        public void onResult(Cast.ApplicationConnectionResult result) {
-                                            Status status = result.getStatus();
-                                            if (status.isSuccess()) {
-                                                ApplicationMetadata applicationMetadata =
-                                                        result.getApplicationMetadata();
-                                                mSessionId = result.getSessionId();
-                                                String applicationStatus = result.getApplicationStatus();
-                                                boolean wasLaunched = result.getWasLaunched();
-
-                                                Log.d(TAG, "applicationMetadata: " + String.valueOf(applicationMetadata));
-                                                Log.d(TAG, "sessionId: " + mSessionId);
-                                                Log.d(TAG, "applicationStatus: " + applicationStatus);
-                                                Log.d(TAG, "wasLaunched: " + String.valueOf(wasLaunched));
-
-                                                mApplicationStarted = true;
-
-                                                if (srgMediaPlayer.isPlaying()) {
-                                                    String mediaIdentifier = srgMediaPlayer.getMediaIdentifier();
-                                                    long mediaPosition = srgMediaPlayer.getMediaPosition();
-                                                    srgMediaPlayer.release();
-                                                    srgMediaPlayer = new SRGMediaPlayerController(DemoMediaPlayerActivity.this, dataProvider, "GoogleCast");
-                                                    Log.d(TAG, "Create new Google cast delegate");
-                                                    PlayerDelegateFactory playerDelegateFactory = new PlayerDelegateFactory() {
-                                                        @Override
-                                                        public PlayerDelegate getDelegateForMediaIdentifier(PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, String mediaIdentifier) {
-                                                            return new GoogleCastDelegate(mSessionId, mApiClient, srgMediaPlayer);
-                                                        }
-                                                    };
-                                                    srgMediaPlayer.setPlayerDelegateFactory(playerDelegateFactory);
-                                                    try {
-                                                        srgMediaPlayer.play(mediaIdentifier, mediaPosition);
-                                                    } catch (SRGMediaPlayerException e) {
-                                                        e.printStackTrace();
-                                                    }
-                                                }
-
-                                            } else {
-                                                teardown();
-                                            }
-                                        }
-                                    }
-
-                            );
-
-                } catch (Exception e) {
-                    Log.e(TAG, "Failed to launch application", e);
-                }
-            }
-        }
-
-        @Override
-        public void onConnectionSuspended(int cause) {
-            mWaitingForReconnect = true;
-        }
-    }
-
-    private class ConnectionFailedListener implements
-            GoogleApiClient.OnConnectionFailedListener {
-        @Override
-        public void onConnectionFailed(ConnectionResult result) {
-            teardown();
-        }
-    }
-
-    Cast.Listener mCastClientListener = new Cast.Listener() {
-        @Override
-        public void onApplicationStatusChanged() {
-            if (mApiClient != null) {
-                Log.d(TAG, "onApplicationStatusChanged: "
-                        + Cast.CastApi.getApplicationStatus(mApiClient));
-            }
-        }
-
-        @Override
-        public void onVolumeChanged() {
-            if (mApiClient != null) {
-                Log.d(TAG, "onVolumeChanged: " + Cast.CastApi.getVolume(mApiClient));
-            }
-        }
-
-        @Override
-        public void onApplicationDisconnected(int errorCode) {
-            teardown();
-        }
-    };
-
-    @Override
-    public boolean dispatchKeyEvent(KeyEvent event) {
-        int action = event.getAction();
-        int keyCode = event.getKeyCode();
-        switch (keyCode) {
-            case KeyEvent.KEYCODE_VOLUME_UP:
-                if (action == KeyEvent.ACTION_DOWN) {
-                    if (mApplicationStarted) {
-                        double currentVolume = Cast.CastApi.getVolume(mApiClient);
-                        if (currentVolume < 1.0) {
-                            try {
-                                Cast.CastApi.setVolume(mApiClient,
-                                        Math.min(currentVolume + VOLUME_INCREMENT, 1.0));
-                            } catch (Exception e) {
-                                Log.e(TAG, "unable to set volume", e);
-                            }
-                        }
-                    } else {
-                        Log.e(TAG, "dispatchKeyEvent - volume up");
-                        return super.dispatchKeyEvent(event);
-                    }
-                }
-                return true;
-            case KeyEvent.KEYCODE_VOLUME_DOWN:
-                if (action == KeyEvent.ACTION_DOWN) {
-                    if (mApplicationStarted) {
-                        double currentVolume = Cast.CastApi.getVolume(mApiClient);
-                        if (currentVolume > 0.0) {
-                            try {
-                                Cast.CastApi.setVolume(mApiClient,
-                                        Math.max(currentVolume - VOLUME_INCREMENT, 0.0));
-                            } catch (Exception e) {
-                                Log.e(TAG, "unable to set volume", e);
-                            }
-                        }
-                    } else {
-                        Log.e(TAG, "dispatchKeyEvent - volume down");
-                        return super.dispatchKeyEvent(event);
-                    }
-                }
-                return true;
-            default:
-                return super.dispatchKeyEvent(event);
-        }
-    }
-
-    private void teardown() {
-        Log.d(TAG, "teardown");
-        if (mApiClient != null) {
-            if (mApplicationStarted) {
-                if (mApiClient.isConnected() || mApiClient.isConnecting()) {
-                    Cast.CastApi.stopApplication(mApiClient, mSessionId);
-                    mApiClient.disconnect();
-                }
-                mApplicationStarted = false;
-            }
-            mApiClient = null;
-        }
-        mSelectedDevice = null;
-        mWaitingForReconnect = false;
-        mSessionId = null;
     }
 
 }

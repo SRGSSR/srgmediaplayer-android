@@ -15,6 +15,13 @@ public interface SRGMediaPlayerServiceMetaDataProvider {
     String getTitle(String mediaIdentifier);
 
     /**
+     * Title to be displayed in notification
+     * @param mediaIdentifier media identifier
+     * @return user string
+     */
+    Long getDuration(String mediaIdentifier);
+
+    /**
      * Notification resource Id.
      *
      * @param mediaIdentifier media identifier

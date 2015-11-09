@@ -10,6 +10,7 @@ import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.extras.dataproviders.DirectMappingDataProvider;
 import ch.srg.mediaplayer.extras.dataproviders.MultiDataProvider;
 import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
+import ch.srg.mediaplayer.internal.cast.ChromeCastManager;
 import ch.srg.mediaplayer.internal.exoplayer.ExoPlayerDelegate;
 import ch.srg.mediaplayer.internal.nativeplayer.NativePlayerDelegate;
 import ch.srg.mediaplayer.service.MediaPlayerService;
@@ -27,6 +28,8 @@ public class DemoApplication extends Application {
 
 	private PlayerDelegateFactory playerDelegateFactory;
 
+	private ChromeCastManager chromeCastManager;
+
 	public DemoApplication() {
 	}
 
@@ -43,6 +46,8 @@ public class DemoApplication extends Application {
 		super.onCreate();
 		sApplication = this;
 		sContext = getApplicationContext();
+
+		chromeCastManager = ChromeCastManager.initialize(this);
 
 		dummyDataProvider = new DummyDataProvider();
 		multiDataProvider = new MultiDataProvider();
