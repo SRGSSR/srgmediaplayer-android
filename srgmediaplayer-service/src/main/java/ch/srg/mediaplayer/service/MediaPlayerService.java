@@ -8,29 +8,24 @@ package ch.srg.mediaplayer.service;
 
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.net.Uri;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.KeyEvent;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
 import ch.srg.mediaplayer.internal.cast.ChromeCastManager;
-import ch.srg.mediaplayer.service.utils.AppUtils;
-import ch.srg.mediaplayer.service.utils.FetchBitmapTask;
+import ch.srg.mediaplayer.internal.session.MediaSessionManager;
 
 /**
  * MediaPlayerService plays using the SRGMediaPlayerController. The communication works
@@ -47,7 +42,7 @@ import ch.srg.mediaplayer.service.utils.FetchBitmapTask;
  * - <b>ACTION_BROADCAST_STATUS_BUNDLE:</b> with <i>KEY_STATE:</i> player status; <i>KEY_POSITION:</i> position within the stream in milliseconds;
  * <i>KEY_DURATION:</i> duration of the stream in milliseconds;
  */
-public class MediaPlayerService extends Service implements SRGMediaPlayerController.Listener, ChromeCastManager.Listener {
+public class MediaPlayerService extends Service implements SRGMediaPlayerController.Listener, ChromeCastManager.Listener, MediaSessionManager.Listener {
     public static final String TAG = "MediaPlayerService";
 
     private static final String PREFIX = "ch.srg.mediaplayer.service";
@@ -85,7 +80,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     private SRGMediaPlayerController player;
     private boolean isForeground;
 
-
     // Media Session implementation
     private MediaSessionCompat mediaSessionCompat;
 
@@ -103,12 +97,10 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     private static boolean debugMode;
 
     private ChromeCastManager chromeCastManager;
+    private MediaSessionManager mediaSessionManager;
 
     ServiceNotificationBuilder currentServiceNotification;
     private LocalBinder binder = new LocalBinder();
-
-    private FetchBitmapTask bitmapDecoderTask;
-    private int dimensionInPixels;
 
     private Runnable autoRelease = new Runnable() {
         @Override
@@ -119,7 +111,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 } else {
                     player.release();
                     player = null;
-                    clearMediaSession();
+                    mediaSessionManager.clearMediaSession();
                 }
             }
         }
@@ -151,6 +143,27 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     public void onChromeCastPlayerStatusUpdated(int state, int idleReason) {
     }
 
+    @Override
+    public void onBitmapUpdate(Bitmap bitmap) {
+        mediaArtBitmap = bitmap;
+        updateNotification();
+    }
+
+    @Override
+    public void onResumeSession() {
+        resume();
+    }
+
+    @Override
+    public void onPauseSession() {
+        pause();
+    }
+
+    @Override
+    public void onStopSession() {
+        stopPlayer();
+    }
+
     public class LocalBinder extends Binder {
         public MediaPlayerService getService() {
             return MediaPlayerService.this;
@@ -172,8 +185,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         chromeCastManager = ChromeCastManager.getInstance();
         chromeCastManager.addListener(this);
 
-        dimensionInPixels = AppUtils.convertDpToPixel(MediaPlayerService.this,
-                getResources().getDimension(R.dimen.notification_image_size));
+        mediaSessionManager = MediaSessionManager.getInstance();
+        mediaSessionManager.addListener(this);
 
     }
 
@@ -190,7 +203,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             player.release();
             player = null;
         }
-        unregisterMediaButtonEvent();
     }
 
     @Override
@@ -206,8 +218,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     break;
                 case ACTION_PLAY: {
                     setForeground(true);
-
-                    clearMediaSession();
 
                     String newMediaIdentifier = intent.getStringExtra(ARG_MEDIA_IDENTIFIER);
 
@@ -225,7 +235,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                         flags = intent.getIntExtra(ARG_FLAGS, 0);
                     }
 
-                    //setupMediaSession(newMediaIdentifier);
+                    //requestMediaSession(newMediaIdentifier);
 
                     try {
                         prepare(newMediaIdentifier, position, true);
@@ -244,7 +254,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     // Update notification so that if we are no longer synchronized, the user can
                     // at least force the notification removal with the stop button
                     updateNotification();
-                    unregisterMediaButtonEvent();
                     break;
 
                 case ACTION_SEEK: {
@@ -323,7 +332,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     private void prepare(String mediaIdentifier, Long startPosition) throws SRGMediaPlayerException {
-        clearMediaSession();
+        mediaSessionManager.clearMediaSession();
         createPlayer();
 
         if (player.play(mediaIdentifier, startPosition)) {
@@ -370,74 +379,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         handler.removeCallbacks(autoRelease);
     }
 
-    private void setupMediaSession(String mediaIdentifier) {
-        Log.d(TAG, "setupMediaSession");
-
-        String mediaThumbnail = "";
-        if (serviceDataProvider != null) {
-            mediaThumbnail = serviceDataProvider.getMediaImageUri(mediaIdentifier);
-        }
-
-        if (mediaSessionCompat == null && chromeCastManager.getMediaSessionCompat() == null) {
-            boolean live = false;
-            if (serviceDataProvider != null) {
-                live = serviceDataProvider.isLive(mediaIdentifier);
-            }
-            /*
-            * Setup the media buttons for the lock screen component.
-		    */
-            Intent intent = new Intent(Intent.ACTION_MEDIA_BUTTON);
-            intent.setComponent(new ComponentName(this, AudioIntentReceiver.class));
-
-            mediaSessionCompat = new MediaSessionCompat(this, "MediaPlayerService", new ComponentName(this, AudioIntentReceiver.class), PendingIntent.getBroadcast(this, 0, intent, 0));
-            mediaSessionCompat.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
-            mediaSessionCompat.setActive(true);
-            mediaSessionCompat.setCallback(new SRGMediaSessionCallback());
-
-            MediaMetadataCompat.Builder meta = new MediaMetadataCompat.Builder();
-            if (serviceDataProvider != null) {
-                String title = serviceDataProvider.getTitle(mediaIdentifier);
-
-                meta.putString(MediaMetadataCompat.METADATA_KEY_TITLE, title);
-            }
-            if (!live) {
-                meta.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, getDuration());
-            }
-
-            mediaSessionCompat.setMetadata(meta.build());
-            chromeCastManager.setMediaSessionCompat(mediaSessionCompat);
-
-            setUpNotification(mediaThumbnail);
-
-        } else if (mediaSessionCompat == null) {
-            mediaSessionCompat = chromeCastManager.getMediaSessionCompat();
-            setUpNotification(mediaThumbnail);
-        }
-    }
-
-    private void setUpNotification(String mediaThumbnail) {
-        if (TextUtils.isEmpty(mediaThumbnail)) {
-            updateNotification();
-            return;
-        }
-        if (bitmapDecoderTask != null) {
-            bitmapDecoderTask.cancel(false);
-        }
-        Uri imgUri = Uri.parse(mediaThumbnail);
-
-        bitmapDecoderTask = new FetchBitmapTask() {
-            @Override
-            protected void onPostExecute(Bitmap bitmap) {
-                mediaArtBitmap = AppUtils.scaleAndFitBitmap(bitmap, dimensionInPixels,
-                        dimensionInPixels);
-                updateNotification();
-                updateLockScreenImage(bitmap);
-                if (this == bitmapDecoderTask) {
-                    bitmapDecoderTask = null;
-                }
-            }
-        };
-        bitmapDecoderTask.execute(imgUri);
+    private void requestMediaSession(String mediaIdentifier) {
+        mediaSessionCompat = mediaSessionManager.requestMediaSession(serviceDataProvider, mediaIdentifier);
     }
 
     private void updateNotification() {
@@ -497,7 +440,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         if (player != null) {
             player.release();
             player = null;
-            clearMediaSession();
+            mediaSessionManager.clearMediaSession();
         }
     }
 
@@ -572,16 +515,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     @Override
     public boolean onUnbind(Intent intent) {
-        clearMediaSession();
+        mediaSessionManager.clearMediaSession();
         return super.onUnbind(intent);
-    }
-
-    private void registerMediaButtonEvent() {
-        //audioManager.registerMediaButtonEventReceiver(new ComponentName(this, AudioIntentReceiver.class.getName()));
-    }
-
-    private void unregisterMediaButtonEvent() {
-        //audioManager.unregisterMediaButtonEventReceiver(new ComponentName(this, AudioIntentReceiver.class.getName()));
     }
 
     @Override
@@ -593,14 +528,12 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         }
         switch (event.type) {
             case MEDIA_READY_TO_PLAY:
-                clearMediaSession();
-                setupMediaSession(mp.getMediaIdentifier());
-                registerMediaButtonEvent();
+                mediaSessionManager.clearMediaSession();
+                requestMediaSession(mp.getMediaIdentifier());
                 cancelAutoRelease();
                 break;
             case MEDIA_COMPLETED:
             case MEDIA_STOPPED:
-                unregisterMediaButtonEvent();
                 cancelAutoRelease();
                 break;
             case PLAYING_STATE_CHANGE:
@@ -626,63 +559,4 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         MediaPlayerService.debugMode = debugMode;
     }
 
-    private class SRGMediaSessionCallback extends MediaSessionCompat.Callback {
-
-        @Override
-        public boolean onMediaButtonEvent(Intent mediaButtonIntent) {
-            KeyEvent keyEvent = mediaButtonIntent
-                    .getParcelableExtra(Intent.EXTRA_KEY_EVENT);
-            if (keyEvent != null && (keyEvent.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PAUSE)) {
-                pause();
-            } else if (keyEvent != null && keyEvent.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PLAY) {
-                resume();
-            }
-            return true;
-        }
-
-        @Override
-        public void onPlay() {
-            super.onPlay();
-            resume();
-        }
-
-        @Override
-        public void onPause() {
-            super.onPause();
-            pause();
-        }
-
-        @Override
-        public void onStop() {
-            super.onStop();
-            stopPlayer();
-        }
-    }
-
-    /*
-     * Updates lock screen image
-     */
-    private void updateLockScreenImage(Bitmap mediaArtBitmap) {
-        MediaMetadataCompat currentMetadata = mediaSessionCompat.getController().getMetadata();
-        MediaMetadataCompat.Builder newBuilder = currentMetadata == null
-                ? new MediaMetadataCompat.Builder()
-                : new MediaMetadataCompat.Builder(currentMetadata);
-        mediaSessionCompat.setMetadata(newBuilder
-                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, mediaArtBitmap)
-                .build());
-        chromeCastManager.setMediaSessionCompat(mediaSessionCompat);
-        updateNotification();
-    }
-
-    /*
-     * Clears Media Session
-     */
-    public void clearMediaSession() {
-        Log.d(TAG, "clearMediaSession()");
-        if (mediaSessionCompat != null) {
-            mediaSessionCompat.setActive(false);
-            mediaSessionCompat.release();
-            mediaSessionCompat = null;
-        }
-    }
 }

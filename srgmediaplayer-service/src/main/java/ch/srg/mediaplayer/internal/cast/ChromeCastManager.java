@@ -1,17 +1,13 @@
 package ch.srg.mediaplayer.internal.cast;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.media.session.MediaSessionCompat;
-import android.support.v4.media.session.PlaybackStateCompat;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.MediaRouteActionProvider;
 import android.support.v7.media.MediaRouteSelector;
@@ -41,7 +37,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import ch.srg.mediaplayer.internal.cast.exceptions.NoConnectionException;
-import ch.srg.mediaplayer.service.MediaPlayerService;
+import ch.srg.mediaplayer.internal.session.MediaSessionManager;
 
 /**
  * Created by seb on 27/10/15.
@@ -58,6 +54,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
     private static final double VOLUME_INCREMENT = 0.075;
 
     private static ChromeCastManager instance;
+    private final MediaSessionManager mediaSessionManager;
     private RemoteMediaPlayer remoteMediaPlayer;
     private MediaSessionCompat mediaSessionCompat;
     private int state = MediaStatus.PLAYER_STATE_IDLE;
@@ -93,6 +90,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
                 CastMediaControlIntent.categoryForCast(CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID)).build();
 
         mediaRouterCallback = new CastMediaRouterCallback(this);
+        mediaSessionManager = MediaSessionManager.getInstance();
 
         Log.d(TAG, "VideoCastManager is instantiated");
     }
@@ -130,7 +128,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
 
         applicationConnected = false;
 
-        updateMediaSession(false);
+        mediaSessionManager.updateMediaSession(false);
         if (mediaSessionCompat != null) {
             mediaRouter.setMediaSessionCompat(null);
         }
@@ -145,7 +143,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         }
         onDeviceSelected(null);
 
-        for (Listener listener : listeners){
+        for (Listener listener : listeners) {
             listener.onChromeCastApplicationDisconnected();
         }
     }
@@ -172,7 +170,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
                         }
                     });
             HashSet<Listener> listeners = new HashSet<>(this.listeners);
-            for (Listener listener : listeners){
+            for (Listener listener : listeners) {
                 listener.onChromeCastApplicationConnected();
             }
         } catch (NoConnectionException e) {
@@ -204,97 +202,6 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
             mediaRouter.removeCallback(mediaRouterCallback);
         } else if (castDiscoveryCounter < 0) {
             throw new IllegalStateException("Mismatched calls to stopCastDiscovery / startCastDiscovery");
-        }
-    }
-
-    /*
-     * Updates the playback status of the Media Session
-     */
-    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-    private void updateMediaSession(boolean playing) {
-        if (!isApplicationConnected()) {
-            return;
-        }
-        try {
-            if ((mediaSessionCompat == null) && playing) {
-                setUpMediaSession(getRemoteMediaInformation());
-            }
-            if (mediaSessionCompat != null) {
-                int playState = isRemoteStreamLive() ? PlaybackStateCompat.STATE_BUFFERING
-                        : PlaybackStateCompat.STATE_PLAYING;
-                int state = playing ? playState : PlaybackStateCompat.STATE_PAUSED;
-
-                mediaSessionCompat.setPlaybackState(new PlaybackStateCompat.Builder()
-                        .setState(state, 0, 1.0f)
-                        .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE).build());
-            }
-        } catch (NoConnectionException e) {
-            Log.e(TAG, "Failed to set up MediaSessionCompat due to network issues", e);
-        }
-    }
-
-    private void setUpMediaSession(final MediaInfo info) {
-        if (mediaSessionCompat == null) {
-            mediaEventReceiver = new ComponentName(context, MediaPlayerService.class.getName());
-            mediaSessionCompat = new MediaSessionCompat(context, "TAG", mediaEventReceiver,
-                    null);
-            mediaSessionCompat.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS
-                    | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
-            mediaSessionCompat.setActive(true);
-            mediaSessionCompat.setCallback(new MediaSessionCompat.Callback() {
-                @Override
-                public boolean onMediaButtonEvent(Intent mediaButtonIntent) {
-                    KeyEvent keyEvent = mediaButtonIntent
-                            .getParcelableExtra(Intent.EXTRA_KEY_EVENT);
-                    if (keyEvent != null) {
-                        if (keyEvent.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PAUSE) {
-                            onPause();
-                        } else if (keyEvent.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PLAY) {
-                            onPlay();
-                        }
-                    }
-                    return true;
-                }
-
-                @Override
-                public void onPlay() {
-                    try {
-                        loadIfNecessaryAndPlay();
-                    } catch (NoConnectionException e) {
-                        Log.e(TAG, "MediaSessionCompat.Callback(): Failed to toggle playback", e);
-                    }
-                }
-
-                @Override
-                public void onPause() {
-                    try {
-                        pause();
-                    } catch (NoConnectionException e) {
-                        Log.e(TAG, "MediaSessionCompat.Callback(): Failed to toggle playback", e);
-                    }
-                }
-            });
-        }
-
-        mediaSessionCompat.setPlaybackState(new PlaybackStateCompat.Builder()
-                .setState(PlaybackStateCompat.STATE_PLAYING, 0, 1.0f)
-                .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE).build());
-
-        // Update the media session's image
-        //updateLockScreenImage(info);
-
-        // update the media session's metadata
-        //updateMediaSessionMetadata();
-
-        mediaRouter.setMediaSessionCompat(mediaSessionCompat);
-    }
-
-    private void clearMediaSession() {
-        Log.d(TAG, "clearMediaSession()");
-        if (mediaSessionCompat != null) {
-            mediaSessionCompat.setActive(false);
-            mediaSessionCompat.release();
-            mediaSessionCompat = null;
         }
     }
 
@@ -589,27 +496,37 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
             Log.d(TAG, "mApiClient or remoteMediaPlayer is null, so will not proceed");
             return;
         }
+
+        if (mediaSessionCompat == null){
+            try {
+                mediaSessionCompat = mediaSessionManager.requestMediaSession(getRemoteMediaInformation());
+                mediaRouter.setMediaSessionCompat(mediaSessionCompat);
+            } catch (NoConnectionException e) {
+                e.printStackTrace();
+            }
+        }
+
         mediaStatus = remoteMediaPlayer.getMediaStatus();
         state = mediaStatus.getPlayerState();
         idleReason = mediaStatus.getIdleReason();
 
         if (state == MediaStatus.PLAYER_STATE_PLAYING) {
             Log.d(TAG, "onRemoteMediaPlayerStatusUpdated(): Player status = playing");
-            updateMediaSession(true);
+            mediaSessionManager.updateMediaSession(true);
         } else if (state == MediaStatus.PLAYER_STATE_PAUSED) {
             Log.d(TAG, "onRemoteMediaPlayerStatusUpdated(): Player status = paused");
-            updateMediaSession(false);
+            mediaSessionManager.updateMediaSession(false);
         } else if (state == MediaStatus.PLAYER_STATE_IDLE) {
             Log.d(TAG, "onRemoteMediaPlayerStatusUpdated(): Player status = idle");
-            updateMediaSession(false);
+            mediaSessionManager.updateMediaSession(false);
             switch (idleReason) {
                 case MediaStatus.IDLE_REASON_FINISHED:
-                    clearMediaSession();
+                    MediaSessionManager.clearMediaSession();
                     break;
                 case MediaStatus.IDLE_REASON_ERROR:
                     // something bad happened on the cast device
                     Log.d(TAG, "onRemoteMediaPlayerStatusUpdated(): IDLE reason = ERROR");
-                    clearMediaSession();
+                    MediaSessionManager.clearMediaSession();
                     break;
                 case MediaStatus.IDLE_REASON_CANCELED:
                     Log.d(TAG, "onRemoteMediaPlayerStatusUpdated(): IDLE reason = CANCELLED");
@@ -617,7 +534,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
                 case MediaStatus.IDLE_REASON_INTERRUPTED:
                     if (mediaStatus.getLoadingItemId() == MediaQueueItem.INVALID_ITEM_ID) {
                         // we have reached the end of queue
-                        clearMediaSession();
+                        MediaSessionManager.clearMediaSession();
                     }
                     break;
                 default:
@@ -629,6 +546,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         } else {
             Log.d(TAG, "onRemoteMediaPlayerStatusUpdated(): Player status = unknown");
         }
+
         HashSet<Listener> listeners = new HashSet<>(this.listeners);
         for (Listener listener : listeners) {
             listener.onChromeCastPlayerStatusUpdated(state, idleReason);
@@ -698,7 +616,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         }
         sessionId = null;
         if (clearPersistedConnectionData && !connectionSuspended) {
-            clearMediaSession();
+            MediaSessionManager.clearMediaSession();
         }
         state = MediaStatus.PLAYER_STATE_IDLE;
     }
@@ -867,10 +785,6 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         return state;
     }
 
-    public MediaSessionCompat getMediaSessionCompat() {
-        return mediaSessionCompat;
-    }
-
     public boolean handleKeyEvent(KeyEvent event) {
         int keyCode = event.getKeyCode();
         switch (keyCode) {
@@ -890,13 +804,6 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
                 }
             default:
                 return false;
-        }
-    }
-
-    public void setMediaSessionCompat(MediaSessionCompat mediaSessionCompat) {
-        this.mediaSessionCompat = mediaSessionCompat;
-        if (mediaRouter != null) {
-            mediaRouter.setMediaSessionCompat(mediaSessionCompat);
         }
     }
 
@@ -940,7 +847,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         }
     }
 
-    public static class CastMediaRouterCallback extends MediaRouter.Callback{
+    public static class CastMediaRouterCallback extends MediaRouter.Callback {
         private final ChromeCastManager chromeCastManager;
 
         public CastMediaRouterCallback(ChromeCastManager chromeCastManager) {
@@ -967,7 +874,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
     }
 
     public boolean decrementVolume() {
-        return changeVolume(- VOLUME_INCREMENT);
+        return changeVolume(-VOLUME_INCREMENT);
     }
 
     public boolean changeVolume(double volumeIncrement) {
