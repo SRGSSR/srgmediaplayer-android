@@ -164,6 +164,11 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         stopPlayer();
     }
 
+    @Override
+    public void onMediaSessionUpdated() {
+
+    }
+
     public class LocalBinder extends Binder {
         public MediaPlayerService getService() {
             return MediaPlayerService.this;
@@ -333,6 +338,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private void prepare(String mediaIdentifier, Long startPosition) throws SRGMediaPlayerException {
         mediaSessionManager.clearMediaSession();
+        mediaArtBitmap = null;
         createPlayer();
 
         if (player.play(mediaIdentifier, startPosition)) {

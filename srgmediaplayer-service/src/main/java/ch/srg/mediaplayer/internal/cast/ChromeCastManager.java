@@ -5,6 +5,7 @@ import android.app.Dialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.media.session.MediaSessionCompat;
@@ -42,7 +43,7 @@ import ch.srg.mediaplayer.internal.session.MediaSessionManager;
 /**
  * Created by seb on 27/10/15.
  */
-public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, MediaSessionManager.Listener {
     private static final String TAG = "ChromeCastManager";
 
     public static final int DISCONNECT_REASON_OTHER = 0;
@@ -497,15 +498,6 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
             return;
         }
 
-        if (mediaSessionCompat == null){
-            try {
-                mediaSessionCompat = mediaSessionManager.requestMediaSession(getRemoteMediaInformation());
-                mediaRouter.setMediaSessionCompat(mediaSessionCompat);
-            } catch (NoConnectionException e) {
-                e.printStackTrace();
-            }
-        }
-
         mediaStatus = remoteMediaPlayer.getMediaStatus();
         state = mediaStatus.getPlayerState();
         idleReason = mediaStatus.getIdleReason();
@@ -550,6 +542,12 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         HashSet<Listener> listeners = new HashSet<>(this.listeners);
         for (Listener listener : listeners) {
             listener.onChromeCastPlayerStatusUpdated(state, idleReason);
+        }
+
+        try {
+            mediaRouter.setMediaSessionCompat(mediaSessionManager.requestMediaSession(getRemoteMediaInformation()));
+        } catch (NoConnectionException e) {
+            e.printStackTrace();
         }
 
         /*for (VideoCastConsumer consumer : mVideoConsumers) {
@@ -806,6 +804,32 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
                 return false;
         }
     }
+
+    @Override
+    public void onBitmapUpdate(Bitmap bitmap) {
+    }
+
+    @Override
+    public void onResumeSession() {
+    }
+
+    @Override
+    public void onPauseSession() {
+    }
+
+    @Override
+    public void onStopSession() {
+    }
+
+    @Override
+    public void onMediaSessionUpdated() {
+        try {
+            mediaRouter.setMediaSessionCompat(mediaSessionManager.requestMediaSession(getRemoteMediaInformation()));
+        } catch (NoConnectionException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     public interface Listener {
         void onChromeCastApplicationConnected();

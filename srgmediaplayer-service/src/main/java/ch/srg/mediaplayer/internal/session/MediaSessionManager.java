@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import ch.srg.mediaplayer.service.AudioIntentReceiver;
+import ch.srg.mediaplayer.service.R;
 import ch.srg.mediaplayer.service.SRGMediaPlayerServiceMetaDataProvider;
 import ch.srg.mediaplayer.service.utils.AppUtils;
 import ch.srg.mediaplayer.service.utils.FetchBitmapTask;
@@ -43,9 +44,8 @@ public class MediaSessionManager {
 
     protected MediaSessionManager(Context context) {
         this.context = context;
-//        dimensionInPixels = AppUtils.convertDpToPixel(context,
-//                context.getResources().getDimension(R.dimen.notification_image_size));
-        dimensionInPixels = 200;
+        dimensionInPixels = AppUtils.convertDpToPixel(context,
+                context.getResources().getDimension(R.dimen.notification_image_size));
     }
 
     public static synchronized MediaSessionManager initialize(Context context) {
@@ -90,9 +90,12 @@ public class MediaSessionManager {
             live = serviceDataProvider.isLive(mediaIdentifier);
         }
 
+        String mediaThumbnailUri = "";
+
         MediaMetadataCompat.Builder meta = new MediaMetadataCompat.Builder();
         if (serviceDataProvider != null) {
             String title = serviceDataProvider.getTitle(mediaIdentifier);
+            mediaThumbnailUri = serviceDataProvider.getMediaImageUri(mediaIdentifier);
 
             meta.putString(MediaMetadataCompat.METADATA_KEY_TITLE, title);
         }
@@ -105,6 +108,8 @@ public class MediaSessionManager {
         mediaSessionCompat.setPlaybackState(new PlaybackStateCompat.Builder()
                 .setState(PlaybackStateCompat.STATE_PLAYING, 0, 1.0f)
                 .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE).build());
+
+        fetchMediaImage(mediaThumbnailUri);
 
         return mediaSessionCompat;
     }
@@ -181,6 +186,15 @@ public class MediaSessionManager {
             mediaSessionCompat.setPlaybackState(new PlaybackStateCompat.Builder()
                     .setState(state, 0, 1.0f)
                     .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE).build());
+
+            if (listeners.isEmpty()) {
+                Log.d(TAG, "No listener found for bitmap Update");
+            } else {
+                Log.d(TAG, listeners.size() + " listener(s) found for bitmap Update");
+            }
+            for (Listener listener : listeners) {
+                listener.onMediaSessionUpdated();
+            }
         }
     }
 
@@ -188,13 +202,25 @@ public class MediaSessionManager {
      * Updates lock screen image
      */
     private void updateLockScreenImage(Bitmap mediaArtBitmap) {
-        MediaMetadataCompat currentMetadata = mediaSessionCompat.getController().getMetadata();
-        MediaMetadataCompat.Builder newBuilder = currentMetadata == null
-                ? new MediaMetadataCompat.Builder()
-                : new MediaMetadataCompat.Builder(currentMetadata);
-        mediaSessionCompat.setMetadata(newBuilder
-                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, mediaArtBitmap)
-                .build());
+        if (mediaSessionCompat != null) {
+            MediaMetadataCompat currentMetadata = mediaSessionCompat.getController().getMetadata();
+            MediaMetadataCompat.Builder newBuilder = currentMetadata == null
+                    ? new MediaMetadataCompat.Builder()
+                    : new MediaMetadataCompat.Builder(currentMetadata);
+            mediaSessionCompat.setMetadata(newBuilder
+                    .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, mediaArtBitmap)
+                    .build());
+
+            if (listeners.isEmpty()) {
+                Log.d(TAG, "No listener found for bitmap Update");
+            } else {
+                Log.d(TAG, listeners.size() + " listener(s) found for bitmap Update");
+            }
+            for (Listener listener : listeners) {
+                listener.onMediaSessionUpdated();
+            }
+
+        }
     }
 
     /*
@@ -225,6 +251,8 @@ public class MediaSessionManager {
         void onPauseSession();
 
         void onStopSession();
+
+        void onMediaSessionUpdated();
     }
 
     private class SRGMediaSessionCallback extends MediaSessionCompat.Callback {
