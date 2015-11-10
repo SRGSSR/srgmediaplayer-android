@@ -143,10 +143,6 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
             }
         }
         onDeviceSelected(null);
-
-        for (Listener listener : listeners) {
-            listener.onChromeCastApplicationDisconnected();
-        }
     }
 
     protected void onApplicationConnected(ApplicationMetadata appMetadata,
@@ -170,6 +166,13 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
 
                         }
                     });
+
+
+            if (listeners.isEmpty()) {
+                Log.d(TAG, "No listener found for application connected");
+            } else {
+                Log.d(TAG, listeners.size() + " listener(s) found for application connected");
+            }
             HashSet<Listener> listeners = new HashSet<>(this.listeners);
             for (Listener listener : listeners) {
                 listener.onChromeCastApplicationConnected();
@@ -513,12 +516,12 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
             mediaSessionManager.updateMediaSession(false);
             switch (idleReason) {
                 case MediaStatus.IDLE_REASON_FINISHED:
-                    MediaSessionManager.clearMediaSession();
+                    mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
                     break;
                 case MediaStatus.IDLE_REASON_ERROR:
                     // something bad happened on the cast device
                     Log.d(TAG, "onRemoteMediaPlayerStatusUpdated(): IDLE reason = ERROR");
-                    MediaSessionManager.clearMediaSession();
+                    mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
                     break;
                 case MediaStatus.IDLE_REASON_CANCELED:
                     Log.d(TAG, "onRemoteMediaPlayerStatusUpdated(): IDLE reason = CANCELLED");
@@ -526,7 +529,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
                 case MediaStatus.IDLE_REASON_INTERRUPTED:
                     if (mediaStatus.getLoadingItemId() == MediaQueueItem.INVALID_ITEM_ID) {
                         // we have reached the end of queue
-                        MediaSessionManager.clearMediaSession();
+                        mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
                     }
                     break;
                 default:
@@ -614,8 +617,18 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         }
         sessionId = null;
         if (clearPersistedConnectionData && !connectionSuspended) {
-            MediaSessionManager.clearMediaSession();
+            mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
         }
+
+        if (listeners.isEmpty()) {
+            Log.d(TAG, "No listener found for application disconnected");
+        } else {
+            Log.d(TAG, listeners.size() + " listener(s) found for application disconnected");
+        }
+        for (Listener listener : listeners) {
+            listener.onChromeCastApplicationDisconnected();
+        }
+
         state = MediaStatus.PLAYER_STATE_IDLE;
     }
 

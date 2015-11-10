@@ -111,7 +111,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 } else {
                     player.release();
                     player = null;
-                    mediaSessionManager.clearMediaSession();
+                    mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
                 }
             }
         }
@@ -127,6 +127,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     @Override
     public void onChromeCastApplicationConnected() {
+        Log.d(TAG, "onChromeCastApplicationConnected");
         if (player != null) {
             player.swapPlayerDelegate(null);
         }
@@ -134,6 +135,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     @Override
     public void onChromeCastApplicationDisconnected() {
+        Log.d(TAG, "onChromeCastApplicationDisconnected");
         if (player != null) {
             player.swapPlayerDelegate(null);
         }
@@ -337,7 +339,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     private void prepare(String mediaIdentifier, Long startPosition) throws SRGMediaPlayerException {
-        mediaSessionManager.clearMediaSession();
+        mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
         mediaArtBitmap = null;
         createPlayer();
 
@@ -446,7 +448,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         if (player != null) {
             player.release();
             player = null;
-            mediaSessionManager.clearMediaSession();
+            mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
         }
     }
 
@@ -521,7 +523,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     @Override
     public boolean onUnbind(Intent intent) {
-        mediaSessionManager.clearMediaSession();
+        mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
         return super.onUnbind(intent);
     }
 
@@ -534,7 +536,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         }
         switch (event.type) {
             case MEDIA_READY_TO_PLAY:
-                mediaSessionManager.clearMediaSession();
+                mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
                 requestMediaSession(mp.getMediaIdentifier());
                 cancelAutoRelease();
                 break;

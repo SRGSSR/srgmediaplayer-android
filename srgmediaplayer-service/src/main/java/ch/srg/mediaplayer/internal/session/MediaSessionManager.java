@@ -34,7 +34,7 @@ public class MediaSessionManager {
 
     private final Context context;
     private static MediaSessionManager instance;
-    private static MediaSessionCompat mediaSessionCompat;
+    private MediaSessionCompat mediaSessionCompat;
 
     private FetchBitmapTask bitmapDecoderTask;
     private static int dimensionInPixels;
@@ -78,7 +78,7 @@ public class MediaSessionManager {
     }
 
     public MediaSessionCompat requestMediaSession(SRGMediaPlayerServiceMetaDataProvider serviceDataProvider, String mediaIdentifier) {
-        Log.d(TAG, "requestMediaSession()");
+        Log.d(TAG, "requestMediaSession");
         if (mediaSessionCompat != null) {
             return mediaSessionCompat;
         }
@@ -110,6 +110,8 @@ public class MediaSessionManager {
                 .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE).build());
 
         fetchMediaImage(mediaThumbnailUri);
+
+        Log.d(TAG, "New mediaSessionCompat created with token: " + mediaSessionCompat.getSessionToken());
 
         return mediaSessionCompat;
     }
@@ -143,10 +145,13 @@ public class MediaSessionManager {
                 .setState(PlaybackStateCompat.STATE_PLAYING, 0, 1.0f)
                 .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE).build());
 
+        Log.d(TAG, "New mediaSessionCompat created with token: " + mediaSessionCompat.getSessionToken());
+
         return mediaSessionCompat;
     }
 
     private void fetchMediaImage(String mediaThumbnail) {
+        Log.d(TAG, "Fetching MediaImage: " + mediaThumbnail);
         if (TextUtils.isEmpty(mediaThumbnail)) {
             return;
         }
@@ -190,7 +195,7 @@ public class MediaSessionManager {
             if (listeners.isEmpty()) {
                 Log.d(TAG, "No listener found for bitmap Update");
             } else {
-                Log.d(TAG, listeners.size() + " listener(s) found for bitmap Update");
+                Log.d(TAG, listeners.size() + " listener(s) found for mediaSession Update");
             }
             for (Listener listener : listeners) {
                 listener.onMediaSessionUpdated();
@@ -226,9 +231,9 @@ public class MediaSessionManager {
     /*
      * Clears Media Session
      */
-    public static void clearMediaSession() {
-        Log.d(TAG, "clearMediaSession()");
-        if (mediaSessionCompat != null) {
+    public void clearMediaSession(MediaSessionCompat.Token token) {
+        Log.d(TAG, "clearMediaSession: " + token);
+        if (mediaSessionCompat != null && token != null && mediaSessionCompat.getSessionToken() == token) {
             mediaSessionCompat.setActive(false);
             mediaSessionCompat.release();
             mediaSessionCompat = null;
