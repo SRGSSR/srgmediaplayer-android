@@ -13,6 +13,7 @@ import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
 import ch.srg.mediaplayer.internal.cast.ChromeCastManager;
 import ch.srg.mediaplayer.internal.exoplayer.ExoPlayerDelegate;
 import ch.srg.mediaplayer.internal.nativeplayer.NativePlayerDelegate;
+import ch.srg.mediaplayer.internal.session.MediaSessionManager;
 import ch.srg.mediaplayer.service.MediaPlayerService;
 
 /**
@@ -47,6 +48,7 @@ public class DemoApplication extends Application {
 		sApplication = this;
 		sContext = getApplicationContext();
 
+		MediaSessionManager.initialize(sContext);
 		chromeCastManager = ChromeCastManager.initialize(this);
 
 		dummyDataProvider = new DummyDataProvider();
