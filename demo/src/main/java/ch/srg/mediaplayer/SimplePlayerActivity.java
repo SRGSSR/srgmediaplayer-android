@@ -5,7 +5,6 @@ import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -13,7 +12,7 @@ import android.view.View;
 import ch.srg.mediaplayer.demo.DemoApplication;
 import ch.srg.mediaplayer.demo.R;
 import ch.srg.mediaplayer.extras.fullscreen.helper.SystemUiHelper;
-import ch.srg.segmentoverlay.view.PlayerControlView;
+import ch.srg.mediaplayer.extras.overlay.control.SimplePlayerControlView;
 
 public class SimplePlayerActivity extends AppCompatActivity implements
         SRGMediaPlayerController.Listener, View.OnClickListener {
@@ -27,9 +26,7 @@ public class SimplePlayerActivity extends AppCompatActivity implements
     private SRGMediaPlayerView playerView;
 
     @Nullable
-    private PlayerControlView segmentPlayerControlView;
-
-    private Toolbar toolbar;
+    private SimplePlayerControlView playerControlView;
 
     private SystemUiHelper uiHelper;
 
@@ -44,14 +41,10 @@ public class SimplePlayerActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_simple_media_player);
         setTitle("DEMO Live");
 
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-
         playerView = (SRGMediaPlayerView) findViewById(R.id.demo_video_container);
 
         View mediaControl = findViewById(R.id.media_control);
-            segmentPlayerControlView = (PlayerControlView) mediaControl;
+        playerControlView = (SimplePlayerControlView) mediaControl;
 
         dataProvider = DemoApplication.multiDataProvider;
 
@@ -78,8 +71,8 @@ public class SimplePlayerActivity extends AppCompatActivity implements
 
         srgMediaPlayer.registerEventListener(this);
 
-        if (segmentPlayerControlView != null) {
-            segmentPlayerControlView.attachToController(srgMediaPlayer);
+        if (playerControlView != null) {
+            playerControlView.attachToController(srgMediaPlayer);
         }
 
         orientation = this.getResources().getConfiguration().orientation;

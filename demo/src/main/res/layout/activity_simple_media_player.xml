@@ -3,20 +3,12 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="ch.srg.mediaplayer.DemoMediaPlayerActivity">
-
-    <android.support.v7.widget.Toolbar
-        android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="?attr/colorPrimary"
-        android:minHeight="?attr/actionBarSize"/>
+    tools:context="ch.srg.mediaplayer.SimplePlayerActivity">
 
     <ch.srg.mediaplayer.SRGMediaPlayerView
         android:id="@+id/demo_video_container"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/toolbar"
+        android:layout_height="match_parent"
         android:animateLayoutChanges="true"
         android:background="#ff222222"
         app:containerAspectRatio="auto"
@@ -42,7 +34,7 @@
             app:overlay_mode="unmanaged" />
 
         <!--Controls-->
-        <ch.srg.segmentoverlay.view.PlayerControlView
+        <ch.srg.mediaplayer.extras.overlay.control.SimplePlayerControlView
             android:id="@+id/media_control"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
