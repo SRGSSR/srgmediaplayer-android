@@ -34,6 +34,10 @@
             android:name="ch.srg.mediaplayer.MultiDemoMediaPlayerActivity"
             android:label="@string/title_activity_demo_media_player">
         </activity>
+        <activity
+            android:name="ch.srg.mediaplayer.SimplePlayerActivity"
+            android:label="@string/title_activity_demo_media_player">
+        </activity>
 
         <activity android:name="net.hockeyapp.android.UpdateActivity"/>
 

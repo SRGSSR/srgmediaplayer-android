@@ -55,4 +55,12 @@
         android:layout_height="wrap_content"
         android:text="Multi"
         android:visibility="gone"/>
+
+    <Button
+        android:id="@+id/demo_simple_media_player"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:drawableStart="@drawable/ic_action_videocam"
+        android:text="Videos: Simple Activity"
+        android:textColor="#60e060"/>
 </LinearLayout>
