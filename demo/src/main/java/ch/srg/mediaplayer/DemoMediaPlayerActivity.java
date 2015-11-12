@@ -183,7 +183,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
             segmentPlayerControlView.attachToController(srgMediaPlayer);
             segmentPlayerControlView.setSegmentController(segmentController);
         }
-        adapter.setSegmentListListener(segmentController);
+        adapter.addSegmentClickListener(segmentController);
 
         if (segments != null && !segments.isEmpty()) {
             segmentController.setSegmentList(segments);
@@ -463,6 +463,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
 
     @Override
     protected void onStop() {
+        adapter.removeSegmentClickListener(segmentController);
         super.onStop();
     }
 
