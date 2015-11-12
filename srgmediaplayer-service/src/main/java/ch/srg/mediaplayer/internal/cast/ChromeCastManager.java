@@ -621,6 +621,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
             mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
         }
 
+        HashSet<Listener> listeners = new HashSet<>(this.listeners);
         if (listeners.isEmpty()) {
             Log.d(TAG, "No listener found for application disconnected");
         } else {
