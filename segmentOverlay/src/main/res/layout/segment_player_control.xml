@@ -53,7 +53,7 @@
             android:layout_marginLeft="@dimen/segment_player_control_margin_inner"
             android:layout_toRightOf="@+id/segment_player_control_controls"
             android:text="--:--"
-            android:textColor="#7bffffff"
+            android:textColor="#ffffff"
             android:textSize="10dp" />
 
         <SeekBar
@@ -73,7 +73,7 @@
             android:layout_centerVertical="true"
             android:layout_marginRight="@dimen/segment_player_control_margin_inner"
             android:text="--:--"
-            android:textColor="#7bffffff"
+            android:textColor="#ffffff"
             android:textSize="10dp" />
 
     </RelativeLayout>
