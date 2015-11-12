@@ -6,6 +6,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import ch.srg.segmentoverlay.model.Segment;
@@ -14,7 +15,7 @@ import ch.srg.segmentoverlay.model.Segment;
  * Created by npietri on 21.05.15.
  */
 public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> extends RecyclerView.Adapter<T> {
-    public SegmentClickListener clickListener;
+    public HashSet<SegmentClickListener> listeners = new HashSet<>();
 
 	public abstract boolean updateProgressSegments(@NonNull String mediaIdentifier, long time);
 
@@ -30,9 +31,13 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
 		setHasStableIds(true);
 	}
 
-	public void setSegmentListListener(SegmentClickListener clickListener) {
-        this.clickListener = clickListener;
-    }
+	public void addSegmentClickListener(SegmentClickListener clickListener) {
+		listeners.add(clickListener);
+	}
+
+	public void removeSegmentClickListener(SegmentClickListener clickListener) {
+		listeners.remove(clickListener);
+	}
 
 	public void addSegmentChangeListener(SegmentChangeListeners listener) {
 		segmentChangeListeners.add(listener);

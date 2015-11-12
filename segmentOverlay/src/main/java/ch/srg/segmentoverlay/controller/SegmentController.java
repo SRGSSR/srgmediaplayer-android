@@ -99,7 +99,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	}
 
     @Override
-    public void onClick(View v, Segment segment, float x, float y) {
+    public void onClick(View v, Segment segment) {
         Log.i("SegmentController", "OnClick :" + segment);
 	    if (!segment.isBlocked()) {
 		    segmentBeingSkipped = null;
@@ -120,6 +120,11 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 			postBlockedSegmentEvent(segment, Event.Type.SEGMENT_USER_SEEK_BLOCKED);
 		}
     }
+
+	@Override
+	public void onLongClick(View v, Segment segment, int position) {
+
+	}
 
 	public void postEvent(Event.Type type, Segment segment) {
 		playerController.postEvent(new Event(playerController, type, segment));

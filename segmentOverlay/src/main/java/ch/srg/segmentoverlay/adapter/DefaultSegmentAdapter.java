@@ -14,6 +14,7 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 
+import java.util.HashSet;
 import java.util.List;
 
 import ch.srg.segmentoverlay.R;
@@ -53,7 +54,7 @@ public class DefaultSegmentAdapter extends BaseSegmentAdapter<DefaultSegmentAdap
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(context).inflate(R.layout.item_segment, parent, false);
-        return new ViewHolder(v, clickListener);
+        return new ViewHolder(v);
     }
 
     @Override
@@ -82,14 +83,13 @@ public class DefaultSegmentAdapter extends BaseSegmentAdapter<DefaultSegmentAdap
 
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnTouchListener {
         private Segment segment;
-        private final SegmentClickListener clickListener;
         private ImageView thumbnail;
         private ProgressBar progressBar;
         private TextView duration;
         private TextView title;
         private View darkOverlay;
 
-        public ViewHolder(View itemView, SegmentClickListener clickListener) {
+        public ViewHolder(View itemView) {
             super(itemView);
             thumbnail = (ImageView) itemView.findViewById(R.id.item_segment_thumbnail);
             progressBar = (ProgressBar) itemView.findViewById(R.id.item_segment_progress);
@@ -97,14 +97,16 @@ public class DefaultSegmentAdapter extends BaseSegmentAdapter<DefaultSegmentAdap
             title = (TextView) itemView.findViewById(R.id.item_segment_title);
             darkOverlay = itemView.findViewById(R.id.item_segment_darkener);
             itemView.setOnTouchListener(this);
-            this.clickListener = clickListener;
         }
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
             Log.i("DefaultSegmentAdapter", "OnClick :" + getAdapterPosition());
             if (event.getAction() == MotionEvent.ACTION_UP && event.getAction() != MotionEvent.ACTION_MOVE) {
-                clickListener.onClick(v, segment, event.getX(), event.getY());
+                HashSet<SegmentClickListener> listeners = new HashSet<>(DefaultSegmentAdapter.this.listeners);
+                for (SegmentClickListener listener: listeners) {
+                    listener.onClick(v, segment);
+                }
             }
             return true;
         }
