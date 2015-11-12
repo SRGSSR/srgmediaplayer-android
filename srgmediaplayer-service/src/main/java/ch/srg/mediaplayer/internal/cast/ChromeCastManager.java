@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -28,6 +27,7 @@ import com.google.android.gms.cast.MediaQueueItem;
 import com.google.android.gms.cast.MediaStatus;
 import com.google.android.gms.cast.RemoteMediaPlayer;
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
@@ -761,18 +761,15 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         switch (googlePlayServicesCheck) {
             case ConnectionResult.SUCCESS:
                 return true;
-            default:
-                Dialog dialog = GooglePlayServicesUtil.getErrorDialog(googlePlayServicesCheck,
-                        activity, 0);
-                dialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
-                    @Override
-                    public void onCancel(DialogInterface dialogInterface) {
-                        activity.finish();
-                    }
-                });
-                dialog.show();
         }
         return false;
+    }
+
+    public static void showDialogInfo(final Activity activity){
+        final int googlePlayServicesCheck = GooglePlayServicesUtil.isGooglePlayServicesAvailable(
+                activity);
+        Dialog dialog = GoogleApiAvailability.getInstance().getErrorDialog(activity, googlePlayServicesCheck, 0);
+        dialog.show();
     }
 
     public long getMediaDuration() throws NoConnectionException {
