@@ -219,7 +219,7 @@ public class MediaSessionManager {
             if (listeners.isEmpty()) {
                 Log.d(TAG, "No listener found for bitmap Update");
             } else {
-                Log.d(TAG, listeners.size() + " listener(s) found for bitmap Update");
+                Log.d(TAG, listeners.size() + " listener(s) found for LockScreenImage Update");
             }
             for (Listener listener : listeners) {
                 listener.onMediaSessionUpdated();

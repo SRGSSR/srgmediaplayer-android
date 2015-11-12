@@ -501,6 +501,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
             return;
         }
 
+        boolean updateMediaRouter = true;
         mediaStatus = remoteMediaPlayer.getMediaStatus();
         state = mediaStatus.getPlayerState();
         idleReason = mediaStatus.getIdleReason();
@@ -525,6 +526,8 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
                     break;
                 case MediaStatus.IDLE_REASON_CANCELED:
                     Log.d(TAG, "onRemoteMediaPlayerStatusUpdated(): IDLE reason = CANCELLED");
+                    mediaRouter.setMediaSessionCompat(null);
+                    updateMediaRouter = false;
                     break;
                 case MediaStatus.IDLE_REASON_INTERRUPTED:
                     if (mediaStatus.getLoadingItemId() == MediaQueueItem.INVALID_ITEM_ID) {
@@ -547,16 +550,14 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
             listener.onChromeCastPlayerStatusUpdated(state, idleReason);
         }
 
-        try {
-            mediaRouter.setMediaSessionCompat(mediaSessionManager.requestMediaSession(getRemoteMediaInformation()));
-        } catch (NoConnectionException e) {
-            e.printStackTrace();
+        if (updateMediaRouter) {
+            try {
+                mediaRouter.setMediaSessionCompat(mediaSessionManager.requestMediaSession(getRemoteMediaInformation()));
+            } catch (NoConnectionException e) {
+                e.printStackTrace();
+            }
         }
 
-        /*for (VideoCastConsumer consumer : mVideoConsumers) {
-            consumer.onRemoteMediaPlayerStatusUpdated();
-            consumer.onVolumeChanged(volume, isMute);
-        }*/
     }
 
     public final void disconnect() {
@@ -836,6 +837,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
 
     @Override
     public void onMediaSessionUpdated() {
+        Log.d(TAG, "onMediaSessionUpdated from listener");
         try {
             mediaRouter.setMediaSessionCompat(mediaSessionManager.requestMediaSession(getRemoteMediaInformation()));
         } catch (NoConnectionException e) {
