@@ -642,13 +642,19 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
      *
      * @param menu           Menu reference
      * @param menuResourceId The resource id of the cast button in the xml menu descriptor file
+     *
+     * @return menu item or null if chrome cast not supported
      */
-    public final MenuItem addMediaRouterButton(Menu menu, int menuResourceId) {
-        MenuItem mediaRouteMenuItem = menu.findItem(menuResourceId);
-        MediaRouteActionProvider mediaRouteActionProvider = (MediaRouteActionProvider)
-                MenuItemCompat.getActionProvider(mediaRouteMenuItem);
-        mediaRouteActionProvider.setRouteSelector(mediaRouteSelector);
-        return mediaRouteMenuItem;
+    public final MenuItem addMediaRouterButtonIfSupported(Menu menu, int menuResourceId) {
+        if (checkGooglePlayServices()) {
+            MenuItem mediaRouteMenuItem = menu.findItem(menuResourceId);
+            MediaRouteActionProvider mediaRouteActionProvider = (MediaRouteActionProvider)
+                    MenuItemCompat.getActionProvider(mediaRouteMenuItem);
+            mediaRouteActionProvider.setRouteSelector(mediaRouteSelector);
+            return mediaRouteMenuItem;
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -756,14 +762,15 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         return deviceName;
     }
 
-    public static boolean checkGooglePlayServices(final Activity activity) {
-        final int googlePlayServicesCheck = GooglePlayServicesUtil.isGooglePlayServicesAvailable(
-                activity);
+    public boolean checkGooglePlayServices() {
+        final int googlePlayServicesCheck =
+                GooglePlayServicesUtil.isGooglePlayServicesAvailable(context);
         switch (googlePlayServicesCheck) {
             case ConnectionResult.SUCCESS:
                 return true;
+            default:
+                return false;
         }
-        return false;
     }
 
     public static void showDialogInfo(final Activity activity){
