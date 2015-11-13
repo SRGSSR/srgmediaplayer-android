@@ -148,8 +148,12 @@ public class NativePlayerDelegate implements
 
 	@Override
 	public void seekTo(long msec) throws IllegalStateException {
-		controller.onPlayerDelegateBuffering(this);
-		nativeMp.seekTo((int) msec);
+		if (state == State.READY) {
+			controller.onPlayerDelegateBuffering(this);
+			nativeMp.seekTo((int) msec);
+		} else {
+			throw new IllegalStateException("no ready");
+		}
 	}
 
 	@Override
