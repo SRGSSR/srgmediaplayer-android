@@ -445,5 +445,10 @@ public class ExoPlayerDelegate implements
     public boolean isRemote() {
         return false;
     }
+
+    @Override
+    public SRGMediaPlayerController.Event.ScreenType getScreenType() {
+        return surfaceView != null ? SRGMediaPlayerController.Event.ScreenType.DEFAULT : SRGMediaPlayerController.Event.ScreenType.NONE;
+    }
 }
 

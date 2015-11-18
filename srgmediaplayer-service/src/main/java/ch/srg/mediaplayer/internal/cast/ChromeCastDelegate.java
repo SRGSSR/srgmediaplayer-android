@@ -12,6 +12,7 @@ import com.google.android.gms.cast.MediaStatus;
 import com.google.android.gms.common.images.WebImage;
 
 import ch.srg.mediaplayer.PlayerDelegate;
+import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerView;
 import ch.srg.mediaplayer.internal.cast.exceptions.NoConnectionException;
@@ -262,6 +263,11 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
     @Override
     public boolean isRemote() {
         return true;
+    }
+
+    @Override
+    public SRGMediaPlayerController.Event.ScreenType getScreenType() {
+        return SRGMediaPlayerController.Event.ScreenType.CHROMECAST;
     }
 
     @Override

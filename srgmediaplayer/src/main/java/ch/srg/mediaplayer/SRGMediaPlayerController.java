@@ -106,6 +106,11 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * Interface definition for a callback to be invoked when the status changes or is periodically emitted.
      */
     public static class Event {
+        public enum ScreenType {
+            NONE,
+            DEFAULT,
+            CHROMECAST
+        }
 
         public enum Type {
             STATE_CHANGE,
@@ -137,7 +142,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         public final String tag;
         public final long mediaPlaylistStartTime;
         public final boolean mediaLive;
-
+        public final ScreenType screenType;
 
         public final State state;
         public final SRGMediaPlayerException exception;
@@ -169,6 +174,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             state = controller.state;
             exception = eventException;
             mediaSessionId = controller.getMediaSessionId();
+            screenType = controller.getScreenType();
         }
 
         protected Event(SRGMediaPlayerController controller, SRGMediaPlayerException eventException) {
@@ -195,6 +201,10 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             sb.append('}');
             return sb.toString();
         }
+    }
+
+    private Event.ScreenType getScreenType() {
+        return currentMediaPlayerDelegate == null ? Event.ScreenType.NONE : currentMediaPlayerDelegate.getScreenType();
     }
 
     public interface Listener {

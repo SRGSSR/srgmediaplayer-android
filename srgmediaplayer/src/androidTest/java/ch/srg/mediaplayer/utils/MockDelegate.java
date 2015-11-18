@@ -172,4 +172,9 @@ public class MockDelegate implements PlayerDelegate {
     public boolean isRemote() {
         return false;
     }
+
+    @Override
+    public SRGMediaPlayerController.Event.ScreenType getScreenType() {
+        return SRGMediaPlayerController.Event.ScreenType.NONE;
+    }
 }

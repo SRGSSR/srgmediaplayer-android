@@ -114,4 +114,6 @@ public interface PlayerDelegate {
 	 * @return true for chromecast and such, false for local players
 	 */
 	boolean isRemote();
+
+	SRGMediaPlayerController.Event.ScreenType getScreenType();
 }
