@@ -102,6 +102,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     ServiceNotificationBuilder currentServiceNotification;
     private LocalBinder binder = new LocalBinder();
 
+    private boolean videoInBackground;
+
     private Runnable autoRelease = new Runnable() {
         @Override
         public void run() {
@@ -137,7 +139,18 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     public void onChromeCastApplicationDisconnected() {
         Log.d(TAG, "onChromeCastApplicationDisconnected");
         if (player != null) {
-            player.swapPlayerDelegate(null);
+            try {
+                int mediaType = dataProvider.getMediaType(player.getMediaIdentifier());
+                if (player.isBoundToMediaPlayerView()
+                        && (videoInBackground
+                        || mediaType == SRGMediaPlayerDataProvider.TYPE_AUDIO)) {
+                    player.swapPlayerDelegate(null);
+                } else {
+                    player.release();
+                }
+            } catch (SRGMediaPlayerException ignored) {
+                player.release();
+            }
         }
     }
 
@@ -567,4 +580,13 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         MediaPlayerService.debugMode = debugMode;
     }
 
+    /**
+     * Enable or disable support of video in background.
+     *
+     * @param videoInBackground true if video in background should be supported
+     *                          (enables continuing play when chromecast is disconnected)
+     */
+    public void setVideoInBackground(boolean videoInBackground) {
+        this.videoInBackground = videoInBackground;
+    }
 }
