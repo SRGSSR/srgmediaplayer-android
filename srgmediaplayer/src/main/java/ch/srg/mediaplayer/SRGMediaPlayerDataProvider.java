@@ -1,6 +1,7 @@
 package ch.srg.mediaplayer;
 
 import android.net.Uri;
+import android.support.annotation.NonNull;
 
 /**
  * Created by Axel on 27/02/2015.
@@ -26,5 +27,5 @@ public interface SRGMediaPlayerDataProvider {
 	 * @return {@link #TYPE_AUDIO} or {@link #TYPE_VIDEO}
 	 * @throws SRGMediaPlayerException network or parsing error encapsulated in an SRGMediaPlayerExcpetion
 	 */
-	int getMediaType(String mediaIdentifier) throws SRGMediaPlayerException;
+	int getMediaType(@NonNull String mediaIdentifier) throws SRGMediaPlayerException;
 }
