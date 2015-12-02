@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
+import ch.srg.mediaplayer.internal.session.MediaSessionManager;
 import ch.srg.mediaplayer.utils.ThreadServiceTestBase;
 
 /**
@@ -29,8 +30,6 @@ public class MediaPlayerServiceTest extends ThreadServiceTestBase<MediaPlayerSer
     public MediaPlayerServiceTest() {
         super(MediaPlayerService.class);
         MediaPlayerService.setDataProvider(new ch.srg.mediaplayer.extras.dataproviders.DirectMappingDataProvider(SRGMediaPlayerDataProvider.TYPE_AUDIO));
-
-        // TODO To support Live we need to use the AAC player delegate from extra (is this a good idea to do here ? )
     }
 
     public void testHlsPlayStopWithDelay() {
@@ -119,7 +118,7 @@ public class MediaPlayerServiceTest extends ThreadServiceTestBase<MediaPlayerSer
 
     public void testPlay404Stream() {
         start404Stream();
-        waitForState(SRGMediaPlayerController.State.PREPARING);
+        waitForState(SRGMediaPlayerController.State.IDLE);
     }
 
     // We ignore this test as one device fails
@@ -180,7 +179,10 @@ public class MediaPlayerServiceTest extends ThreadServiceTestBase<MediaPlayerSer
     protected void setUp() throws Exception {
         super.setUp();
         serviceStatus = new MediaStatusReceiver();
-        serviceStatus.register(getContext());
+        Context context = getContext();
+
+        serviceStatus.register(context);
+        MediaSessionManager.initialize(context);
     }
 
     @Override
@@ -227,7 +229,7 @@ public class MediaPlayerServiceTest extends ThreadServiceTestBase<MediaPlayerSer
             long remainingTime = timeout;
             while (state != this.state && remainingTime > 0) {
                 long waitStartTime = System.nanoTime();
-                Log.d("APST", "waitForState: " + state + "  remainingTime: " + remainingTime);
+                Log.d("APST", "waitForState: " + state + " current: " + this.state + " remainingTime: " + remainingTime);
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException ignored) {

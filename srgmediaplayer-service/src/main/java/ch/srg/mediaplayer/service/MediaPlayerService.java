@@ -14,6 +14,7 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.media.session.MediaSessionCompat;
@@ -96,6 +97,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     private static PlayerDelegateFactory playerDelegateFactory;
     private static boolean debugMode;
 
+    @Nullable
     private ChromeCastManager chromeCastManager;
     private MediaSessionManager mediaSessionManager;
 
@@ -203,12 +205,13 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 		 */
         MusicControl.pause(this); /* XXX: this is not the proper place for this, should be in the play part */
 
-        chromeCastManager = ChromeCastManager.getInstance();
-        chromeCastManager.addListener(this);
+        if (ChromeCastManager.isInstantiated()) {
+            chromeCastManager = ChromeCastManager.getInstance();
+            chromeCastManager.addListener(this);
+        }
 
         mediaSessionManager = MediaSessionManager.getInstance();
         mediaSessionManager.addListener(this);
-
     }
 
     @Override
@@ -218,7 +221,9 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
         setForeground(false);
 
-        chromeCastManager.removeListener(this);
+        if (chromeCastManager != null) {
+            chromeCastManager.removeListener(this);
+        }
 
         if (player != null) {
             player.release();

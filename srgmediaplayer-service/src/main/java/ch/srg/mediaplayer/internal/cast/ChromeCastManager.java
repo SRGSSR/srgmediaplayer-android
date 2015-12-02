@@ -109,6 +109,10 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         return instance;
     }
 
+    public static boolean isInstantiated() {
+        return instance != null;
+    }
+
     /**
      * Returns a (singleton) instance of this class. Clients should call this method in order to
      * get a hold of this singleton instance, only after it is initialized. If it is not initialized

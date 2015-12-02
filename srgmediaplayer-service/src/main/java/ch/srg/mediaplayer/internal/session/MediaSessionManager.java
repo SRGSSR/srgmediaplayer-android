@@ -4,6 +4,7 @@ import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.support.v4.media.MediaMetadataCompat;
@@ -44,8 +45,11 @@ public class MediaSessionManager {
 
     protected MediaSessionManager(Context context) {
         this.context = context;
-        dimensionInPixels = AppUtils.convertDpToPixel(context,
-                context.getResources().getDimension(R.dimen.notification_image_size));
+        try {
+            dimensionInPixels = AppUtils.convertDpToPixel(context, context.getResources().getDimension(R.dimen.notification_image_size));
+        } catch (Resources.NotFoundException e) {
+            dimensionInPixels = 0;
+        }
     }
 
     public static synchronized MediaSessionManager initialize(Context context) {
