@@ -5,8 +5,8 @@ package ch.srg.segmentoverlay.model;
  */
 public class Segment implements Comparable<Segment> {
 
-	/** URN is the target urn of the media to be played. */
-	private String urn;
+	/** Target mediaIdentifier of the media to be played. */
+	private String mediaIdentifier;
 	/** Unique identifier for this particular segment, not used for playing. */
 	private String identifier;
 	private String title;
@@ -22,9 +22,10 @@ public class Segment implements Comparable<Segment> {
 	private boolean displayable;
 	private boolean fullLength;
 
-	public Segment(String urn, String identifier, String title, String description, String imageUrl,
+	public Segment(String mediaIdentifier, String identifier, String title, String description, String imageUrl,
 				   String blocking, long markIn, long markOut, long duration, long publishedTimestamp,
 				   boolean displayable, boolean fullLength) {
+		this.mediaIdentifier = mediaIdentifier;
 		this.identifier = identifier;
 		this.title = title;
 		this.description = description;
@@ -34,7 +35,6 @@ public class Segment implements Comparable<Segment> {
 		this.duration = duration;
 		this.publishedTimestamp = publishedTimestamp;
 		this.displayable = displayable;
-		this.urn = urn;
 		this.fullLength = fullLength;
 		blockingReason = blocking;
 	}
@@ -100,7 +100,7 @@ public class Segment implements Comparable<Segment> {
 	}
 
 	public String getMediaIdentifier() {
-		return urn;
+		return mediaIdentifier;
 	}
 
 	@Override
@@ -111,7 +111,7 @@ public class Segment implements Comparable<Segment> {
 	@Override
 	public String toString() {
 		return "Segment{" +
-				"urn='" + urn + '\'' +
+				"mediaIdentifier='" + mediaIdentifier + '\'' +
 				", identifier='" + identifier + '\'' +
 				", title='" + title + '\'' +
 				", description='" + description + '\'' +
