@@ -2,6 +2,7 @@ package ch.srg.mediaplayer.extras.dataproviders;
 
 import android.net.Uri;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -62,9 +63,16 @@ public class MultiDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
 	@Override
 	public List<Segment> getSegments(String mediaIdentifier) {
 		SRGMediaPlayerDataProvider provider = getProvider(mediaIdentifier);
+		String prefix = getPrefix(mediaIdentifier);
 		if (provider instanceof SegmentDataProvider) {
-			return ((SegmentDataProvider) provider).
+			List<Segment> baseList = ((SegmentDataProvider) provider).
 					getSegments(getIdentifier(mediaIdentifier));
+			ArrayList<Segment> prefixedSegments = new ArrayList<>(baseList.size());
+			for (Segment s: baseList) {
+				Segment prefixedS = new Segment(prefix + ":" + s.getMediaIdentifier(), s.getIdentifier(), s.getTitle(), s.getDescription(), s.getImageUrl(), s.getBlockingReason(), s.getMarkIn(), s.getMarkOut(), s.getDuration(), s.getPublishedTimestamp(), s.isDisplayable(), s.isFullLength());
+				prefixedSegments.add(prefixedS);
+			}
+			return prefixedSegments;
 		} else {
 			return null;
 		}
