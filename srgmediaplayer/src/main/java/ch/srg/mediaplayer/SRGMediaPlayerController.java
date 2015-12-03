@@ -37,13 +37,15 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     public static final String NAME = "SRGMediaPlayer";
     public static final String VERSION = "0.0.2";
     private static final long[] EMPTY_TIME_RANGE = new long[2];
+    private static final long UPDATE_PERIOD = 100;
     private boolean duckedVolume;
 
     /**
      * True when audio focus has been requested, does not reflect current focus (LOSS / DUCKED).
      */
     private boolean audioFocusRequested;
-    private long currentSeekTarget;
+    @Nullable
+    private Long currentSeekTarget;
     private boolean debugMode;
 
     public static String getName() {
@@ -78,6 +80,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private static final int MSG_PLAYER_DELEGATE_BUFFERING = 18;
     private static final int MSG_PLAYER_DELEGATE_COMPLETED = 19;
     private static final int MSG_DATA_PROVIDER_EXCEPTION = 20;
+    private static final int MSG_PERIODIC_UPDATE = 21;
 
     public enum State {
         /**
@@ -124,7 +127,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             OVERLAY_CONTROL_DISPLAYED,
             OVERLAY_CONTROL_HIDDEN,
             PLAYING_STATE_CHANGE,
-            WILL_SEEK,
+            WILL_SEEK, // SEEK_STARTED
+            DID_SEEK, // SEEK_STOPPED
 
             EXTERNAL_EVENT;
         }
@@ -528,8 +532,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     if (state == State.PREPARING) {
                         seekToWhenReady = positionMs;
                     } else {
-                        seekToWhenReady = positionMs;
                         fireEvent(Event.Type.WILL_SEEK);
+                        seekToWhenReady = positionMs;
                         if (currentMediaPlayerDelegate != null) {
                             try {
                                 currentMediaPlayerDelegate.seekTo(seekToWhenReady);
@@ -603,6 +607,12 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 setStateInternal(State.READY);
                 fireEvent(Event.Type.MEDIA_COMPLETED);
                 return true;
+            case MSG_PERIODIC_UPDATE:
+                periodicUpdateInteral();
+                if (isPlaying()) {
+                    schedulePeriodUpdate();
+                }
+                return true;
             default: {
                 String message = "Unknown message: " + msg.what + " / " + msg.obj;
                 if (isDebugMode()) {
@@ -613,6 +623,22 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 }
             }
         }
+    }
+
+    private void periodicUpdateInteral() {
+        if (currentSeekTarget != null) {
+            if (currentMediaPlayerDelegate == null
+                    || currentMediaPlayerDelegate.getCurrentPosition() != currentSeekTarget) {
+                currentSeekTarget = null;
+                fireEvent(Event.Type.DID_SEEK);
+            }
+        }
+    }
+
+    public void schedulePeriodUpdate() {
+        commandHandler.removeMessages(MSG_PERIODIC_UPDATE);
+        commandHandler.sendMessageDelayed(
+                commandHandler.obtainMessage(MSG_PERIODIC_UPDATE), UPDATE_PERIOD);
     }
 
     private void applyStateInternal() {
@@ -627,6 +653,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     seekToWhenReady = null;
                 } catch (IllegalStateException ignored) {
                 }
+            }
+            if (playWhenReady) {
+                schedulePeriodUpdate();
             }
         }
     }
@@ -1221,7 +1250,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * @return true if current media position match to seek target
      */
     public boolean isSeekPending() {
-        return getMediaPosition() == currentSeekTarget;
+        return currentSeekTarget != null && getMediaPosition() == currentSeekTarget;
     }
 
     public boolean isDebugMode() {
