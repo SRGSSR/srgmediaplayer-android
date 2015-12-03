@@ -96,24 +96,23 @@ import android.view.ViewGroup;
             this.videoContainer.setVideoTouchListener(this);
         }
         propagateControlVisibility();
-        updateLoadings(playerController.getState(), true);
+        updateLoadings(true);
+    }
+
+    public void updateLoadings(boolean forceUpdate) {
+        updateLoadings(forceUpdate,
+                playerController.getState() == SRGMediaPlayerController.State.PREPARING
+                        || playerController.isSeekPending());
     }
 
     public boolean isOverlayVisible() {
         return showingControlOverlays;
     }
 
-    private void showLoadings(boolean forceUpdate) {
-        if (forceUpdate || !showingLoadings) {
-            showingLoadings = true;
-            handleSpecificVisibility(SRGMediaPlayerView.LayoutParams.OVERLAY_LOADING, true);
-        }
-    }
-
-    private void hideLoadings(boolean forceUpdate) {
-        if (forceUpdate || showingLoadings) {
-            showingLoadings = false;
-            handleSpecificVisibility(SRGMediaPlayerView.LayoutParams.OVERLAY_LOADING, false);
+    private void setLoadingsVisibility(boolean forceUpdate, boolean visible) {
+        if (forceUpdate || showingLoadings != visible) {
+            showingLoadings = visible;
+            handleSpecificVisibility(SRGMediaPlayerView.LayoutParams.OVERLAY_LOADING, visible);
         }
     }
 
@@ -138,10 +137,15 @@ import android.view.ViewGroup;
         if (Looper.myLooper() != Looper.getMainLooper()) {
             throw new IllegalStateException("Invalid thread");
         }
+        if (mp != playerController) {
+            throw new IllegalArgumentException("Unexpected controller");
+        }
         switch (event.type) {
             case STATE_CHANGE:
             case PLAYING_STATE_CHANGE:
-                handleStateChange(mp);
+            case WILL_SEEK:
+            case DID_SEEK:
+                updateWithPlayer();
                 break;
             case MEDIA_COMPLETED:
                 setForceShowingControlOverlays(true);
@@ -150,8 +154,8 @@ import android.view.ViewGroup;
 
     }
 
-    private void handleStateChange(SRGMediaPlayerController mp) {
-        SRGMediaPlayerController.State state = mp.getState();
+    private void updateWithPlayer() {
+        SRGMediaPlayerController.State state = playerController.getState();
         switch (state) {
             case PREPARING:
             case BUFFERING:
@@ -160,7 +164,7 @@ import android.view.ViewGroup;
                 setForceShowingControlOverlays(true);
                 break;
             case READY:
-                if (mp.isPlaying()) {
+                if (playerController.isPlaying()) {
                     postponeOverlayHiding();
                     setForceShowingControlOverlays(false);
                 } else {
@@ -170,19 +174,11 @@ import android.view.ViewGroup;
             default:
                 throw new IllegalArgumentException("Unhandled state: " + state);
         }
-        updateLoadings(state, false);
+        updateLoadings(false);
     }
 
-    private void updateLoadings(SRGMediaPlayerController.State state, boolean forceUpdate) {
-        switch (state) {
-            case PREPARING:
-                showLoadings(forceUpdate);
-                break;
-
-            default:
-                hideLoadings(forceUpdate);
-                break;
-        }
+    private void updateLoadings(boolean forceUpdate, boolean loading) {
+        setLoadingsVisibility(forceUpdate, loading);
     }
 
     private void postponeOverlayHiding() {
@@ -240,5 +236,4 @@ import android.view.ViewGroup;
     public boolean isShowingControlOverlays() {
         return showingControlOverlays;
     }
-
 }
