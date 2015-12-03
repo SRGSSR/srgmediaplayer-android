@@ -81,6 +81,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private static final int MSG_PLAYER_DELEGATE_COMPLETED = 19;
     private static final int MSG_DATA_PROVIDER_EXCEPTION = 20;
     private static final int MSG_PERIODIC_UPDATE = 21;
+    private static final int MSG_FIRE_EVENT = 22;
 
     public enum State {
         /**
@@ -488,7 +489,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 PlayerDelegate playerDelegate = data.playerDelegate;
 
                 currentMediaUrl = String.valueOf(uri);
-                fireEvent(Event.Type.MEDIA_READY_TO_PLAY);
+                postEventInternal(Event.Type.MEDIA_READY_TO_PLAY);
                 try {
                     if (playerDelegate == null) {
                         createPlayerDelegateInternal(currentMediaIdentifier);
@@ -532,7 +533,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     if (state == State.PREPARING) {
                         seekToWhenReady = positionMs;
                     } else {
-                        fireEvent(Event.Type.WILL_SEEK);
+                        postEventInternal(Event.Type.WILL_SEEK);
                         seekToWhenReady = positionMs;
                         if (currentMediaPlayerDelegate != null) {
                             try {
@@ -605,13 +606,16 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 return true;
             case MSG_PLAYER_DELEGATE_COMPLETED:
                 setStateInternal(State.READY);
-                fireEvent(Event.Type.MEDIA_COMPLETED);
+                postEventInternal(Event.Type.MEDIA_COMPLETED);
                 return true;
             case MSG_PERIODIC_UPDATE:
                 periodicUpdateInteral();
                 if (isPlaying()) {
                     schedulePeriodUpdate();
                 }
+                return true;
+            case MSG_FIRE_EVENT:
+                this.postEventInternal((Event) msg.obj);
                 return true;
             default: {
                 String message = "Unknown message: " + msg.what + " / " + msg.obj;
@@ -630,7 +634,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             if (currentMediaPlayerDelegate == null
                     || currentMediaPlayerDelegate.getCurrentPosition() != currentSeekTarget) {
                 currentSeekTarget = null;
-                fireEvent(Event.Type.DID_SEEK);
+                postEventInternal(Event.Type.DID_SEEK);
             }
         }
     }
@@ -646,7 +650,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             currentMediaPlayerDelegate.setMuted(muted);
             currentMediaPlayerDelegate.playIfReady(playWhenReady);
             if (seekToWhenReady != null) {
-                fireEvent(Event.Type.WILL_SEEK);
+                postEventInternal(Event.Type.WILL_SEEK);
                 Log.v(TAG, "Apply state / Seeking to " + seekToWhenReady);
                 try {
                     currentMediaPlayerDelegate.seekTo(seekToWhenReady);
@@ -711,7 +715,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     private void releaseDelegateInternal() {
         if (currentMediaPlayerDelegate != null) {
-            fireEvent(Event.Type.MEDIA_STOPPED);
+            postEventInternal(Event.Type.MEDIA_STOPPED);
             currentMediaPlayerDelegate.release();
             currentMediaPlayerDelegate = null;
             currentMediaIdentifier = null;
@@ -727,7 +731,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     /*package*/ void handleFatalExceptionInternal(SRGMediaPlayerException e) {
         logE("exception occurred", e);
         releaseDelegateInternal();
-        fireErrorEvent(true, e);
+        postErrorEventInternal(true, e);
         setStateInternal(State.IDLE);
     }
 
@@ -750,7 +754,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     public void onPlayerDelegatePlayWhenReadyCommited(PlayerDelegate delegate) {
         manageKeepScreenOnInternal();
         if (delegate == currentMediaPlayerDelegate) {
-            fireEvent(Event.Type.PLAYING_STATE_CHANGE);
+            postEventInternal(Event.Type.PLAYING_STATE_CHANGE);
         }
     }
 
@@ -1026,7 +1030,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
         if (this.state != state) {
             this.state = state;
-            fireCurrentStateEventInternal();
+            postEventInternal(Event.buildStateEvent(this));
         }
     }
 
@@ -1070,44 +1074,40 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         return globalEventListeners.remove(listener);
     }
 
-    /*package*/ void fireEvent(Event.Type eventType) {
-        postEvent(Event.buildEvent(this, eventType));
+    public void broadcastEvent(Event.Type eventType) {
+        broadcastEvent(Event.buildEvent(this, eventType));
     }
 
-    private void fireErrorEvent(boolean fatalError, SRGMediaPlayerException e) {
-        postEvent(Event.buildErrorEvent(this, fatalError, e));
+    public void broadcastEvent(Event event) {
+        sendMessage(MSG_FIRE_EVENT, event);
     }
 
-    private void fireCurrentStateEventInternal() {
+    private void postErrorEventInternal(boolean fatalError, SRGMediaPlayerException e) {
+        postEventInternal(Event.buildErrorEvent(this, fatalError, e));
+    }
+
+    private void postEventInternal(Event.Type eventType) {
+        postEventInternal(Event.buildEvent(this, eventType));
+    }
+
+    public void postEventInternal(final Event event) {
         if (debugMode) {
             assertCommandHandlerThread();
         }
-        postEvent(Event.buildStateEvent(this));
-    }
-
-    public void postEvent(final Event event) {
-        Log.d(TAG, "Posting event: " + event);
+        int count = SRGMediaPlayerController.globalEventListeners.size() + this.eventListeners.size();
+        final Set<Listener> eventListeners = new HashSet<>(count);
+        Log.d(TAG, "Posting event: " + event + " to " + count);
+        eventListeners.addAll(globalEventListeners);
+        eventListeners.addAll(this.eventListeners);
         mainHandler.post(new Runnable() {
             @Override
             public void run() {
-                doPostEvent(event);
+                doPostEvent(event, eventListeners);
             }
         });
     }
 
-    private void doPostEvent(Event event) {
-
-        // TODO Make this internal as well as any modification to eventListeners.
-        
-        logV("Sending event to global(" + globalEventListeners.size() + ") : " + event);
-        // (reminder) It is necessary to copy before using the iteration as event listeners might modify
-        // the listener lists and multiple threads access those two lists.
-        Set<Listener> globalEventListeners = new HashSet<>(SRGMediaPlayerController.globalEventListeners);
-        for (Listener listener : globalEventListeners) {
-            listener.onMediaPlayerEvent(this, event);
-        }
-        Set<Listener> eventListeners = new HashSet<>(this.eventListeners);
-        logV("Sending event to local(" + eventListeners.size() + ") : " + event);
+    private void doPostEvent(Event event, Set<Listener> eventListeners) {
         for (Listener listener : eventListeners) {
             listener.onMediaPlayerEvent(this, event);
         }

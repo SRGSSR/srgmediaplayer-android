@@ -58,6 +58,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
                 controller.setDebugMode(true);
             }
         });
+        controller.setDebugMode(true);
         delegate = new MockDelegate(controller);
         controller.setPlayerDelegateFactory(new PlayerDelegateFactory() {
             @Override

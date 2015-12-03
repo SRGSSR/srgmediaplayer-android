@@ -117,7 +117,7 @@ import android.view.ViewGroup;
     }
 
     public void showControlOverlays() {
-        playerController.fireEvent(SRGMediaPlayerController.Event.Type.OVERLAY_CONTROL_DISPLAYED);
+        playerController.broadcastEvent(SRGMediaPlayerController.Event.Type.OVERLAY_CONTROL_DISPLAYED);
         showingControlOverlays = true;
         propagateControlVisibility();
         postponeOverlayHiding();
@@ -125,7 +125,7 @@ import android.view.ViewGroup;
 
     public void hideControlOverlays() {
         if (!forceShowingOverlays) {
-            playerController.fireEvent(SRGMediaPlayerController.Event.Type.OVERLAY_CONTROL_HIDDEN);
+            playerController.broadcastEvent(SRGMediaPlayerController.Event.Type.OVERLAY_CONTROL_HIDDEN);
             handler.removeCallbacks(hideOverlaysRunnable);
             showingControlOverlays = false;
             propagateControlVisibility();

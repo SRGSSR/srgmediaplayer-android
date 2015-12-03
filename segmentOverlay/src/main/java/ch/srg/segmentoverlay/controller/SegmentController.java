@@ -127,11 +127,11 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	}
 
 	public void postEvent(Event.Type type, Segment segment) {
-		playerController.postEvent(new Event(playerController, type, segment));
+		playerController.broadcastEvent(new Event(playerController, type, segment));
 	}
 
 	public void postBlockedSegmentEvent(Segment segment, Event.Type type) {
-		playerController.postEvent(new Event(playerController, type, segment, segment.getBlockingReason()));
+		playerController.broadcastEvent(new Event(playerController, type, segment, segment.getBlockingReason()));
 	}
 
 	private void notifyPositionChange(String mediaIdentifier, long time) {
