@@ -38,7 +38,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     public static final String VERSION = "0.0.2";
     private static final long[] EMPTY_TIME_RANGE = new long[2];
     private static final long UPDATE_PERIOD = 100;
-    private boolean duckedVolume;
 
     /**
      * True when audio focus has been requested, does not reflect current focus (LOSS / DUCKED).
@@ -47,6 +46,10 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     @Nullable
     private Long currentSeekTarget;
     private boolean debugMode;
+    private boolean pausedBecauseTransientFocusLoss;
+    private boolean duckedBecauseTransientFocusLoss;
+    private boolean pausedBecauseFocusLoss;
+    private boolean mutedBecauseFocusLoss;
 
     public static String getName() {
         return NAME;
@@ -1134,58 +1137,47 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     public void handleAudioFocusChange(int focusChange) {
         switch (focusChange) {
             case AudioManager.AUDIOFOCUS_LOSS:
-                handleAudioFocusLoss(false);
+                handleAudioFocusLoss(false, false);
                 break;
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
-                handleAudioFocusLoss(true);
-                break;
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
-                if ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_DUCK) != 0) {
-                    setDuckedVolume(true);
-                } else {
-                    handleAudioFocusLoss(true);
-                }
+                handleAudioFocusLoss(true, focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK);
                 break;
             case AudioManager.AUDIOFOCUS_GAIN:
-                handleAudioFocusGain(false);
-                break;
             case AudioManager.AUDIOFOCUS_GAIN_TRANSIENT:
-                handleAudioFocusGain(true);
-                break;
             case AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK:
-                if ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_DUCK) != 0) {
-                    setDuckedVolume(false);
-                } else {
-                    handleAudioFocusGain(true);
-                }
+                handleAudioFocusGain();
                 break;
         }
     }
 
-    public void setDuckedVolume(boolean duckedVolume) {
-        this.duckedVolume = duckedVolume;
-        // TODO Handle ducked volume or something
-        if (duckedVolume) {
+    private void handleAudioFocusGain() {
+        if (duckedBecauseTransientFocusLoss) {
+            // TODO Handle ducked volume or something
+            unmute();
+        }
+        if (pausedBecauseFocusLoss  && ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_AUTO_RESTART) != 0 || pausedBecauseTransientFocusLoss)) {
+            start();
+        }
+        if (mutedBecauseFocusLoss) {
+            unmute();
+        }
+        pausedBecauseFocusLoss = false;
+        pausedBecauseTransientFocusLoss = false;
+        duckedBecauseTransientFocusLoss = false;
+    }
+
+    private void handleAudioFocusLoss(boolean transientFocus, boolean mayDuck) {
+        if (mayDuck && (audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_DUCK) != 0) {
+            this.duckedBecauseTransientFocusLoss = true;
+            // TODO Handle ducked volume or something
             mute();
-        } else {
-            unmute();
-        }
-    }
-
-    private void handleAudioFocusGain(boolean transientFocus) {
-        if ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_PAUSE) != 0) {
-            if ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_AUTO_RESTART) != 0 || transientFocus) {
-                start();
-            }
-        } else if ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_MUTE) != 0) {
-            unmute();
-        }
-    }
-
-    private void handleAudioFocusLoss(boolean transientFocus) {
-        if ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_PAUSE) != 0) {
+        } else if ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_PAUSE) != 0) {
+            pausedBecauseFocusLoss = true;
+            pausedBecauseTransientFocusLoss = transientFocus;
             pause();
         } else if ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_MUTE) != 0) {
+            mutedBecauseFocusLoss = true;
             mute();
         }
     }
