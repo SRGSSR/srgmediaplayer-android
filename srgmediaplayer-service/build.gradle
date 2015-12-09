@@ -6,8 +6,8 @@ android {
 
     defaultConfig {
         minSdkVersion 15
-        versionCode Integer.parseInt(project.VERSION_CODE)
-        versionName project.VERSION_NAME
+        versionCode Integer.parseInt(System.getenv().BUILD_NUMBER ?: "0")
+        versionName VERSION_BASE + "." + (System.getenv().BUILD_NUMBER ?: "SNAPSHOT")
     }
     buildTypes {
         release {

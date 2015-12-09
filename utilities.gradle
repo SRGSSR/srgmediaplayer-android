@@ -2,8 +2,10 @@
 apply plugin: 'maven'
 apply plugin: 'signing'
 
+project.ext.versionName = VERSION_BASE + "." + (System.getenv().BUILD_NUMBER ?: "9999-SNAPSHOT")
+
 def isReleaseBuild() {
-    return VERSION_NAME.contains("SNAPSHOT") == false
+    return project.versionName.contains("SNAPSHOT") == false
 }
 
 def sonatypeRepositoryUrl
@@ -26,7 +28,7 @@ uploadArchives {
         mavenDeployer {
             pom.artifactId = project.name
             pom.groupId = GROUP
-            pom.version = VERSION_NAME
+            pom.version = project.versionName
 
             repository(url: sonatypeRepositoryUrl) {
                 authentication(userName: getRepositoryUsername(), password: getRepositoryPassword())
@@ -82,7 +84,7 @@ uploadArchives {
     }
 
     task gitTagArchive() {
-        def tagWithVersionCommand = 'git tag -a ' + VERSION_NAME + ' -m ' + VERSION_NAME
+        def tagWithVersionCommand = 'git tag -a ' + project.versionName + ' -m ' + project.versionName
         tagWithVersionCommand.execute()
         'git push origin --tags'.execute()
     }

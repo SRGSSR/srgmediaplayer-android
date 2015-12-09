@@ -10,9 +10,8 @@ android {
 		minSdkVersion 16
 		targetSdkVersion 23
 
-		def buildNumber = System.getenv().BUILD_NUMBER as Integer ?: 9999
-		versionCode buildNumber
-		versionName "1.2." + buildNumber
+		versionCode Integer.parseInt(System.getenv().BUILD_NUMBER ?: "0")
+		versionName VERSION_BASE + "." + (System.getenv().BUILD_NUMBER ?: "SNAPSHOT")
 
 		resValue "string", "APP_ID", "314785ad94ebbae30a802a8a1eadf3df"
 
