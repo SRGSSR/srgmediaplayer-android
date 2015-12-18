@@ -634,10 +634,14 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     private void periodicUpdateInteral() {
         if (currentSeekTarget != null) {
-            if (currentMediaPlayerDelegate == null
-                    || currentMediaPlayerDelegate.getCurrentPosition() != currentSeekTarget) {
+            if (currentMediaPlayerDelegate == null) {
                 currentSeekTarget = null;
-                postEventInternal(Event.Type.DID_SEEK);
+            } else {
+                long currentPosition = currentMediaPlayerDelegate.getCurrentPosition();
+                if (currentPosition != UNKNOWN_TIME && currentPosition != currentSeekTarget) {
+                    currentSeekTarget = null;
+                    postEventInternal(Event.Type.DID_SEEK);
+                }
             }
         }
     }
@@ -652,12 +656,14 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         if (currentMediaPlayerDelegate != null) {
             currentMediaPlayerDelegate.setMuted(muted);
             currentMediaPlayerDelegate.playIfReady(playWhenReady);
-            if (seekToWhenReady != null) {
+            Long seekTarget = this.seekToWhenReady;
+            if (seekTarget != null) {
                 postEventInternal(Event.Type.WILL_SEEK);
-                Log.v(TAG, "Apply state / Seeking to " + seekToWhenReady);
+                Log.v(TAG, "Apply state / Seeking to " + seekTarget);
                 try {
-                    currentMediaPlayerDelegate.seekTo(seekToWhenReady);
-                    seekToWhenReady = null;
+                    currentMediaPlayerDelegate.seekTo(seekTarget);
+                    currentSeekTarget = seekTarget;
+                    this.seekToWhenReady = null;
                 } catch (IllegalStateException ignored) {
                 }
             }
@@ -800,7 +806,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     public boolean isPlaying() {
-        return currentMediaPlayerDelegate != null && currentMediaPlayerDelegate.isPlaying();
+        return currentMediaPlayerDelegate != null && currentMediaPlayerDelegate.isPlaying() && seekToWhenReady == null;
     }
 
     /**
