@@ -25,8 +25,10 @@ import ch.srg.segmentoverlay.model.Segment;
 public class PlayerControlView extends RelativeLayout implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, SegmentController.Listener {
     private static final long COMPLETION_TOLERANCE_MS = 5000;
 
+    @Nullable
     private SRGMediaPlayerController playerController;
 
+    @Nullable
     private SegmentController segmentController;
 
     private SeekBar seekBar;
@@ -117,10 +119,12 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
 
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
-        segmentController.stopUserTrackingProgress();
-        if (seekBarSeekToMs >= 0 && playerController != null) {
-            segmentController.seekTo(playerController.getMediaIdentifier(), seekBarSeekToMs);
-            seekBarSeekToMs = -1;
+        if (segmentController != null) {
+            segmentController.stopUserTrackingProgress();
+            if (seekBarSeekToMs >= 0 && playerController != null) {
+                segmentController.seekTo(playerController.getMediaIdentifier(), seekBarSeekToMs);
+                seekBarSeekToMs = -1;
+            }
         }
     }
 
@@ -151,7 +155,9 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
     }
 
     private void updateTimes(long position, long duration) {
-        if (!segmentController.isUserChangingProgress()) {
+        if (segmentController != null
+                && playerController != null
+                && !segmentController.isUserChangingProgress()) {
             int bufferPercent = playerController.getBufferPercentage();
             if (bufferPercent > 0) {
                 seekBar.setSecondaryProgress((int) duration * bufferPercent / 100);
