@@ -7,6 +7,7 @@ import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -25,6 +26,10 @@ import ch.srg.segmentoverlay.model.Segment;
 public class PlayerControlView extends RelativeLayout implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, SegmentController.Listener {
     private static final long COMPLETION_TOLERANCE_MS = 5000;
 
+    public static final int FULLSCREEN_BUTTON_INVISIBLE = 0;
+    public static final int FULLSCREEN_BUTTON_ON = 1;
+    public static final int FULLSCREEN_BUTTON_OFF = 2;
+
     @Nullable
     private SRGMediaPlayerController playerController;
 
@@ -36,6 +41,7 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
     private Button pauseButton;
     private Button playButton;
     private Button replayButton;
+    private ImageButton fullscreenButton;
 
     private TextView leftTime;
     private TextView rightTime;
@@ -45,6 +51,7 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
     private long seekBarSeekToMs;
 
     private ArrayList<PlayerControlView.Listener> listeners = new ArrayList<>();
+    private int fullScreenButtonState;
 
     public PlayerControlView(Context context) {
         this(context, null);
@@ -66,13 +73,32 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
         pauseButton = (Button) findViewById(R.id.segment_player_control_button_pause);
         playButton = (Button) findViewById(R.id.segment_player_control_button_play);
         replayButton = (Button) findViewById(R.id.segment_player_control_button_replay);
+        fullscreenButton = (ImageButton) findViewById(R.id.segment_player_control_button_fullscreen);
 
         pauseButton.setOnClickListener(this);
         playButton.setOnClickListener(this);
         replayButton.setOnClickListener(this);
+        fullscreenButton.setOnClickListener(this);
 
         leftTime = (TextView) findViewById(R.id.segment_player_control_time_left);
         rightTime = (TextView) findViewById(R.id.segment_player_control_time_right);
+
+        updateFullScreenButton();
+    }
+
+    private void updateFullScreenButton() {
+        if (fullscreenButton != null) {
+            if (fullScreenButtonState == FULLSCREEN_BUTTON_INVISIBLE) {
+                fullscreenButton.setVisibility(View.GONE);
+            } else {
+                fullscreenButton.setVisibility(View.VISIBLE);
+                if (fullScreenButtonState == FULLSCREEN_BUTTON_OFF) {
+                    fullscreenButton.setImageResource(R.drawable.ic_fullscreen_exit);
+                } else {
+                    fullscreenButton.setImageResource(R.drawable.ic_fullscreen);
+                }
+            }
+        }
     }
 
     public void attachToController(SRGMediaPlayerController playerController) {
@@ -98,6 +124,11 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
                 ArrayList<Listener> listeners = new ArrayList<>(this.listeners);
                 for (PlayerControlView.Listener listener : listeners) {
                     listener.onReplayClick();
+                }
+            } else if (v == fullscreenButton) {
+                ArrayList<Listener> listeners = new ArrayList<>(this.listeners);
+                for (PlayerControlView.Listener listener : listeners) {
+                    listener.onFullscreenClick(fullScreenButtonState == FULLSCREEN_BUTTON_ON);
                 }
             }
         }
@@ -197,14 +228,20 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
 
     public interface Listener {
         void onReplayClick();
+
+        void onFullscreenClick(boolean fullscreen);
     }
 
-    public void addReplayListener(@NonNull PlayerControlView.Listener listener){
+    public void addListener(@NonNull PlayerControlView.Listener listener){
         listeners.add(listener);
     }
 
-    public void removeReplayListener(@NonNull PlayerControlView.Listener listener){
+    public void removeListener(@NonNull PlayerControlView.Listener listener){
         listeners.remove(listener);
     }
 
+    public void setFullScreenButtonState(int fullScreenButtonState) {
+        this.fullScreenButtonState = fullScreenButtonState;
+        updateFullScreenButton();
+    }
 }
