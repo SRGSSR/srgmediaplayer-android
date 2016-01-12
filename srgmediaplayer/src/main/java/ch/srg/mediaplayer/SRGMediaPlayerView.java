@@ -237,11 +237,11 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         //This will trigger the onTouch attached to the videorenderingview if it's the case.
         boolean handled = super.dispatchTouchEvent(event);
         if (videoRenderViewTrackingTouch) {
-            return super.dispatchTouchEvent(event);
+            return handled;
         }
         if (videoRenderViewHandledTouch) {
             videoRenderViewHandledTouch = false;
-            return super.dispatchTouchEvent(event);
+            return handled;
         }
 
         if (touchListener != null) {
