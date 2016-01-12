@@ -2,6 +2,7 @@ package ch.srg.mediaplayer;
 
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -245,19 +246,42 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         }
 
         if (touchListener != null) {
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_MOVE:
-                    touchListener.onVideoOverlayTouched(this);
-                    break;
-                case MotionEvent.ACTION_UP:
-                    touchListener.onVideoOverlayTouched(this);
-                    break;
-                case MotionEvent.ACTION_DOWN:
-                default:
-                    break;
+            boolean controlHit = isControlHit((int) event.getX(), (int) event.getY());
+            if (controlHit) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_MOVE:
+                        touchListener.onVideoOverlayTouched(this);
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        touchListener.onVideoOverlayTouched(this);
+                        break;
+                    case MotionEvent.ACTION_DOWN:
+                    default:
+                        break;
+                }
             }
         }
         return handled;
+    }
+
+    public boolean isControlHit(int x, int y) {
+        boolean controlHit = false;
+        for(int i = getChildCount(); i >= 0; --i)
+        {
+            View child = getChildAt(i);
+            if (child != null) {
+                ViewGroup.LayoutParams layoutParams = child.getLayoutParams();
+                if (child.getVisibility() == VISIBLE && layoutParams instanceof LayoutParams && ((LayoutParams) layoutParams).overlayMode == LayoutParams.OVERLAY_CONTROL) {
+                    Rect bounds = new Rect();
+                    child.getHitRect(bounds);
+                    if (bounds.contains(x, y)) {
+                        controlHit = true;
+                        break;
+                    }
+                }
+            }
+        }
+        return controlHit;
     }
 
     /**
