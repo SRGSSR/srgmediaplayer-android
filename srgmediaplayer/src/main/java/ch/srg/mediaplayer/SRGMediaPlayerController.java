@@ -895,6 +895,10 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         overlayController.showControlOverlays();
     }
 
+    public void hideControlOverlays() {
+        overlayController.hideControlOverlays();
+    }
+
     public void toggleOverlay() {
         if (overlayController.isOverlayVisible()) {
             overlayController.hideControlOverlays();
