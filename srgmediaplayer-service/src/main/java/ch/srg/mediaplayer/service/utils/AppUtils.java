@@ -35,6 +35,11 @@ public class AppUtils {
 		if (source == null) {
 			return null;
 		}
+		Bitmap.Config config = source.getConfig();
+		if (config == null) {
+			return null;
+		}
+
 		int sourceWidth = source.getWidth();
 		int sourceHeight = source.getHeight();
 
@@ -50,7 +55,7 @@ public class AppUtils {
 
 		RectF targetRect = new RectF(left, top, left + scaledWidth, top + scaledHeight);
 
-		Bitmap destination = Bitmap.createBitmap(newWidth, newHeight, source.getConfig());
+		Bitmap destination = Bitmap.createBitmap(newWidth, newHeight, config);
 		Canvas canvas = new Canvas(destination);
 		canvas.drawBitmap(source, null, targetRect, null);
 
