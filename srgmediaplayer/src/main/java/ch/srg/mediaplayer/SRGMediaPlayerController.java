@@ -520,11 +520,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 return true;
             }
             case MSG_SET_PLAY_WHEN_READY: {
-                if (this.playWhenReady != (Boolean) msg.obj) {
-                    this.playWhenReady = (Boolean) msg.obj;
-                    if (currentMediaPlayerDelegate != null) {
-                        currentMediaPlayerDelegate.playIfReady(playWhenReady);
-                    }
+                this.playWhenReady = (Boolean) msg.obj;
+                if (currentMediaPlayerDelegate != null) {
+                    currentMediaPlayerDelegate.playIfReady(playWhenReady);
                 }
                 return true;
             }
@@ -780,6 +778,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         if (delegate == currentMediaPlayerDelegate) {
             sendMessage(MSG_PLAYER_DELEGATE_COMPLETED);
         }
+        release();
     }
 
     @Override
