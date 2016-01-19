@@ -184,6 +184,18 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 videoViewDimension = controller.mediaPlayerView != null ? controller.mediaPlayerView.getVideoRenderingViewSizeString() : SRGMediaPlayerView.UNKNOWN_DIMENSION;
                 mediaSessionId = controller.getMediaSessionId();
                 screenType = controller.getScreenType();
+            } else {
+                mediaIdentifier = null;
+                mediaUrl = null;
+                mediaPosition = 0;
+                mediaDuration = 0;
+                mediaPlaylistStartTime = 0;
+                mediaPlaying = false;
+                mediaMuted = false;
+                mediaLive = false;
+                videoViewDimension = null;
+                mediaSessionId = null;
+                screenType = null;
             }
         }
 
