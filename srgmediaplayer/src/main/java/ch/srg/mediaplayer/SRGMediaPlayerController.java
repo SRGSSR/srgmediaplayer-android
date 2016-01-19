@@ -169,20 +169,22 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
         private Event(Type eventType, SRGMediaPlayerController controller, SRGMediaPlayerException eventException) {
             type = eventType;
-            mediaIdentifier = controller.currentMediaIdentifier;
-            mediaUrl = controller.currentMediaUrl;
-            mediaPosition = controller.getMediaPosition();
-            mediaDuration = controller.getMediaDuration();
-            mediaPlaying = controller.isPlaying();
-            mediaMuted = controller.muted;
-            mediaLive = controller.isLive();
-            mediaPlaylistStartTime = controller.getPlaylistStartTime();
-            videoViewDimension = controller.mediaPlayerView != null ? controller.mediaPlayerView.getVideoRenderingViewSizeString() : SRGMediaPlayerView.UNKNOWN_DIMENSION;
             tag = controller.tag;
             state = controller.state;
             exception = eventException;
-            mediaSessionId = controller.getMediaSessionId();
-            screenType = controller.getScreenType();
+            if (!controller.isReleased()) {
+                mediaIdentifier = controller.currentMediaIdentifier;
+                mediaUrl = controller.currentMediaUrl;
+                mediaPosition = controller.getMediaPosition();
+                mediaDuration = controller.getMediaDuration();
+                mediaPlaying = controller.isPlaying();
+                mediaMuted = controller.muted;
+                mediaLive = controller.isLive();
+                mediaPlaylistStartTime = controller.getPlaylistStartTime();
+                videoViewDimension = controller.mediaPlayerView != null ? controller.mediaPlayerView.getVideoRenderingViewSizeString() : SRGMediaPlayerView.UNKNOWN_DIMENSION;
+                mediaSessionId = controller.getMediaSessionId();
+                screenType = controller.getScreenType();
+            }
         }
 
         protected Event(SRGMediaPlayerController controller, SRGMediaPlayerException eventException) {
