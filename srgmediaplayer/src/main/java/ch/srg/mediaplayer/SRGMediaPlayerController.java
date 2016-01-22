@@ -172,31 +172,17 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             tag = controller.tag;
             state = controller.state;
             exception = eventException;
-            if (!controller.isReleased()) {
-                mediaIdentifier = controller.currentMediaIdentifier;
-                mediaUrl = controller.currentMediaUrl;
-                mediaPosition = controller.getMediaPosition();
-                mediaDuration = controller.getMediaDuration();
-                mediaPlaying = controller.isPlaying();
-                mediaMuted = controller.muted;
-                mediaLive = controller.isLive();
-                mediaPlaylistStartTime = controller.getPlaylistStartTime();
-                videoViewDimension = controller.mediaPlayerView != null ? controller.mediaPlayerView.getVideoRenderingViewSizeString() : SRGMediaPlayerView.UNKNOWN_DIMENSION;
-                mediaSessionId = controller.getMediaSessionId();
-                screenType = controller.getScreenType();
-            } else {
-                mediaIdentifier = null;
-                mediaUrl = null;
-                mediaPosition = 0;
-                mediaDuration = 0;
-                mediaPlaylistStartTime = 0;
-                mediaPlaying = false;
-                mediaMuted = false;
-                mediaLive = false;
-                videoViewDimension = null;
-                mediaSessionId = null;
-                screenType = null;
-            }
+            mediaIdentifier = controller.currentMediaIdentifier;
+            mediaSessionId = controller.getMediaSessionId();
+            mediaUrl = controller.currentMediaUrl;
+            mediaPosition = controller.getMediaPosition();
+            mediaDuration = controller.getMediaDuration();
+            mediaPlaying = controller.isPlaying();
+            mediaMuted = controller.muted;
+            mediaLive = controller.isLive();
+            mediaPlaylistStartTime = controller.getPlaylistStartTime();
+            videoViewDimension = controller.mediaPlayerView != null ? controller.mediaPlayerView.getVideoRenderingViewSizeString() : SRGMediaPlayerView.UNKNOWN_DIMENSION;
+            screenType = controller.getScreenType();
         }
 
         protected Event(SRGMediaPlayerController controller, SRGMediaPlayerException eventException) {
@@ -622,6 +608,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             case MSG_PLAYER_DELEGATE_COMPLETED:
                 setStateInternal(State.READY);
                 postEventInternal(Event.Type.MEDIA_COMPLETED);
+                releaseInternal();
                 return true;
             case MSG_PERIODIC_UPDATE:
                 periodicUpdateInteral();
@@ -735,6 +722,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     private void releaseDelegateInternal() {
+        if (debugMode) {
+            assertCommandHandlerThread();
+        }
         if (currentMediaPlayerDelegate != null) {
             postEventInternal(Event.Type.MEDIA_STOPPED);
             currentMediaPlayerDelegate.release();
@@ -792,7 +782,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         if (delegate == currentMediaPlayerDelegate) {
             sendMessage(MSG_PLAYER_DELEGATE_COMPLETED);
         }
-        release();
     }
 
     @Override
