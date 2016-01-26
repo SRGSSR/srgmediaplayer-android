@@ -18,6 +18,7 @@ package ch.srg.mediaplayer.internal.exoplayer;
 import android.content.Context;
 import android.media.MediaCodec;
 import android.os.Handler;
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.google.android.exoplayer.DefaultLoadControl;
@@ -121,7 +122,7 @@ public class DashRendererBuilder implements RendererBuilder {
             this.player = player;
             this.callback = callback;
             MediaPresentationDescriptionParser parser = new MediaPresentationDescriptionParser();
-            manifestDataSource = new DefaultUriDataSource(context, userAgent);
+            manifestDataSource = new DefaultUriDataSource(context, null, createSecuredDataSource());
             manifestFetcher = new ManifestFetcher<>(url, manifestDataSource, parser);
         }
 
@@ -212,10 +213,7 @@ public class DashRendererBuilder implements RendererBuilder {
             }
 
             // Build the video renderer.
-            DataSource videoDataSource;
-            DefaultHttpDataSource httpDataSource = new DefaultHttpDataSource(userAgent, null, null, 8000, 8000, true);
-            httpDataSource.setRequestProperty("X-Fromakamai", "true");
-            videoDataSource = new DefaultUriDataSource(context, null, httpDataSource);
+            DataSource videoDataSource = createSecuredDataSource();
             ChunkSource videoChunkSource = new DashChunkSource(manifestFetcher,
                     DefaultDashTrackSelector.newVideoInstance(context, true, filterHdContent),
                     videoDataSource, new AdaptiveEvaluator(bandwidthMeter), LIVE_EDGE_LATENCY_MS,
@@ -228,7 +226,7 @@ public class DashRendererBuilder implements RendererBuilder {
                     mainHandler, player, 50);
 
             // Build the audio renderer.
-            DataSource audioDataSource = new DefaultUriDataSource(context, bandwidthMeter, userAgent);
+            DataSource audioDataSource = new DefaultUriDataSource(context, bandwidthMeter, createSecuredDataSource());
             ChunkSource audioChunkSource = new DashChunkSource(manifestFetcher,
                     DefaultDashTrackSelector.newAudioInstance(), audioDataSource, null, LIVE_EDGE_LATENCY_MS,
                     elapsedRealtimeOffset, mainHandler, player);
@@ -255,6 +253,13 @@ public class DashRendererBuilder implements RendererBuilder {
             renderers[ExoPlayerDelegate.TYPE_AUDIO] = audioRenderer;
             renderers[ExoPlayerDelegate.TYPE_TEXT] = textRenderer;
             player.onRenderers(renderers, bandwidthMeter);
+        }
+
+        @NonNull
+        private DefaultUriDataSource createSecuredDataSource() {
+            DefaultHttpDataSource httpDataSource = new DefaultHttpDataSource(userAgent, null, null, 8000, 8000, true);
+            httpDataSource.setRequestProperty("X-Fromakamai", "true");
+            return new DefaultUriDataSource(context, null, httpDataSource);
         }
 
         private static int getWidevineSecurityLevel(StreamingDrmSessionManager sessionManager) {
