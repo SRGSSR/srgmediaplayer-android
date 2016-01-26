@@ -144,17 +144,12 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
         mediaPlayerFragment = (MediaPlayerFragment) getFragmentManager().findFragmentByTag(FRAGMENT_TAG);
 
         if (mediaPlayerFragment == null) {
-            srgMediaPlayer = new SRGMediaPlayerController(this, dataProvider, PLAYER_TAG);
-            srgMediaPlayer.setDebugMode(true);
-
             mediaPlayerFragment = new MediaPlayerFragment();
-            mediaPlayerFragment.mediaPlayer = srgMediaPlayer;
+            mediaPlayerFragment.mediaPlayer = createPlayer();
             getFragmentManager().beginTransaction().add(mediaPlayerFragment, FRAGMENT_TAG).commit();
         } else {
             if (mediaPlayerFragment.mediaPlayer == null) {
-                srgMediaPlayer = new SRGMediaPlayerController(this, dataProvider, PLAYER_TAG);
-                srgMediaPlayer.setDebugMode(true);
-                mediaPlayerFragment.mediaPlayer = srgMediaPlayer;
+                mediaPlayerFragment.mediaPlayer = createPlayer();
             } else {
                 srgMediaPlayer = mediaPlayerFragment.mediaPlayer;
             }
@@ -216,6 +211,13 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
             //code for landscape mode
             uiHelper = new SystemUiHelper(this, SystemUiHelper.LEVEL_IMMERSIVE, SystemUiHelper.FLAG_IMMERSIVE_STICKY);
         }
+    }
+
+    private SRGMediaPlayerController createPlayer() {
+        srgMediaPlayer = new SRGMediaPlayerController(this, dataProvider, PLAYER_TAG);
+        srgMediaPlayer.setPlayerDelegateFactory(((DemoApplication) getApplication()).getPlayerDelegateFactory());
+        srgMediaPlayer.setDebugMode(true);
+        return srgMediaPlayer;
     }
 
     public String getTestListItem(int i) {
@@ -333,7 +335,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
             newPlayerDelegate = new NativePlayerDelegate(srgMediaPlayer);
             buttonText = "ExoPlayer";
         } else {
-            newPlayerDelegate = new ExoPlayerDelegate(this, srgMediaPlayer);
+            newPlayerDelegate = new ExoPlayerDelegate(this, srgMediaPlayer, ExoPlayerDelegate.SourceType.HLS);
             buttonText = "NativePlayer";
         }
         srgMediaPlayer.swapPlayerDelegate(newPlayerDelegate);

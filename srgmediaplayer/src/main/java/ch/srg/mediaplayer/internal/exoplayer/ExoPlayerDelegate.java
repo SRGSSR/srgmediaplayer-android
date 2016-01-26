@@ -3,9 +3,11 @@ package ch.srg.mediaplayer.internal.exoplayer;
 
 import android.content.Context;
 import android.media.MediaCodec;
+import android.media.MediaDrm;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceView;
@@ -17,21 +19,31 @@ import com.google.android.exoplayer.ExoPlayer;
 import com.google.android.exoplayer.MediaCodecAudioTrackRenderer;
 import com.google.android.exoplayer.MediaCodecTrackRenderer;
 import com.google.android.exoplayer.MediaCodecVideoTrackRenderer;
+import com.google.android.exoplayer.TimeRange;
 import com.google.android.exoplayer.TrackRenderer;
 import com.google.android.exoplayer.audio.AudioCapabilities;
 import com.google.android.exoplayer.audio.AudioCapabilitiesReceiver;
 import com.google.android.exoplayer.audio.AudioTrack;
+import com.google.android.exoplayer.chunk.ChunkSampleSource;
 import com.google.android.exoplayer.chunk.Format;
+import com.google.android.exoplayer.dash.DashChunkSource;
+import com.google.android.exoplayer.drm.MediaDrmCallback;
+import com.google.android.exoplayer.drm.StreamingDrmSessionManager;
 import com.google.android.exoplayer.hls.HlsChunkSource;
 import com.google.android.exoplayer.hls.HlsSampleSource;
+import com.google.android.exoplayer.text.Cue;
+import com.google.android.exoplayer.text.TextRenderer;
 import com.google.android.exoplayer.upstream.BandwidthMeter;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.UUID;
 
 import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerView;
+
 
 
 /**
@@ -41,22 +53,48 @@ import ch.srg.mediaplayer.SRGMediaPlayerView;
 public class ExoPlayerDelegate implements
         PlayerDelegate,
         ExoPlayer.Listener,
+        TextRenderer,
         HlsSampleSource.EventListener,
         HlsChunkSource.EventListener,
+        DashChunkSource.EventListener,
+        ChunkSampleSource.EventListener,
         MediaCodecVideoTrackRenderer.EventListener,
         MediaCodecAudioTrackRenderer.EventListener,
         AudioCapabilitiesReceiver.Listener,
-        RendererBuilderCallback {
+        RendererBuilderCallback,
+        BandwidthMeter.EventListener, StreamingDrmSessionManager.EventListener {
 
+
+    @Override
+    public void onBandwidthSample(int i, long l, long l1) {
+        Log.v(TAG, "Unhandled dash event");
+    }
+
+    @Override
+    public void onAvailableRangeChanged(TimeRange timeRange) {
+        Log.v(TAG, "Unhandled dash event");
+    }
+
+    @Override
+    public void onCues(List<Cue> list) {
+        Log.v(TAG, "Unhandled dash text event");
+    }
+
+    @Override
+    public void onDrmSessionManagerError(Exception e) {
+        Log.v(TAG, "Unhandled dash drm session event");
+    }
 
     public enum SourceType {
         HLS,
-        EXTRACTOR
+        EXTRACTOR,
+        DASH
     }
 
-    public static final int RENDERER_COUNT = 2;
+    public static final int RENDERER_COUNT = 3;
     public static final int TYPE_VIDEO = 0;
     public static final int TYPE_AUDIO = 1;
+    public static final int TYPE_TEXT = 2;
     public static final String TAG = SRGMediaPlayerController.TAG;
 
     private final Context context;
@@ -84,10 +122,6 @@ public class ExoPlayerDelegate implements
 
     private long playlistStartTimeMs;
 
-    public ExoPlayerDelegate(Context context, OnPlayerDelegateListener controller) {
-        this(context, controller, SourceType.HLS);
-    }
-
     public ExoPlayerDelegate(Context context, OnPlayerDelegateListener controller, SourceType sourceType) {
         this.sourceType = sourceType;
         this.context = context;
@@ -105,7 +139,7 @@ public class ExoPlayerDelegate implements
 
     @Override
     public void prepare(Uri videoUri) throws SRGMediaPlayerException {
-        Log.v(TAG, "Preparing " + videoUri);
+        Log.v(TAG, "Preparing " + videoUri + " (" + sourceType  + ")");
         try {
             String videoSourceUrl = videoUri.toString();
             if (videoSourceUrl.equalsIgnoreCase(this.videoSourceUrl)) {
@@ -122,6 +156,9 @@ public class ExoPlayerDelegate implements
             this.videoSourceUrl = videoSourceUrl;
 
             switch (sourceType) {
+                case DASH:
+                    rendererBuilder = new DashRendererBuilder(context, "android", this.videoSourceUrl, createDrmCallback());
+                    break;
                 case HLS:
                     rendererBuilder = new HlsRendererBuilder(context, "android", this.videoSourceUrl, audioCapabilities);
                     break;
@@ -136,6 +173,21 @@ public class ExoPlayerDelegate implements
             release();
             throw new SRGMediaPlayerException(e);
         }
+    }
+
+    @NonNull
+    private MediaDrmCallback createDrmCallback() {
+        return new MediaDrmCallback() {
+            @Override
+            public byte[] executeProvisionRequest(UUID uuid, MediaDrm.ProvisionRequest provisionRequest) throws Exception {
+                return new byte[0];
+            }
+
+            @Override
+            public byte[] executeKeyRequest(UUID uuid, MediaDrm.KeyRequest keyRequest) throws Exception {
+                return new byte[0];
+            }
+        };
     }
 
     @Override

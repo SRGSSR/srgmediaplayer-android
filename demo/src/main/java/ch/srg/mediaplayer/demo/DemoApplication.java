@@ -56,6 +56,7 @@ public class DemoApplication extends Application {
 		multiDataProvider.addDataProvider("dummy", dummyDataProvider);
 		multiDataProvider.addDataProvider("directVideo", new DirectMappingDataProvider(SRGMediaPlayerDataProvider.TYPE_VIDEO));
 		multiDataProvider.addDataProvider("aac", new DirectMappingDataProvider(SRGMediaPlayerDataProvider.TYPE_AUDIO));
+		multiDataProvider.addDataProvider("dash", new DirectMappingDataProvider(SRGMediaPlayerDataProvider.TYPE_VIDEO));
 		multiDataProvider.addDataProvider("native", new DirectMappingDataProvider(SRGMediaPlayerDataProvider.TYPE_AUDIO));
 		multiDataProvider.addDataProvider("rawHttp", new RawHttpDataProvider(SRGMediaPlayerDataProvider.TYPE_VIDEO));
 
@@ -65,6 +66,8 @@ public class DemoApplication extends Application {
 				switch (multiDataProvider.getPrefix(mediaIdentifier)) {
 					case "aac":
 						return new ExoPlayerDelegate(DemoApplication.this,srgMediaPlayer, ExoPlayerDelegate.SourceType.EXTRACTOR);
+					case "dash":
+						return new ExoPlayerDelegate(DemoApplication.this,srgMediaPlayer, ExoPlayerDelegate.SourceType.DASH);
 					case "il":
 					case "native":
 						return new NativePlayerDelegate(srgMediaPlayer);

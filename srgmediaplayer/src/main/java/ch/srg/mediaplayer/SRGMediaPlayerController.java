@@ -291,7 +291,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             public PlayerDelegate getDelegateForMediaIdentifier(PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, String mediaIdentifier) {
                 if (ExoPlayerDelegate.isSupported()) {
                     return new ExoPlayerDelegate(SRGMediaPlayerController.this.context,
-                            SRGMediaPlayerController.this);
+                            SRGMediaPlayerController.this, ExoPlayerDelegate.SourceType.HLS);
                 } else {
                     return new NativePlayerDelegate(SRGMediaPlayerController.this);
                 }
