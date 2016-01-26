@@ -45,6 +45,7 @@ import com.google.android.exoplayer.text.TextTrackRenderer;
 import com.google.android.exoplayer.upstream.DataSource;
 import com.google.android.exoplayer.upstream.DefaultAllocator;
 import com.google.android.exoplayer.upstream.DefaultBandwidthMeter;
+import com.google.android.exoplayer.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer.upstream.DefaultUriDataSource;
 import com.google.android.exoplayer.upstream.UriDataSource;
 import com.google.android.exoplayer.util.ManifestFetcher;
@@ -211,7 +212,10 @@ public class DashRendererBuilder implements RendererBuilder {
             }
 
             // Build the video renderer.
-            DataSource videoDataSource = new DefaultUriDataSource(context, bandwidthMeter, userAgent);
+            DataSource videoDataSource;
+            DefaultHttpDataSource httpDataSource = new DefaultHttpDataSource(userAgent, null, null, 8000, 8000, true);
+            httpDataSource.setRequestProperty("X-Fromakamai", "true");
+            videoDataSource = new DefaultUriDataSource(context, null, httpDataSource);
             ChunkSource videoChunkSource = new DashChunkSource(manifestFetcher,
                     DefaultDashTrackSelector.newVideoInstance(context, true, filterHdContent),
                     videoDataSource, new AdaptiveEvaluator(bandwidthMeter), LIVE_EDGE_LATENCY_MS,
