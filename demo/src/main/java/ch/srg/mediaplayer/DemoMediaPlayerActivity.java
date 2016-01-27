@@ -415,7 +415,12 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
         switch (event.type) {
             case MEDIA_READY_TO_PLAY:
                 segments = dataProvider.getSegments(mp.getMediaIdentifier());
-                segmentController.setSegmentList(segments);
+                if (segments != null && !segments.isEmpty() && segmentView != null) {
+                    segmentController.setSegmentList(segments);
+                    segmentView.setVisibility(View.VISIBLE);
+                } else if(segments != null && segmentView != null && segments.isEmpty()){
+                    segmentView.setVisibility(View.GONE);
+                }
                 break;
             case EXTERNAL_EVENT:
                 if (event instanceof SegmentController.Event) {
