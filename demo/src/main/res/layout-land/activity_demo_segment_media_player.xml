@@ -33,6 +33,12 @@
             android:layout_centerHorizontal="true"
             app:overlay_mode="unmanaged"/>
 
+        <ch.srg.mediaplayer.extras.overlay.error.SimpleErrorMessage
+            android:id="@+id/error_message"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:overlay_mode="unmanaged"/>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -72,11 +78,6 @@
                 android:background="@color/grey"/>
             <!--Some text over the controls that stay-->
 
-            <ch.srg.mediaplayer.extras.overlay.error.SimpleErrorMessage
-                android:id="@+id/error_message"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                app:overlay_mode="unmanaged"/>
 
         </LinearLayout>
 
