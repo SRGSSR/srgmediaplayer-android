@@ -7,7 +7,6 @@ import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -41,7 +40,7 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
     private Button pauseButton;
     private Button playButton;
     private Button replayButton;
-    private ImageButton fullscreenButton;
+    private Button fullscreenButton;
 
     private TextView leftTime;
     private TextView rightTime;
@@ -73,7 +72,7 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
         pauseButton = (Button) findViewById(R.id.segment_player_control_button_pause);
         playButton = (Button) findViewById(R.id.segment_player_control_button_play);
         replayButton = (Button) findViewById(R.id.segment_player_control_button_replay);
-        fullscreenButton = (ImageButton) findViewById(R.id.segment_player_control_button_fullscreen);
+        fullscreenButton = (Button) findViewById(R.id.segment_player_control_button_fullscreen);
 
         pauseButton.setOnClickListener(this);
         playButton.setOnClickListener(this);
@@ -93,9 +92,9 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
             } else {
                 fullscreenButton.setVisibility(View.VISIBLE);
                 if (fullScreenButtonState == FULLSCREEN_BUTTON_OFF) {
-                    fullscreenButton.setImageResource(R.drawable.ic_fullscreen_exit);
+                    fullscreenButton.setBackgroundResource(R.drawable.ic_fullscreen_exit);
                 } else {
-                    fullscreenButton.setImageResource(R.drawable.ic_fullscreen);
+                    fullscreenButton.setBackgroundResource(R.drawable.ic_fullscreen);
                 }
             }
         }

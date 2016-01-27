@@ -3,10 +3,10 @@
               xmlns:tools="http://schemas.android.com/tools"
               android:layout_width="match_parent"
               android:layout_height="wrap_content"
-              android:paddingLeft="8dp"
-              android:paddingRight="8dp"
               android:divider="@drawable/simple_vertical_divider"
               android:gravity="center_vertical"
+              android:paddingLeft="8dp"
+              android:paddingRight="8dp"
               android:showDividers="middle">
 
     <FrameLayout
@@ -61,10 +61,10 @@
         android:textColor="#ffffff"
         android:textSize="10dp"/>
 
-    <ImageButton
+    <Button
         android:id="@+id/segment_player_control_button_fullscreen"
         android:layout_width="@dimen/segment_player_control_button_size"
         android:layout_height="@dimen/segment_player_control_button_size"
-        android:src="@drawable/ic_fullscreen"/>
+        android:background="@drawable/ic_fullscreen"/>
 
 </LinearLayout>
