@@ -1,22 +1,32 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context="ch.srg.mediaplayer.DemoMediaPlayerActivity">
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:app="http://schemas.android.com/apk/res-auto"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              tools:context="ch.srg.mediaplayer.DemoMediaPlayerActivity">
 
     <android.support.v7.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/colorPrimary"
-        android:minHeight="?attr/actionBarSize"/>
+        android:minHeight="?attr/actionBarSize">
+
+
+        <TextView
+            android:id="@+id/status_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:lines="2"
+            android:text="Status"
+            android:textAppearance="?android:attr/textAppearanceSmall"/>
+    </android.support.v7.widget.Toolbar>
 
     <ch.srg.mediaplayer.SRGMediaPlayerView
         android:id="@+id/demo_video_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/toolbar"
         android:animateLayoutChanges="true"
         android:background="#ff222222"
         app:containerAspectRatio="auto"
@@ -30,43 +40,32 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-            app:overlay_mode="loading" />
+            app:overlay_mode="loading"/>
 
-        <!--Bottom anchor-->
-        <Space
-            android:id="@+id/bottomAnchor"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_alignParentBottom="true"
-            android:layout_centerHorizontal="true"
-            app:overlay_mode="unmanaged" />
+        <ch.srg.mediaplayer.extras.overlay.error.SimpleErrorMessage
+            android:id="@+id/error_message"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:overlay_mode="unmanaged"/>
+
+        <Button
+            android:id="@+id/button_swap_player"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentTop="true"
+            android:text="Native"
+            android:textSize="6sp"
+            app:overlay_mode="control"/>
+
 
         <!--Controls-->
         <ch.srg.segmentoverlay.view.PlayerControlView
             android:id="@+id/media_control"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_above="@+id/bottomAnchor"
-            android:layout_centerHorizontal="true"
-            app:overlay_mode="control" />
-        <!--Some text over the controls that stay-->
+            android:layout_alignParentBottom="true"/>
 
-        <ch.srg.mediaplayer.extras.overlay.error.SimpleErrorMessage
-            android:id="@+id/error_message"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:overlay_mode="unmanaged" />
-
-        <Button
-            android:id="@+id/button_swap_player"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentRight="true"
-            android:text="Native"
-            android:textSize="6sp"
-            app:overlay_mode="control"
-            />
     </ch.srg.mediaplayer.SRGMediaPlayerView>
 
     <!--Controls-->
@@ -74,25 +73,15 @@
         android:id="@+id/segment_demo_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/demo_video_container"
-        android:layout_centerHorizontal="true" />
+        android:visibility="gone"/>
     <!--Some text over the controls that stay-->
-
-    <TextView
-        android:id="@+id/status_label"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/segment_demo_view"
-        android:lines="2"
-        android:text="Status"
-        android:textAppearance="?android:attr/textAppearanceSmall" />
 
     <ListView
         android:id="@+id/uri_list"
         android:layout_width="wrap_content"
-        android:layout_height="200dp"
-        android:layout_below="@id/status_label"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:choiceMode="singleChoice"
-        android:listSelector="@drawable/list_item_background" />
+        android:listSelector="@drawable/list_item_background"/>
 
-</RelativeLayout>
+</LinearLayout>

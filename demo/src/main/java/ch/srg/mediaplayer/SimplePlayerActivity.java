@@ -51,16 +51,14 @@ public class SimplePlayerActivity extends AppCompatActivity implements
         mediaPlayerFragment = (MediaPlayerFragment) getFragmentManager().findFragmentByTag(FRAGMENT_TAG);
 
         if (mediaPlayerFragment == null) {
-            srgMediaPlayer = new SRGMediaPlayerController(this, dataProvider, PLAYER_TAG);
-            srgMediaPlayer.setDebugMode(true);
+            createPlayerController();
 
             mediaPlayerFragment = new MediaPlayerFragment();
             mediaPlayerFragment.mediaPlayer = srgMediaPlayer;
             getFragmentManager().beginTransaction().add(mediaPlayerFragment, FRAGMENT_TAG).commit();
         } else {
             if (mediaPlayerFragment.mediaPlayer == null) {
-                srgMediaPlayer = new SRGMediaPlayerController(this, dataProvider, PLAYER_TAG);
-                srgMediaPlayer.setDebugMode(true);
+                createPlayerController();
                 mediaPlayerFragment.mediaPlayer = srgMediaPlayer;
             } else {
                 srgMediaPlayer = mediaPlayerFragment.mediaPlayer;
@@ -83,6 +81,12 @@ public class SimplePlayerActivity extends AppCompatActivity implements
             //code for landscape mode
             uiHelper = new SystemUiHelper(this, SystemUiHelper.LEVEL_IMMERSIVE, SystemUiHelper.FLAG_IMMERSIVE_STICKY);
         }
+    }
+
+    private void createPlayerController() {
+        srgMediaPlayer = new SRGMediaPlayerController(this, dataProvider, PLAYER_TAG);
+        srgMediaPlayer.setDebugMode(true);
+        srgMediaPlayer.setPlayerDelegateFactory(((DemoApplication) getApplication()).getPlayerDelegateFactory());
     }
 
     public void playTestIdentifier(String identifier) {

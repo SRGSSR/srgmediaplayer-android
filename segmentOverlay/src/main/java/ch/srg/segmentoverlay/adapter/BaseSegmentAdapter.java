@@ -84,8 +84,9 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
 	public int findPhysicalSegment(@NonNull String mediaIdentifier) {
 		for (int i = 0; i < segments.size(); i++) {
 			Segment segment = segments.get(i);
-			if (mediaIdentifier.equals(segment.getMediaIdentifier())
-					&& segment.getMarkIn() == 0 && segment.getMarkOut() == 0) {
+			if ((mediaIdentifier.equals(segment.getMediaIdentifier())
+					&& segment.getMarkIn() == 0 && segment.getMarkOut() == 0)
+					|| mediaIdentifier.equals(segment.getIdentifier())) {
 				return i;
 			}
 		}

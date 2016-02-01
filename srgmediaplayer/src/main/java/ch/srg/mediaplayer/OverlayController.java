@@ -51,6 +51,7 @@ import android.view.ViewGroup;
         this.handler = handler;
         this.playerController = playerController;
         showControlOverlays();
+        updateWithPlayer();
     }
 
     public void setForceShowingControlOverlays(boolean forceShowingControlOverlays) {

@@ -1,9 +1,11 @@
 package ch.srg.mediaplayer;
 
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v7.app.ActionBarActivity;
 import android.view.View;
 
+import ch.srg.mediaplayer.demo.DemoApplication;
 import ch.srg.mediaplayer.demo.R;
 
 public class MultiDemoMediaPlayerActivity extends ActionBarActivity implements
@@ -35,12 +37,9 @@ public class MultiDemoMediaPlayerActivity extends ActionBarActivity implements
 		SRGMediaPlayerViewBottomLeft = (SRGMediaPlayerView) findViewById(R.id.multi_video_view_bottom_left);
 		SRGMediaPlayerViewBottomRight = (SRGMediaPlayerView) findViewById(R.id.multi_video_view_bottom_right);
 
-		rtsMediaPlayer1 = new SRGMediaPlayerController(this, dataProvider, PLAYER_TAG);
-		rtsMediaPlayer2 = new SRGMediaPlayerController(this, dataProvider, PLAYER_TAG);
-		rtsMediaPlayer3 = new SRGMediaPlayerController(this, dataProvider, PLAYER_TAG);
-		rtsMediaPlayer1.setDebugMode(true);
-		rtsMediaPlayer2.setDebugMode(true);
-		rtsMediaPlayer3.setDebugMode(true);
+		rtsMediaPlayer1 = createPlayerController();
+		rtsMediaPlayer2 = createPlayerController();
+		rtsMediaPlayer3 = createPlayerController();
 
 		try {
 			rtsMediaPlayer1.play("MULTI1");
@@ -51,6 +50,14 @@ public class MultiDemoMediaPlayerActivity extends ActionBarActivity implements
 		} catch (SRGMediaPlayerException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@NonNull
+	private SRGMediaPlayerController createPlayerController() {
+		SRGMediaPlayerController srgMediaPlayerController = new SRGMediaPlayerController(this, dataProvider, PLAYER_TAG);
+		srgMediaPlayerController.setDebugMode(true);
+		srgMediaPlayerController.setPlayerDelegateFactory(((DemoApplication) getApplication()).getPlayerDelegateFactory());
+		return srgMediaPlayerController;
 	}
 
 	@Override
