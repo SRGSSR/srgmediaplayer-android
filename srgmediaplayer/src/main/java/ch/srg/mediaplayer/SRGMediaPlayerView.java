@@ -367,7 +367,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
                 int width = MeasureSpec.getSize(widthMeasureSpec);
                 int height = (int) (width / aspectRatio);
                 int specHeight = MeasureSpec.getSize(heightMeasureSpec);
-                if (height > specHeight) {
+                if (height > specHeight && specHeight != 0) {
                     height = specHeight;
                     width = (int) (height * aspectRatio);
                     widthMeasureSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
@@ -380,7 +380,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
                 int width = (int) (height * aspectRatio);
                 int specWidth = MeasureSpec.getSize(widthMeasureSpec);
 
-                if (width > specWidth) {
+                if (width > specWidth && specWidth != 0) {
                     width = specWidth;
                     height = (int) (width / aspectRatio);
                     heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
