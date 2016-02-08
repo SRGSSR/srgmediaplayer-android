@@ -10,11 +10,14 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewDebug;
 import android.view.ViewGroup;
+import android.view.ViewParent;
+import android.widget.HorizontalScrollView;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 
 /**
  * This class is a placeholder for some video.
- * PLace it in your layout, or create it programmatically and bind it to a SRGMediaPlayerController to play video
+ * Place it in your layout, or create it programmatically and bind it to a SRGMediaPlayerController to play video
  */
 public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchListener {
 
@@ -44,6 +47,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
     public static final float DEFAULT_ASPECT_RATIO = 16 / 9f;
     public static final String UNKNOWN_DIMENSION = "0x0";
     private boolean onTop;
+    private boolean adjustToParentScrollView;
 
     /**
      * Interface definition for a callback to be invoked when touch event occurs.
@@ -53,12 +57,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         void onVideoRenderingViewTouched(SRGMediaPlayerView rtsMediaPlayerView);
 
         void onVideoOverlayTouched(SRGMediaPlayerView rtsMediaPlayerView);
-    }
-
-    public enum ResizeMode {
-        NONE,
-        WIDTH_BASED,
-        HEIGHT_BASED
     }
 
     public enum ScaleMode {
@@ -72,7 +70,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
     private float aspectRatio = DEFAULT_ASPECT_RATIO;
     private float actualVideoAspectRatio = DEFAULT_ASPECT_RATIO;
 
-    private ResizeMode resizeMode = null;
     private ScaleMode scaleMode = null;
 
     private View videoRenderingView;
@@ -110,23 +107,23 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         }
         int aspectVal = a.getInteger(R.styleable.SRGMediaPlayerView_containerAspectRatio, 0);
         switch (aspectVal) {
-            case 1:
+            case 1: // square
                 aspectRatio = 1f;
                 autoAspect = false;
                 break;
-            case 2:
+            case 2: // standard_4_3
                 aspectRatio = 4 / 3f;
                 autoAspect = false;
                 break;
-            case 3:
+            case 3: // wide_16_10
                 aspectRatio = 16 / 10f;
                 autoAspect = false;
                 break;
-            case 4:
+            case 4: // hdvideo_16_9
                 aspectRatio = 16 / 9f;
                 autoAspect = false;
                 break;
-            case 5:
+            case 5: // movie_21_9
                 aspectRatio = 21 / 9f;
                 autoAspect = false;
                 break;
@@ -135,6 +132,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
                 autoAspect = true;
                 break;
         }
+        adjustToParentScrollView = a.getBoolean(R.styleable.SRGMediaPlayerView_adjustToParentScrollView, true);
         a.recycle();
     }
 
@@ -186,10 +184,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         } else {
             return UNKNOWN_DIMENSION;
         }
-    }
-
-    public void setResizeMode(ResizeMode resizeMode) {
-        this.resizeMode = resizeMode;
     }
 
     public void setScaleMode(ScaleMode scaleMode) {
@@ -338,8 +332,10 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
                 if (scaleMode == ScaleMode.TOP_INSIDE) {
                     surfaceParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
                     surfaceParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-                } else {
+                } else if (scaleMode == ScaleMode.CENTER_INSIDE) {
                     surfaceParams.addRule(RelativeLayout.CENTER_IN_PARENT);
+                } else {
+                    throw new IllegalArgumentException("Scale mode not supported " + scaleMode);
                 }
 
                 videoRenderingView.setLayoutParams(surfaceParams);
@@ -348,51 +344,97 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
     }
 
     @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+    }
+
+    @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        //Log.v(VideoMediaPlayerFragment.TAG, "AspectRatioLayout, onMeasure W:" + MeasureSpec.getSize(widthMeasureSpec) + ", H:" + MeasureSpec.getSize(heightMeasureSpec));
-        if (resizeMode == null) {
-            ViewGroup.LayoutParams lp = getLayoutParams();
-            boolean wrapWidth = lp.width == ViewGroup.LayoutParams.WRAP_CONTENT;
-            boolean wrapHeight = lp.height == ViewGroup.LayoutParams.WRAP_CONTENT;
+        final int specWidth = MeasureSpec.getSize(widthMeasureSpec);
+        final int specWidthMode = MeasureSpec.getMode(widthMeasureSpec);
+        final int specHeight = MeasureSpec.getSize(heightMeasureSpec);
+        final int specHeightMode = MeasureSpec.getMode(heightMeasureSpec);
 
-            resizeMode = SRGMediaPlayerView.ResizeMode.NONE;
-            if (wrapWidth != wrapHeight) {
-                resizeMode = wrapHeight ? SRGMediaPlayerView.ResizeMode.WIDTH_BASED : SRGMediaPlayerView.ResizeMode.HEIGHT_BASED;
-            } else if (wrapWidth && wrapHeight) {
-                throw new IllegalArgumentException("WRAP width & WRAP height not supported");
-            }
-        }
-        switch (resizeMode) {
-            case WIDTH_BASED: {
-                int width = MeasureSpec.getSize(widthMeasureSpec);
-                int height = (int) (width / aspectRatio);
-                int specHeight = MeasureSpec.getSize(heightMeasureSpec);
-                if (height > specHeight && specHeight != 0) {
-                    height = specHeight;
-                    width = (int) (height * aspectRatio);
-                    widthMeasureSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
-                }
-                heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
-            }
-            break;
-            case HEIGHT_BASED: {
-                int height = MeasureSpec.getSize(heightMeasureSpec);
-                int width = (int) (height * aspectRatio);
-                int specWidth = MeasureSpec.getSize(widthMeasureSpec);
+        if (specWidthMode == MeasureSpec.EXACTLY && specHeightMode == MeasureSpec.EXACTLY) {
+            Log.w(SRGMediaPlayerController.TAG, "Aspect ratio cannot be supported with these layout constraints");
+        } else if (specWidthMode == MeasureSpec.EXACTLY) {
+            int width = specWidth;
+            int height = (int) (width / aspectRatio);
 
-                if (width > specWidth && specWidth != 0) {
-                    width = specWidth;
-                    height = (int) (width / aspectRatio);
-                    heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
-                }
+            int maxHeight;
+            maxHeight = specHeightMode == MeasureSpec.AT_MOST ? specHeight : Integer.MAX_VALUE;
+            if (adjustToParentScrollView) {
+                maxHeight = Math.min(maxHeight, getParentScrollViewHeight());
+            }
+
+            if (height > maxHeight) {
+                height = maxHeight;
+                width = (int) (height * aspectRatio);
                 widthMeasureSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
             }
-            break;
-            case NONE:
-            default:
-                break;
+            heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
+        } else if (specHeightMode == MeasureSpec.EXACTLY) {
+            int height = specHeight;
+            int width = (int) (height * aspectRatio);
+
+            int maxWidth;
+            maxWidth = specWidthMode == MeasureSpec.AT_MOST ? specWidth : Integer.MAX_VALUE;
+            if (adjustToParentScrollView) {
+                maxWidth = Math.min(maxWidth, getParentScrollViewWidth());
+            }
+
+            if (width > maxWidth) {
+                width = maxWidth;
+                height = (int) (width / aspectRatio);
+                heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
+            }
+            widthMeasureSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
         }
+        Log.v("AspectRatioLayout", String.format("meas. W:%d/%s, H:%d/%s -> %d,%d",
+                specWidth, modeName(specWidthMode), specHeight, modeName(specHeightMode),
+                MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec)));
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
+
+    private int getParentScrollViewHeight() {
+        ViewParent parent = getParent();
+        do {
+            if (parent != null) {
+                if (parent instanceof ScrollView) {
+                    return ((ScrollView) parent).getMeasuredHeight();
+                }
+                parent = parent.getParent();
+            }
+        } while (parent != null);
+
+        return Integer.MAX_VALUE;
+    }
+
+    private int getParentScrollViewWidth() {
+        ViewParent parent = getParent();
+        do {
+            if (parent != null) {
+                if (parent instanceof HorizontalScrollView) {
+                    return ((HorizontalScrollView) parent).getMeasuredWidth();
+                }
+                parent = parent.getParent();
+            }
+        } while (parent != null);
+
+        return Integer.MAX_VALUE;
+    }
+
+    private String modeName(int mode) {
+        switch (mode) {
+            case MeasureSpec.UNSPECIFIED:
+                return "unspecified";
+            case MeasureSpec.AT_MOST:
+                return "at_most";
+            case MeasureSpec.EXACTLY:
+                return "exactly";
+            default:
+                return "???";
+        }
     }
 
     @Override
@@ -404,7 +446,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         sb.append(", videoRenderingViewWidth=").append(videoRenderingViewWidth);
         sb.append(", videoRenderingViewHeight=").append(videoRenderingViewHeight);
         sb.append(", scaleMode=").append(scaleMode);
-        sb.append(", resizeMode=").append(resizeMode);
         sb.append(", aspectRatio=").append(aspectRatio);
         sb.append(", onTop=").append(onTop);
         sb.append(", autoAspect=").append(autoAspect);
@@ -526,5 +567,9 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
                     break;
             }
         }
+    }
+
+    public void setAdjustToParentScrollView(boolean adjustToParentScrollView) {
+        this.adjustToParentScrollView = adjustToParentScrollView;
     }
 }
