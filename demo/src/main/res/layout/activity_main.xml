@@ -8,7 +8,7 @@
               android:paddingRight="@dimen/activity_horizontal_margin"
               android:paddingTop="@dimen/activity_vertical_margin"
               tools:context=".MainActivity"
-              tools:ignore="HardcodedText,SmallSp">
+              tools:ignore="HardcodedText,SmallSp,RtlCompat">
 
     <ImageView
         android:layout_width="wrap_content"
@@ -25,7 +25,7 @@
         android:textSize="20sp"/>
 
     <Button
-        android:id="@+id/audio"
+        android:id="@+id/demo_audio"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:drawableStart="@drawable/ic_action_volume_up"
@@ -50,11 +50,13 @@
         android:textColor="#60e060"/>
 
     <Button
-        android:id="@+id/demo_multi_rts_media_player"
-        android:layout_width="wrap_content"
+        android:id="@+id/demo_layouts"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Multi"
-        android:visibility="gone"/>
+        android:text="Layout tests"
+        android:drawableStart="@android:drawable/ic_dialog_map"
+        android:textColor="#60e060"
+        android:visibility="visible" />
 
     <Button
         android:id="@+id/demo_simple_media_player"
