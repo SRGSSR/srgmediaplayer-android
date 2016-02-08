@@ -6,6 +6,11 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.LinearLayout;
+
 import ch.srg.mediaplayer.demo.R;
 
 public class LayoutsActivity extends AppCompatActivity {
@@ -28,8 +33,24 @@ public class LayoutsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_layouts);
 
         pager = (ViewPager) findViewById(R.id.pager);
+
         pagerAdapter = new LayoutsPagerAdapter(getSupportFragmentManager());
         pager.setAdapter(pagerAdapter);
+        ViewGroup buttons = (ViewGroup) findViewById(R.id.buttons);
+
+        for (int i = 0; i < LAYOUT_LIST.length; i++) {
+            Button button = new Button(this);
+            button.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            button.setText(String.valueOf(i));
+            final int itemPosition = i;
+            button.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    pager.setCurrentItem(itemPosition);
+                }
+            });
+            buttons.addView(button);
+        }
     }
 
     private class LayoutsPagerAdapter extends FragmentStatePagerAdapter {
