@@ -64,9 +64,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     public static final int AUDIO_FOCUS_FLAG_MUTE = 1;
 
     public static final int AUDIO_FOCUS_FLAG_PAUSE = 2;
+    private static final int MSG_PREPARE_FOR_MEDIA_IDENTIFIER = 3;
     public static final int AUDIO_FOCUS_FLAG_DUCK = 4;
     public static final int AUDIO_FOCUS_FLAG_AUTO_RESTART = 8;
-    private static final int MSG_PREPARE_FOR_MEDIA_IDENTIFIER = 3;
 
     private static final int MSG_PREPARE_FOR_URI = 4;
     private static final int MSG_SET_PLAY_WHEN_READY = 5;
@@ -364,6 +364,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * @throws SRGMediaPlayerException
      */
     public boolean play(String mediaIdentifier, Long startPositionMs) throws SRGMediaPlayerException {
+        if (mediaPlayerDataProvider == null) {
+            throw new IllegalStateException("No data provider set before play");
+        }
         if (requestAudioFocus()) {
             if (!TextUtils.equals(currentMediaIdentifier, mediaIdentifier)) {
                 sendMessage(MSG_PREPARE_FOR_MEDIA_IDENTIFIER, mediaIdentifier);
@@ -674,6 +677,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     private void prepareForIdentifierInternal(String mediaIdentifier, PlayerDelegate playerDelegate) {
         setStateInternal(State.PREPARING);
+        if (mediaIdentifier == null) {
+            throw new IllegalArgumentException("Media identifier is null in prepare for identifier");
+        }
         currentMediaIdentifier = mediaIdentifier;
         currentMediaUrl = null;
         if (dataProviderAsyncTask != null) {
@@ -799,7 +805,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         sendMessage(MSG_RELEASE);
     }
 
-    public void releaseInternal() {
+    protected void releaseInternal() {
         setStateInternal(State.RELEASED);
         abandonAudioFocus();
         releaseDelegateInternal();

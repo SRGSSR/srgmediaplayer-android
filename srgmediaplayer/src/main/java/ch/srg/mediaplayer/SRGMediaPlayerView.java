@@ -110,23 +110,23 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         }
         int aspectVal = a.getInteger(R.styleable.SRGMediaPlayerView_containerAspectRatio, 0);
         switch (aspectVal) {
-            case 1:
+            case 1: // square
                 aspectRatio = 1f;
                 autoAspect = false;
                 break;
-            case 2:
+            case 2: // standard_4_3
                 aspectRatio = 4 / 3f;
                 autoAspect = false;
                 break;
-            case 3:
+            case 3: // wide_16_10
                 aspectRatio = 16 / 10f;
                 autoAspect = false;
                 break;
-            case 4:
+            case 4: // hdvideo_16_9
                 aspectRatio = 16 / 9f;
                 autoAspect = false;
                 break;
-            case 5:
+            case 5: // movie_21_9
                 aspectRatio = 21 / 9f;
                 autoAspect = false;
                 break;
@@ -338,8 +338,10 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
                 if (scaleMode == ScaleMode.TOP_INSIDE) {
                     surfaceParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
                     surfaceParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-                } else {
+                } else if (scaleMode == ScaleMode.CENTER_INSIDE) {
                     surfaceParams.addRule(RelativeLayout.CENTER_IN_PARENT);
+                } else {
+                    throw new IllegalArgumentException("Scale mode not supported " + scaleMode);
                 }
 
                 videoRenderingView.setLayoutParams(surfaceParams);
@@ -349,25 +351,30 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        //Log.v(VideoMediaPlayerFragment.TAG, "AspectRatioLayout, onMeasure W:" + MeasureSpec.getSize(widthMeasureSpec) + ", H:" + MeasureSpec.getSize(heightMeasureSpec));
         if (resizeMode == null) {
             ViewGroup.LayoutParams lp = getLayoutParams();
             boolean wrapWidth = lp.width == ViewGroup.LayoutParams.WRAP_CONTENT;
             boolean wrapHeight = lp.height == ViewGroup.LayoutParams.WRAP_CONTENT;
 
-            resizeMode = SRGMediaPlayerView.ResizeMode.NONE;
             if (wrapWidth != wrapHeight) {
                 resizeMode = wrapHeight ? SRGMediaPlayerView.ResizeMode.WIDTH_BASED : SRGMediaPlayerView.ResizeMode.HEIGHT_BASED;
-            } else if (wrapWidth && wrapHeight) {
+            } else if (wrapWidth) {
                 throw new IllegalArgumentException("WRAP width & WRAP height not supported");
+            } else {
+                resizeMode = SRGMediaPlayerView.ResizeMode.NONE;
             }
         }
+        int specWidth = MeasureSpec.getSize(widthMeasureSpec);
+        int specWidthMode = MeasureSpec.getMode(widthMeasureSpec);
+        int specHeight = MeasureSpec.getSize(heightMeasureSpec);
+        int specHeightMode = MeasureSpec.getSize(heightMeasureSpec);
+        Log.v(SRGMediaPlayerController.TAG, String.format("AspectRatioLayout, onMeasure W:%d/%d, H:%d/%d %s", specWidth, specWidthMode, specHeight, specHeightMode, resizeMode.toString()));
         switch (resizeMode) {
             case WIDTH_BASED: {
-                int width = MeasureSpec.getSize(widthMeasureSpec);
+                int width = specWidth;
                 int height = (int) (width / aspectRatio);
-                int specHeight = MeasureSpec.getSize(heightMeasureSpec);
-                if (height > specHeight && specHeight != 0) {
+
+                if (specHeightMode == MeasureSpec.AT_MOST && height > specHeight) {
                     height = specHeight;
                     width = (int) (height * aspectRatio);
                     widthMeasureSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
@@ -376,11 +383,10 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
             }
             break;
             case HEIGHT_BASED: {
-                int height = MeasureSpec.getSize(heightMeasureSpec);
+                int height = specHeight;
                 int width = (int) (height * aspectRatio);
-                int specWidth = MeasureSpec.getSize(widthMeasureSpec);
 
-                if (width > specWidth && specWidth != 0) {
+                if (specWidthMode == MeasureSpec.AT_MOST && width > specWidth) {
                     width = specWidth;
                     height = (int) (width / aspectRatio);
                     heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
