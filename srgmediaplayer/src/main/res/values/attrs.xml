@@ -2,19 +2,20 @@
 <resources>
 	<declare-styleable name="SRGMediaPlayerView">
 		<attr name="containerAspectRatio">
-			<flag name="auto" value="0"/>
-			<flag name="square" value="1"/>
-			<flag name="standard_4_3" value="2"/>
-			<flag name="wide_16_10" value="3"/>
-			<flag name="hdvideo_16_9" value="4"/>
-			<flag name="movie_21_9" value="5"/>
+			<flag name="auto" value="0" />
+			<flag name="square" value="1" />
+			<flag name="standard_4_3" value="2" />
+			<flag name="wide_16_10" value="3" />
+			<flag name="hdvideo_16_9" value="4" />
+			<flag name="movie_21_9" value="5" />
 		</attr>
 		<attr name="videoScale">
-			<flag name="center_inside" value="0"/>
-			<flag name="top_inside" value="1"/>
-			<flag name="center_crop" value="2"/>
-			<flag name="fit" value="3"/>
+			<flag name="center_inside" value="0" />
+			<flag name="top_inside" value="1" />
+			<flag name="center_crop" value="2" />
+			<flag name="fit" value="3" />
 		</attr>
+		<attr name="adjustToParentScrollView" format="boolean"/>
 	</declare-styleable>
 	<declare-styleable name="VideoContainer_Layout">
 		<attr name="overlay_mode">

@@ -23,7 +23,8 @@ public class LayoutsActivity extends AppCompatActivity {
         LAYOUT_LIST = new int[]{
                 R.layout.fragment_layout_one,
                 R.layout.fragment_layout_two,
-                R.layout.fragment_layout_three
+                R.layout.fragment_layout_three,
+                R.layout.fragment_layout_four
         };
     }
 
