@@ -16,7 +16,7 @@ public class LayoutFragment extends android.support.v4.app.Fragment implements
     public static final String ARG_LAYOUT_ID = "layoutId";
 
     private static final String PLAYER_TAG = "main";
-    private static final String URN = "dummy:SPECIMEN";
+    private static final String URN = "dash:http://rdmedia.bbc.co.uk/dash/ondemand/testcard/1/client_manifest-events.mpd";
     private static final String TAG = "DemoSegment";
 
     private SRGMediaPlayerController mediaPlayer;
@@ -31,6 +31,7 @@ public class LayoutFragment extends android.support.v4.app.Fragment implements
         int layoutId = getArguments().getInt(ARG_LAYOUT_ID);
         ViewGroup rootView = (ViewGroup) inflater.inflate(layoutId, container, false);
         playerView = (SRGMediaPlayerView) rootView.findViewById(R.id.demo_video_container);
+        mediaPlayer.bindToMediaPlayerView(playerView);
         return rootView;
     }
 
@@ -44,6 +45,12 @@ public class LayoutFragment extends android.support.v4.app.Fragment implements
         } catch (SRGMediaPlayerException e) {
             Toast.makeText(context, "Player error " + e, Toast.LENGTH_LONG).show();
         }
+    }
+
+    @Override
+    public void onDetach() {
+        mediaPlayer.release();
+        super.onDetach();
     }
 
     private SRGMediaPlayerController createPlayer(Context context) {
@@ -65,11 +72,5 @@ public class LayoutFragment extends android.support.v4.app.Fragment implements
                 }
                 break;
         }
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        mediaPlayer.release();
     }
 }
