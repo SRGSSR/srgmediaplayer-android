@@ -55,12 +55,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         void onVideoOverlayTouched(SRGMediaPlayerView rtsMediaPlayerView);
     }
 
-    public enum ResizeMode {
-        NONE,
-        WIDTH_BASED,
-        HEIGHT_BASED
-    }
-
     public enum ScaleMode {
         CENTER_INSIDE,
         TOP_INSIDE,
@@ -72,7 +66,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
     private float aspectRatio = DEFAULT_ASPECT_RATIO;
     private float actualVideoAspectRatio = DEFAULT_ASPECT_RATIO;
 
-    private ResizeMode resizeMode = null;
     private ScaleMode scaleMode = null;
 
     private View videoRenderingView;
@@ -186,10 +179,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         } else {
             return UNKNOWN_DIMENSION;
         }
-    }
-
-    public void setResizeMode(ResizeMode resizeMode) {
-        this.resizeMode = resizeMode;
     }
 
     public void setScaleMode(ScaleMode scaleMode) {
@@ -351,38 +340,22 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        if (resizeMode == null) {
-            ViewGroup.LayoutParams lp = getLayoutParams();
-            boolean wrapWidth = lp.width == ViewGroup.LayoutParams.WRAP_CONTENT;
-            boolean wrapHeight = lp.height == ViewGroup.LayoutParams.WRAP_CONTENT;
+        final int specWidth = MeasureSpec.getSize(widthMeasureSpec);
+        final int specWidthMode = MeasureSpec.getMode(widthMeasureSpec);
+        final int specHeight = MeasureSpec.getSize(heightMeasureSpec);
+        final int specHeightMode = MeasureSpec.getMode(heightMeasureSpec);
 
-            if (wrapWidth != wrapHeight) {
-                resizeMode = wrapHeight ? SRGMediaPlayerView.ResizeMode.WIDTH_BASED : SRGMediaPlayerView.ResizeMode.HEIGHT_BASED;
-            } else if (wrapWidth) {
-                throw new IllegalArgumentException("WRAP width & WRAP height not supported");
-            } else {
-                resizeMode = SRGMediaPlayerView.ResizeMode.NONE;
-            }
-        }
-        int specWidth = MeasureSpec.getSize(widthMeasureSpec);
-        int specWidthMode = MeasureSpec.getMode(widthMeasureSpec);
-        int specHeight = MeasureSpec.getSize(heightMeasureSpec);
-        int specHeightMode = MeasureSpec.getSize(heightMeasureSpec);
-        Log.v(SRGMediaPlayerController.TAG, String.format("AspectRatioLayout, onMeasure W:%d/%d, H:%d/%d %s", specWidth, specWidthMode, specHeight, specHeightMode, resizeMode.toString()));
-        switch (resizeMode) {
-            case WIDTH_BASED: {
-                int width = specWidth;
-                int height = (int) (width / aspectRatio);
+        if (specWidthMode == MeasureSpec.EXACTLY) {
+            int width = specWidth;
+            int height = (int) (width / aspectRatio);
 
-                if (specHeightMode == MeasureSpec.AT_MOST && height > specHeight) {
-                    height = specHeight;
-                    width = (int) (height * aspectRatio);
-                    widthMeasureSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
-                }
-                heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
+            if (specHeightMode == MeasureSpec.AT_MOST && height > specHeight) {
+                height = specHeight;
+                width = (int) (height * aspectRatio);
+                widthMeasureSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
             }
-            break;
-            case HEIGHT_BASED: {
+            heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
+        } else if (specHeightMode == MeasureSpec.EXACTLY) {
                 int height = specHeight;
                 int width = (int) (height * aspectRatio);
 
@@ -392,13 +365,24 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
                     heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
                 }
                 widthMeasureSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
-            }
-            break;
-            case NONE:
-            default:
-                break;
         }
+        Log.v("AspectRatioLayout", String.format("meas. W:%d/%s, H:%d/%s -> %d,%d",
+                specWidth, modeName(specWidthMode), specHeight, modeName(specHeightMode),
+                MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec)));
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
+
+    private String modeName(int mode) {
+        switch (mode) {
+            case MeasureSpec.UNSPECIFIED:
+                return "unspecified";
+            case MeasureSpec.AT_MOST:
+                return "at_most";
+            case MeasureSpec.EXACTLY:
+                return "exactly";
+            default:
+                return "???";
+        }
     }
 
     @Override
@@ -410,7 +394,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         sb.append(", videoRenderingViewWidth=").append(videoRenderingViewWidth);
         sb.append(", videoRenderingViewHeight=").append(videoRenderingViewHeight);
         sb.append(", scaleMode=").append(scaleMode);
-        sb.append(", resizeMode=").append(resizeMode);
         sb.append(", aspectRatio=").append(aspectRatio);
         sb.append(", onTop=").append(onTop);
         sb.append(", autoAspect=").append(autoAspect);
