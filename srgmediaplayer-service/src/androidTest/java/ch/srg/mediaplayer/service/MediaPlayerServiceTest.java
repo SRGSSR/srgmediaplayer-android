@@ -118,7 +118,7 @@ public class MediaPlayerServiceTest extends ThreadServiceTestBase<MediaPlayerSer
 
     public void testPlay404Stream() {
         start404Stream();
-        waitForState(SRGMediaPlayerController.State.IDLE);
+        waitForState(SRGMediaPlayerController.State.RELEASED);
     }
 
     // We ignore this test as one device fails
