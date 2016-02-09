@@ -212,7 +212,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     private Event.ScreenType getScreenType() {
-        return currentMediaPlayerDelegate == null ? Event.ScreenType.NONE : currentMediaPlayerDelegate.getScreenType();
+        PlayerDelegate delegate = this.currentMediaPlayerDelegate;
+        return delegate == null ? Event.ScreenType.NONE : delegate.getScreenType();
     }
 
     public interface Listener {
