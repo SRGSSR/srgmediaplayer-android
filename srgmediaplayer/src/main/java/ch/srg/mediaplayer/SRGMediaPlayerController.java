@@ -1,6 +1,7 @@
 package ch.srg.mediaplayer;
 
 import android.content.Context;
+import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
@@ -14,6 +15,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.TextureView;
 import android.view.View;
 
 import java.lang.ref.WeakReference;
@@ -957,7 +959,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                         public void surfaceCreated(SurfaceHolder holder) {
                             Log.v(TAG, renderingView + "binding, surfaceCreated" + mediaPlayerView);
                             try {
-                                if (currentMediaPlayerDelegate != null) {
+                                if (currentMediaPlayerDelegate != null && ((SurfaceView) renderingView).getHolder() == holder) {
                                     currentMediaPlayerDelegate.bindRenderingViewInUiThread(mediaPlayerView);
                                 } else {
                                     Log.d(TAG, "Surface created, but media player delegate retired");
@@ -978,7 +980,42 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                             //TODO if a delegate is bound to this surface, we need tu unbind it
                         }
                     });
-                } else {
+                } else if (renderingView instanceof TextureView) {
+                    TextureView textureView = (TextureView) renderingView;
+                        textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+                            public boolean isCurrent(SurfaceTexture surfaceTexture) {
+                                return renderingView instanceof TextureView && ((TextureView) renderingView).getSurfaceTexture() == surfaceTexture;
+                            }
+
+                            @Override
+                            public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
+                                Log.v(TAG, renderingView + "binding, surfaceCreated" + mediaPlayerView);
+                                if (currentMediaPlayerDelegate != null && isCurrent(surfaceTexture)) {
+                                    try {
+                                        currentMediaPlayerDelegate.bindRenderingViewInUiThread(mediaPlayerView);
+                                    } catch (SRGMediaPlayerException e) {
+                                        Log.d(TAG, "Error binding view", e);
+                                    }
+                                }
+                            }
+
+                            @Override
+                            public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
+                                // TODO
+                            }
+
+                            @Override
+                            public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
+                                return false;
+                            }
+
+                            @Override
+                            public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
+
+                            }
+                        });
+
+                    } else {
                     Log.v(TAG, renderingView + "binding, attaching rendering view" + mediaPlayerView);
 
                     renderingView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
