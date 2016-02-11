@@ -19,6 +19,9 @@ public class DataProviderAsyncTask extends AsyncTask<String, Integer, Void> {
 		this.controller = controller;
 		this.dataProvider = dataProvider;
 		this.playerDelegate = playerDelegate;
+		if (dataProvider == null) {
+			throw new IllegalStateException("No data provider set before play");
+		}
 	}
 
 	@Override

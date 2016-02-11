@@ -119,7 +119,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         delegate.setVideoSourceUrl("this is not null");
         controller.play("NULL");
         waitForState(SRGMediaPlayerController.State.PREPARING);
-        waitForState(SRGMediaPlayerController.State.IDLE);
+        waitForState(SRGMediaPlayerController.State.RELEASED);
         Assert.assertNotNull(lastError);
     }
 

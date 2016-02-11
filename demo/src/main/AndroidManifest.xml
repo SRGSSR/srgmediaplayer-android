@@ -35,6 +35,10 @@
             android:label="@string/title_activity_demo_media_player">
         </activity>
         <activity
+            android:name="ch.srg.mediaplayer.LayoutsActivity"
+            android:label="@string/title_activity_demo_media_player">
+        </activity>
+        <activity
             android:name="ch.srg.mediaplayer.SimplePlayerActivity"
             android:label="@string/title_activity_demo_media_player">
         </activity>

@@ -2,7 +2,9 @@
 apply plugin: 'maven'
 apply plugin: 'signing'
 
-project.ext.versionName = VERSION_BASE + "." + (System.getenv().BUILD_NUMBER ?: "9999-SNAPSHOT")
+project.ext.versionName = VERSION_BASE + "." + (
+        System.getenv().DEFAULT_BRANCH == "true" ? (System.getenv().BUILD_NUMBER ?: "9999-SNAPSHOT")
+                                                 : (System.getenv().BUILD_NUMBER + "-SNAPSHOT"))
 
 def isReleaseBuild() {
     return project.versionName.contains("SNAPSHOT") == false
