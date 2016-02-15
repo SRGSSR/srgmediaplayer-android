@@ -65,9 +65,9 @@ public class DemoApplication extends Application {
 			public PlayerDelegate getDelegateForMediaIdentifier(PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, String mediaIdentifier) {
 				switch (multiDataProvider.getPrefix(mediaIdentifier)) {
 					case "aac":
-						return new ExoPlayerDelegate(DemoApplication.this,srgMediaPlayer, ExoPlayerDelegate.SourceType.EXTRACTOR);
+						return createExoPlayerDelegate(DemoApplication.this, srgMediaPlayer, ExoPlayerDelegate.SourceType.EXTRACTOR);
 					case "dash":
-						return new ExoPlayerDelegate(DemoApplication.this,srgMediaPlayer, ExoPlayerDelegate.SourceType.DASH);
+						return createExoPlayerDelegate(DemoApplication.this,srgMediaPlayer, ExoPlayerDelegate.SourceType.DASH);
 					case "il":
 					case "native":
 						return new NativePlayerDelegate(srgMediaPlayer);
@@ -80,5 +80,11 @@ public class DemoApplication extends Application {
 
 	public PlayerDelegateFactory getPlayerDelegateFactory() {
 		return playerDelegateFactory;
+	}
+
+	public static ExoPlayerDelegate createExoPlayerDelegate(Context context, PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, ExoPlayerDelegate.SourceType sourceType) {
+		ExoPlayerDelegate exoPlayerDelegate = new ExoPlayerDelegate(context, srgMediaPlayer, sourceType);
+		exoPlayerDelegate.setViewType(ExoPlayerDelegate.ViewType.TYPE_TEXTUREVIEW);
+		return exoPlayerDelegate;
 	}
 }

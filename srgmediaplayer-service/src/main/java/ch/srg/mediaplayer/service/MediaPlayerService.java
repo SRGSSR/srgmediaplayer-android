@@ -198,8 +198,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         super.onCreate();
         Log.v(TAG, this.toString() + " onCreate");
 
-        //dummyArt = BitmapFactory.decodeResource(getResources(), R.drawable.dummy_album_art);/* XXX: dummy, and should be done in a thread too */
-
 		/*
          * Stop the Google Music player.
 		 */
@@ -210,6 +208,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             chromeCastManager.addListener(this);
         }
 
+        MediaSessionManager.initialize(this);
         mediaSessionManager = MediaSessionManager.getInstance();
         mediaSessionManager.addListener(this);
     }

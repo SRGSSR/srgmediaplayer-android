@@ -2,6 +2,7 @@
 package ch.srg.mediaplayer.internal.exoplayer;
 
 import android.content.Context;
+import android.graphics.SurfaceTexture;
 import android.media.MediaCodec;
 import android.media.MediaDrm;
 import android.net.Uri;
@@ -10,7 +11,9 @@ import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.Surface;
+import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.TextureView;
 import android.view.View;
 
 import com.google.android.exoplayer.DummyTrackRenderer;
@@ -64,26 +67,10 @@ public class ExoPlayerDelegate implements
         RendererBuilderCallback,
         BandwidthMeter.EventListener, StreamingDrmSessionManager.EventListener {
 
-
-    @Override
-    public void onBandwidthSample(int i, long l, long l1) {
-        Log.v(TAG, "Unhandled dash event");
-    }
-
-    @Override
-    public void onAvailableRangeChanged(TimeRange timeRange) {
-        Log.v(TAG, "Unhandled dash event");
-    }
-
-    @Override
-    public void onCues(List<Cue> list) {
-        Log.v(TAG, "Unhandled dash text event");
-    }
-
-    @Override
-    public void onDrmSessionManagerError(Exception e) {
-        Log.v(TAG, "Unhandled dash drm session event");
-    }
+    public enum ViewType {
+        TYPE_SURFACEVIEW,
+        TYPE_TEXTUREVIEW
+    };
 
     public enum SourceType {
         HLS,
@@ -112,7 +99,7 @@ public class ExoPlayerDelegate implements
     private float videoSourceAspectRatio = 1.7777f;
     private int videoSourceHeight = 0;
 
-    private SurfaceView surfaceView;
+    private View renderingView;
 
     private OnPlayerDelegateListener controller;
     private boolean audioTrack = true;
@@ -121,6 +108,8 @@ public class ExoPlayerDelegate implements
     private boolean live;
 
     private long playlistStartTimeMs;
+
+    private ViewType viewType = ViewType.TYPE_SURFACEVIEW;
 
     public ExoPlayerDelegate(Context context, OnPlayerDelegateListener controller, SourceType sourceType) {
         this.sourceType = sourceType;
@@ -277,15 +266,18 @@ public class ExoPlayerDelegate implements
         return videoSourceHeight;
     }
 
-
     @Override
     public boolean canRenderInView(View view) {
-        return view != null && view instanceof SurfaceView;
+        return view instanceof SurfaceView || view instanceof TextureView;
     }
 
     @Override
     public View createRenderingView(Context parentContext) {
-        return new SurfaceView(parentContext);
+        if (viewType == ViewType.TYPE_SURFACEVIEW) {
+            return new SurfaceView(parentContext);
+        } else {
+            return new TextureView(parentContext);
+        }
     }
 
     @Override
@@ -293,26 +285,34 @@ public class ExoPlayerDelegate implements
         if (mpv == null || !canRenderInView(mpv.getVideoRenderingView())) {
             throw new SRGMediaPlayerException("ExoPlayerDelegate cannot render video in a " + mpv);
         }
-        surfaceView = (SurfaceView) mpv.getVideoRenderingView();
-        if (surfaceView != null && surfaceView.getHolder() != null && surfaceView.getHolder().getSurface() != null) {
-            pushSurface(true);
-        }
+        renderingView = mpv.getVideoRenderingView();
+        pushSurface(true);
     }
 
     @Override
     public void unbindRenderingView() {
-        surfaceView = null;
+        renderingView = null;
         exoPlayer.sendMessage(videoRenderer, MediaCodecVideoTrackRenderer.MSG_SET_SURFACE, null);
     }
 
     private void pushSurface(boolean blockForSurfacePush) {
         if (videoRenderer == null) {
-            Log.d(TAG, "Exoplayer push surface w/o videoRenderer");
+            Log.e(TAG, "Exoplayer push surface w/o videoRenderer");
             return;
         }
         Surface surface = null;
-        if (surfaceView != null && surfaceView.getHolder() != null) {
-            surface = surfaceView.getHolder().getSurface();
+        if (renderingView instanceof SurfaceView) {
+            SurfaceHolder holder = ((SurfaceView) renderingView).getHolder();
+            if (holder != null) {
+                surface = holder.getSurface();
+            }
+        } else if (renderingView instanceof TextureView) {
+            TextureView textureView = ((TextureView) renderingView);
+            SurfaceTexture surfaceTexture = textureView.getSurfaceTexture();
+            surface = new Surface(surfaceTexture);
+        }
+        if (surface == null) {
+            Log.e(TAG, "Exoplayer push w/o surface");
         }
         if (blockForSurfacePush) {
             exoPlayer.blockingSendMessage(videoRenderer, MediaCodecVideoTrackRenderer.MSG_SET_SURFACE, surface);
@@ -333,7 +333,7 @@ public class ExoPlayerDelegate implements
 
     private void recomputeVideoContainerConstrains() {
         SRGMediaPlayerView mediaPlayerView = controller.getMediaPlayerView();
-        if (mediaPlayerView == null || surfaceView == null) {
+        if (mediaPlayerView == null || renderingView == null) {
             return; //nothing to do now.
         }
         if (Float.isNaN(videoSourceAspectRatio) || Float.isInfinite(videoSourceAspectRatio)) {
@@ -500,7 +500,31 @@ public class ExoPlayerDelegate implements
 
     @Override
     public SRGMediaPlayerController.Event.ScreenType getScreenType() {
-        return surfaceView != null ? SRGMediaPlayerController.Event.ScreenType.DEFAULT : SRGMediaPlayerController.Event.ScreenType.NONE;
+        return renderingView != null ? SRGMediaPlayerController.Event.ScreenType.DEFAULT : SRGMediaPlayerController.Event.ScreenType.NONE;
+    }
+
+    @Override
+    public void onBandwidthSample(int i, long l, long l1) {
+        Log.v(TAG, "Unhandled dash event");
+    }
+
+    @Override
+    public void onAvailableRangeChanged(TimeRange timeRange) {
+        Log.v(TAG, "Unhandled dash event");
+    }
+
+    @Override
+    public void onCues(List<Cue> list) {
+        Log.v(TAG, "Unhandled dash text event");
+    }
+
+    @Override
+    public void onDrmSessionManagerError(Exception e) {
+        Log.v(TAG, "Unhandled dash drm session event");
+    }
+
+    public void setViewType(ViewType viewType) {
+        this.viewType = viewType;
     }
 }
 

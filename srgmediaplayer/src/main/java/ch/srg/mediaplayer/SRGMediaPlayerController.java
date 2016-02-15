@@ -1,6 +1,7 @@
 package ch.srg.mediaplayer;
 
 import android.content.Context;
+import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
@@ -14,6 +15,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.TextureView;
 import android.view.View;
 
 import java.lang.ref.WeakReference;
@@ -155,15 +157,19 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         public final State state;
         public final SRGMediaPlayerException exception;
 
-        public static Event buildEvent(SRGMediaPlayerController controller, Type eventType) {
+        private static Event buildTestEvent(SRGMediaPlayerController controller) {
+            return new Event(Type.EXTERNAL_EVENT, controller, null);
+        }
+
+        private static Event buildEvent(SRGMediaPlayerController controller, Type eventType) {
             return new Event(eventType, controller, null);
         }
 
-        public static Event buildErrorEvent(SRGMediaPlayerController controller, boolean fatalError, SRGMediaPlayerException exception) {
+        private static Event buildErrorEvent(SRGMediaPlayerController controller, boolean fatalError, SRGMediaPlayerException exception) {
             return new Event(fatalError ? Type.FATAL_ERROR : Type.TRANSIENT_ERROR, controller, exception);
         }
 
-        public static Event buildStateEvent(SRGMediaPlayerController controller) {
+        private static Event buildStateEvent(SRGMediaPlayerController controller) {
             return new Event(Type.STATE_CHANGE, controller, null);
         }
 
@@ -195,21 +201,30 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
         @Override
         public String toString() {
-            final StringBuilder sb = new StringBuilder("Event{");
-            sb.append("type=").append(type);
-            sb.append(", state=").append(state);
-            sb.append(", mediaIdentifier='").append(mediaIdentifier).append('\'');
-            sb.append(", mediaPosition=").append(mediaPosition);
-            sb.append(", mediaDuration=").append(mediaDuration);
-            sb.append(", mediaPlaying=").append(mediaPlaying);
-            sb.append(", videoViewDimension='").append(videoViewDimension).append('\'');
-            sb.append(", tag='").append(tag).append('\'');
-            sb.append(", exception=").append(exception);
-            sb.append(", mediasession=").append(mediaSessionId);
-            sb.append('}');
-            return sb.toString();
+            return "Event{" +
+                    "type=" + type +
+                    ", mediaIdentifier='" + mediaIdentifier + '\'' +
+                    ", mediaUrl='" + mediaUrl + '\'' +
+                    ", mediaSessionId='" + mediaSessionId + '\'' +
+                    ", mediaPosition=" + mediaPosition +
+                    ", mediaDuration=" + mediaDuration +
+                    ", mediaPlaying=" + mediaPlaying +
+                    ", mediaMuted=" + mediaMuted +
+                    ", videoViewDimension='" + videoViewDimension + '\'' +
+                    ", tag='" + tag + '\'' +
+                    ", mediaPlaylistStartTime=" + mediaPlaylistStartTime +
+                    ", mediaLive=" + mediaLive +
+                    ", screenType=" + screenType +
+                    ", state=" + state +
+                    ", exception=" + exception +
+                    '}';
         }
     }
+
+    public Event buildTestEvent() {
+        return Event.buildTestEvent(this);
+    }
+
 
     private Event.ScreenType getScreenType() {
         PlayerDelegate delegate = this.currentMediaPlayerDelegate;
@@ -957,7 +972,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                         public void surfaceCreated(SurfaceHolder holder) {
                             Log.v(TAG, renderingView + "binding, surfaceCreated" + mediaPlayerView);
                             try {
-                                if (currentMediaPlayerDelegate != null) {
+                                if (currentMediaPlayerDelegate != null && ((SurfaceView) renderingView).getHolder() == holder) {
                                     currentMediaPlayerDelegate.bindRenderingViewInUiThread(mediaPlayerView);
                                 } else {
                                     Log.d(TAG, "Surface created, but media player delegate retired");
@@ -978,7 +993,42 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                             //TODO if a delegate is bound to this surface, we need tu unbind it
                         }
                     });
-                } else {
+                } else if (renderingView instanceof TextureView) {
+                    TextureView textureView = (TextureView) renderingView;
+                        textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+                            public boolean isCurrent(SurfaceTexture surfaceTexture) {
+                                return renderingView instanceof TextureView && ((TextureView) renderingView).getSurfaceTexture() == surfaceTexture;
+                            }
+
+                            @Override
+                            public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
+                                Log.v(TAG, renderingView + "binding, surfaceCreated" + mediaPlayerView);
+                                if (currentMediaPlayerDelegate != null && isCurrent(surfaceTexture)) {
+                                    try {
+                                        currentMediaPlayerDelegate.bindRenderingViewInUiThread(mediaPlayerView);
+                                    } catch (SRGMediaPlayerException e) {
+                                        Log.d(TAG, "Error binding view", e);
+                                    }
+                                }
+                            }
+
+                            @Override
+                            public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
+                                // TODO
+                            }
+
+                            @Override
+                            public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
+                                return false;
+                            }
+
+                            @Override
+                            public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
+
+                            }
+                        });
+
+                    } else {
                     Log.v(TAG, renderingView + "binding, attaching rendering view" + mediaPlayerView);
 
                     renderingView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
@@ -1123,12 +1173,12 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         mainHandler.post(new Runnable() {
             @Override
             public void run() {
-                doPostEvent(event, eventListeners);
+                doPostEventInternal(event, eventListeners);
             }
         });
     }
 
-    private void doPostEvent(Event event, Set<Listener> eventListeners) {
+    private void doPostEventInternal(Event event, Set<Listener> eventListeners) {
         for (Listener listener : eventListeners) {
             listener.onMediaPlayerEvent(this, event);
         }
@@ -1324,5 +1374,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     public boolean isRemote() {
         return currentMediaPlayerDelegate != null && currentMediaPlayerDelegate.isRemote();
+    }
+
+    public void forceBroadcastStateChange() {
+        broadcastEvent(Event.buildStateEvent(this));
     }
 }

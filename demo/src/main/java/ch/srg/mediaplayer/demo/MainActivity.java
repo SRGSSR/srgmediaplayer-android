@@ -46,8 +46,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	}
 
 	private void checkForUpdates() {
-		// Remove this for store / production builds!
-		UpdateManager.register(this, "314785ad94ebbae30a802a8a1eadf3df");
+		if (!BuildConfig.DEBUG)
+		{
+			UpdateManager.register(this, getString(R.string.hockeyapp_app_identifier));
+		}
 	}
 
 	@Override
