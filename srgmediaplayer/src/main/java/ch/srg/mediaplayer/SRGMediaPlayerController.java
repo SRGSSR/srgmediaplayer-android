@@ -496,7 +496,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             logE("handleMessage when released: skipping " + msg);
             return true;
         }
-        logV("handleMessage: " + msg);
+        if (msg.what != MSG_PERIODIC_UPDATE) {
+            logV("handleMessage: " + msg);
+        }
         switch (msg.what) {
             case MSG_PREPARE_FOR_MEDIA_IDENTIFIER: {
                 String mediaIdentifier = (String) msg.obj;
