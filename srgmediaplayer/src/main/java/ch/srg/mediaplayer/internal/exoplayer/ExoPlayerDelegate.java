@@ -309,7 +309,9 @@ public class ExoPlayerDelegate implements
         } else if (renderingView instanceof TextureView) {
             TextureView textureView = ((TextureView) renderingView);
             SurfaceTexture surfaceTexture = textureView.getSurfaceTexture();
-            surface = new Surface(surfaceTexture);
+            if (surfaceTexture != null) {
+                surface = new Surface(surfaceTexture);
+            }
         }
         if (surface == null) {
             Log.e(TAG, "Exoplayer push w/o surface");
