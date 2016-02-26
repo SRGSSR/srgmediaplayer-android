@@ -1,7 +1,7 @@
 package ch.srg.segmentoverlay.view;
 
 import android.content.Context;
-import android.graphics.Color;
+import android.content.res.TypedArray;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
@@ -29,8 +29,11 @@ public class SegmentView extends FrameLayout implements SegmentController.Listen
     private LinearLayoutManager linearLayoutManager;
     private SegmentController segmentController;
 
-    private int themeColor = Color.RED;
     private BaseSegmentAdapter adapter;
+
+    private Integer textColor;
+    private Integer selectedTextColor;
+    private Integer selectedBackground;
 
     public SegmentView(Context context) {
         this(context, null);
@@ -43,6 +46,12 @@ public class SegmentView extends FrameLayout implements SegmentController.Listen
     public SegmentView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
 
+        TypedArray a = context.getTheme().obtainStyledAttributes(attrs, R.styleable.SegmentView, 0, 0);
+
+        textColor = a.getColor(R.styleable.SegmentView_text_color, 0);
+        selectedTextColor = a.getColor(R.styleable.SegmentView_text_color, 0);
+        selectedBackground = a.getColor(R.styleable.SegmentView_text_color, 0);
+
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         inflater.inflate(R.layout.segment_view, this, true);
 
@@ -52,6 +61,7 @@ public class SegmentView extends FrameLayout implements SegmentController.Listen
 
         // TODO Items change often during seek. Disabling animator fix the flashing, is there a better way to do this?
         recyclerView.setItemAnimator(null);
+        a.recycle();
     }
 
     public void attachToController(SRGMediaPlayerController playerController) {
@@ -61,6 +71,21 @@ public class SegmentView extends FrameLayout implements SegmentController.Listen
     public void setBaseAdapter(@NonNull BaseSegmentAdapter adapter) {
         this.adapter = adapter;
         recyclerView.setAdapter(adapter);
+    }
+
+    public void setTextColor(int textColor) {
+        this.textColor = textColor;
+        adapter.setTextColor(textColor);
+    }
+
+    public void setSelectedTextColor(int selectedTextColor) {
+        this.selectedTextColor = selectedTextColor;
+        adapter.setSelectedTextColor(selectedTextColor);
+    }
+
+    public void setSelectedBackground(int selectedBackground) {
+        this.selectedBackground = selectedBackground;
+        adapter.setSelectedBackgroundColor(selectedBackground);
     }
 
     public void setSegmentController(@NonNull SegmentController segmentController) {
