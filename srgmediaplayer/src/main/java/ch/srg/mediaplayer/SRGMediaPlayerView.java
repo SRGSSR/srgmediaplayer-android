@@ -390,7 +390,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
             }
             widthMeasureSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
         }
-        Log.v("AspectRatioLayout", String.format("meas. W:%d/%s, H:%d/%s -> %d,%d",
+        Log.v(SRGMediaPlayerController.TAG, String.format("onMeasure W:%d/%s, H:%d/%s -> %d,%d",
                 specWidth, modeName(specWidthMode), specHeight, modeName(specHeightMode),
                 MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec)));
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
