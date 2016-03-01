@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               xmlns:tools="http://schemas.android.com/tools"
               android:layout_width="match_parent"
-              android:layout_height="wrap_content"
+              android:layout_height="@dimen/segment_player_control_button_size"
               android:divider="@drawable/simple_vertical_divider"
               android:gravity="center_vertical"
               android:paddingLeft="8dp"
