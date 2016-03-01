@@ -51,6 +51,8 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
 
     private ArrayList<PlayerControlView.Listener> listeners = new ArrayList<>();
     private int fullScreenButtonState;
+    private long currentPosition;
+    private long currentDuration;
 
     public PlayerControlView(Context context) {
         this(context, null);
@@ -186,20 +188,24 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
     }
 
     private void updateTimes(long position, long duration) {
-        if (segmentController != null
-                && playerController != null
-                && !segmentController.isUserChangingProgress()) {
-            int bufferPercent = playerController.getBufferPercentage();
-            if (bufferPercent > 0) {
-                seekBar.setSecondaryProgress((int) duration * bufferPercent / 100);
-            } else {
-                seekBar.setSecondaryProgress(0);
+        if (currentPosition != position || currentDuration != duration) {
+            currentPosition = position;
+            currentDuration = duration;
+            if (segmentController != null
+                    && playerController != null
+                    && !segmentController.isUserChangingProgress()) {
+                int bufferPercent = playerController.getBufferPercentage();
+                if (bufferPercent > 0) {
+                    seekBar.setSecondaryProgress((int) duration * bufferPercent / 100);
+                } else {
+                    seekBar.setSecondaryProgress(0);
+                }
+                seekBar.setMax((int) duration);
+                seekBar.setProgress((int) position);
             }
-            seekBar.setMax((int) duration);
-            seekBar.setProgress((int) position);
+            leftTime.setText(stringForTimeInMs(position));
+            rightTime.setText(stringForTimeInMs(duration));
         }
-        leftTime.setText(stringForTimeInMs(position));
-        rightTime.setText(stringForTimeInMs(duration));
     }
 
     private String stringForTimeInMs(long millis) {
