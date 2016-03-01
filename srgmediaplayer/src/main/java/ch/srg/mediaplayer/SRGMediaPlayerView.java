@@ -48,6 +48,15 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
     public static final String UNKNOWN_DIMENSION = "0x0";
     private boolean onTop;
     private boolean adjustToParentScrollView;
+    private boolean debugMode;
+
+    public boolean isDebugMode() {
+        return debugMode;
+    }
+
+    public void setDebugMode(boolean debugMode) {
+        this.debugMode = debugMode;
+    }
 
     /**
      * Interface definition for a callback to be invoked when touch event occurs.
@@ -390,9 +399,11 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
             }
             widthMeasureSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
         }
-        Log.v(SRGMediaPlayerController.TAG, String.format("onMeasure W:%d/%s, H:%d/%s -> %d,%d",
-                specWidth, modeName(specWidthMode), specHeight, modeName(specHeightMode),
-                MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec)));
+        if (isDebugMode()) {
+            Log.v(SRGMediaPlayerController.TAG, String.format("onMeasure W:%d/%s, H:%d/%s -> %d,%d",
+                    specWidth, modeName(specWidthMode), specHeight, modeName(specHeightMode),
+                    MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec)));
+        }
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
 
