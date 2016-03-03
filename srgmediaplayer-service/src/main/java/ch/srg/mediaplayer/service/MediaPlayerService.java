@@ -82,6 +82,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     private boolean isForeground;
 
     // Media Session implementation
+    @Nullable
     private MediaSessionCompat mediaSessionCompat;
 
     private int flags;
@@ -417,9 +418,10 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             } else {
                 NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
                 ServiceNotificationBuilder builder = createNotificationBuilder();
-                if (builder != currentServiceNotification) {
+                if (builder != currentServiceNotification && mediaSessionCompat != null) {
                     currentServiceNotification = builder;
-                    notificationManager.notify(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat));
+                    notificationManager.notify(NOTIFICATION_ID,
+                            builder.buildNotification(this, mediaSessionCompat));
                 }
             }
         } else {
@@ -435,8 +437,10 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             if (foreground != isForeground) {
                 if (foreground) {
                     ServiceNotificationBuilder builder = createNotificationBuilder();
-                    currentServiceNotification = builder;
-                    startForeground(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat));
+                    if (mediaSessionCompat != null) {
+                        currentServiceNotification = builder;
+                        startForeground(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat));
+                    }
                 } else {
                     stopForeground(true);
                     currentServiceNotification = null;

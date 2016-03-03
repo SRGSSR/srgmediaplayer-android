@@ -5,6 +5,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.support.annotation.NonNull;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v7.app.NotificationCompat;
 
@@ -44,7 +45,7 @@ public class ServiceNotificationBuilder {
 
     }
 
-    public Notification buildNotification(Context context, MediaSessionCompat mediaSessionCompat) {
+    public Notification buildNotification(Context context, @NonNull MediaSessionCompat mediaSessionCompat) {
         Intent pauseIntent = new Intent(context, MediaPlayerService.class);
         pauseIntent.setAction(playing ? MediaPlayerService.ACTION_PAUSE : MediaPlayerService.ACTION_RESUME);
         pauseIntent.putExtra(MediaPlayerService.ARG_FROM_NOTIFICATION, true);
