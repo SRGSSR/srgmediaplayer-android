@@ -325,7 +325,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
                 surfaceHeight = (int) Math.ceil(surfaceWidth / actualVideoAspectRatio);
             } else if (actualVideoAspectRatio < videoContainerAspectRatio) {
                 surfaceWidth = (int) Math.ceil(surfaceHeight * actualVideoAspectRatio);
-            } else {
+//            } else {
                 //Nothing values already set above
             }
 

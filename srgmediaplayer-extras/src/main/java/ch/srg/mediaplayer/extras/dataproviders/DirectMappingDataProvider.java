@@ -1,6 +1,7 @@
 package ch.srg.mediaplayer.extras.dataproviders;
 
 import android.net.Uri;
+import android.support.annotation.NonNull;
 
 import java.util.List;
 
@@ -30,7 +31,7 @@ public class DirectMappingDataProvider implements SRGMediaPlayerDataProvider, Se
 	}
 
 	@Override
-	public int getMediaType(String mediaIdentifier) throws SRGMediaPlayerException {
+	public int getMediaType(@NonNull String mediaIdentifier) throws SRGMediaPlayerException {
 		return mediaType;
 	}
 }

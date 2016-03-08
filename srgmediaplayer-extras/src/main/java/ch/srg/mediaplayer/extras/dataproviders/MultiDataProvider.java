@@ -1,6 +1,7 @@
 package ch.srg.mediaplayer.extras.dataproviders;
 
 import android.net.Uri;
+import android.support.annotation.NonNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -84,7 +85,7 @@ public class MultiDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
 
 
 	@Override
-	public int getMediaType(String mediaIdentifier) throws SRGMediaPlayerException {
+	public int getMediaType(@NonNull String mediaIdentifier) throws SRGMediaPlayerException {
 		return getProvider(mediaIdentifier).getMediaType(getIdentifier(mediaIdentifier));
 	}
 

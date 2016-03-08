@@ -1,5 +1,7 @@
 package ch.srg.segmentoverlay.model;
 
+import android.support.annotation.NonNull;
+
 /**
  * Created by zapek on 2014-05-07.
  */
@@ -104,7 +106,7 @@ public class Segment implements Comparable<Segment> {
 	}
 
 	@Override
-	public int compareTo(Segment another) {
+	public int compareTo(@NonNull Segment another) {
 		return ((int) (markIn - another.getMarkIn()));
 	}
 
