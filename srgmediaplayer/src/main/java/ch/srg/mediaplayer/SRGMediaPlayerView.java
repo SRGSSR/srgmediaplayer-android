@@ -371,7 +371,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
             int height = (int) (width / aspectRatio);
 
             int maxHeight;
-            maxHeight = specHeightMode == MeasureSpec.AT_MOST ? specHeight : Integer.MAX_VALUE;
+            maxHeight = specHeightMode == MeasureSpec.AT_MOST ? specHeight : MEASURED_SIZE_MASK;
             if (adjustToParentScrollView) {
                 maxHeight = Math.min(maxHeight, getParentScrollViewHeight());
             }
@@ -387,7 +387,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
             int width = (int) (height * aspectRatio);
 
             int maxWidth;
-            maxWidth = specWidthMode == MeasureSpec.AT_MOST ? specWidth : Integer.MAX_VALUE;
+            maxWidth = specWidthMode == MeasureSpec.AT_MOST ? specWidth : MEASURED_SIZE_MASK;
             if (adjustToParentScrollView) {
                 maxWidth = Math.min(maxWidth, getParentScrollViewWidth());
             }

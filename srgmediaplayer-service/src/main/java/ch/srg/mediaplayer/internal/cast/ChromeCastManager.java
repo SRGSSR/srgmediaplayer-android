@@ -906,8 +906,10 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         public void onRouteSelected(MediaRouter router, MediaRouter.RouteInfo info) {
             Log.d(TAG, "onRouteSelected: info=" + info);
             CastDevice device = CastDevice.getFromBundle(info.getExtras());
-            chromeCastManager.onDeviceSelected(device);
-            Log.d(TAG, "onRouteSelected: mSelectedDevice=" + device.getFriendlyName());
+            if (device != null) {
+                chromeCastManager.onDeviceSelected(device);
+                Log.d(TAG, "onRouteSelected: mSelectedDevice=" + device.getFriendlyName());
+            }
         }
 
         @Override

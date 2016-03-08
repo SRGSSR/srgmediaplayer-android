@@ -197,9 +197,7 @@ public class SimplePlayerControlView extends RelativeLayout implements SRGMediaP
 	@Override
 	public void run() {
 		// This is stopped when detached from window.
-		if (true) {
-			update();
-			postDelayed(this, PERIODIC_UPDATE_DELAY);
-		}
+		update();
+		postDelayed(this, PERIODIC_UPDATE_DELAY);
 	}
 }

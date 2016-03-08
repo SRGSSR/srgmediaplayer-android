@@ -10,6 +10,8 @@ import android.util.Log;
 
 import junit.framework.Assert;
 
+import org.junit.Ignore;
+
 import java.util.concurrent.TimeUnit;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
@@ -90,9 +92,8 @@ public class MediaPlayerServiceTest extends ThreadServiceTestBase<MediaPlayerSer
         waitForPlayerTimeLessThan(SEEK_POSITION_1);
     }
 
+    @Ignore
     public void testLivePlayStopWithDelay() {
-        if (true)
-            return;
         startSrf1Live();
 
         waitForState(SRGMediaPlayerController.State.READY);
@@ -104,9 +105,8 @@ public class MediaPlayerServiceTest extends ThreadServiceTestBase<MediaPlayerSer
         waitForState(SRGMediaPlayerController.State.RELEASED);
     }
 
+    @Ignore
     public void testLivePlayStopWithoutDelay() {
-        if (true)
-            return;
         startSrf1Live();
 
         waitForState(SRGMediaPlayerController.State.READY);

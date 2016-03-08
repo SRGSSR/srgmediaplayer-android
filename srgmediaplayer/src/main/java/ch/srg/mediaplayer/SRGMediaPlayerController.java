@@ -998,6 +998,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 } else if (renderingView instanceof TextureView) {
                     TextureView textureView = (TextureView) renderingView;
                         textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+                            @SuppressWarnings("ConstantConditions") // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
                             public boolean isCurrent(SurfaceTexture surfaceTexture) {
                                 return renderingView instanceof TextureView && ((TextureView) renderingView).getSurfaceTexture() == surfaceTexture;
                             }
