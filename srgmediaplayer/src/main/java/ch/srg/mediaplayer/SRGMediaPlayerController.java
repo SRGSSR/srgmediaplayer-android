@@ -940,14 +940,16 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * Attach a MediaPlayerView to the controller.
      * Also ink the overlayController to the MediaPlayerView.
      *
-     * @param newMediaPlayerView
+     * @param newView player view
+     *
+     * @throws IllegalStateException if a player view is already attached to this controller
      */
-    public void bindToMediaPlayerView(SRGMediaPlayerView newMediaPlayerView) {
-        if (mediaPlayerView != null && mediaPlayerView != newMediaPlayerView) {
-            //TODO handle previous linkage
+    public void bindToMediaPlayerView(SRGMediaPlayerView newView) {
+        if (mediaPlayerView != null) {
+            throw new IllegalStateException("Controller already bound to player view: " + newView);
         }
 
-        mediaPlayerView = newMediaPlayerView;
+        mediaPlayerView = newView;
         internalUpdateMediaPlayerViewBound();
         overlayController.bindToVideoContainer(this.mediaPlayerView);
         manageKeepScreenOnInternal();
