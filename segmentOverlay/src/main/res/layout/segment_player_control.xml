@@ -43,9 +43,10 @@
         android:id="@+id/segment_player_control_time_left"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="--:--"
+        android:text="@string/time_pending"
         android:textColor="#ffffff"
-        android:textSize="10dp"/>
+        android:textSize="10sp"
+        tools:ignore="SmallSp" />
 
     <SeekBar
         android:id="@+id/segment_player_control_seekbar"
@@ -57,9 +58,10 @@
         android:id="@+id/segment_player_control_time_right"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="--:--"
+        android:text="@string/time_pending"
         android:textColor="#ffffff"
-        android:textSize="10dp"/>
+        android:textSize="10sp"
+        tools:ignore="SmallSp" />
 
     <Button
         android:id="@+id/segment_player_control_button_fullscreen"

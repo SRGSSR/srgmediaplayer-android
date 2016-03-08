@@ -9,6 +9,7 @@ import android.view.SurfaceView;
 import android.view.View;
 
 import java.util.HashMap;
+import java.util.Locale;
 
 import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
@@ -338,7 +339,7 @@ public class NativePlayerDelegate implements
 		}
 
 		private static String toMessage(int what, int extra) {
-			return String.format("Native player error: %d / %d", what, extra);
+			return String.format(Locale.US, "Native player error: %d / %d", what, extra);
 		}
 	}
 
