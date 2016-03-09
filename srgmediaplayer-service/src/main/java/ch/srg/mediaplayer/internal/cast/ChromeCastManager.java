@@ -93,6 +93,9 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         mediaRouterCallback = new CastMediaRouterCallback(this);
         mediaSessionManager = MediaSessionManager.getInstance();
 
+        mediaRouter.addCallback(mediaRouteSelector, mediaRouterCallback,
+                MediaRouter.CALLBACK_FLAG_REQUEST_DISCOVERY);
+
         Log.d(TAG, "VideoCastManager is instantiated");
     }
 
@@ -120,7 +123,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
      */
     public static ChromeCastManager getInstance() {
         if (instance == null) {
-            String msg = "No VideoCastManager instance was found, did you forget to initialize it?";
+            String msg = "No ChromeCastManager instance was found, did you forget to initialize it?";
             Log.e(TAG, msg);
             throw new IllegalStateException(msg);
         }
