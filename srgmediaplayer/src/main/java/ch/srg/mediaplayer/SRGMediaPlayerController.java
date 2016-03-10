@@ -138,6 +138,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
             EXTERNAL_EVENT;
         }
+
         public final Type type;
 
         public final String mediaIdentifier;
@@ -444,7 +445,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * <p>
      * When playing a live stream, a value of 0 represents the live most position.
      * A value of 1..duration represents the relative position in the live stream.
-     *</p>
+     * </p>
+     *
      * @param positionMs position in ms
      * @throws IllegalStateException player error
      */
@@ -843,7 +845,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     /**
-     *
      * @return media position relative to MPST (see {@link #getMediaPlaylistStartTime} )
      */
     public long getMediaPosition() {
@@ -859,7 +860,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     /**
-     *
      * @return Media duration relative to 0.
      */
     public long getMediaDuration() {
@@ -874,12 +874,12 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * Media playlist start time (MPST) is a relative offset for the available seekable range,
      * used in sliding window live playlist.
      * The range [0..MPST] is not available for seeking.
-     *
+     * <p/>
      * <pre>
      * 0 --------------- MPST --------- POSITION ------------------------------------- LIVE
      *                    \---------------------------DURATION---------------------------/
      * </pre>
-     *
+     * <p/>
      * MPST stays constant with a value of 0 when playing a static video.
      *
      * @return MPST in ms
@@ -941,7 +941,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * Also ink the overlayController to the MediaPlayerView.
      *
      * @param newView player view
-     *
      * @throws IllegalStateException if a player view is already attached to this controller
      */
     public void bindToMediaPlayerView(SRGMediaPlayerView newView) {
@@ -999,41 +998,42 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     });
                 } else if (renderingView instanceof TextureView) {
                     TextureView textureView = (TextureView) renderingView;
-                        textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
-                            @SuppressWarnings("ConstantConditions") // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
-                            public boolean isCurrent(SurfaceTexture surfaceTexture) {
-                                return renderingView instanceof TextureView && ((TextureView) renderingView).getSurfaceTexture() == surfaceTexture;
-                            }
+                    textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+                        @SuppressWarnings("ConstantConditions")
+                        // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
+                        public boolean isCurrent(SurfaceTexture surfaceTexture) {
+                            return renderingView instanceof TextureView && ((TextureView) renderingView).getSurfaceTexture() == surfaceTexture;
+                        }
 
-                            @Override
-                            public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
-                                Log.v(TAG, renderingView + "binding, surfaceCreated" + mediaPlayerView);
-                                if (currentMediaPlayerDelegate != null && isCurrent(surfaceTexture)) {
-                                    try {
-                                        currentMediaPlayerDelegate.bindRenderingViewInUiThread(mediaPlayerView);
-                                    } catch (SRGMediaPlayerException e) {
-                                        Log.d(TAG, "Error binding view", e);
-                                    }
+                        @Override
+                        public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
+                            Log.v(TAG, renderingView + "binding, surfaceCreated" + mediaPlayerView);
+                            if (currentMediaPlayerDelegate != null && isCurrent(surfaceTexture)) {
+                                try {
+                                    currentMediaPlayerDelegate.bindRenderingViewInUiThread(mediaPlayerView);
+                                } catch (SRGMediaPlayerException e) {
+                                    Log.d(TAG, "Error binding view", e);
                                 }
                             }
+                        }
 
-                            @Override
-                            public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
-                                // TODO
-                            }
+                        @Override
+                        public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
+                            // TODO
+                        }
 
-                            @Override
-                            public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
-                                return false;
-                            }
+                        @Override
+                        public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
+                            return false;
+                        }
 
-                            @Override
-                            public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
+                        @Override
+                        public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
 
-                            }
-                        });
+                        }
+                    });
 
-                    } else {
+                } else {
                     Log.v(TAG, renderingView + "binding, attaching rendering view" + mediaPlayerView);
 
                     renderingView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
@@ -1229,7 +1229,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             // TODO Handle ducked volume or something
             unmute();
         }
-        if (pausedBecauseFocusLoss  && ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_AUTO_RESTART) != 0 || pausedBecauseTransientFocusLoss)) {
+        if (pausedBecauseFocusLoss && ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_AUTO_RESTART) != 0 || pausedBecauseTransientFocusLoss)) {
             start();
         }
         if (mutedBecauseFocusLoss) {
@@ -1361,7 +1361,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     /**
      * Change the player delegate for another one. The currently playing stream will be stopped on the old
      * player delegate and resumed with the new one.
-     *
+     * <p/>
      * Warning this only impacts the current stream.
      *
      * @param playerDelegate player delegate or null to use the default one (using current delegate factory)
@@ -1383,5 +1383,14 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     public void forceBroadcastStateChange() {
         broadcastEvent(Event.buildStateEvent(this));
+    }
+
+    /**
+     * Configure auto hide delay (delay to change visibility for overlay of OVERLAY_CONTROL type)
+     *
+     * @param overlayAutoHideDelay auto hide delay in ms
+     */
+    public static void setOverlayAutoHideDelay(int overlayAutoHideDelay) {
+        OverlayController.setOverlayAutoHideDelay(overlayAutoHideDelay);
     }
 }
