@@ -155,8 +155,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
             }
         }
 
-        srgMediaPlayer.bindToMediaPlayerView(playerView);
-
         if (livePlayerControlView != null) {
             livePlayerControlView.setPlayerController(srgMediaPlayer);
         }
