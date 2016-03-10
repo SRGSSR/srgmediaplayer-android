@@ -14,6 +14,7 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.annotation.DrawableRes;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.LocalBroadcastManager;
@@ -90,8 +91,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private SRGMediaPlayerController.State currentState;
 
-    private Bitmap mediaArtBitmap;
-
     public boolean isDestroyed;
 
     private Runnable statusUpdater;
@@ -162,7 +161,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     @Override
     public void onBitmapUpdate(Bitmap bitmap) {
-        mediaArtBitmap = bitmap;
         updateNotification();
     }
 
@@ -329,17 +327,22 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         String title;
         boolean live;
         PendingIntent pendingIntent;
+        Bitmap mediaArtBitmap;
+        @DrawableRes int smallIcon = R.drawable.ic_play_arrow_white_24dp;
         if (serviceDataProvider != null) {
             String mediaIdentifier = getCurrentMediaIdentifier();
             title = serviceDataProvider.getTitle(mediaIdentifier);
             live = serviceDataProvider.isLive(mediaIdentifier);
             pendingIntent = serviceDataProvider.getNotificationPendingIntent(mediaIdentifier);
+            mediaArtBitmap = serviceDataProvider.getNotificationLargeIconBitmap(mediaIdentifier);
+            smallIcon = serviceDataProvider.getNotificationSmallIconResourceId(mediaIdentifier);
         } else {
             title = null;
             live = false;
             pendingIntent = null;
+            mediaArtBitmap = null;
         }
-        return new ServiceNotificationBuilder(live, isPlaying(), title, pendingIntent, mediaArtBitmap, R.drawable.ic_play_arrow_white_24dp);
+        return new ServiceNotificationBuilder(live, isPlaying(), title, pendingIntent, mediaArtBitmap, smallIcon);
     }
 
     private void startUpdates() {
@@ -357,7 +360,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private void prepare(String mediaIdentifier, Long startPosition) throws SRGMediaPlayerException {
         mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
-        mediaArtBitmap = null;
         createPlayer();
 
         if (player.play(mediaIdentifier, startPosition)) {

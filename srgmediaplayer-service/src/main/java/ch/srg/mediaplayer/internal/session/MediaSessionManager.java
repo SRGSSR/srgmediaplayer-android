@@ -6,11 +6,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.net.Uri;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 
@@ -99,7 +97,6 @@ public class MediaSessionManager {
         MediaMetadataCompat.Builder meta = new MediaMetadataCompat.Builder();
         if (serviceDataProvider != null) {
             String title = serviceDataProvider.getTitle(mediaIdentifier);
-            mediaThumbnailUri = serviceDataProvider.getMediaImageUri(mediaIdentifier);
 
             meta.putString(MediaMetadataCompat.METADATA_KEY_TITLE, title);
         }
@@ -112,8 +109,6 @@ public class MediaSessionManager {
         mediaSessionCompat.setPlaybackState(new PlaybackStateCompat.Builder()
                 .setState(PlaybackStateCompat.STATE_PLAYING, 0, 1.0f)
                 .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE).build());
-
-        fetchMediaImage(mediaThumbnailUri);
 
         Log.d(TAG, "New mediaSessionCompat created with token: " + mediaSessionCompat.getSessionToken());
 
@@ -154,39 +149,39 @@ public class MediaSessionManager {
         return mediaSessionCompat;
     }
 
-    private void fetchMediaImage(String mediaThumbnail) {
-        Log.d(TAG, "Fetching MediaImage: " + mediaThumbnail);
-        if (TextUtils.isEmpty(mediaThumbnail)) {
-            return;
-        }
-        if (bitmapDecoderTask != null) {
-            bitmapDecoderTask.cancel(false);
-        }
-        Uri imgUri = Uri.parse(mediaThumbnail);
-
-        bitmapDecoderTask = new FetchBitmapTask() {
-            @Override
-            protected void onPostExecute(Bitmap bitmap) {
-                mediaArtBitmap = AppUtils.scaleAndFitBitmap(bitmap, dimensionInPixels,
-                        dimensionInPixels);
-                updateLockScreenImage(bitmap);
-
-                if (listeners.isEmpty()) {
-                    Log.d(TAG, "No listener found for bitmap Update");
-                } else {
-                    Log.d(TAG, listeners.size() + " listener(s) found for bitmap Update");
-                }
-                for (Listener listener : listeners) {
-                    listener.onBitmapUpdate(mediaArtBitmap);
-                }
-
-                if (this == bitmapDecoderTask) {
-                    bitmapDecoderTask = null;
-                }
-            }
-        };
-        bitmapDecoderTask.execute(imgUri);
-    }
+//    private void fetchMediaImage(String mediaThumbnail) {
+//        Log.d(TAG, "Fetching MediaImage: " + mediaThumbnail);
+//        if (TextUtils.isEmpty(mediaThumbnail)) {
+//            return;
+//        }
+//        if (bitmapDecoderTask != null) {
+//            bitmapDecoderTask.cancel(false);
+//        }
+//        Uri imgUri = Uri.parse(mediaThumbnail);
+//
+//        bitmapDecoderTask = new FetchBitmapTask() {
+//            @Override
+//            protected void onPostExecute(Bitmap bitmap) {
+//                mediaArtBitmap = AppUtils.scaleAndFitBitmap(bitmap, dimensionInPixels,
+//                        dimensionInPixels);
+//                updateLockScreenImage(bitmap);
+//
+//                if (listeners.isEmpty()) {
+//                    Log.d(TAG, "No listener found for bitmap Update");
+//                } else {
+//                    Log.d(TAG, listeners.size() + " listener(s) found for bitmap Update");
+//                }
+//                for (Listener listener : listeners) {
+//                    listener.onBitmapUpdate(mediaArtBitmap);
+//                }
+//
+//                if (this == bitmapDecoderTask) {
+//                    bitmapDecoderTask = null;
+//                }
+//            }
+//        };
+//        bitmapDecoderTask.execute(imgUri);
+//    }
 
     public void updateMediaSession(boolean playing) {
         if (mediaSessionCompat != null) {
@@ -209,6 +204,8 @@ public class MediaSessionManager {
 
     /*
      * Updates lock screen image
+     *
+     * TODO ! Call me from somewhere (use notification large bitmap thingie)
      */
     private void updateLockScreenImage(Bitmap mediaArtBitmap) {
         if (mediaSessionCompat != null) {
