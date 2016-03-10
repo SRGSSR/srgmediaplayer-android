@@ -329,8 +329,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         PendingIntent pendingIntent;
         Bitmap mediaArtBitmap;
         @DrawableRes int smallIcon = R.drawable.ic_play_arrow_white_24dp;
-        if (serviceDataProvider != null) {
-            String mediaIdentifier = getCurrentMediaIdentifier();
+        String mediaIdentifier = getCurrentMediaIdentifier();
+        if (serviceDataProvider != null && mediaIdentifier != null) {
             title = serviceDataProvider.getTitle(mediaIdentifier);
             live = serviceDataProvider.isLive(mediaIdentifier);
             pendingIntent = serviceDataProvider.getNotificationPendingIntent(mediaIdentifier);
