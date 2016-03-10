@@ -18,14 +18,16 @@ public class ServiceNotificationBuilder {
     boolean playing;
     String title;
     PendingIntent pendingIntent;
-    private Bitmap notificationBitmap;
+    private Bitmap largeIcon;
+    private int smallIcon;
 
-    public ServiceNotificationBuilder(boolean live, boolean playing, String title, PendingIntent pendingIntent, Bitmap notificationBitmap) {
+    public ServiceNotificationBuilder(boolean live, boolean playing, String title, PendingIntent pendingIntent, Bitmap notificationBitmap, int smallIcon) {
         this.live = live;
         this.playing = playing;
         this.title = title;
         this.pendingIntent = pendingIntent;
-        this.notificationBitmap = notificationBitmap;
+        this.largeIcon = notificationBitmap;
+        this.smallIcon = smallIcon;
     }
 
     @Override
@@ -38,7 +40,8 @@ public class ServiceNotificationBuilder {
         if (live != that.live) return false;
         if (playing != that.playing) return false;
         if (title != null ? !title.equals(that.title) : that.title != null) return false;
-        if (notificationBitmap != that.notificationBitmap) return false;
+        if (largeIcon != that.largeIcon) return false;
+        if (smallIcon != that.smallIcon) return false;
         if (pendingIntent != null ? !pendingIntent.equals(that.pendingIntent) : that.pendingIntent != null) return false;
 
         return true;
@@ -82,9 +85,9 @@ public class ServiceNotificationBuilder {
             builder.setContentText(title);
         }
 
-        builder.setSmallIcon(R.drawable.ic_play_arrow_white_24dp);
-        if (notificationBitmap != null) {
-            builder.setLargeIcon(notificationBitmap);
+        builder.setSmallIcon(smallIcon);
+        if (largeIcon != null) {
+            builder.setLargeIcon(largeIcon);
         }
 
         builder.setOngoing(true);

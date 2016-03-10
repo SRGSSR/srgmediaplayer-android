@@ -74,7 +74,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private static final int NOTIFICATION_ID = 1;
     public static final int FLAG_LIVE = 1;
-    private static final long AUTORELEASE_DELAY_MS = 10000;
+    private static long autoreleaseDelayMs = 10000;
     private static SRGMediaPlayerDataProvider dataProvider;
     private static SRGMediaPlayerServiceMetaDataProvider serviceDataProvider;
 
@@ -112,11 +112,9 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         public void run() {
             if (player != null && !player.isPlaying()) {
                 if (player.isBoundToMediaPlayerView()) {
-                    handler.postDelayed(autoRelease, AUTORELEASE_DELAY_MS);
+                    startAutoRelease();
                 } else {
-                    player.release();
-                    player = null;
-                    mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
+                    stopPlayer();
                 }
             }
         }
@@ -341,7 +339,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             live = false;
             pendingIntent = null;
         }
-        return new ServiceNotificationBuilder(live, isPlaying(), title, pendingIntent, mediaArtBitmap);
+        return new ServiceNotificationBuilder(live, isPlaying(), title, pendingIntent, mediaArtBitmap, R.drawable.ic_play_arrow_white_24dp);
     }
 
     private void startUpdates() {
@@ -568,9 +566,30 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 break;
             case PLAYING_STATE_CHANGE:
                 cancelAutoRelease();
-                handler.postDelayed(autoRelease, AUTORELEASE_DELAY_MS);
+                startAutoRelease();
                 break;
         }
+    }
+
+    private void startAutoRelease() {
+        if (autoreleaseDelayMs > 0) {
+            handler.postDelayed(autoRelease, autoreleaseDelayMs);
+        } else if (autoreleaseDelayMs == 0) {
+            if (player != null && !player.isPlaying() && player.isBoundToMediaPlayerView()) {
+                stopPlayer();
+            }
+        }
+    }
+
+    /**
+     * Configure auto release time. Auto release is used to automatically release the player this
+     * service controls after it has been paused _and_ the player is not bound to a media
+     * player view.
+     *
+     * @param autoreleaseDelayMs time in ms or -1 to disable the auto release feature
+     */
+    public static void setAutoreleaseDelayMs(long autoreleaseDelayMs) {
+        MediaPlayerService.autoreleaseDelayMs = autoreleaseDelayMs;
     }
 
     public static void setDataProvider(SRGMediaPlayerDataProvider dataProvider) {
