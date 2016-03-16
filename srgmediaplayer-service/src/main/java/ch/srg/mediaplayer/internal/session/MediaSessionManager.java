@@ -203,33 +203,6 @@ public class MediaSessionManager {
     }
 
     /*
-     * Updates lock screen image
-     *
-     * TODO ! Call me from somewhere (use notification large bitmap thingie)
-     */
-    private void updateLockScreenImage(Bitmap mediaArtBitmap) {
-        if (mediaSessionCompat != null) {
-            MediaMetadataCompat currentMetadata = mediaSessionCompat.getController().getMetadata();
-            MediaMetadataCompat.Builder newBuilder = currentMetadata == null
-                    ? new MediaMetadataCompat.Builder()
-                    : new MediaMetadataCompat.Builder(currentMetadata);
-            mediaSessionCompat.setMetadata(newBuilder
-                    .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, mediaArtBitmap)
-                    .build());
-
-            if (listeners.isEmpty()) {
-                Log.d(TAG, "No listener found for bitmap Update");
-            } else {
-                Log.d(TAG, listeners.size() + " listener(s) found for LockScreenImage Update");
-            }
-            for (Listener listener : listeners) {
-                listener.onMediaSessionUpdated();
-            }
-
-        }
-    }
-
-    /*
      * Clears Media Session
      */
     public void clearMediaSession(MediaSessionCompat.Token token) {

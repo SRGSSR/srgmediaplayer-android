@@ -7,9 +7,9 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.NonNull;
+import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v7.app.NotificationCompat;
-
 import android.text.TextUtils;
 
 import ch.srg.mediaplayer.service.utils.AppUtils;
@@ -43,7 +43,8 @@ public class ServiceNotificationBuilder {
         if (title != null ? !title.equals(that.title) : that.title != null) return false;
         if (largeIcon != that.largeIcon) return false;
         if (smallIcon != that.smallIcon) return false;
-        if (pendingIntent != null ? !pendingIntent.equals(that.pendingIntent) : that.pendingIntent != null) return false;
+        if (pendingIntent != null ? !pendingIntent.equals(that.pendingIntent) : that.pendingIntent != null)
+            return false;
 
         return true;
 
@@ -89,11 +90,22 @@ public class ServiceNotificationBuilder {
         builder.setSmallIcon(smallIcon);
         if (largeIcon != null) {
             builder.setLargeIcon(largeIcon);
+            setLargeIconInMediaSession(mediaSessionCompat);
         }
 
         builder.setOngoing(true);
 
         return builder.build();
+    }
+
+    private void setLargeIconInMediaSession(@NonNull MediaSessionCompat mediaSessionCompat) {
+        MediaMetadataCompat currentMetadata = mediaSessionCompat.getController().getMetadata();
+        MediaMetadataCompat.Builder newBuilder = currentMetadata == null
+                ? new MediaMetadataCompat.Builder()
+                : new MediaMetadataCompat.Builder(currentMetadata);
+        mediaSessionCompat.setMetadata(newBuilder
+                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, largeIcon)
+                .build());
     }
 
 }
