@@ -53,7 +53,8 @@ import ch.srg.mediaplayer.SRGMediaPlayerView;
  * Created by Axel on 02/03/2015.
  */
 
-public class ExoPlayerDelegate implements
+public
+class ExoPlayerDelegate implements
         PlayerDelegate,
         ExoPlayer.Listener,
         TextRenderer,
@@ -66,6 +67,11 @@ public class ExoPlayerDelegate implements
         AudioCapabilitiesReceiver.Listener,
         RendererBuilderCallback,
         BandwidthMeter.EventListener, StreamingDrmSessionManager.EventListener {
+
+    @Override
+    public void onAvailableRangeChanged(int i, TimeRange timeRange) {
+
+    }
 
     public enum ViewType {
         TYPE_SURFACEVIEW,
@@ -411,22 +417,17 @@ public class ExoPlayerDelegate implements
     }
 
     @Override
-    public void onDecoderError(IllegalStateException e) {
-        Log.e(TAG, "onDecoderError: " + e);
-    }
-
-    @Override
     public void onCryptoError(MediaCodec.CryptoException e) {
         Log.e(TAG, "onCryptoError: " + e);
     }
 
     @Override
-    public void onLoadStarted(int sourceId, long length, int type, int trigger, Format format, int mediaStartTimeMs, int mediaEndTimeMs) {
+    public void onLoadStarted(int sourceId, long length, int type, int trigger, Format format, long mediaStartTimeMs, long mediaEndTimeMs) {
 
     }
 
     @Override
-    public void onLoadCompleted(int sourceId, long bytesLoaded, int type, int trigger, Format format, int mediaStartTimeMs, int mediaEndTimeMs, long elapsedRealtimeMs, long loadDurationMs) {
+    public void onLoadCompleted(int sourceId, long bytesLoaded, int type, int trigger, Format format, long mediaStartTimeMs, long mediaEndTimeMs, long elapsedRealtimeMs, long loadDurationMs) {
     }
 
     @Override
@@ -435,18 +436,13 @@ public class ExoPlayerDelegate implements
     }
 
     @Override
-    public void onUpstreamDiscarded(int sourceId, int mediaStartTimeMs, int mediaEndTimeMs) {
+    public void onUpstreamDiscarded(int sourceId, long mediaStartTimeMs, long mediaEndTimeMs) {
         // Do nothing.
     }
 
     @Override
     public void onLoadError(int i, IOException e) {
         Log.e(TAG, "onLoadError: ", e);
-    }
-
-    @Override
-    public void onDownstreamFormatChanged(int sourceId, Format format, int trigger, int mediaTimeMs) {
-        Log.e(TAG, "downstream format changed: " + sourceId + " format: " + format + " trigger:" + trigger + " mediaTimeMs:" + mediaTimeMs);
     }
 
     @Override
@@ -457,6 +453,11 @@ public class ExoPlayerDelegate implements
     @Override
     public void onAudioTrackWriteError(AudioTrack.WriteException e) {
         controller.onPlayerDelegateError(this, new SRGMediaPlayerException(e));
+    }
+
+    @Override
+    public void onAudioTrackUnderrun(int i, long l, long l1) {
+
     }
 
     @Override
@@ -511,13 +512,13 @@ public class ExoPlayerDelegate implements
     }
 
     @Override
-    public void onAvailableRangeChanged(TimeRange timeRange) {
-        Log.v(TAG, "Unhandled dash event");
+    public void onCues(List<Cue> list) {
+        Log.v(TAG, "Unhandled dash text event");
     }
 
     @Override
-    public void onCues(List<Cue> list) {
-        Log.v(TAG, "Unhandled dash text event");
+    public void onDrmKeysLoaded() {
+
     }
 
     @Override
@@ -528,5 +529,12 @@ public class ExoPlayerDelegate implements
     public void setViewType(ViewType viewType) {
         this.viewType = viewType;
     }
+
+    @Override
+    public void onDownstreamFormatChanged(int i, Format format, int trigger, long mediaTimeMs) {
+        Log.e(TAG, "downstream format changed: " + i + " format: " + format + " trigger:" + trigger + " mediaTimeMs:" + mediaTimeMs);
+    }
+
+
 }
 
