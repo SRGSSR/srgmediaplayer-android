@@ -117,6 +117,8 @@ class ExoPlayerDelegate implements
 
     private ViewType viewType = ViewType.TYPE_SURFACEVIEW;
 
+    private boolean muted;
+
     public ExoPlayerDelegate(Context context, OnPlayerDelegateListener controller, SourceType sourceType) {
         this.sourceType = sourceType;
         this.context = context;
@@ -214,6 +216,9 @@ class ExoPlayerDelegate implements
         Log.v(TAG,
                 "Using renderers: video:" + videoRenderer + " audio:" + audioRenderer);
         pushSurface(false);
+        if (muted) {
+            applyMuted();
+        }
         exoPlayer.setSelectedTrack(TYPE_AUDIO, ExoPlayer.TRACK_DEFAULT);
         exoPlayer.setSelectedTrack(TYPE_VIDEO, ExoPlayer.TRACK_DEFAULT);
         exoPlayer.setPlayWhenReady(true);
@@ -333,10 +338,14 @@ class ExoPlayerDelegate implements
 
     @Override
     public void setMuted(boolean muted) {
-        if (audioRenderer == null) {
-            throw new IllegalStateException("Called mute without a registered audio renderer");
+        this.muted = muted;
+        applyMuted();
+    }
+
+    private void applyMuted() {
+        if (audioRenderer != null) {
+            exoPlayer.sendMessage(audioRenderer, MediaCodecAudioTrackRenderer.MSG_SET_VOLUME, muted ? 0f : 1f);
         }
-        exoPlayer.sendMessage(audioRenderer, MediaCodecAudioTrackRenderer.MSG_SET_VOLUME, muted ? 0f : 1f);
     }
 
     private void recomputeVideoContainerConstrains() {
