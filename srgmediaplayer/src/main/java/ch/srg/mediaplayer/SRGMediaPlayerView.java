@@ -63,9 +63,9 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
      */
     public interface VideoTouchListener {
 
-        void onVideoRenderingViewTouched(SRGMediaPlayerView rtsMediaPlayerView);
+        void onVideoRenderingViewTouched(SRGMediaPlayerView srgMediaPlayerView);
 
-        void onVideoOverlayTouched(SRGMediaPlayerView rtsMediaPlayerView);
+        void onVideoOverlayTouched(SRGMediaPlayerView srgMediaPlayerView);
     }
 
     public enum ScaleMode {
@@ -450,7 +450,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("RTSMediaPlayerView{");
+        final StringBuilder sb = new StringBuilder("SRGMediaPlayerView{");
         sb.append(", width=").append(getWidth());
         sb.append(", height=").append(getHeight());
         sb.append(", videoRenderingView=").append(videoRenderingView);
