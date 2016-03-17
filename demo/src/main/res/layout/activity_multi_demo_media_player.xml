@@ -1,104 +1,103 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                xmlns:tools="http://schemas.android.com/tools"
+<RelativeLayout android:id="@+id/parent"
+                xmlns:android="http://schemas.android.com/apk/res/android"
                 xmlns:app="http://schemas.android.com/apk/res-auto"
+                xmlns:tools="http://schemas.android.com/tools"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                tools:context="ch.srg.mediaplayer.DemoMediaPlayerActivity"
-                android:background="#ff0088bf">
-	<TextView
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		android:textAppearance="?android:attr/textAppearanceLarge"
-		android:text="DEMO RTS MEDIA PLAYER"
-		android:id="@+id/top_text"
-		android:layout_alignParentTop="true"
-		android:layout_centerHorizontal="true"
-		android:backgroundTintMode="multiply"/>
-	<LinearLayout
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:orientation="horizontal"
-		android:layout_below="@+id/top_text"
-		android:id="@+id/buttons">
-		<Button
-			android:layout_width="0dp"
-			android:layout_height="wrap_content"
-			android:layout_weight="1"
-			android:text="1"
-			android:id="@+id/button_1"
-			/>
-		<Button
-			android:layout_width="0dp"
-			android:layout_height="wrap_content"
-			android:layout_weight="1"
-			android:text="2"
-			android:id="@+id/button_2"
-			/>
-		<Button
-			android:layout_width="0dp"
-			android:layout_height="wrap_content"
-			android:layout_weight="1"
-			android:text="3"
-			android:id="@+id/button_3"
-			/>
-	</LinearLayout>
-	<ch.srg.mediaplayer.SRGMediaPlayerView
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		app:containerAspectRatio="auto"
-		app:videoScale="center_inside"
-		tools:layout_width="match_parent"
-		tools:layout_height="300dp"
-		android:id="@+id/multi_video_view_top"
-		android:background="#ff331111"
-		android:animateLayoutChanges="true"
-		android:layout_below="@+id/buttons">
-		<!-- Loading Progress -->
-		<ProgressBar
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content"
-			app:overlay_mode="loading"
-			android:layout_centerInParent="true"/>
-	</ch.srg.mediaplayer.SRGMediaPlayerView>
-	<LinearLayout
-		android:orientation="horizontal"
-		android:layout_width="match_parent"
-		android:layout_height="200dp"
-		android:layout_alignParentBottom="true"
-		android:layout_centerHorizontal="true">
-		<ch.srg.mediaplayer.SRGMediaPlayerView
-			android:layout_width="0dp"
-			android:layout_weight="1"
-			android:layout_height="match_parent"
-			app:containerAspectRatio="auto"
-			app:videoScale="center_inside"
-			android:id="@+id/multi_video_view_bottom_left"
-			android:background="#ff113311"
-			android:animateLayoutChanges="true"
-			android:layout_below="@+id/top_text">
-			<!-- Loading Progress -->
-			<ProgressBar
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				app:overlay_mode="loading"
-				android:layout_centerInParent="true"/>
-		</ch.srg.mediaplayer.SRGMediaPlayerView>
-		<ch.srg.mediaplayer.SRGMediaPlayerView
-			android:layout_width="0dp"
-			android:layout_weight="1"
-			android:layout_height="match_parent"
-			app:containerAspectRatio="auto"
-			app:videoScale="center_inside"
-			android:id="@+id/multi_video_view_bottom_right"
-			android:background="#ff111133"
-			android:animateLayoutChanges="true"
-			android:layout_below="@+id/top_text">
-			<!-- Loading Progress -->
-			<ProgressBar
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				app:overlay_mode="loading"
-				android:layout_centerInParent="true"/>
-			</ch.srg.mediaplayer.SRGMediaPlayerView>
-	</LinearLayout>
+                android:background="#ff0088bf"
+                tools:context="ch.srg.mediaplayer.DemoMediaPlayerActivity">
+
+    <TextView
+        android:id="@+id/top_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:text="DEMO RTS MEDIA PLAYER"
+        android:textAppearance="?android:attr/textAppearanceLarge"/>
+
+    <LinearLayout
+        android:id="@+id/buttons"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/top_text"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/button_1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="1"
+            />
+
+        <Button
+            android:id="@+id/button_2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="2"
+            />
+
+        <Button
+            android:id="@+id/button_3"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="3"
+            />
+    </LinearLayout>
+
+    <ch.srg.mediaplayer.SRGMediaPlayerView
+        android:id="@+id/multi_video_view_top"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/buttons"
+        android:animateLayoutChanges="true"
+        android:background="#ff331111"
+        app:containerAspectRatio="auto"
+        app:videoScale="center_inside"
+        tools:layout_height="300dp"
+        tools:layout_width="match_parent">
+        <!-- Loading Progress -->
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            app:overlay_mode="loading"/>
+    </ch.srg.mediaplayer.SRGMediaPlayerView>
+
+    <ch.srg.mediaplayer.SRGMediaPlayerView
+        android:id="@+id/multi_video_view_bottom_left"
+        android:layout_width="160dp"
+        android:layout_height="90dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:background="#ff113311"
+        app:containerAspectRatio="auto"
+        app:videoScale="center_inside">
+        <!-- Loading Progress -->
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            app:overlay_mode="loading"/>
+    </ch.srg.mediaplayer.SRGMediaPlayerView>
+
+    <ch.srg.mediaplayer.SRGMediaPlayerView
+        android:id="@+id/multi_video_view_bottom_right"
+        android:layout_width="160dp"
+        android:layout_height="90dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:background="#ff111133"
+        app:containerAspectRatio="auto"
+        app:videoScale="center_inside">
+        <!-- Loading Progress -->
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            app:overlay_mode="loading"/>
+    </ch.srg.mediaplayer.SRGMediaPlayerView>
 </RelativeLayout>

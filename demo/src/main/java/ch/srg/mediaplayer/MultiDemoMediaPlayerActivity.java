@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.ActionBarActivity;
 import android.view.View;
+import android.view.ViewGroup;
 
 import ch.srg.mediaplayer.demo.DemoApplication;
 import ch.srg.mediaplayer.demo.R;
@@ -17,6 +18,7 @@ public class MultiDemoMediaPlayerActivity extends ActionBarActivity implements
 	private SRGMediaPlayerController mediaPlayers[];
 
 	private SRGMediaPlayerView views[];
+	private ViewGroup parentView;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -27,6 +29,8 @@ public class MultiDemoMediaPlayerActivity extends ActionBarActivity implements
 		views[0] = (SRGMediaPlayerView) findViewById(R.id.multi_video_view_top);
 		views[1] = (SRGMediaPlayerView) findViewById(R.id.multi_video_view_bottom_left);
 		views[2] = (SRGMediaPlayerView) findViewById(R.id.multi_video_view_bottom_right);
+
+		parentView = (ViewGroup) findViewById(R.id.parent);
 
 		findViewById(R.id.button_1).setOnClickListener(new View.OnClickListener() {
 			@Override
@@ -51,7 +55,13 @@ public class MultiDemoMediaPlayerActivity extends ActionBarActivity implements
 			mediaPlayers[i] = createPlayerController();
 		}
 
-//		playAll();
+		startAll();
+	}
+
+	private void startAll() {
+		for (int i = 0; i < mediaPlayers.length; i++) {
+			startPlayer(i);
+		}
 	}
 
 	private void startPlayer(int i) {
@@ -77,6 +87,7 @@ public class MultiDemoMediaPlayerActivity extends ActionBarActivity implements
 		super.onResume();
 		int top = 0;
 		bindPlayers(top);
+		selectPlayer(0);
 	}
 
 	private void bindPlayers(int top) {
@@ -122,13 +133,34 @@ public class MultiDemoMediaPlayerActivity extends ActionBarActivity implements
 	}
 
 	private void selectPlayer(int newTop) {
-		if (!mediaPlayers[newTop].isPlaying()) {
+		SRGMediaPlayerController topPlayer = mediaPlayers[newTop];
+		if (!topPlayer.isPlaying()) {
 			startPlayer(newTop);
 			return;
 		}
+		for (int i = 0; i < mediaPlayers.length; i++) {
+			if (i == newTop) {
+				mediaPlayers[i].unmute();
+			} else {
+				mediaPlayers[i].mute();
+			}
+		}
 
-		unbindAll();
-		bindPlayers(newTop);
+		SRGMediaPlayerView topView = topPlayer.getMediaPlayerView();
+		swapLayoutParams(views[0], topView);
+
+		for (SRGMediaPlayerView view : views) {
+			if (view != topView) {
+				view.bringToFront();
+			}
+		}
+	}
+
+	private void swapLayoutParams(View a, View b) {
+			ViewGroup.LayoutParams lpA = a.getLayoutParams();
+			ViewGroup.LayoutParams lpB = b.getLayoutParams();
+			a.setLayoutParams(lpB);
+			b.setLayoutParams(lpA);
 	}
 
 	@Override
