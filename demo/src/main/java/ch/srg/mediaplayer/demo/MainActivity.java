@@ -12,6 +12,7 @@ import net.hockeyapp.android.UpdateManager;
 
 import ch.srg.mediaplayer.DemoMediaPlayerActivity;
 import ch.srg.mediaplayer.LayoutsActivity;
+import ch.srg.mediaplayer.MultiDemoMediaPlayerActivity;
 import ch.srg.mediaplayer.SimplePlayerActivity;
 
 public class MainActivity extends Activity implements View.OnClickListener {
@@ -25,6 +26,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		findViewById(R.id.demo_segment_media_player).setOnClickListener(this);
 		findViewById(R.id.demo_live_media_player).setOnClickListener(this);
 		findViewById(R.id.demo_layouts).setOnClickListener(this);
+		findViewById(R.id.demo_multi_live).setOnClickListener(this);
 
 		checkForUpdates();
 	}
@@ -102,6 +104,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			}
 			case R.id.demo_layouts: {
 				Intent intent = new Intent(this, LayoutsActivity.class);
+				startActivity(intent);
+				break;
+			}
+			case R.id.demo_multi_live: {
+				Intent intent = new Intent(this, MultiDemoMediaPlayerActivity.class);
 				startActivity(intent);
 				break;
 			}
