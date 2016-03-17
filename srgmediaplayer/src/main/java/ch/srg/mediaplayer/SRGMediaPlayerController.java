@@ -63,12 +63,13 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     public static final long UNKNOWN_TIME = PlayerDelegate.UNKNOWN_TIME;
 
+    public static final int AUDIO_FOCUS_FLAG_DISABLED = 0;
     public static final int AUDIO_FOCUS_FLAG_MUTE = 1;
-
     public static final int AUDIO_FOCUS_FLAG_PAUSE = 2;
-    private static final int MSG_PREPARE_FOR_MEDIA_IDENTIFIER = 3;
     public static final int AUDIO_FOCUS_FLAG_DUCK = 4;
     public static final int AUDIO_FOCUS_FLAG_AUTO_RESTART = 8;
+
+    private static final int MSG_PREPARE_FOR_MEDIA_IDENTIFIER = 3;
 
     private static final int MSG_PREPARE_FOR_URI = 4;
     private static final int MSG_SET_PLAY_WHEN_READY = 5;
@@ -957,7 +958,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     public void bindToMediaPlayerView(SRGMediaPlayerView newView) {
         if (mediaPlayerView != null) {
             if (mediaPlayerView == newView) {
-                throw new IllegalStateException("Controller already bound to this player view");
+                throw new IllegalStateException("Controller already bound to this same player view");
             } else {
                 throw new IllegalStateException("Controller already bound to player view: "
                         + mediaPlayerView
