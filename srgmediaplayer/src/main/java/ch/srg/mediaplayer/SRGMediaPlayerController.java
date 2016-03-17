@@ -956,7 +956,14 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      */
     public void bindToMediaPlayerView(SRGMediaPlayerView newView) {
         if (mediaPlayerView != null) {
-            throw new IllegalStateException("Controller already bound to player view: " + newView);
+            if (mediaPlayerView == newView) {
+                throw new IllegalStateException("Controller already bound to this player view");
+            } else {
+                throw new IllegalStateException("Controller already bound to player view: "
+                        + mediaPlayerView
+                        + " when trying to connect to "
+                        + newView);
+            }
         }
 
         mediaPlayerView = newView;

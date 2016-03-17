@@ -461,6 +461,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         sb.append(", onTop=").append(onTop);
         sb.append(", autoAspect=").append(autoAspect);
         sb.append(", actualVideoAspectRatio=").append(actualVideoAspectRatio);
+        sb.append(", context=").append(getContext());
         sb.append('}');
         return sb.toString();
     }
