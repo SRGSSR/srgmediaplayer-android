@@ -68,6 +68,9 @@ public class DemoApplication extends Application {
 						return createExoPlayerDelegate(DemoApplication.this, srgMediaPlayer, ExoPlayerDelegate.SourceType.EXTRACTOR);
 					case "dash":
 						return createExoPlayerDelegate(DemoApplication.this,srgMediaPlayer, ExoPlayerDelegate.SourceType.DASH);
+					case "directVideo":
+					case "dummy":
+						return createExoPlayerDelegate(DemoApplication.this,srgMediaPlayer, ExoPlayerDelegate.SourceType.HLS);
 					case "native":
 						return new NativePlayerDelegate(srgMediaPlayer);
 				}

@@ -14,6 +14,34 @@
 		android:layout_alignParentTop="true"
 		android:layout_centerHorizontal="true"
 		android:backgroundTintMode="multiply"/>
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:orientation="horizontal"
+		android:layout_below="@+id/top_text"
+		android:id="@+id/buttons">
+		<Button
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:text="1"
+			android:id="@+id/button_1"
+			/>
+		<Button
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:text="2"
+			android:id="@+id/button_2"
+			/>
+		<Button
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:text="3"
+			android:id="@+id/button_3"
+			/>
+	</LinearLayout>
 	<ch.srg.mediaplayer.SRGMediaPlayerView
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
@@ -24,7 +52,7 @@
 		android:id="@+id/multi_video_view_top"
 		android:background="#ff331111"
 		android:animateLayoutChanges="true"
-		android:layout_below="@+id/top_text">
+		android:layout_below="@+id/buttons">
 		<!-- Loading Progress -->
 		<ProgressBar
 			android:layout_width="wrap_content"
@@ -35,17 +63,15 @@
 	<LinearLayout
 		android:orientation="horizontal"
 		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
+		android:layout_height="200dp"
 		android:layout_alignParentBottom="true"
 		android:layout_centerHorizontal="true">
 		<ch.srg.mediaplayer.SRGMediaPlayerView
 			android:layout_width="0dp"
-			android:layout_weight="0.5"
-			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:layout_height="match_parent"
 			app:containerAspectRatio="auto"
 			app:videoScale="center_inside"
-			tools:layout_width="match_parent"
-			tools:layout_height="150dp"
 			android:id="@+id/multi_video_view_bottom_left"
 			android:background="#ff113311"
 			android:animateLayoutChanges="true"
@@ -59,12 +85,10 @@
 		</ch.srg.mediaplayer.SRGMediaPlayerView>
 		<ch.srg.mediaplayer.SRGMediaPlayerView
 			android:layout_width="0dp"
-			android:layout_weight="0.5"
-			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:layout_height="match_parent"
 			app:containerAspectRatio="auto"
 			app:videoScale="center_inside"
-			tools:layout_width="match_parent"
-			tools:layout_height="150dp"
 			android:id="@+id/multi_video_view_bottom_right"
 			android:background="#ff111133"
 			android:animateLayoutChanges="true"
