@@ -594,11 +594,17 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 return true;
             }
             case MSG_REGISTER_EVENT_LISTENER: {
-                eventListeners.add((Listener) msg.obj);
+                Listener listener = ((WeakReference<Listener>) msg.obj).get();
+                if (listener != null) {
+                    eventListeners.add(listener);
+                }
                 return true;
             }
             case MSG_UNREGISTER_EVENT_LISTENER: {
-                eventListeners.remove((Listener) msg.obj);
+                Listener listener = ((WeakReference<Listener>) msg.obj).get();
+                if (listener != null) {
+                    eventListeners.remove(listener);
+                }
                 return true;
             }
             case MSG_SWAP_PLAYER_DELEGATE: {
@@ -834,6 +840,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         abandonAudioFocus();
         releaseDelegateInternal();
         stopBackgroundThread();
+        unregisterAllEventListenersInternal();
     }
 
     public boolean isPlaying() {
@@ -1122,7 +1129,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * @param listener the listener.
      */
     public void registerEventListener(Listener listener) {
-        sendMessage(MSG_REGISTER_EVENT_LISTENER, listener);
+        sendMessage(MSG_REGISTER_EVENT_LISTENER, new WeakReference<>(listener));
     }
 
     /**
@@ -1131,7 +1138,11 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * @param listener the listener.
      */
     public void unregisterEventListener(Listener listener) {
-        sendMessage(MSG_UNREGISTER_EVENT_LISTENER, listener);
+        sendMessage(MSG_UNREGISTER_EVENT_LISTENER, new WeakReference<>(listener));
+    }
+
+    private void unregisterAllEventListenersInternal() {
+        eventListeners.clear();
     }
 
     /**
