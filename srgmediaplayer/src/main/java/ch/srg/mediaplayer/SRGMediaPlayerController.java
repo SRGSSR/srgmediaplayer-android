@@ -80,13 +80,14 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private static final int MSG_REGISTER_EVENT_LISTENER = 13;
     private static final int MSG_UNREGISTER_EVENT_LISTENER = 14;
     private static final int MSG_SWAP_PLAYER_DELEGATE = 15;
-    private static final int MSG_PLAYER_DELEGATE_PREPARING = 16;
-    private static final int MSG_PLAYER_DELEGATE_READY = 17;
-    private static final int MSG_PLAYER_DELEGATE_BUFFERING = 18;
-    private static final int MSG_PLAYER_DELEGATE_COMPLETED = 19;
-    private static final int MSG_DATA_PROVIDER_EXCEPTION = 20;
-    private static final int MSG_PERIODIC_UPDATE = 21;
-    private static final int MSG_FIRE_EVENT = 22;
+    private static final int MSG_PLAYER_DELEGATE_PREPARING = 101;
+    private static final int MSG_PLAYER_DELEGATE_READY = 102;
+    private static final int MSG_PLAYER_DELEGATE_BUFFERING = 103;
+    private static final int MSG_PLAYER_DELEGATE_COMPLETED = 104;
+    private static final int MSG_PLAYER_DELEGATE_PLAY_WHEN_READY_COMMITED = 105;
+    private static final int MSG_DATA_PROVIDER_EXCEPTION = 200;
+    private static final int MSG_PERIODIC_UPDATE = 300;
+    private static final int MSG_FIRE_EVENT = 400;
 
     public enum State {
         /**
@@ -633,6 +634,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 postEventInternal(Event.Type.MEDIA_COMPLETED);
                 releaseInternal();
                 return true;
+            case MSG_PLAYER_DELEGATE_PLAY_WHEN_READY_COMMITED:
+                postEventInternal(Event.Type.PLAYING_STATE_CHANGE);
+                return true;
             case MSG_PERIODIC_UPDATE:
                 periodicUpdateInteral();
                 if (isPlaying()) {
@@ -790,7 +794,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     public void onPlayerDelegatePlayWhenReadyCommited(PlayerDelegate delegate) {
         manageKeepScreenOnInternal();
         if (delegate == currentMediaPlayerDelegate) {
-            postEventInternal(Event.Type.PLAYING_STATE_CHANGE);
+            sendMessage(MSG_PLAYER_DELEGATE_PLAY_WHEN_READY_COMMITED);
         }
     }
 
