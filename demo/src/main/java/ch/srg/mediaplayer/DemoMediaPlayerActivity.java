@@ -130,7 +130,10 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
                 R.id.button_seek_one_hour,
                 R.id.button_seek_half_hour,
                 R.id.button_seek_one_minute,
-                R.id.button_seek_live
+                R.id.button_seek_live,
+                R.id.button_quality_adptative,
+                R.id.button_quality_hd,
+                R.id.button_quality_sd
         };
         for (int buttonId : buttonIds) {
             View button = findViewById(buttonId);
@@ -321,6 +324,15 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
                 break;
             case R.id.button_swap_player:
                 swapPlayer();
+                break;
+            case R.id.button_quality_adptative:
+                srgMediaPlayer.setQualityOverride(null);
+                break;
+            case R.id.button_quality_hd:
+                srgMediaPlayer.setQualityOverride(Long.MAX_VALUE);
+                break;
+            case R.id.button_quality_sd:
+                srgMediaPlayer.setQualityOverride(0L);
                 break;
         }
     }

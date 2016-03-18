@@ -315,4 +315,9 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
             currentState = state;
         }
     }
+
+    @Override
+    public void setQualityOverride(Long quality) {
+
+    }
 }

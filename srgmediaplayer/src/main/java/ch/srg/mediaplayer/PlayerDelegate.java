@@ -116,4 +116,10 @@ public interface PlayerDelegate {
 	boolean isRemote();
 
 	SRGMediaPlayerController.Event.ScreenType getScreenType();
+
+	/**
+	 * Force usage of a specific quality (when supported). Represented by bandwidth.
+	 * @param quality quality in bits/sec or null to disable
+     */
+	void setQualityOverride(Long quality);
 }

@@ -177,4 +177,9 @@ public class MockDelegate implements PlayerDelegate {
     public SRGMediaPlayerController.Event.ScreenType getScreenType() {
         return SRGMediaPlayerController.Event.ScreenType.NONE;
     }
+
+    @Override
+    public void setQualityOverride(Long quality) {
+
+    }
 }

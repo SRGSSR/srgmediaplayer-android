@@ -68,6 +68,9 @@ class ExoPlayerDelegate implements
         RendererBuilderCallback,
         BandwidthMeter.EventListener, StreamingDrmSessionManager.EventListener {
 
+    private HlsChunkSource hlsChunkSource;
+    private Long qualityOverride;
+
     @Override
     public void onAvailableRangeChanged(int i, TimeRange timeRange) {
 
@@ -223,6 +226,12 @@ class ExoPlayerDelegate implements
         exoPlayer.setSelectedTrack(TYPE_VIDEO, ExoPlayer.TRACK_DEFAULT);
         exoPlayer.setPlayWhenReady(true);
         exoPlayer.prepare(renderers);
+    }
+
+    @Override
+    public void onHlsChunkSource(HlsChunkSource chunkSource) {
+        this.hlsChunkSource = chunkSource;
+        hlsChunkSource.setBitrateEstimateOverride(qualityOverride);
     }
 
     @Override
@@ -545,5 +554,12 @@ class ExoPlayerDelegate implements
     }
 
 
+    @Override
+    public void setQualityOverride(Long quality) {
+        this.qualityOverride = quality;
+        if (hlsChunkSource != null) {
+            hlsChunkSource.setBitrateEstimateOverride(quality);
+        }
+    }
 }
 

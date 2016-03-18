@@ -97,6 +97,7 @@ public class HlsRendererBuilder implements RendererBuilder, ManifestCallback<Hls
         renderers[ExoPlayerDelegate.TYPE_VIDEO] = videoRenderer;
         renderers[ExoPlayerDelegate.TYPE_AUDIO] = audioRenderer;
         callback.onRenderers(renderers, bandwidthMeter);
+        callback.onHlsChunkSource(chunkSource);
     }
 
 }

@@ -361,4 +361,9 @@ public class NativePlayerDelegate implements
 	public SRGMediaPlayerController.Event.ScreenType getScreenType() {
 		return mediaPlayerView != null ? SRGMediaPlayerController.Event.ScreenType.DEFAULT : SRGMediaPlayerController.Event.ScreenType.NONE;
 	}
+
+	@Override
+	public void setQualityOverride(Long quality) {
+		// Ignored
+	}
 }

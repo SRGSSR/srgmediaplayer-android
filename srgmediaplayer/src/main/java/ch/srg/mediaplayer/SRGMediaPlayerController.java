@@ -34,7 +34,6 @@ import ch.srg.mediaplayer.internal.nativeplayer.NativePlayerDelegate;
  * actual players, like android.MediaPlayer or ExoPlayer
  */
 public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegateListener, Handler.Callback {
-
     public static final String TAG = "SRGMediaPlayer";
     public static final String NAME = "SRGMediaPlayer";
     public static final String VERSION = "0.0.2";
@@ -52,6 +51,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private boolean duckedBecauseTransientFocusLoss;
     private boolean pausedBecauseFocusLoss;
     private boolean mutedBecauseFocusLoss;
+    private Long qualityOverride;
 
     public static String getName() {
         return NAME;
@@ -687,6 +687,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     private void applyStateInternal() {
         if (currentMediaPlayerDelegate != null) {
+            currentMediaPlayerDelegate.setQualityOverride(qualityOverride);
             currentMediaPlayerDelegate.setMuted(muted);
             currentMediaPlayerDelegate.playIfReady(playWhenReady);
             Long seekTarget = this.seekToWhenReady;
@@ -1026,7 +1027,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
                         @Override
                         public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
-                            Log.v(TAG, renderingView + "binding, surfaceCreated" + mediaPlayerView);
+                            Log.v(TAG, renderingView + "binding, surfaceTextureAvailable" + mediaPlayerView);
                             if (currentMediaPlayerDelegate != null && isCurrent(surfaceTexture)) {
                                 try {
                                     currentMediaPlayerDelegate.bindRenderingViewInUiThread(mediaPlayerView);
@@ -1415,5 +1416,16 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      */
     public static void setOverlayAutoHideDelay(int overlayAutoHideDelay) {
         OverlayController.setOverlayAutoHideDelay(overlayAutoHideDelay);
+    }
+
+    /**
+     * Force usage of a specific quality (when supported). Represented by bandwidth.
+     * Can be 0 to force lowest quality or Integer.MAX for highest for instance.
+     *
+     * @param quality bandwidth quality in bits/sec or null to disable
+     */
+    public void setQualityOverride(Long quality) {
+        qualityOverride = quality;
+        sendMessage(MSG_APPLY_STATE);
     }
 }
