@@ -279,6 +279,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private String currentMediaUrl = null;
     private String tag;
 
+    //Main player property to handle multiple player view
+    private boolean mainPlayer = true;
+
     private int audioFocusBehaviorFlag = AUDIO_FOCUS_FLAG_PAUSE;
 
     /**
@@ -1380,6 +1383,14 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             return overlayController.isShowingControlOverlays();
         }
         return true;
+    }
+
+    public boolean isMainPlayer() {
+        return mainPlayer;
+    }
+
+    public void setMainPlayer(boolean mainPlayer) {
+        this.mainPlayer = mainPlayer;
     }
 
     /**
