@@ -1390,7 +1390,10 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     public void setMainPlayer(boolean mainPlayer) {
-        this.mainPlayer = mainPlayer;
+        if (this.mainPlayer != mainPlayer) {
+            this.mainPlayer = mainPlayer;
+            forceBroadcastStateChange();
+        }
     }
 
     /**
