@@ -325,6 +325,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private ServiceNotificationBuilder createNotificationBuilder() {
         String title;
+        String text;
         boolean live;
         PendingIntent pendingIntent;
         Bitmap mediaArtBitmap;
@@ -332,17 +333,19 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         String mediaIdentifier = getCurrentMediaIdentifier();
         if (serviceDataProvider != null && mediaIdentifier != null) {
             title = serviceDataProvider.getTitle(mediaIdentifier);
+            text = serviceDataProvider.getText(mediaIdentifier);
             live = serviceDataProvider.isLive(mediaIdentifier);
             pendingIntent = serviceDataProvider.getNotificationPendingIntent(mediaIdentifier);
             mediaArtBitmap = serviceDataProvider.getNotificationLargeIconBitmap(mediaIdentifier);
             smallIcon = serviceDataProvider.getNotificationSmallIconResourceId(mediaIdentifier);
         } else {
             title = null;
+            text = null;
             live = false;
             pendingIntent = null;
             mediaArtBitmap = null;
         }
-        return new ServiceNotificationBuilder(live, isPlaying(), title, pendingIntent, mediaArtBitmap, smallIcon);
+        return new ServiceNotificationBuilder(live, isPlaying(), title, text, pendingIntent, mediaArtBitmap, smallIcon);
     }
 
     private void startUpdates() {

@@ -52,4 +52,11 @@ public interface SRGMediaPlayerServiceMetaDataProvider {
      */
     @Nullable
     PendingIntent getNotificationPendingIntent(String mediaIdentifier);
+
+    /**
+     * Text to be displayed in notification
+     * @param mediaIdentifier media identifier
+     * @return user string
+     */
+    String getText(String mediaIdentifier);
 }

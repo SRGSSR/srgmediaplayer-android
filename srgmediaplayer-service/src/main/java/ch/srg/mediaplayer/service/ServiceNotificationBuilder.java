@@ -15,17 +15,19 @@ import android.text.TextUtils;
 import ch.srg.mediaplayer.service.utils.AppUtils;
 
 public class ServiceNotificationBuilder {
-    boolean live;
-    boolean playing;
-    String title;
-    PendingIntent pendingIntent;
+    private boolean live;
+    private boolean playing;
+    private String title;
+    private String text;
+    private PendingIntent pendingIntent;
     private Bitmap largeIcon;
     private int smallIcon;
 
-    public ServiceNotificationBuilder(boolean live, boolean playing, String title, PendingIntent pendingIntent, Bitmap notificationBitmap, @DrawableRes int smallIcon) {
+    public ServiceNotificationBuilder(boolean live, boolean playing, String title, String text, PendingIntent pendingIntent, Bitmap notificationBitmap, @DrawableRes int smallIcon) {
         this.live = live;
         this.playing = playing;
         this.title = title;
+        this.text = text;
         this.pendingIntent = pendingIntent;
         this.largeIcon = notificationBitmap;
         this.smallIcon = smallIcon;
@@ -40,7 +42,8 @@ public class ServiceNotificationBuilder {
 
         if (live != that.live) return false;
         if (playing != that.playing) return false;
-        if (title != null ? !title.equals(that.title) : that.title != null) return false;
+        if (!TextUtils.equals(title, that.title)) return false;
+        if (!TextUtils.equals(text, that.text)) return false;
         if (largeIcon != that.largeIcon) return false;
         if (smallIcon != that.smallIcon) return false;
         if (pendingIntent != null ? !pendingIntent.equals(that.pendingIntent) : that.pendingIntent != null)
@@ -81,10 +84,14 @@ public class ServiceNotificationBuilder {
         }
 
         builder.addAction(R.drawable.ic_stop_white_36dp, context.getString(R.string.service_notification_stop), piStop);
-        builder.setContentTitle(appName);
-
         if (!TextUtils.isEmpty(title)) {
-            builder.setContentText(title);
+            builder.setContentTitle(title);
+        } else {
+            builder.setContentTitle(appName);
+        }
+
+        if (!TextUtils.isEmpty(text)) {
+            builder.setContentText(text);
         }
 
         builder.setSmallIcon(smallIcon);
