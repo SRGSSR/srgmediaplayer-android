@@ -16,6 +16,7 @@
 
 package ch.srg.mediaplayer.extras.fullscreen.helper;
 
+import android.app.ActivityManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -197,6 +198,13 @@ public final class SystemUiHelper {
     private void removeQueuedRunnables() {
         // Ensure that any currently queued hide calls are removed
         mHandler.removeCallbacks(mHideRunnable);
+    }
+
+    public static void hideStatusIfMonkey(AppCompatActivity activity) {
+        if (ActivityManager.isUserAMonkey()) {
+            SystemUiHelper uiHelper = new SystemUiHelper(activity, SystemUiHelper.LEVEL_IMMERSIVE, SystemUiHelper.FLAG_IMMERSIVE_STICKY);
+            uiHelper.hide();
+        }
     }
 
     /**
