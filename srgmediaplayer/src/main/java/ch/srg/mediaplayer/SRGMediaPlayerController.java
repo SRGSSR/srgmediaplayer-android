@@ -432,10 +432,16 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         sendMessage(MSG_DATA_PROVIDER_EXCEPTION, e);
     }
 
+    /**
+     * Resume playing after a pause call or make the controller start immediately after the preparation phase.
+     */
     public void start() {
         sendMessage(MSG_SET_PLAY_WHEN_READY, true);
     }
 
+    /**
+     * Pause the current media or prevent it from starting immediately if controller in preparation phase.
+     */
     public void pause() {
         sendMessage(MSG_SET_PLAY_WHEN_READY, false);
     }
@@ -837,6 +843,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * if you want to play a new video.
      */
     public void release() {
+        if (debugMode && isBoundToMediaPlayerView()) {
+            throw new IllegalStateException("Releasing a player still bound to player view. Call unbindFromMediaPlayerView first");
+        }
         sendMessage(MSG_RELEASE);
     }
 
