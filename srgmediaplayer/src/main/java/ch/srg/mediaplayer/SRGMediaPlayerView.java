@@ -48,15 +48,24 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
     public static final String UNKNOWN_DIMENSION = "0x0";
     private boolean onTop;
     private boolean adjustToParentScrollView;
+    private boolean debugMode;
+
+    public boolean isDebugMode() {
+        return debugMode;
+    }
+
+    public void setDebugMode(boolean debugMode) {
+        this.debugMode = debugMode;
+    }
 
     /**
      * Interface definition for a callback to be invoked when touch event occurs.
      */
     public interface VideoTouchListener {
 
-        void onVideoRenderingViewTouched(SRGMediaPlayerView rtsMediaPlayerView);
+        void onVideoRenderingViewTouched(SRGMediaPlayerView srgMediaPlayerView);
 
-        void onVideoOverlayTouched(SRGMediaPlayerView rtsMediaPlayerView);
+        void onVideoOverlayTouched(SRGMediaPlayerView srgMediaPlayerView);
     }
 
     public enum ScaleMode {
@@ -316,7 +325,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
                 surfaceHeight = (int) Math.ceil(surfaceWidth / actualVideoAspectRatio);
             } else if (actualVideoAspectRatio < videoContainerAspectRatio) {
                 surfaceWidth = (int) Math.ceil(surfaceHeight * actualVideoAspectRatio);
-            } else {
+//            } else {
                 //Nothing values already set above
             }
 
@@ -362,7 +371,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
             int height = (int) (width / aspectRatio);
 
             int maxHeight;
-            maxHeight = specHeightMode == MeasureSpec.AT_MOST ? specHeight : Integer.MAX_VALUE;
+            maxHeight = specHeightMode == MeasureSpec.AT_MOST ? specHeight : MEASURED_SIZE_MASK;
             if (adjustToParentScrollView) {
                 maxHeight = Math.min(maxHeight, getParentScrollViewHeight());
             }
@@ -378,7 +387,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
             int width = (int) (height * aspectRatio);
 
             int maxWidth;
-            maxWidth = specWidthMode == MeasureSpec.AT_MOST ? specWidth : Integer.MAX_VALUE;
+            maxWidth = specWidthMode == MeasureSpec.AT_MOST ? specWidth : MEASURED_SIZE_MASK;
             if (adjustToParentScrollView) {
                 maxWidth = Math.min(maxWidth, getParentScrollViewWidth());
             }
@@ -390,9 +399,11 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
             }
             widthMeasureSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
         }
-        Log.v("AspectRatioLayout", String.format("meas. W:%d/%s, H:%d/%s -> %d,%d",
-                specWidth, modeName(specWidthMode), specHeight, modeName(specHeightMode),
-                MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec)));
+        if (isDebugMode()) {
+            Log.v(SRGMediaPlayerController.TAG, String.format("onMeasure W:%d/%s, H:%d/%s -> %d,%d",
+                    specWidth, modeName(specWidthMode), specHeight, modeName(specHeightMode),
+                    MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec)));
+        }
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
 
@@ -439,7 +450,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("RTSMediaPlayerView{");
+        final StringBuilder sb = new StringBuilder("SRGMediaPlayerView{");
         sb.append(", width=").append(getWidth());
         sb.append(", height=").append(getHeight());
         sb.append(", videoRenderingView=").append(videoRenderingView);
@@ -450,6 +461,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         sb.append(", onTop=").append(onTop);
         sb.append(", autoAspect=").append(autoAspect);
         sb.append(", actualVideoAspectRatio=").append(actualVideoAspectRatio);
+        sb.append(", context=").append(getContext());
         sb.append('}');
         return sb.toString();
     }

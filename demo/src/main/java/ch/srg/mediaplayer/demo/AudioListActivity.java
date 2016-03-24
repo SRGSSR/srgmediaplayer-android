@@ -205,11 +205,11 @@ public class AudioListActivity extends Activity implements View.OnClickListener 
 
         audioStatusReceiver = new AudioStatusReceiver();
         audioStatusReceiver.register(this);
+        audioStatusReceiver.requestBroadcastStatus(this);
     }
 
 
     private class AudioStatusReceiver extends BroadcastReceiver {
-
         public void register(Context context) {
             Log.d("Demo", "registering broadcast receiver");
             LocalBroadcastManager.getInstance(context).registerReceiver(this, new IntentFilter(MediaPlayerService.ACTION_BROADCAST_STATUS));
@@ -225,6 +225,12 @@ public class AudioListActivity extends Activity implements View.OnClickListener 
             if (bundle != null) {
                 logAudioBundle(bundle);
             }
+        }
+
+        public void requestBroadcastStatus(Context context) {
+            Intent intent = new Intent(context, MediaPlayerService.class);
+            intent.setAction(MediaPlayerService.ACTION_BROADCAST_STATUS);
+            context.startService(intent);
         }
     }
 

@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               xmlns:tools="http://schemas.android.com/tools"
               android:layout_width="match_parent"
-              android:layout_height="wrap_content"
+              android:layout_height="@dimen/segment_player_control_button_size"
               android:divider="@drawable/simple_vertical_divider"
               android:gravity="center_vertical"
               android:paddingLeft="8dp"
@@ -43,23 +43,25 @@
         android:id="@+id/segment_player_control_time_left"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="--:--"
+        android:text="@string/time_pending"
         android:textColor="#ffffff"
-        android:textSize="10dp"/>
+        android:textSize="10sp"
+        tools:ignore="SmallSp" />
 
     <SeekBar
         android:id="@+id/segment_player_control_seekbar"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_weight="1"/>
 
     <TextView
         android:id="@+id/segment_player_control_time_right"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="--:--"
+        android:text="@string/time_pending"
         android:textColor="#ffffff"
-        android:textSize="10dp"/>
+        android:textSize="10sp"
+        tools:ignore="SmallSp" />
 
     <Button
         android:id="@+id/segment_player_control_button_fullscreen"

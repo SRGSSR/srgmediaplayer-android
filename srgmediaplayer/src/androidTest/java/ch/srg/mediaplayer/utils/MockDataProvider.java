@@ -1,6 +1,7 @@
 package ch.srg.mediaplayer.utils;
 
 import android.net.Uri;
+import android.support.annotation.NonNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -43,7 +44,7 @@ public class MockDataProvider implements SRGMediaPlayerDataProvider {
     }
 
     @Override
-    public int getMediaType(String mediaIdentifier) throws SRGMediaPlayerException {
+    public int getMediaType(@NonNull String mediaIdentifier) throws SRGMediaPlayerException {
         return 0;
     }
 

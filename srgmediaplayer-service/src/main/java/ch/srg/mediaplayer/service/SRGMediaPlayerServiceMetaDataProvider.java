@@ -1,6 +1,8 @@
 package ch.srg.mediaplayer.service;
 
 import android.app.PendingIntent;
+import android.graphics.Bitmap;
+import android.support.annotation.DrawableRes;
 import android.support.annotation.Nullable;
 
 /**
@@ -15,19 +17,28 @@ public interface SRGMediaPlayerServiceMetaDataProvider {
     String getTitle(String mediaIdentifier);
 
     /**
-     * Title to be displayed in notification
+     * Duration to be displayed in media session (displayed by chrome cast for instance)
      * @param mediaIdentifier media identifier
      * @return user string
      */
     Long getDuration(String mediaIdentifier);
 
     /**
-     * Notification resource Id.
+     * Notification small resource Id.
      *
      * @param mediaIdentifier media identifier
      * @return drawable id to be displayed in service notification
      */
-    int getNotificationIconResourceId(String mediaIdentifier);
+    @DrawableRes
+    int getNotificationSmallIconResourceId(String mediaIdentifier);
+
+    /**
+     * Notification large resource Id.
+     *
+     * @param mediaIdentifier media identifier
+     * @return bitmap to be displayed in service notification or null if not application (and small icon to be displayed)
+     */
+    Bitmap getNotificationLargeIconBitmap(String mediaIdentifier);
 
     /**
      * @param mediaIdentifier media identifier
@@ -42,5 +53,10 @@ public interface SRGMediaPlayerServiceMetaDataProvider {
     @Nullable
     PendingIntent getNotificationPendingIntent(String mediaIdentifier);
 
-    String getMediaImageUri(String mediaIdentifier);
+    /**
+     * Text to be displayed in notification
+     * @param mediaIdentifier media identifier
+     * @return user string
+     */
+    String getText(String mediaIdentifier);
 }

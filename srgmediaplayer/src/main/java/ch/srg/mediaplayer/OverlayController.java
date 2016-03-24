@@ -23,8 +23,9 @@ import android.view.ViewGroup;
  */
 /*package*/ class OverlayController implements SRGMediaPlayerView.VideoTouchListener, SRGMediaPlayerController.Listener {
 
-    public static final int OVERLAY_AUTO_HIDE_DELAY = 3000;
     private static final String TAG = SRGMediaPlayerController.TAG;
+
+    public static int overlayAutoHideDelay = 3000;
 
     private SRGMediaPlayerView videoContainer;
     private SRGMediaPlayerController playerController;
@@ -83,7 +84,7 @@ import android.view.ViewGroup;
      * Bind the SRGMediaPlayerView touch event to the overlayController for handle touch and switch
      * visibility of views if necessary.
      *
-     * @param videoContainer
+     * @param videoContainer video container to bind to
      */
     public void bindToVideoContainer(SRGMediaPlayerView videoContainer) {
         if (videoContainer == this.videoContainer) {
@@ -187,7 +188,7 @@ import android.view.ViewGroup;
         if (now > lastOverlayPostponingTime + 250) {
             lastOverlayPostponingTime = now;
             handler.removeCallbacks(hideOverlaysRunnable);
-            handler.postDelayed(hideOverlaysRunnable, OVERLAY_AUTO_HIDE_DELAY);
+            handler.postDelayed(hideOverlaysRunnable, overlayAutoHideDelay);
         }
     }
 
@@ -236,5 +237,14 @@ import android.view.ViewGroup;
 
     public boolean isShowingControlOverlays() {
         return showingControlOverlays;
+    }
+
+    /**
+     * Configure auto hide delay (delay to change visibility for overlay of OVERLAY_CONTROL type)
+     *
+     * @param overlayAutoHideDelay auto hide delay in ms
+     */
+    public static void setOverlayAutoHideDelay(int overlayAutoHideDelay) {
+        OverlayController.overlayAutoHideDelay = overlayAutoHideDelay;
     }
 }

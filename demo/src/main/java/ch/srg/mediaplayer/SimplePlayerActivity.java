@@ -65,8 +65,6 @@ public class SimplePlayerActivity extends AppCompatActivity implements
             }
         }
 
-        srgMediaPlayer.bindToMediaPlayerView(playerView);
-
         srgMediaPlayer.registerEventListener(this);
 
         if (playerControlView != null) {

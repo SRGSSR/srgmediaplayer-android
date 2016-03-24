@@ -34,7 +34,6 @@ import ch.srg.mediaplayer.internal.nativeplayer.NativePlayerDelegate;
  * actual players, like android.MediaPlayer or ExoPlayer
  */
 public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegateListener, Handler.Callback {
-
     public static final String TAG = "SRGMediaPlayer";
     public static final String NAME = "SRGMediaPlayer";
     public static final String VERSION = "0.0.2";
@@ -52,6 +51,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private boolean duckedBecauseTransientFocusLoss;
     private boolean pausedBecauseFocusLoss;
     private boolean mutedBecauseFocusLoss;
+    private Long qualityOverride;
 
     public static String getName() {
         return NAME;
@@ -63,12 +63,13 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     public static final long UNKNOWN_TIME = PlayerDelegate.UNKNOWN_TIME;
 
+    public static final int AUDIO_FOCUS_FLAG_DISABLED = 0;
     public static final int AUDIO_FOCUS_FLAG_MUTE = 1;
-
     public static final int AUDIO_FOCUS_FLAG_PAUSE = 2;
-    private static final int MSG_PREPARE_FOR_MEDIA_IDENTIFIER = 3;
     public static final int AUDIO_FOCUS_FLAG_DUCK = 4;
     public static final int AUDIO_FOCUS_FLAG_AUTO_RESTART = 8;
+
+    private static final int MSG_PREPARE_FOR_MEDIA_IDENTIFIER = 3;
 
     private static final int MSG_PREPARE_FOR_URI = 4;
     private static final int MSG_SET_PLAY_WHEN_READY = 5;
@@ -80,13 +81,14 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private static final int MSG_REGISTER_EVENT_LISTENER = 13;
     private static final int MSG_UNREGISTER_EVENT_LISTENER = 14;
     private static final int MSG_SWAP_PLAYER_DELEGATE = 15;
-    private static final int MSG_PLAYER_DELEGATE_PREPARING = 16;
-    private static final int MSG_PLAYER_DELEGATE_READY = 17;
-    private static final int MSG_PLAYER_DELEGATE_BUFFERING = 18;
-    private static final int MSG_PLAYER_DELEGATE_COMPLETED = 19;
-    private static final int MSG_DATA_PROVIDER_EXCEPTION = 20;
-    private static final int MSG_PERIODIC_UPDATE = 21;
-    private static final int MSG_FIRE_EVENT = 22;
+    private static final int MSG_PLAYER_DELEGATE_PREPARING = 101;
+    private static final int MSG_PLAYER_DELEGATE_READY = 102;
+    private static final int MSG_PLAYER_DELEGATE_BUFFERING = 103;
+    private static final int MSG_PLAYER_DELEGATE_COMPLETED = 104;
+    private static final int MSG_PLAYER_DELEGATE_PLAY_WHEN_READY_COMMITED = 105;
+    private static final int MSG_DATA_PROVIDER_EXCEPTION = 200;
+    private static final int MSG_PERIODIC_UPDATE = 300;
+    private static final int MSG_FIRE_EVENT = 400;
 
     public enum State {
         /**
@@ -138,6 +140,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
             EXTERNAL_EVENT;
         }
+
         public final Type type;
 
         public final String mediaIdentifier;
@@ -275,6 +278,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     private String currentMediaUrl = null;
     private String tag;
+
+    //Main player property to handle multiple player view
+    private boolean mainPlayer = true;
 
     private int audioFocusBehaviorFlag = AUDIO_FOCUS_FLAG_PAUSE;
 
@@ -426,10 +432,16 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         sendMessage(MSG_DATA_PROVIDER_EXCEPTION, e);
     }
 
+    /**
+     * Resume playing after a pause call or make the controller start immediately after the preparation phase.
+     */
     public void start() {
         sendMessage(MSG_SET_PLAY_WHEN_READY, true);
     }
 
+    /**
+     * Pause the current media or prevent it from starting immediately if controller in preparation phase.
+     */
     public void pause() {
         sendMessage(MSG_SET_PLAY_WHEN_READY, false);
     }
@@ -444,7 +456,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * <p>
      * When playing a live stream, a value of 0 represents the live most position.
      * A value of 1..duration represents the relative position in the live stream.
-     *</p>
+     * </p>
+     *
      * @param positionMs position in ms
      * @throws IllegalStateException player error
      */
@@ -591,11 +604,17 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 return true;
             }
             case MSG_REGISTER_EVENT_LISTENER: {
-                eventListeners.add((Listener) msg.obj);
+                Listener listener = ((WeakReference<Listener>) msg.obj).get();
+                if (listener != null) {
+                    eventListeners.add(listener);
+                }
                 return true;
             }
             case MSG_UNREGISTER_EVENT_LISTENER: {
-                eventListeners.remove((Listener) msg.obj);
+                Listener listener = ((WeakReference<Listener>) msg.obj).get();
+                if (listener != null) {
+                    eventListeners.remove(listener);
+                }
                 return true;
             }
             case MSG_SWAP_PLAYER_DELEGATE: {
@@ -630,6 +649,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 setStateInternal(State.READY);
                 postEventInternal(Event.Type.MEDIA_COMPLETED);
                 releaseInternal();
+                return true;
+            case MSG_PLAYER_DELEGATE_PLAY_WHEN_READY_COMMITED:
+                postEventInternal(Event.Type.PLAYING_STATE_CHANGE);
                 return true;
             case MSG_PERIODIC_UPDATE:
                 periodicUpdateInteral();
@@ -674,6 +696,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     private void applyStateInternal() {
         if (currentMediaPlayerDelegate != null) {
+            currentMediaPlayerDelegate.setQualityOverride(qualityOverride);
             currentMediaPlayerDelegate.setMuted(muted);
             currentMediaPlayerDelegate.playIfReady(playWhenReady);
             Long seekTarget = this.seekToWhenReady;
@@ -788,7 +811,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     public void onPlayerDelegatePlayWhenReadyCommited(PlayerDelegate delegate) {
         manageKeepScreenOnInternal();
         if (delegate == currentMediaPlayerDelegate) {
-            postEventInternal(Event.Type.PLAYING_STATE_CHANGE);
+            sendMessage(MSG_PLAYER_DELEGATE_PLAY_WHEN_READY_COMMITED);
         }
     }
 
@@ -820,6 +843,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * if you want to play a new video.
      */
     public void release() {
+        if (debugMode && isBoundToMediaPlayerView()) {
+            throw new IllegalStateException("Releasing a player still bound to player view. Call unbindFromMediaPlayerView first");
+        }
         sendMessage(MSG_RELEASE);
     }
 
@@ -828,6 +854,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         abandonAudioFocus();
         releaseDelegateInternal();
         stopBackgroundThread();
+        unregisterAllEventListenersInternal();
     }
 
     public boolean isPlaying() {
@@ -843,7 +870,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     /**
-     *
      * @return media position relative to MPST (see {@link #getMediaPlaylistStartTime} )
      */
     public long getMediaPosition() {
@@ -859,7 +885,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     /**
-     *
      * @return Media duration relative to 0.
      */
     public long getMediaDuration() {
@@ -874,12 +899,12 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * Media playlist start time (MPST) is a relative offset for the available seekable range,
      * used in sliding window live playlist.
      * The range [0..MPST] is not available for seeking.
-     *
+     * <p/>
      * <pre>
      * 0 --------------- MPST --------- POSITION ------------------------------------- LIVE
      *                    \---------------------------DURATION---------------------------/
      * </pre>
-     *
+     * <p/>
      * MPST stays constant with a value of 0 when playing a static video.
      *
      * @return MPST in ms
@@ -940,14 +965,22 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * Attach a MediaPlayerView to the controller.
      * Also ink the overlayController to the MediaPlayerView.
      *
-     * @param newMediaPlayerView
+     * @param newView player view
+     * @throws IllegalStateException if a player view is already attached to this controller
      */
-    public void bindToMediaPlayerView(SRGMediaPlayerView newMediaPlayerView) {
-        if (mediaPlayerView != null && mediaPlayerView != newMediaPlayerView) {
-            //TODO handle previous linkage
+    public void bindToMediaPlayerView(SRGMediaPlayerView newView) {
+        if (mediaPlayerView != null) {
+            if (mediaPlayerView == newView) {
+                throw new IllegalStateException("Controller already bound to this same player view");
+            } else {
+                throw new IllegalStateException("Controller already bound to player view: "
+                        + mediaPlayerView
+                        + " when trying to connect to "
+                        + newView);
+            }
         }
 
-        mediaPlayerView = newMediaPlayerView;
+        mediaPlayerView = newView;
         internalUpdateMediaPlayerViewBound();
         overlayController.bindToVideoContainer(this.mediaPlayerView);
         manageKeepScreenOnInternal();
@@ -997,40 +1030,42 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     });
                 } else if (renderingView instanceof TextureView) {
                     TextureView textureView = (TextureView) renderingView;
-                        textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
-                            public boolean isCurrent(SurfaceTexture surfaceTexture) {
-                                return renderingView instanceof TextureView && ((TextureView) renderingView).getSurfaceTexture() == surfaceTexture;
-                            }
+                    textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+                        @SuppressWarnings("ConstantConditions")
+                        // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
+                        public boolean isCurrent(SurfaceTexture surfaceTexture) {
+                            return renderingView instanceof TextureView && ((TextureView) renderingView).getSurfaceTexture() == surfaceTexture;
+                        }
 
-                            @Override
-                            public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
-                                Log.v(TAG, renderingView + "binding, surfaceCreated" + mediaPlayerView);
-                                if (currentMediaPlayerDelegate != null && isCurrent(surfaceTexture)) {
-                                    try {
-                                        currentMediaPlayerDelegate.bindRenderingViewInUiThread(mediaPlayerView);
-                                    } catch (SRGMediaPlayerException e) {
-                                        Log.d(TAG, "Error binding view", e);
-                                    }
+                        @Override
+                        public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
+                            Log.v(TAG, renderingView + "binding, surfaceTextureAvailable" + mediaPlayerView);
+                            if (currentMediaPlayerDelegate != null && isCurrent(surfaceTexture)) {
+                                try {
+                                    currentMediaPlayerDelegate.bindRenderingViewInUiThread(mediaPlayerView);
+                                } catch (SRGMediaPlayerException e) {
+                                    Log.d(TAG, "Error binding view", e);
                                 }
                             }
+                        }
 
-                            @Override
-                            public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
-                                // TODO
-                            }
+                        @Override
+                        public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
+                            // TODO
+                        }
 
-                            @Override
-                            public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
-                                return false;
-                            }
+                        @Override
+                        public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
+                            return false;
+                        }
 
-                            @Override
-                            public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
+                        @Override
+                        public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
 
-                            }
-                        });
+                        }
+                    });
 
-                    } else {
+                } else {
                     Log.v(TAG, renderingView + "binding, attaching rendering view" + mediaPlayerView);
 
                     renderingView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
@@ -1115,7 +1150,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * @param listener the listener.
      */
     public void registerEventListener(Listener listener) {
-        sendMessage(MSG_REGISTER_EVENT_LISTENER, listener);
+        sendMessage(MSG_REGISTER_EVENT_LISTENER, new WeakReference<>(listener));
     }
 
     /**
@@ -1124,7 +1159,11 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * @param listener the listener.
      */
     public void unregisterEventListener(Listener listener) {
-        sendMessage(MSG_UNREGISTER_EVENT_LISTENER, listener);
+        sendMessage(MSG_UNREGISTER_EVENT_LISTENER, new WeakReference<>(listener));
+    }
+
+    private void unregisterAllEventListenersInternal() {
+        eventListeners.clear();
     }
 
     /**
@@ -1226,7 +1265,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             // TODO Handle ducked volume or something
             unmute();
         }
-        if (pausedBecauseFocusLoss  && ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_AUTO_RESTART) != 0 || pausedBecauseTransientFocusLoss)) {
+        if (pausedBecauseFocusLoss && ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_AUTO_RESTART) != 0 || pausedBecauseTransientFocusLoss)) {
             start();
         }
         if (mutedBecauseFocusLoss) {
@@ -1355,10 +1394,21 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         return true;
     }
 
+    public boolean isMainPlayer() {
+        return mainPlayer;
+    }
+
+    public void setMainPlayer(boolean mainPlayer) {
+        if (this.mainPlayer != mainPlayer) {
+            this.mainPlayer = mainPlayer;
+            forceBroadcastStateChange();
+        }
+    }
+
     /**
      * Change the player delegate for another one. The currently playing stream will be stopped on the old
      * player delegate and resumed with the new one.
-     *
+     * <p/>
      * Warning this only impacts the current stream.
      *
      * @param playerDelegate player delegate or null to use the default one (using current delegate factory)
@@ -1380,5 +1430,25 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     public void forceBroadcastStateChange() {
         broadcastEvent(Event.buildStateEvent(this));
+    }
+
+    /**
+     * Configure auto hide delay (delay to change visibility for overlay of OVERLAY_CONTROL type)
+     *
+     * @param overlayAutoHideDelay auto hide delay in ms
+     */
+    public static void setOverlayAutoHideDelay(int overlayAutoHideDelay) {
+        OverlayController.setOverlayAutoHideDelay(overlayAutoHideDelay);
+    }
+
+    /**
+     * Force usage of a specific quality (when supported). Represented by bandwidth.
+     * Can be 0 to force lowest quality or Integer.MAX for highest for instance.
+     *
+     * @param quality bandwidth quality in bits/sec or null to disable
+     */
+    public void setQualityOverride(Long quality) {
+        qualityOverride = quality;
+        sendMessage(MSG_APPLY_STATE);
     }
 }

@@ -11,6 +11,6 @@ identifier.
 
 == Gradle ==
 Use the following imports in your application
-compile 'com.google.android.gms:play-services-cast:8.3.0'
-compile 'com.android.support:mediarouter-v7:23.1.1'
-compile 'com.android.support:appcompat-v7:23.1.1'
+compile 'com.google.android.gms:play-services-cast:8.4.0'
+compile 'com.android.support:mediarouter-v7:23.2.0'
+compile 'com.android.support:appcompat-v7:23.2.0'

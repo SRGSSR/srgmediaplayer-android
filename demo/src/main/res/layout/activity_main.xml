@@ -75,6 +75,14 @@
                 android:drawableStart="@drawable/ic_action_videocam"
                 android:text="Videos: Simple Activity"
                 android:textColor="#60e060" />
+
+            <Button
+                android:id="@+id/demo_multi_live"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:drawableStart="@drawable/ic_action_videocam"
+                android:text="Multi Live"
+                android:textColor="#60e060" />
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

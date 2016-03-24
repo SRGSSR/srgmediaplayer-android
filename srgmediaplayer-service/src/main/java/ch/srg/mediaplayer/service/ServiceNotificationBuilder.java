@@ -5,26 +5,32 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.support.annotation.DrawableRes;
+import android.support.annotation.NonNull;
+import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v7.app.NotificationCompat;
-
 import android.text.TextUtils;
 
 import ch.srg.mediaplayer.service.utils.AppUtils;
 
 public class ServiceNotificationBuilder {
-    boolean live;
-    boolean playing;
-    String title;
-    PendingIntent pendingIntent;
-    private Bitmap notificationBitmap;
+    private boolean live;
+    private boolean playing;
+    private String title;
+    private String text;
+    private PendingIntent pendingIntent;
+    private Bitmap largeIcon;
+    private int smallIcon;
 
-    public ServiceNotificationBuilder(boolean live, boolean playing, String title, PendingIntent pendingIntent, Bitmap notificationBitmap) {
+    public ServiceNotificationBuilder(boolean live, boolean playing, String title, String text, PendingIntent pendingIntent, Bitmap notificationBitmap, @DrawableRes int smallIcon) {
         this.live = live;
         this.playing = playing;
         this.title = title;
+        this.text = text;
         this.pendingIntent = pendingIntent;
-        this.notificationBitmap = notificationBitmap;
+        this.largeIcon = notificationBitmap;
+        this.smallIcon = smallIcon;
     }
 
     @Override
@@ -36,15 +42,18 @@ public class ServiceNotificationBuilder {
 
         if (live != that.live) return false;
         if (playing != that.playing) return false;
-        if (title != null ? !title.equals(that.title) : that.title != null) return false;
-        if (notificationBitmap != that.notificationBitmap) return false;
-        if (pendingIntent != null ? !pendingIntent.equals(that.pendingIntent) : that.pendingIntent != null) return false;
+        if (!TextUtils.equals(title, that.title)) return false;
+        if (!TextUtils.equals(text, that.text)) return false;
+        if (largeIcon != that.largeIcon) return false;
+        if (smallIcon != that.smallIcon) return false;
+        if (pendingIntent != null ? !pendingIntent.equals(that.pendingIntent) : that.pendingIntent != null)
+            return false;
 
         return true;
 
     }
 
-    public Notification buildNotification(Context context, MediaSessionCompat mediaSessionCompat) {
+    public Notification buildNotification(Context context, @NonNull MediaSessionCompat mediaSessionCompat) {
         Intent pauseIntent = new Intent(context, MediaPlayerService.class);
         pauseIntent.setAction(playing ? MediaPlayerService.ACTION_PAUSE : MediaPlayerService.ACTION_RESUME);
         pauseIntent.putExtra(MediaPlayerService.ARG_FROM_NOTIFICATION, true);
@@ -75,20 +84,35 @@ public class ServiceNotificationBuilder {
         }
 
         builder.addAction(R.drawable.ic_stop_white_36dp, context.getString(R.string.service_notification_stop), piStop);
-        builder.setContentTitle(appName);
-
         if (!TextUtils.isEmpty(title)) {
-            builder.setContentText(title);
+            builder.setContentTitle(title);
+        } else {
+            builder.setContentTitle(appName);
         }
 
-        builder.setSmallIcon(R.drawable.ic_play_arrow_white_24dp);
-        if (notificationBitmap != null) {
-            builder.setLargeIcon(notificationBitmap);
+        if (!TextUtils.isEmpty(text)) {
+            builder.setContentText(text);
+        }
+
+        builder.setSmallIcon(smallIcon);
+        if (largeIcon != null) {
+            builder.setLargeIcon(largeIcon);
+            setLargeIconInMediaSession(mediaSessionCompat);
         }
 
         builder.setOngoing(true);
 
         return builder.build();
+    }
+
+    private void setLargeIconInMediaSession(@NonNull MediaSessionCompat mediaSessionCompat) {
+        MediaMetadataCompat currentMetadata = mediaSessionCompat.getController().getMetadata();
+        MediaMetadataCompat.Builder newBuilder = currentMetadata == null
+                ? new MediaMetadataCompat.Builder()
+                : new MediaMetadataCompat.Builder(currentMetadata);
+        mediaSessionCompat.setMetadata(newBuilder
+                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, largeIcon)
+                .build());
     }
 
 }

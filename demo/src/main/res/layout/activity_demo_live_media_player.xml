@@ -102,11 +102,41 @@
             android:text="live"/>
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/group_quality_buttons"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/group_seek_buttons"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/button_quality_adptative"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Adapt"/>
+
+        <Button
+            android:id="@+id/button_quality_sd"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="SD"/>
+
+        <Button
+            android:id="@+id/button_quality_hd"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="HD"/>
+
+    </LinearLayout>
+
     <TextView
         android:id="@+id/status_label"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/group_seek_buttons"
+        android:layout_below="@+id/group_quality_buttons"
         android:lines="2"
         android:text="Status"
         android:textAppearance="?android:attr/textAppearanceSmall"/>

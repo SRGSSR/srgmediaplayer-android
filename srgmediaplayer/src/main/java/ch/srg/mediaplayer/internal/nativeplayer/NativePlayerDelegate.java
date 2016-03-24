@@ -9,6 +9,7 @@ import android.view.SurfaceView;
 import android.view.View;
 
 import java.util.HashMap;
+import java.util.Locale;
 
 import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
@@ -43,7 +44,6 @@ public class NativePlayerDelegate implements
 	private int videoSourceHeight = 0;
 
 	private SRGMediaPlayerView mediaPlayerView;
-	private SurfaceView surfaceView;
 
 	private OnPlayerDelegateListener controller;
 
@@ -203,7 +203,7 @@ public class NativePlayerDelegate implements
 		if (mediaPlayerView == null || !canRenderInView(mediaPlayerView.getVideoRenderingView())) {
 			throw new SRGMediaPlayerException("NativePlayerDelegate can render video in a " + mediaPlayerView);
 		}
-		surfaceView = (SurfaceView) mediaPlayerView.getVideoRenderingView();
+		SurfaceView surfaceView = (SurfaceView) mediaPlayerView.getVideoRenderingView();
 		if (surfaceView != null && surfaceView.getHolder() != null) {
 			try {
 				nativeMp.setDisplay(surfaceView.getHolder());
@@ -228,7 +228,7 @@ public class NativePlayerDelegate implements
 	}
 
 	private void recomputeVideoContainerConstrains() {
-		if (mediaPlayerView == null || surfaceView == null) {
+		if (mediaPlayerView == null) {
 			return; //nothing to do now.
 		}
 		if (Float.isNaN(videoSourceAspectRatio) || Float.isInfinite(videoSourceAspectRatio)) {
@@ -338,7 +338,7 @@ public class NativePlayerDelegate implements
 		}
 
 		private static String toMessage(int what, int extra) {
-			return String.format("Native player error: %d / %d", what, extra);
+			return String.format(Locale.US, "Native player error: %d / %d", what, extra);
 		}
 	}
 
@@ -359,6 +359,11 @@ public class NativePlayerDelegate implements
 
 	@Override
 	public SRGMediaPlayerController.Event.ScreenType getScreenType() {
-		return surfaceView != null ? SRGMediaPlayerController.Event.ScreenType.DEFAULT : SRGMediaPlayerController.Event.ScreenType.NONE;
+		return mediaPlayerView != null ? SRGMediaPlayerController.Event.ScreenType.DEFAULT : SRGMediaPlayerController.Event.ScreenType.NONE;
+	}
+
+	@Override
+	public void setQualityOverride(Long quality) {
+		// Ignored
 	}
 }

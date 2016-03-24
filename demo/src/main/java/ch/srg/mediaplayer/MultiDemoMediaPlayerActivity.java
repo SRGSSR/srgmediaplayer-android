@@ -4,49 +4,69 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.ActionBarActivity;
 import android.view.View;
+import android.view.ViewGroup;
 
 import ch.srg.mediaplayer.demo.DemoApplication;
 import ch.srg.mediaplayer.demo.R;
 
 public class MultiDemoMediaPlayerActivity extends ActionBarActivity implements
-		View.OnClickListener,
 		SRGMediaPlayerView.VideoTouchListener,
 		SRGMediaPlayerController.Listener {
 
 	public static final String PLAYER_TAG = "main";
-	private SRGMediaPlayerDataProvider dataProvider = new DummyDataProvider();
 
-	private SRGMediaPlayerController rtsMediaPlayer1;
-	private SRGMediaPlayerController rtsMediaPlayer2;
-	private SRGMediaPlayerController rtsMediaPlayer3;
+	private SRGMediaPlayerController mediaPlayers[];
 
-	private SRGMediaPlayerController rtsMediaPlayerBoundToTop;
-	private SRGMediaPlayerController rtsMediaPlayerBoundToBotLeft;
-	private SRGMediaPlayerController rtsMediaPlayerBoundToBotRight;
-
-	private SRGMediaPlayerView SRGMediaPlayerViewTop;
-	private SRGMediaPlayerView SRGMediaPlayerViewBottomLeft;
-	private SRGMediaPlayerView SRGMediaPlayerViewBottomRight;
+	private SRGMediaPlayerView views[];
+	private ViewGroup parentView;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_multi_demo_media_player);
 
-		SRGMediaPlayerViewTop = (SRGMediaPlayerView) findViewById(R.id.multi_video_view_top);
-		SRGMediaPlayerViewBottomLeft = (SRGMediaPlayerView) findViewById(R.id.multi_video_view_bottom_left);
-		SRGMediaPlayerViewBottomRight = (SRGMediaPlayerView) findViewById(R.id.multi_video_view_bottom_right);
+		views = new SRGMediaPlayerView[3];
+		views[0] = (SRGMediaPlayerView) findViewById(R.id.multi_video_view_top);
+		views[1] = (SRGMediaPlayerView) findViewById(R.id.multi_video_view_bottom_left);
+		views[2] = (SRGMediaPlayerView) findViewById(R.id.multi_video_view_bottom_right);
 
-		rtsMediaPlayer1 = createPlayerController();
-		rtsMediaPlayer2 = createPlayerController();
-		rtsMediaPlayer3 = createPlayerController();
+		parentView = (ViewGroup) findViewById(R.id.parent);
 
+		findViewById(R.id.button_1).setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				selectPlayer(0);
+			}
+		});
+		findViewById(R.id.button_2).setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				selectPlayer(1);
+			}
+		});
+		findViewById(R.id.button_3).setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				selectPlayer(2);
+			}
+		});
+		mediaPlayers = new SRGMediaPlayerController[3];
+		for (int i = 0; i < mediaPlayers.length; i++) {
+			mediaPlayers[i] = createPlayerController();
+		}
+
+		startAll();
+	}
+
+	private void startAll() {
+		for (int i = 0; i < mediaPlayers.length; i++) {
+			startPlayer(i);
+		}
+	}
+
+	private void startPlayer(int i) {
 		try {
-			rtsMediaPlayer1.play("MULTI1");
-			rtsMediaPlayer2.play("MULTI2");
-			rtsMediaPlayer2.mute();
-			rtsMediaPlayer3.play("MULTI4");
-			rtsMediaPlayer3.mute();
+			mediaPlayers[i].play("dummy:MULTI" + (i + 1));
 		} catch (SRGMediaPlayerException e) {
 			throw new RuntimeException(e);
 		}
@@ -54,25 +74,37 @@ public class MultiDemoMediaPlayerActivity extends ActionBarActivity implements
 
 	@NonNull
 	private SRGMediaPlayerController createPlayerController() {
-		SRGMediaPlayerController srgMediaPlayerController = new SRGMediaPlayerController(this, dataProvider, PLAYER_TAG);
-		srgMediaPlayerController.setDebugMode(true);
-		srgMediaPlayerController.setPlayerDelegateFactory(((DemoApplication) getApplication()).getPlayerDelegateFactory());
-		return srgMediaPlayerController;
+		SRGMediaPlayerController mp = new SRGMediaPlayerController(this, DemoApplication.multiDataProvider, PLAYER_TAG);
+		mp.setDebugMode(true);
+		mp.setPlayerDelegateFactory(((DemoApplication) getApplication()).getPlayerDelegateFactory());
+		mp.setAudioFocusBehaviorFlag(SRGMediaPlayerController.AUDIO_FOCUS_FLAG_DISABLED);
+
+		return mp;
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
-		rtsMediaPlayer1.bindToMediaPlayerView(SRGMediaPlayerViewTop);
-		rtsMediaPlayerBoundToTop = rtsMediaPlayer1;
-		rtsMediaPlayer2.bindToMediaPlayerView(SRGMediaPlayerViewBottomLeft);
-		rtsMediaPlayerBoundToBotLeft = rtsMediaPlayer2;
-		rtsMediaPlayer3.bindToMediaPlayerView(SRGMediaPlayerViewBottomRight);
-		rtsMediaPlayerBoundToBotRight = rtsMediaPlayer3;
+		int top = 0;
+		bindPlayers(top);
+		selectPlayer(0);
+	}
 
-		SRGMediaPlayerViewTop.setVideoTouchListener(this);
-		SRGMediaPlayerViewBottomLeft.setVideoTouchListener(this);
-		SRGMediaPlayerViewBottomRight.setVideoTouchListener(this);
+	private void bindPlayers(int top) {
+		int viewIndex = 0;
+		mediaPlayers[top].bindToMediaPlayerView(views[viewIndex++]);
+		mediaPlayers[top].unmute();
+		for (int i = 0; i < mediaPlayers.length; i++) {
+			if (i != top) {
+				mediaPlayers[i].bindToMediaPlayerView(views[viewIndex++]);
+//				mediaPlayers[i].mute();
+			}
+		}
+
+		// Override video touch listener from OverlayController... this is dodgy
+		for (SRGMediaPlayerView view : views) {
+			view.setVideoTouchListener(this);
+		}
 
 	}
 
@@ -82,99 +114,73 @@ public class MultiDemoMediaPlayerActivity extends ActionBarActivity implements
 	}
 
 	@Override
-	public void onClick(View v) {
-
+	public void onVideoOverlayTouched(SRGMediaPlayerView SRGMediaPlayerView) {
 	}
 
 	@Override
-	public void onVideoRenderingViewTouched(SRGMediaPlayerView SRGMediaPlayerView) {
-		if (SRGMediaPlayerView == SRGMediaPlayerViewBottomLeft) {
-
-			String topId = rtsMediaPlayerBoundToTop.getMediaIdentifier();
-			String botLeftId = rtsMediaPlayerBoundToBotLeft.getMediaIdentifier();
-			try {
-				rtsMediaPlayerBoundToTop.play(botLeftId);
-				rtsMediaPlayerBoundToBotLeft.play(topId);
-			} catch (SRGMediaPlayerException e) {
-				e.printStackTrace();
+	public void onVideoRenderingViewTouched(SRGMediaPlayerView view) {
+		int newTop = -1;
+		for (int i = 0; i < mediaPlayers.length; i++) {
+			if (mediaPlayers[i].getMediaPlayerView() == view) {
+				newTop = i;
 			}
-
-//			rtsMediaPlayerBoundToTop.mute();
-//			SRGMediaPlayerController newBotLeft = rtsMediaPlayerBoundToTop;
-//			SRGMediaPlayerController newTop = rtsMediaPlayerBoundToBotLeft;
-//
-//
-//			newTop.unbindFromMediaPlayerView();
-//			newBotLeft.unbindFromMediaPlayerView();
-//
-//			newTop.bindToMediaPlayerView(SRGMediaPlayerViewTop);
-//
-//			newBotLeft.bindToMediaPlayerView(SRGMediaPlayerViewBottomLeft);
-//
-//			rtsMediaPlayerBoundToBotLeft = newBotLeft;
-//			rtsMediaPlayerBoundToTop = newTop;
-//			rtsMediaPlayerBoundToTop.unmute();
-		} else if (SRGMediaPlayerView == SRGMediaPlayerViewBottomRight) {
-
-			String topId = rtsMediaPlayerBoundToTop.getMediaIdentifier();
-			String boRightId = rtsMediaPlayerBoundToBotRight.getMediaIdentifier();
-			try {
-				rtsMediaPlayerBoundToTop.play(boRightId);
-				rtsMediaPlayerBoundToBotRight.play(topId);
-			} catch (SRGMediaPlayerException e) {
-				e.printStackTrace();
-			}
-
-
-//			rtsMediaPlayerBoundToTop.mute();
-//			SRGMediaPlayerController newBotRight = rtsMediaPlayerBoundToTop;
-//			SRGMediaPlayerController newTop = rtsMediaPlayerBoundToBotRight;
-//
-//
-//			newTop.unbindFromMediaPlayerView();
-//			newBotRight.unbindFromMediaPlayerView();
-//
-//			newTop.bindToMediaPlayerView(SRGMediaPlayerViewTop);
-//			newBotRight.bindToMediaPlayerView(SRGMediaPlayerViewBottomRight);
-//
-//			rtsMediaPlayerBoundToBotRight = newBotRight;
-//			rtsMediaPlayerBoundToTop = newTop;
-//			rtsMediaPlayerBoundToTop.unmute();
 		}
 
-		SRGMediaPlayerViewTop.setVideoTouchListener(this);
-		SRGMediaPlayerViewBottomLeft.setVideoTouchListener(this);
-		SRGMediaPlayerViewBottomRight.setVideoTouchListener(this);
+		if (newTop == -1) {
+			throw new IllegalStateException("No player for " + view);
+		}
+		selectPlayer(newTop);
 	}
 
-	@Override
-	public void onVideoOverlayTouched(SRGMediaPlayerView SRGMediaPlayerView) {
-		//Nothing special now
+	private void selectPlayer(int newTop) {
+		SRGMediaPlayerController topPlayer = mediaPlayers[newTop];
+		if (!topPlayer.isPlaying()) {
+			startPlayer(newTop);
+			return;
+		}
+		for (int i = 0; i < mediaPlayers.length; i++) {
+			if (i == newTop) {
+				mediaPlayers[i].unmute();
+			} else {
+				mediaPlayers[i].mute();
+			}
+		}
+
+		SRGMediaPlayerView topView = topPlayer.getMediaPlayerView();
+		swapLayoutParams(views[0], topView);
+
+		for (SRGMediaPlayerView view : views) {
+			if (view != topView) {
+				view.bringToFront();
+			}
+		}
+	}
+
+	private void swapLayoutParams(View a, View b) {
+			ViewGroup.LayoutParams lpA = a.getLayoutParams();
+			ViewGroup.LayoutParams lpB = b.getLayoutParams();
+			a.setLayoutParams(lpB);
+			b.setLayoutParams(lpA);
 	}
 
 	@Override
 	protected void onPause() {
-		SRGMediaPlayerView[] views = {SRGMediaPlayerViewBottomLeft, SRGMediaPlayerViewBottomRight, SRGMediaPlayerViewTop};
-		SRGMediaPlayerController[] controllers = {
-		rtsMediaPlayer1,
-		rtsMediaPlayer2,
-		rtsMediaPlayer3 };
-		for (SRGMediaPlayerController controller : controllers) {
-			for (SRGMediaPlayerView view : views) {
-				controller.unbindFromMediaPlayerView(view);
-			}
-		}
+		unbindAll();
 		super.onPause();
+	}
+
+	private void unbindAll() {
+		for (SRGMediaPlayerController controller : mediaPlayers) {
+			controller.unbindFromMediaPlayerView(controller.getMediaPlayerView());
+		}
 	}
 
 	@Override
 	protected void onStop() {
-		rtsMediaPlayer1.release();
-		rtsMediaPlayer1 = null;
-		rtsMediaPlayer2.release();
-		rtsMediaPlayer2 = null;
-		rtsMediaPlayer3.release();
-		rtsMediaPlayer3 = null;
+		for (int i = 0; i < mediaPlayers.length; i++) {
+			mediaPlayers[i].release();
+			mediaPlayers[i] = null;
+		}
 		super.onStop();
 	}
 

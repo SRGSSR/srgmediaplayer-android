@@ -2,7 +2,8 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    tools:ignore="RtlHardcoded">
 
     <LinearLayout
         android:id="@+id/simple_player_control_controls"
@@ -71,9 +72,10 @@
             android:layout_alignParentLeft="true"
             android:layout_centerVertical="true"
             android:layout_marginLeft="@dimen/simple_player_control_margin_inner"
-            android:text="--:--"
+            android:text="@string/time_pending"
             android:textColor="#7bffffff"
-            android:textSize="10dp" />
+            android:textSize="10sp"
+            tools:ignore="SmallSp" />
 
         <SeekBar
             android:id="@+id/simple_player_control_seekbar"
@@ -84,7 +86,7 @@
             android:layout_toLeftOf="@+id/simple_player_control_time_right"
             android:layout_toRightOf="@+id/simple_player_control_time_left"
             android:secondaryProgressTint="#bb999999"
-            />
+            tools:targetApi="lollipop" />
 
         <TextView
             android:id="@+id/simple_player_control_time_right"
@@ -93,9 +95,10 @@
             android:layout_alignParentRight="true"
             android:layout_centerVertical="true"
             android:layout_marginRight="@dimen/simple_player_control_margin_inner"
-            android:text="--:--"
+            android:text="@string/time_pending"
             android:textColor="#7bffffff"
-            android:textSize="10dp" />
+            android:textSize="10sp"
+            tools:ignore="SmallSp" />
 
     </RelativeLayout>
 

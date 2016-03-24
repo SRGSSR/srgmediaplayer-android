@@ -153,7 +153,7 @@ public abstract class ThreadServiceTestBase<T extends Service> extends ServiceTe
 
 			@Override
 			public void run() {
-				T service = null;
+				T service;
 				if (bound)
 				{
 					/* IBinder binder = */

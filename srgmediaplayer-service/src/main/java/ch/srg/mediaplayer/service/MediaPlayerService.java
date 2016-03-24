@@ -14,6 +14,7 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.annotation.DrawableRes;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.LocalBroadcastManager;
@@ -74,7 +75,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private static final int NOTIFICATION_ID = 1;
     public static final int FLAG_LIVE = 1;
-    private static final long AUTORELEASE_DELAY_MS = 10000;
+    private static long autoreleaseDelayMs = 10000;
     private static SRGMediaPlayerDataProvider dataProvider;
     private static SRGMediaPlayerServiceMetaDataProvider serviceDataProvider;
 
@@ -82,14 +83,13 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     private boolean isForeground;
 
     // Media Session implementation
+    @Nullable
     private MediaSessionCompat mediaSessionCompat;
 
     private int flags;
     private final Handler handler = new Handler();
 
     private SRGMediaPlayerController.State currentState;
-
-    private Bitmap mediaArtBitmap;
 
     public boolean isDestroyed;
 
@@ -111,11 +111,9 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         public void run() {
             if (player != null && !player.isPlaying()) {
                 if (player.isBoundToMediaPlayerView()) {
-                    handler.postDelayed(autoRelease, AUTORELEASE_DELAY_MS);
+                    startAutoRelease();
                 } else {
-                    player.release();
-                    player = null;
-                    mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
+                    stopPlayer();
                 }
             }
         }
@@ -163,7 +161,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     @Override
     public void onBitmapUpdate(Bitmap bitmap) {
-        mediaArtBitmap = bitmap;
         updateNotification();
     }
 
@@ -328,19 +325,27 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private ServiceNotificationBuilder createNotificationBuilder() {
         String title;
+        String text;
         boolean live;
         PendingIntent pendingIntent;
-        if (serviceDataProvider != null) {
-            String mediaIdentifier = getCurrentMediaIdentifier();
+        Bitmap mediaArtBitmap;
+        @DrawableRes int smallIcon = R.drawable.ic_play_arrow_white_24dp;
+        String mediaIdentifier = getCurrentMediaIdentifier();
+        if (serviceDataProvider != null && mediaIdentifier != null) {
             title = serviceDataProvider.getTitle(mediaIdentifier);
+            text = serviceDataProvider.getText(mediaIdentifier);
             live = serviceDataProvider.isLive(mediaIdentifier);
             pendingIntent = serviceDataProvider.getNotificationPendingIntent(mediaIdentifier);
+            mediaArtBitmap = serviceDataProvider.getNotificationLargeIconBitmap(mediaIdentifier);
+            smallIcon = serviceDataProvider.getNotificationSmallIconResourceId(mediaIdentifier);
         } else {
             title = null;
+            text = null;
             live = false;
             pendingIntent = null;
+            mediaArtBitmap = null;
         }
-        return new ServiceNotificationBuilder(live, isPlaying(), title, pendingIntent, mediaArtBitmap);
+        return new ServiceNotificationBuilder(live, isPlaying(), title, text, pendingIntent, mediaArtBitmap, smallIcon);
     }
 
     private void startUpdates() {
@@ -358,7 +363,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private void prepare(String mediaIdentifier, Long startPosition) throws SRGMediaPlayerException {
         mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
-        mediaArtBitmap = null;
         createPlayer();
 
         if (player.play(mediaIdentifier, startPosition)) {
@@ -417,9 +421,10 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             } else {
                 NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
                 ServiceNotificationBuilder builder = createNotificationBuilder();
-                if (builder != currentServiceNotification) {
+                if (builder != currentServiceNotification && mediaSessionCompat != null) {
                     currentServiceNotification = builder;
-                    notificationManager.notify(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat));
+                    notificationManager.notify(NOTIFICATION_ID,
+                            builder.buildNotification(this, mediaSessionCompat));
                 }
             }
         } else {
@@ -435,8 +440,10 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             if (foreground != isForeground) {
                 if (foreground) {
                     ServiceNotificationBuilder builder = createNotificationBuilder();
-                    currentServiceNotification = builder;
-                    startForeground(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat));
+                    if (mediaSessionCompat != null) {
+                        currentServiceNotification = builder;
+                        startForeground(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat));
+                    }
                 } else {
                     stopForeground(true);
                     currentServiceNotification = null;
@@ -564,9 +571,30 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 break;
             case PLAYING_STATE_CHANGE:
                 cancelAutoRelease();
-                handler.postDelayed(autoRelease, AUTORELEASE_DELAY_MS);
+                startAutoRelease();
                 break;
         }
+    }
+
+    private void startAutoRelease() {
+        if (autoreleaseDelayMs > 0) {
+            handler.postDelayed(autoRelease, autoreleaseDelayMs);
+        } else if (autoreleaseDelayMs == 0) {
+            if (player != null && !player.isPlaying() && player.isBoundToMediaPlayerView()) {
+                stopPlayer();
+            }
+        }
+    }
+
+    /**
+     * Configure auto release time. Auto release is used to automatically release the player this
+     * service controls after it has been paused _and_ the player is not bound to a media
+     * player view.
+     *
+     * @param autoreleaseDelayMs time in ms or -1 to disable the auto release feature
+     */
+    public static void setAutoreleaseDelayMs(long autoreleaseDelayMs) {
+        MediaPlayerService.autoreleaseDelayMs = autoreleaseDelayMs;
     }
 
     public static void setDataProvider(SRGMediaPlayerDataProvider dataProvider) {

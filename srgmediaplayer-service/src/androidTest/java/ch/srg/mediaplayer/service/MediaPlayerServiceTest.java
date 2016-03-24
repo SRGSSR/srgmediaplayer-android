@@ -90,9 +90,8 @@ public class MediaPlayerServiceTest extends ThreadServiceTestBase<MediaPlayerSer
         waitForPlayerTimeLessThan(SEEK_POSITION_1);
     }
 
+    /*
     public void testLivePlayStopWithDelay() {
-        if (true)
-            return;
         startSrf1Live();
 
         waitForState(SRGMediaPlayerController.State.READY);
@@ -105,8 +104,6 @@ public class MediaPlayerServiceTest extends ThreadServiceTestBase<MediaPlayerSer
     }
 
     public void testLivePlayStopWithoutDelay() {
-        if (true)
-            return;
         startSrf1Live();
 
         waitForState(SRGMediaPlayerController.State.READY);
@@ -114,7 +111,7 @@ public class MediaPlayerServiceTest extends ThreadServiceTestBase<MediaPlayerSer
         sendAction(MediaPlayerService.ACTION_STOP);
 
         waitForState(SRGMediaPlayerController.State.RELEASED);
-    }
+    }*/
 
     public void testPlay404Stream() {
         start404Stream();

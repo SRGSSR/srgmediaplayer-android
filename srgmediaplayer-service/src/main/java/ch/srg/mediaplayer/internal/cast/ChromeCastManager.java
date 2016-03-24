@@ -1,7 +1,6 @@
 package ch.srg.mediaplayer.internal.cast;
 
 import android.app.Activity;
-import android.app.Dialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -28,7 +27,6 @@ import com.google.android.gms.cast.MediaStatus;
 import com.google.android.gms.cast.RemoteMediaPlayer;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Status;
@@ -82,6 +80,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
     private final Object stoppingLock = new Object();
     private boolean applicationConnected;
     private int castDiscoveryCounter;
+    private boolean errorDialogShown;
 
     protected ChromeCastManager(Context context) {
         this.context = context.getApplicationContext();
@@ -93,14 +92,16 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         mediaRouterCallback = new CastMediaRouterCallback(this);
         mediaSessionManager = MediaSessionManager.getInstance();
 
+        mediaRouter.addCallback(mediaRouteSelector, mediaRouterCallback,
+                MediaRouter.CALLBACK_FLAG_REQUEST_DISCOVERY);
+
         Log.d(TAG, "VideoCastManager is instantiated");
     }
 
     public static synchronized ChromeCastManager initialize(Context context) {
         if (instance == null) {
             Log.d(TAG, "New instance of VideoCastManager is created");
-            if (ConnectionResult.SUCCESS != GooglePlayServicesUtil
-                    .isGooglePlayServicesAvailable(context)) {
+            if (ConnectionResult.SUCCESS != GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(context)) {
                 String msg = "Couldn't find the appropriate version of Google Play Services";
                 Log.e(TAG, msg);
             }
@@ -120,7 +121,7 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
      */
     public static ChromeCastManager getInstance() {
         if (instance == null) {
-            String msg = "No VideoCastManager instance was found, did you forget to initialize it?";
+            String msg = "No ChromeCastManager instance was found, did you forget to initialize it?";
             Log.e(TAG, msg);
             throw new IllegalStateException(msg);
         }
@@ -646,11 +647,10 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
      *
      * @param menu           Menu reference
      * @param menuResourceId The resource id of the cast button in the xml menu descriptor file
-     *
      * @return menu item or null if chrome cast not supported
      */
-    public final MenuItem addMediaRouterButtonIfSupported(Menu menu, int menuResourceId) {
-        if (checkGooglePlayServices()) {
+    public final MenuItem addMediaRouterButtonIfSupported(Activity activity, Menu menu, int menuResourceId) {
+        if (checkGooglePlayServices(activity)) {
             MenuItem mediaRouteMenuItem = menu.findItem(menuResourceId);
             MediaRouteActionProvider mediaRouteActionProvider = (MediaRouteActionProvider)
                     MenuItemCompat.getActionProvider(mediaRouteMenuItem);
@@ -766,22 +766,17 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         return deviceName;
     }
 
-    public boolean checkGooglePlayServices() {
-        final int googlePlayServicesCheck =
-                GooglePlayServicesUtil.isGooglePlayServicesAvailable(context);
+    public boolean checkGooglePlayServices(Activity activity) {
+        final int googlePlayServicesCheck = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(context);
         switch (googlePlayServicesCheck) {
             case ConnectionResult.SUCCESS:
                 return true;
             default:
-                return false;
+                if (!errorDialogShown) {
+                    errorDialogShown = GoogleApiAvailability.getInstance().showErrorDialogFragment(activity, googlePlayServicesCheck, 1000);
+                }
         }
-    }
-
-    public static void showDialogInfo(final Activity activity){
-        final int googlePlayServicesCheck = GooglePlayServicesUtil.isGooglePlayServicesAvailable(
-                activity);
-        Dialog dialog = GoogleApiAvailability.getInstance().getErrorDialog(activity, googlePlayServicesCheck, 0);
-        dialog.show();
+        return false;
     }
 
     public long getMediaDuration() throws NoConnectionException {
@@ -906,8 +901,10 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         public void onRouteSelected(MediaRouter router, MediaRouter.RouteInfo info) {
             Log.d(TAG, "onRouteSelected: info=" + info);
             CastDevice device = CastDevice.getFromBundle(info.getExtras());
-            chromeCastManager.onDeviceSelected(device);
-            Log.d(TAG, "onRouteSelected: mSelectedDevice=" + device.getFriendlyName());
+            if (device != null) {
+                chromeCastManager.onDeviceSelected(device);
+                Log.d(TAG, "onRouteSelected: mSelectedDevice=" + device.getFriendlyName());
+            }
         }
 
         @Override
