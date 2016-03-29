@@ -19,8 +19,8 @@
 
             <Button
                 android:id="@+id/segment_player_control_button_play"
-                android:layout_width="@dimen/segment_player_control_button_size"
-                android:layout_height="@dimen/segment_player_control_button_size"
+                android:layout_width="@dimen/player_control_height"
+                android:layout_height="@dimen/player_control_height"
                 android:layout_marginLeft="@dimen/segment_player_control_margin_inner"
                 android:background="@drawable/player_control_play"
                 android:visibility="gone"
@@ -28,8 +28,8 @@
 
             <Button
                 android:id="@+id/segment_player_control_button_pause"
-                android:layout_width="@dimen/segment_player_control_button_size"
-                android:layout_height="@dimen/segment_player_control_button_size"
+                android:layout_width="@dimen/player_control_height"
+                android:layout_height="@dimen/player_control_height"
                 android:layout_marginLeft="@dimen/segment_player_control_margin_inner"
                 android:background="@drawable/player_control_pause"
                 android:visibility="gone"
@@ -37,8 +37,8 @@
 
             <Button
                 android:id="@+id/segment_player_control_button_replay"
-                android:layout_width="@dimen/segment_player_control_button_size"
-                android:layout_height="@dimen/segment_player_control_button_size"
+                android:layout_width="@dimen/player_control_height"
+                android:layout_height="@dimen/player_control_height"
                 android:layout_marginLeft="@dimen/segment_player_control_margin_inner"
                 android:background="@drawable/player_control_replay"
                 android:visibility="gone"
