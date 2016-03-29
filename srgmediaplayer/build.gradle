@@ -26,7 +26,7 @@ repositories {
 }
 
 dependencies {
-    compile files("libs/exoplayer-r1.0.12-1338-g18c8353.jar");
+    compile files("libs/exoplayer-r1.0.12-1339-g06f4964.jar");
     // Testing-only dependencies
     androidTestCompile 'com.android.support.test:runner:0.4'
     androidTestCompile 'com.android.support.test:rules:0.4'
