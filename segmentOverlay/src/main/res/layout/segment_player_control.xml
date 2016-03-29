@@ -51,7 +51,9 @@
     <SeekBar
         android:id="@+id/segment_player_control_seekbar"
         android:layout_width="0dp"
-        android:layout_height="match_parent"
+        android:layout_height="@dimen/segment_player_control_button_size"
+        android:minHeight="@dimen/segment_player_control_button_size"
+        android:maxHeight="@dimen/segment_player_control_button_size"
         android:layout_weight="1"/>
 
     <TextView
