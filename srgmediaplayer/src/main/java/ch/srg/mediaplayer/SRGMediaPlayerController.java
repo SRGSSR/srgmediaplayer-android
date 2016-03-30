@@ -40,6 +40,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private static final long[] EMPTY_TIME_RANGE = new long[2];
     private static final long UPDATE_PERIOD = 100;
 
+    private PlayerSurface playerSurface;
+
     /**
      * True when audio focus has been requested, does not reflect current focus (LOSS / DUCKED).
      */
