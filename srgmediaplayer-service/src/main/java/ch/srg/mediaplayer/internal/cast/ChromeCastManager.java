@@ -773,7 +773,11 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
                 return true;
             default:
                 if (!errorDialogShown) {
-                    errorDialogShown = GoogleApiAvailability.getInstance().showErrorDialogFragment(activity, googlePlayServicesCheck, 1000);
+                    try {
+                        errorDialogShown = GoogleApiAvailability.getInstance().showErrorDialogFragment(activity, googlePlayServicesCheck, 1000);
+                    } catch (IllegalStateException e) {
+                        Log.e(TAG, "Show error in check google play services", e);
+                    }
                 }
         }
         return false;
