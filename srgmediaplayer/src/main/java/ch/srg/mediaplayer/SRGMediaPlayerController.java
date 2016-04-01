@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.WeakHashMap;
 
+import ch.srg.mediaplayer.egl.EglCore;
 import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
 import ch.srg.mediaplayer.internal.exoplayer.ExoPlayerDelegate;
 import ch.srg.mediaplayer.internal.nativeplayer.NativePlayerDelegate;
@@ -33,7 +34,7 @@ import ch.srg.mediaplayer.internal.nativeplayer.NativePlayerDelegate;
  * if used in conjonction with a SRGMediaPlayerView can handle Video playback base on delegation on
  * actual players, like android.MediaPlayer or ExoPlayer
  */
-public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegateListener, Handler.Callback {
+public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegateListener, Handler.Callback, SurfaceTexture.OnFrameAvailableListener {
     public static final String TAG = "SRGMediaPlayer";
     public static final String NAME = "SRGMediaPlayer";
     public static final String VERSION = "0.0.2";
@@ -54,6 +55,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private boolean pausedBecauseFocusLoss;
     private boolean mutedBecauseFocusLoss;
     private Long qualityOverride;
+    private EglCore eglCore;
 
     public static String getName() {
         return NAME;
@@ -323,6 +325,10 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         };
 
         audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+    }
+
+    public void setEglCore(EglCore eglCore) {
+        this.eglCore = eglCore;
     }
 
     private synchronized void startBackgroundThreadIfNecessary() {
@@ -720,6 +726,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     private void prepareForIdentifierInternal(String mediaIdentifier, PlayerDelegate playerDelegate) {
         setStateInternal(State.PREPARING);
+        preparePlayerSurfaceInternal();
         if (mediaIdentifier == null) {
             throw new IllegalArgumentException("Media identifier is null in prepare for identifier");
         }
@@ -730,6 +737,17 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
         dataProviderAsyncTask = new DataProviderAsyncTask(this, mediaPlayerDataProvider, playerDelegate);
         dataProviderAsyncTask.execute(mediaIdentifier);
+    }
+
+    private void preparePlayerSurfaceInternal() {
+        if (eglCore != null) {
+            playerSurface = new PlayerSurface(eglCore);
+            playerSurface.createSurfaceTexture(this);
+
+            
+        } else {
+            throw new IllegalStateException("No egl core available");
+        }
     }
 
     private void createPlayerDelegateInternal(String mediaIdentifier) {

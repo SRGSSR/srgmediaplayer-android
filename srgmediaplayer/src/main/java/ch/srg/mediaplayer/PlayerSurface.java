@@ -25,7 +25,7 @@ import ch.srg.mediaplayer.egl.Texture2dProgram;
 /**
  * Created by seb on 30/03/16.
  */
-public class PlayerSurface implements SurfaceTexture.OnFrameAvailableListener {
+public class PlayerSurface {
     private static final String TAG = EglCore.TAG;
     // EglCore object we're associated with.  It may be associated with multiple surfaces.
     protected EglCore eglCore;
@@ -61,13 +61,13 @@ public class PlayerSurface implements SurfaceTexture.OnFrameAvailableListener {
         //this.height = eglCore.querySurface(eglSurface, EGL14.EGL_HEIGHT);
     }
 
-    public void createSurfaceTexture() {
+    public void createSurfaceTexture(SurfaceTexture.OnFrameAvailableListener listener) {
         texture2dProgram = new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT);
         int textureId = texture2dProgram.createTextureObject();
         surfaceTexture = new SurfaceTexture(textureId);
         mRect.setTexture(textureId);
 
-        surfaceTexture.setOnFrameAvailableListener(this);
+        surfaceTexture.setOnFrameAvailableListener(listener);
     }
     /**
      * Creates an off-screen surface.
@@ -199,8 +199,7 @@ public class PlayerSurface implements SurfaceTexture.OnFrameAvailableListener {
         Log.d(TAG, "Saved " + width + "x" + height + " frame as '" + filename + "'");
     }
 
-    @Override
-    public void onFrameAvailable(SurfaceTexture surfaceTexture) {
-
+    public SurfaceTexture getSurfaceTexture() {
+        return surfaceTexture;
     }
 }
