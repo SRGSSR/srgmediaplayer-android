@@ -76,6 +76,10 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private static final int NOTIFICATION_ID = 1;
     public static final int FLAG_LIVE = 1;
+    /**
+     * Forbid seeking too close to the end when using relative seek (POSITION_INCREMENT).
+     */
+    private static final long SEEK_END_SAFETY_MARGIN_MS = 10000;
     private static long autoreleaseDelayMs = 10000;
     private static SRGMediaPlayerDataProvider dataProvider;
     private static SRGMediaPlayerServiceMetaDataProvider serviceDataProvider;
@@ -287,7 +291,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     } else {
                         if (player != null) {
                             if (positionIncrement != null) {
-                                seekTo(getPosition() + positionIncrement);
+                                seekTo(Math.min(getDuration() - SEEK_END_SAFETY_MARGIN_MS, getPosition() + positionIncrement));
                             } else {
                                 seekTo(position);
                             }
@@ -511,6 +515,9 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         return player != null && player.isPlaying();
     }
 
+    /**
+     * @return position in ms
+     */
     private long getPosition() {
         if (player != null) {
             return Math.max(0, player.getMediaPosition());
@@ -519,6 +526,9 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         }
     }
 
+    /**
+     * @return duration in ms
+     */
     private long getDuration() {
         if (player != null) {
             return player.getMediaDuration();
