@@ -63,6 +63,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     public static final String ARG_MEDIA_IDENTIFIER = "mediaIdentifier";
     public static final String ARG_POSITION = "position";
+    public static final String ARG_POSITION_INCREMENENT = "positionIncrement";
     public static final String ARG_FLAGS = "flags";
     public static final String ARG_FROM_NOTIFICATION = "fromNotification";
 
@@ -280,11 +281,16 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
                 case ACTION_SEEK: {
                     long position = intent.getLongExtra(ARG_POSITION, -1);
-                    if (position == -1) {
-                        throw new IllegalArgumentException("Undefined position for seek");
+                    Long positionIncrement = intent.hasExtra(ARG_POSITION_INCREMENENT) ? intent.getLongExtra(ARG_POSITION_INCREMENENT, 0) : null;
+                    if (position == -1 && positionIncrement == null) {
+                        throw new IllegalArgumentException("Undefined position or position increment for seek");
                     } else {
-                        if (isPlaying()) {
-                            seekTo(position);
+                        if (player != null) {
+                            if (positionIncrement != null) {
+                                seekTo(getPosition() + positionIncrement);
+                            } else {
+                                seekTo(position);
+                            }
                         }
                     }
                 }
@@ -506,7 +512,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     private long getPosition() {
-        // Return position only for AOD when we have an active player.
         if (player != null) {
             return Math.max(0, player.getMediaPosition());
         } else {
