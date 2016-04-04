@@ -16,7 +16,6 @@ android {
 		resValue "string", "APP_ID", "314785ad94ebbae30a802a8a1eadf3df"
 
 		testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-		vectorDrawables.useSupportLibrary = true
 	}
 
 	signingConfigs {
