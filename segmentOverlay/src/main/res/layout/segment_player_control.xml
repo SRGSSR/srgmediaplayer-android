@@ -6,8 +6,8 @@
     android:gravity="center_vertical">
 
     <FrameLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+        android:layout_width="@dimen/player_control_height"
+        android:layout_height="@dimen/player_control_height">
 
         <Button
             android:id="@+id/segment_player_control_button_play"
