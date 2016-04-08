@@ -456,6 +456,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     }
                 } else {
                     stopForeground(true);
+                    NotificationManagerCompat.from(this).cancel(NOTIFICATION_ID);
                     currentServiceNotification = null;
                 }
                 isForeground = foreground;
@@ -483,6 +484,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         if (player != null) {
             player.release();
             player = null;
+            setForeground(false);
             mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
         }
     }
