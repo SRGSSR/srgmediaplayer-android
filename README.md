@@ -1,6 +1,8 @@
 SRG Media Player
 ================
 
+### Current version : 1.2.52 ###
+
 Building
 --------
 * install Android Studio from http://developer.android.com/sdk/installing/studio.html (stable build)
