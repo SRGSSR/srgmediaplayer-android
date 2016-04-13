@@ -4,6 +4,7 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -15,12 +16,12 @@ import ch.srg.segmentoverlay.model.Segment;
  * Created by npietri on 21.05.15.
  */
 public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> extends RecyclerView.Adapter<T> {
-    public HashSet<SegmentClickListener> listeners = new HashSet<>();
+	public HashSet<SegmentClickListener> listeners = new HashSet<>();
 	protected Integer textColor;
 	protected Integer selectedTextColor;
 	protected Integer selectedBackgroundColor;
 
-	public abstract boolean updateProgressSegments(@NonNull String mediaIdentifier, long time);
+	public abstract boolean updateProgressSegments(@NonNull String mediaIdentifier, long time, String currentSegmentIdentifier);
 
 	protected Context context;
 
@@ -62,7 +63,7 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
 		notifyDataSetChanged();
 	}
 
-	public int getDisplayableSegmentsListSize(){
+	public int getDisplayableSegmentsListSize() {
 		return segments.size();
 	}
 
@@ -78,6 +79,15 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
 	public int getSegmentIndex(@NonNull String mediaIdentifier, long time) {
 		int segmentIndex;
 		segmentIndex = findLogicalSegment(mediaIdentifier, time);
+		if (segmentIndex == -1) {
+			segmentIndex = findPhysicalSegment(mediaIdentifier);
+		}
+		return segmentIndex;
+	}
+
+	public int getSegmentIndex(@NonNull String mediaIdentifier, String segmentIdentifier) {
+		int segmentIndex;
+		segmentIndex = findLogicalSegment(mediaIdentifier, segmentIdentifier);
 		if (segmentIndex == -1) {
 			segmentIndex = findPhysicalSegment(mediaIdentifier);
 		}
@@ -107,6 +117,17 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
 		return -1;
 	}
 
+	public int findLogicalSegment(@NonNull String mediaIdentifier, String segmentIdentifier) {
+		for (int i = 0; i < segments.size(); i++) {
+			Segment segment = segments.get(i);
+			if (mediaIdentifier.equals(segment.getMediaIdentifier())
+					&& TextUtils.equals(segment.getIdentifier(), segmentIdentifier)) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
 	public ArrayList<Segment> getSegmentsList() {
 		return segments;
 	}
@@ -123,4 +144,5 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
 		this.textColor = textColor;
 	}
 
+	public abstract int getCurrentSegment();
 }
