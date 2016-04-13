@@ -33,12 +33,12 @@ public class DemoSegmentAdapter extends BaseSegmentAdapter<DemoSegmentAdapter.Vi
 	private int currentSegment;
 	private long currentTime;
 
-    public DemoSegmentAdapter(Context context, List<Segment> segmentsList) {
+	public DemoSegmentAdapter(Context context, List<Segment> segmentsList) {
 	    super(context, segmentsList);
     }
 
     @Override
-    public boolean updateProgressSegments(String mediaIdentifier, long time) {
+    public boolean updateProgressSegments(String mediaIdentifier, long time, String currentSegmentIdentifier) {
 	    boolean segmentChange = false;
 	    if (time != currentTime) {
 		    currentTime = time;
@@ -144,4 +144,8 @@ public class DemoSegmentAdapter extends BaseSegmentAdapter<DemoSegmentAdapter.Vi
 		return true;
 	}
 
+	@Override
+	public int getCurrentSegment() {
+		return currentSegment;
+	}
 }
