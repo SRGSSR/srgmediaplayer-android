@@ -70,6 +70,7 @@ class ExoPlayerDelegate implements
 
     private HlsChunkSource hlsChunkSource;
     private Long qualityOverride;
+    private Long qualityDefault;
 
     @Override
     public void onAvailableRangeChanged(int i, TimeRange timeRange) {
@@ -232,6 +233,7 @@ class ExoPlayerDelegate implements
     public void onHlsChunkSource(HlsChunkSource chunkSource) {
         this.hlsChunkSource = chunkSource;
         hlsChunkSource.setBitrateEstimateOverride(qualityOverride);
+        hlsChunkSource.setBitrateEstimateDefault(qualityDefault);
     }
 
     @Override
@@ -559,6 +561,23 @@ class ExoPlayerDelegate implements
         this.qualityOverride = quality;
         if (hlsChunkSource != null) {
             hlsChunkSource.setBitrateEstimateOverride(quality);
+        }
+    }
+
+    @Override
+    public void setQualityDefault(Long quality) {
+        this.qualityDefault = quality;
+        if (hlsChunkSource != null) {
+            hlsChunkSource.setBitrateEstimateDefault(quality);
+        }
+    }
+
+    @Override
+    public Long getBandwidthEstimate() {
+        if (hlsChunkSource != null) {
+            return hlsChunkSource.getBitrateEstimate();
+        } else {
+            return null;
         }
     }
 }
