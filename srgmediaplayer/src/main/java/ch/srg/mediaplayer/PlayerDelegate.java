@@ -120,6 +120,19 @@ public interface PlayerDelegate {
 	/**
 	 * Force usage of a specific quality (when supported). Represented by bandwidth.
 	 * @param quality quality in bits/sec or null to disable
-     */
+	 */
 	void setQualityOverride(Long quality);
+
+	/**
+	 * Force usage of a specific quality (when supported). Represented by bandwidth.
+	 * @param quality quality in bits/sec or null to disable
+	 */
+	void setQualityDefault(Long quality);
+
+	/**
+	 * Get current bandwidth estimate (when supported).
+	 *
+	 * @return bandwidth estimate in bits/sec or null if not available.
+     */
+	Long getBandwidthEstimate();
 }

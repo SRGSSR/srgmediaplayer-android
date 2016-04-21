@@ -364,6 +364,14 @@ public class NativePlayerDelegate implements
 
 	@Override
 	public void setQualityOverride(Long quality) {
-		// Ignored
+	}
+
+	@Override
+	public void setQualityDefault(Long quality) {
+	}
+
+	@Override
+	public Long getBandwidthEstimate() {
+		return null;
 	}
 }

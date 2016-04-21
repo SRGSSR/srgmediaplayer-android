@@ -318,6 +318,15 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
 
     @Override
     public void setQualityOverride(Long quality) {
+    }
 
+    @Override
+    public void setQualityDefault(Long quality) {
+
+    }
+
+    @Override
+    public Long getBandwidthEstimate() {
+        return null;
     }
 }
