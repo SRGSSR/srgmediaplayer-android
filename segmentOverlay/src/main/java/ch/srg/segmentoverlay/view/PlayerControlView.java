@@ -225,7 +225,7 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
     }
 
     @Override
-    public void onPositionChange(@Nullable String mediaIdentifier, long position) {
+    public void onPositionChange(@Nullable String mediaIdentifier, long position, boolean seeking) {
         update(position);
     }
 

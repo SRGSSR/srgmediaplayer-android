@@ -1,6 +1,8 @@
 SRG Media Player
 ================
 
+### Current version : 1.2.52 ###
+
 Building
 --------
 * install Android Studio from http://developer.android.com/sdk/installing/studio.html (stable build)
@@ -15,32 +17,29 @@ Device requirements
 
 Setup for a custom project
 ---------------
-- Create a project in a folder along side SRGMediaPlayer-Android to have the following directory structure:
 
-```
-mediaplayerProjects/SRGMediaPlayer-Android
-mediaplayerProjects/myProject
-```
-- Edit your settings.gradle:
+Add maven repository in build.gradle:
 
-```
-include 'MY_PROJECT', ':srgmediaplayer', ':segmentOverlay', ':srgmediaplayer-extras', ':srgmediaplayer-service'
+    repositories {
+    	maven {
+    		url "http://maven.ecetest.rts.ch/content/groups/public/"
+    	}
+    }
 
-project(':srgmediaplayer').projectDir = new File(settingsDir, '../SRGMediaPlayer-Android/srgmediaplayer')
-project(':segmentOverlay').projectDir = new File(settingsDir, '../SRGMediaPlayer-Android/segmentOverlay')
-project(':srgmediaplayer-extras').projectDir = new File(settingsDir, '../SRGMediaPlayer-Android/srgmediaplayer-extras')
-project(':srgmediaplayer-service').projectDir = new File(settingsDir, '../SRGMediaPlayer-Android/srgmediaplayer-service')
-```
-
-- Edit your build.gradle:
+Then use:
 
 ```groovy
 dependencies {
 // ...
-  compile project(':srgmediaplayer')
-  compile project(':srgmediaplayer-extras')
-  compile project(':srgmediaplayer-service')
-  compile project(':segmentOverlay')
+
+    compile 'ch.srg.mediaplayer:srgmediaplayer:$LIB_VERSION@aar'
+    compile 'ch.srg.mediaplayer:segmentOverlay:$LIB_VERSION@aar'
+    compile 'ch.srg.mediaplayer:srgmediaplayer-extras:$LIB_VERSION@aar'
+    compile 'ch.srg.mediaplayer:srgmediaplayer-service:$LIB_VERSION@aar'
+    
+    // Following three only for ChromeCast support (and srgmediaplayer-service use)
+    compile 'com.android.support:mediarouter-v7:$SUPPORT_VERSION'
+    compile 'com.google.android.gms:play-services-cast:$SUPPORT_VERSION'
 // ...
 }
 ```

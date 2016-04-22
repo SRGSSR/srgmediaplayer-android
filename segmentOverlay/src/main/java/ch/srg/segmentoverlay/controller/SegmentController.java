@@ -23,7 +23,7 @@ import ch.srg.segmentoverlay.model.Segment;
  */
 public class SegmentController implements SegmentClickListener, SRGMediaPlayerController.Listener,  Runnable {
 	private static final long PERIODIC_UPDATE_DELAY = 250;
-	private static final long SEGMENT_HYSTERESIS_MS = 500;
+	private static final long SEGMENT_HYSTERESIS_MS = 5000;
 
 	private Context context;
 
@@ -105,6 +105,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 		    segmentBeingSkipped = null;
 
 			String mediaIdentifier = playerController.getMediaIdentifier();
+			currentSegment = segment;
 			if (!TextUtils.isEmpty(mediaIdentifier) && mediaIdentifier.equals(segment.getMediaIdentifier())) {
 				postEvent(Event.Type.SEGMENT_SELECTED, segment);
 				playerController.seekTo(segment.getMarkIn());
@@ -115,7 +116,6 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 					e.printStackTrace();
 				}
 			}
-			currentSegment = segment;
 	    } else {
 			postBlockedSegmentEvent(segment, Event.Type.SEGMENT_USER_SEEK_BLOCKED);
 		}
@@ -134,9 +134,9 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 		playerController.broadcastEvent(new Event(playerController, type, segment, segment.getBlockingReason()));
 	}
 
-	private void notifyPositionChange(String mediaIdentifier, long time) {
+	private void notifyPositionChange(String mediaIdentifier, long time, boolean seeking) {
 		for (Listener l : listeners) {
-			l.onPositionChange(mediaIdentifier, time);
+			l.onPositionChange(mediaIdentifier, time, seeking);
 		}
 	}
 
@@ -144,7 +144,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 		// TODO handle if progress time is valid with segment
 		userChangingProgress = true;
 
-		notifyPositionChange(playerController.getMediaIdentifier(), time);
+		notifyPositionChange(playerController.getMediaIdentifier(), time, true);
 	}
 
 	public void stopUserTrackingProgress() {
@@ -185,7 +185,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	}
 
 	public interface Listener {
-		void onPositionChange(@Nullable String mediaIdentifier, long position);
+		void onPositionChange(@Nullable String mediaIdentifier, long position, boolean seeking);
 
 		void onSegmentListChanged(List<Segment> segments);
 	}
@@ -232,19 +232,19 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 				currentSegment = newSegment;
 			}
 		}
-		notifyPositionChange(playerController.getMediaIdentifier(), mediaPosition);
+		notifyPositionChange(playerController.getMediaIdentifier(), mediaPosition, false);
 	}
 
 	@Nullable
 	public Segment getSegment(String mediaIdentifier, long time) {
+		if (currentSegment != null && segments.contains(currentSegment)
+				&& time >= currentSegment.getMarkIn() - SEGMENT_HYSTERESIS_MS
+				&& time < currentSegment.getMarkOut()) {
+			return currentSegment;
+		}
 		for (Segment segment : segments) {
 			if (TextUtils.equals(segment.getMediaIdentifier(), mediaIdentifier)
 					&& !segment.isFullLength()) {
-				if (time >= segment.getMarkIn() - SEGMENT_HYSTERESIS_MS
-						&& time < segment.getMarkOut()
-						&& segment == currentSegment) {
-					return segment;
-				}
 				if (time >= segment.getMarkIn() && time < segment.getMarkOut()) {
 					return segment;
 				}
@@ -259,7 +259,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 			if (event.type == SRGMediaPlayerController.Event.Type.STATE_CHANGE
 					&& event.state == SRGMediaPlayerController.State.RELEASED) {
 				// Update one last time UI to reflect released state
-				notifyPositionChange(mp.getMediaIdentifier(), 0);
+				notifyPositionChange(mp.getMediaIdentifier(), 0, false);
 			} else {
 				updateIfNotUserTracked();
 			}
@@ -276,5 +276,9 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	public void stopListening() {
 		playerController.unregisterEventListener(this);
 		handler.removeCallbacks(this);
+	}
+
+	public Segment getCurrentSegment() {
+		return currentSegment;
 	}
 }
