@@ -845,8 +845,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * if you want to play a new video.
      */
     public void release() {
-        if (debugMode && isBoundToMediaPlayerView()) {
-            throw new IllegalStateException("Releasing a player still bound to player view. Call unbindFromMediaPlayerView first");
+        if (mediaPlayerView != null) {
+            unbindFromMediaPlayerView(mediaPlayerView);
         }
         sendMessage(MSG_RELEASE);
     }
