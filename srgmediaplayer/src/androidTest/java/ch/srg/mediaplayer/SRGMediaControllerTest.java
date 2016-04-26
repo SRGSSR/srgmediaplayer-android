@@ -130,7 +130,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         waitForState(SRGMediaPlayerController.State.READY);
         Thread.sleep(100);
         Log.v("test", "isPlaying: " + delegate.isPlaying());
-        assertTrue(delegate.isPlaying());
+        assertTrue("delegate.isPlaying()", delegate.isPlaying());
     }
 
     @Test

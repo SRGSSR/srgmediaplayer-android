@@ -1,4 +1,3 @@
 <resources>
-    <string name="time_live">Live</string>
     <string name="time_pending">--:--</string>
 </resources>

@@ -180,6 +180,14 @@ public class MockDelegate implements PlayerDelegate {
 
     @Override
     public void setQualityOverride(Long quality) {
+    }
 
+    @Override
+    public void setQualityDefault(Long quality) {
+    }
+
+    @Override
+    public Long getBandwidthEstimate() {
+        return null;
     }
 }

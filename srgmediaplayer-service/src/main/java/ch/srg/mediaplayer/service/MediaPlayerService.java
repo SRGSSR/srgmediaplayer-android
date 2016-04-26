@@ -63,6 +63,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     public static final String ARG_MEDIA_IDENTIFIER = "mediaIdentifier";
     public static final String ARG_POSITION = "position";
+    public static final String ARG_POSITION_INCREMENENT = "positionIncrement";
     public static final String ARG_FLAGS = "flags";
     public static final String ARG_FROM_NOTIFICATION = "fromNotification";
 
@@ -75,6 +76,10 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private static final int NOTIFICATION_ID = 1;
     public static final int FLAG_LIVE = 1;
+    /**
+     * Forbid seeking too close to the end when using relative seek (POSITION_INCREMENT).
+     */
+    private static final long SEEK_END_SAFETY_MARGIN_MS = 10000;
     private static long autoreleaseDelayMs = 10000;
     private static SRGMediaPlayerDataProvider dataProvider;
     private static SRGMediaPlayerServiceMetaDataProvider serviceDataProvider;
@@ -280,11 +285,16 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
                 case ACTION_SEEK: {
                     long position = intent.getLongExtra(ARG_POSITION, -1);
-                    if (position == -1) {
-                        throw new IllegalArgumentException("Undefined position for seek");
+                    Long positionIncrement = intent.hasExtra(ARG_POSITION_INCREMENENT) ? intent.getLongExtra(ARG_POSITION_INCREMENENT, 0) : null;
+                    if (position == -1 && positionIncrement == null) {
+                        throw new IllegalArgumentException("Undefined position or position increment for seek");
                     } else {
-                        if (isPlaying()) {
-                            seekTo(position);
+                        if (player != null) {
+                            if (positionIncrement != null) {
+                                seekTo(Math.min(getDuration() - SEEK_END_SAFETY_MARGIN_MS, getPosition() + positionIncrement));
+                            } else {
+                                seekTo(position);
+                            }
                         }
                     }
                 }
@@ -370,7 +380,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         }
     }
 
-    public void prepare(String mediaIdentifier, @Nullable Long startPosition, boolean autoStart) throws SRGMediaPlayerException {
+    public SRGMediaPlayerController prepare(String mediaIdentifier, @Nullable Long startPosition, boolean autoStart) throws SRGMediaPlayerException {
         if (player != null && !player.isReleased()) {
             if (mediaIdentifier.equals(player.getMediaIdentifier())) {
                 if (autoStart) {
@@ -379,7 +389,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 if (startPosition != null) {
                     player.seekTo(startPosition);
                 }
-                return;
+                return player;
             } else {
                 player.release();
             }
@@ -390,6 +400,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         } else {
             player.pause();
         }
+        return player;
     }
 
     private void createPlayer() {
@@ -446,6 +457,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     }
                 } else {
                     stopForeground(true);
+                    NotificationManagerCompat.from(this).cancel(NOTIFICATION_ID);
                     currentServiceNotification = null;
                 }
                 isForeground = foreground;
@@ -473,6 +485,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         if (player != null) {
             player.release();
             player = null;
+            setForeground(false);
             mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
         }
     }
@@ -505,8 +518,10 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         return player != null && player.isPlaying();
     }
 
+    /**
+     * @return position in ms
+     */
     private long getPosition() {
-        // Return position only for AOD when we have an active player.
         if (player != null) {
             return Math.max(0, player.getMediaPosition());
         } else {
@@ -514,6 +529,9 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         }
     }
 
+    /**
+     * @return duration in ms
+     */
     private long getDuration() {
         if (player != null) {
             return player.getMediaDuration();

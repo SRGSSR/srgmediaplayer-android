@@ -52,6 +52,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private boolean pausedBecauseFocusLoss;
     private boolean mutedBecauseFocusLoss;
     private Long qualityOverride;
+    private Long qualityDefault;
 
     public static String getName() {
         return NAME;
@@ -697,6 +698,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private void applyStateInternal() {
         if (currentMediaPlayerDelegate != null) {
             currentMediaPlayerDelegate.setQualityOverride(qualityOverride);
+            currentMediaPlayerDelegate.setQualityDefault(qualityDefault);
             currentMediaPlayerDelegate.setMuted(muted);
             currentMediaPlayerDelegate.playIfReady(playWhenReady);
             Long seekTarget = this.seekToWhenReady;
@@ -843,8 +845,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * if you want to play a new video.
      */
     public void release() {
-        if (debugMode && isBoundToMediaPlayerView()) {
-            throw new IllegalStateException("Releasing a player still bound to player view. Call unbindFromMediaPlayerView first");
+        if (mediaPlayerView != null) {
+            unbindFromMediaPlayerView(mediaPlayerView);
         }
         sendMessage(MSG_RELEASE);
     }
@@ -1442,7 +1444,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     /**
-     * Force usage of a specific quality (when supported). Represented by bandwidth.
+     * Force use specific quality (when supported). Represented by bandwidth.
      * Can be 0 to force lowest quality or Integer.MAX for highest for instance.
      *
      * @param quality bandwidth quality in bits/sec or null to disable
@@ -1450,5 +1452,28 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     public void setQualityOverride(Long quality) {
         qualityOverride = quality;
         sendMessage(MSG_APPLY_STATE);
+    }
+
+    /**
+     * Use a specific quality when an estimate is not available (when supported).
+     * Represented by bandwidth. Typically used to force a better quality during startup.
+     * Can be 0 to force lowest quality or Integer.MAX for highest for instance.
+     *
+     * @param qualityDefault bandwidth quality in bits/sec or null to disable
+     */
+    public void setQualityDefault(Long qualityDefault) {
+        this.qualityDefault = qualityDefault;
+        sendMessage(MSG_APPLY_STATE);
+    }
+
+    /**
+     * @return bandwidth estimate in bits/sec if available, null otherwise
+     */
+    public Long getBandwidthEstimate() {
+        if (currentMediaPlayerDelegate != null) {
+            return currentMediaPlayerDelegate.getBandwidthEstimate();
+        } else {
+            return null;
+        }
     }
 }
