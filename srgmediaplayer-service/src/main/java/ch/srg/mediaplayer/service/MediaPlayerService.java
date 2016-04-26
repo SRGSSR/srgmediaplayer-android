@@ -380,7 +380,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         }
     }
 
-    public void prepare(String mediaIdentifier, @Nullable Long startPosition, boolean autoStart) throws SRGMediaPlayerException {
+    public SRGMediaPlayerController prepare(String mediaIdentifier, @Nullable Long startPosition, boolean autoStart) throws SRGMediaPlayerException {
         if (player != null && !player.isReleased()) {
             if (mediaIdentifier.equals(player.getMediaIdentifier())) {
                 if (autoStart) {
@@ -389,7 +389,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 if (startPosition != null) {
                     player.seekTo(startPosition);
                 }
-                return;
+                return player;
             } else {
                 player.release();
             }
@@ -400,6 +400,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         } else {
             player.pause();
         }
+        return player;
     }
 
     private void createPlayer() {
