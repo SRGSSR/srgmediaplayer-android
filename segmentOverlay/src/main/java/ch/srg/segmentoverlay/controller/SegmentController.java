@@ -33,7 +33,8 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 
 	private Set<Listener> listeners = new HashSet<>(); // TODO Weak hash set ?
 	private boolean userChangingProgress;
-	private final Handler handler;
+	@Nullable
+	private Handler handler;
 	private Segment segmentBeingSkipped;
 	private Segment currentSegment;
 
@@ -94,8 +95,6 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	public SegmentController(Context context, @NonNull SRGMediaPlayerController playerController) {
         this.context = context;
 		this.playerController = playerController;
-
-		handler = new Handler();
 	}
 
     @Override
@@ -269,13 +268,19 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	}
 
 	public void startListening() {
-		playerController.registerEventListener(this);
-		handler.postDelayed(this, PERIODIC_UPDATE_DELAY);
+		if (handler == null) {
+			playerController.registerEventListener(this);
+			handler = new Handler();
+			handler.postDelayed(this, PERIODIC_UPDATE_DELAY);
+		}
 	}
 
 	public void stopListening() {
-		playerController.unregisterEventListener(this);
-		handler.removeCallbacks(this);
+		if (handler != null) {
+			playerController.unregisterEventListener(this);
+			handler.removeCallbacks(this);
+			handler = null;
+		}
 	}
 
 	public Segment getCurrentSegment() {
