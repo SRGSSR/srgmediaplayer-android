@@ -1,6 +1,5 @@
 package ch.srg.segmentoverlay.controller;
 
-import android.content.Context;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -24,8 +23,6 @@ import ch.srg.segmentoverlay.model.Segment;
 public class SegmentController implements SegmentClickListener, SRGMediaPlayerController.Listener,  Runnable {
 	private static final long PERIODIC_UPDATE_DELAY = 250;
 	private static final long SEGMENT_HYSTERESIS_MS = 5000;
-
-	private Context context;
 
     private SRGMediaPlayerController playerController;
 
@@ -92,9 +89,9 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 		}
 	}
 
-	public SegmentController(Context context, @NonNull SRGMediaPlayerController playerController) {
-        this.context = context;
+	public SegmentController(@NonNull SRGMediaPlayerController playerController) {
 		this.playerController = playerController;
+		handler = new Handler();
 	}
 
     @Override
