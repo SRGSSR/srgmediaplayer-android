@@ -169,7 +169,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
 
         segmentView = (SegmentView) findViewById(R.id.segment_demo_view);
 
-        segmentController = new SegmentController(this, srgMediaPlayer);
+        segmentController = new SegmentController(srgMediaPlayer);
         if (segmentView != null) {
             segmentView.setBaseAdapter(adapter);
             segmentView.setSegmentController(segmentController);

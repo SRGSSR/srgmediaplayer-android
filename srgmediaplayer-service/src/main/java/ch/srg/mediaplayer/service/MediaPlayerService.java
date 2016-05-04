@@ -80,6 +80,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
      * Forbid seeking too close to the end when using relative seek (POSITION_INCREMENT).
      */
     private static final long SEEK_END_SAFETY_MARGIN_MS = 10000;
+    // Do not seek if player is already playing and no further than this to the required position
+    private static final long START_SEEK_THRESHOLD = 2000;
     private static long autoreleaseDelayMs = 10000;
     private static SRGMediaPlayerDataProvider dataProvider;
     private static SRGMediaPlayerServiceMetaDataProvider serviceDataProvider;
@@ -387,7 +389,9 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     player.start();
                 }
                 if (startPosition != null) {
-                    player.seekTo(startPosition);
+                    if (Math.abs(startPosition - player.getMediaPosition()) >= START_SEEK_THRESHOLD) {
+                        player.seekTo(startPosition);
+                    }
                 }
                 return player;
             } else {

@@ -1,6 +1,5 @@
 package ch.srg.segmentoverlay.controller;
 
-import android.content.Context;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -25,15 +24,14 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	private static final long PERIODIC_UPDATE_DELAY = 250;
 	private static final long SEGMENT_HYSTERESIS_MS = 5000;
 
-	private Context context;
-
     private SRGMediaPlayerController playerController;
 
 	private ArrayList<Segment> segments = new ArrayList<>();
 
 	private Set<Listener> listeners = new HashSet<>(); // TODO Weak hash set ?
 	private boolean userChangingProgress;
-	private final Handler handler;
+	@Nullable
+	private Handler handler;
 	private Segment segmentBeingSkipped;
 	private Segment currentSegment;
 
@@ -91,11 +89,8 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 		}
 	}
 
-	public SegmentController(Context context, @NonNull SRGMediaPlayerController playerController) {
-        this.context = context;
+	public SegmentController(@NonNull SRGMediaPlayerController playerController) {
 		this.playerController = playerController;
-
-		handler = new Handler();
 	}
 
     @Override
@@ -193,7 +188,9 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	@Override
 	public void run() {
 		updateIfNotUserTracked();
-		handler.postDelayed(this, PERIODIC_UPDATE_DELAY);
+		if (handler != null) {
+			handler.postDelayed(this, PERIODIC_UPDATE_DELAY);
+		}
 	}
 
 	private void updateIfNotUserTracked() {
@@ -269,13 +266,19 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	}
 
 	public void startListening() {
-		playerController.registerEventListener(this);
-		handler.postDelayed(this, PERIODIC_UPDATE_DELAY);
+		if (handler == null) {
+			playerController.registerEventListener(this);
+			handler = new Handler();
+			handler.postDelayed(this, PERIODIC_UPDATE_DELAY);
+		}
 	}
 
 	public void stopListening() {
-		playerController.unregisterEventListener(this);
-		handler.removeCallbacks(this);
+		if (handler != null) {
+			playerController.unregisterEventListener(this);
+			handler.removeCallbacks(this);
+			handler = null;
+		}
 	}
 
 	public Segment getCurrentSegment() {
