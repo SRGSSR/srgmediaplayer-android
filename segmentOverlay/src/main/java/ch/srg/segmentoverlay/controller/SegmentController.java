@@ -192,7 +192,9 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	@Override
 	public void run() {
 		updateIfNotUserTracked();
-		handler.postDelayed(this, PERIODIC_UPDATE_DELAY);
+		if (handler != null) {
+			handler.postDelayed(this, PERIODIC_UPDATE_DELAY);
+		}
 	}
 
 	private void updateIfNotUserTracked() {
