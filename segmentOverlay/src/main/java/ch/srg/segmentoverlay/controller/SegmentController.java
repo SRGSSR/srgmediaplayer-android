@@ -91,7 +91,6 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 
 	public SegmentController(@NonNull SRGMediaPlayerController playerController) {
 		this.playerController = playerController;
-		handler = new Handler();
 	}
 
     @Override
