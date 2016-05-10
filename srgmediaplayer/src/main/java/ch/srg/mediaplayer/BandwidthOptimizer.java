@@ -10,6 +10,7 @@ import android.util.Log;
  */
 public class BandwidthOptimizer implements SRGMediaPlayerController.Listener {
     private static final String TAG = SRGMediaPlayerController.TAG;
+    public static final int NO_NETWORK = -1;
     Long lastBandwidthEstimate;
     int lastNetworkEstimate;
     private ConnectivityManager connectivityManager;
@@ -30,7 +31,7 @@ public class BandwidthOptimizer implements SRGMediaPlayerController.Listener {
     public void onMediaPlayerEvent(SRGMediaPlayerController mp, SRGMediaPlayerController.Event event) {
         Long mpBandwidthEstimate = mp.getBandwidthEstimate();
         NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
-        int networkType = networkInfo.getType();
+        int networkType = networkInfo != null ? networkInfo.getType() : NO_NETWORK;
         if (lastNetworkEstimate != networkType) {
             lastNetworkEstimate = networkType;
             switch (networkType) {
@@ -42,6 +43,7 @@ public class BandwidthOptimizer implements SRGMediaPlayerController.Listener {
                 case ConnectivityManager.TYPE_MOBILE:
                     lastBandwidthEstimate = mobileDefaultEstimate;
                     break;
+                case NO_NETWORK:
                 default:
                     lastBandwidthEstimate = null;
             }
