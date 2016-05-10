@@ -29,6 +29,7 @@ public class SegmentView extends FrameLayout implements SegmentController.Listen
     private LinearLayoutManager linearLayoutManager;
     private SegmentController segmentController;
 
+    @Nullable
     private BaseSegmentAdapter adapter;
 
     private Integer textColor;
@@ -71,21 +72,30 @@ public class SegmentView extends FrameLayout implements SegmentController.Listen
     public void setBaseAdapter(@NonNull BaseSegmentAdapter adapter) {
         this.adapter = adapter;
         recyclerView.setAdapter(adapter);
+        adapter.setSelectedTextColor(selectedTextColor);
+        adapter.setSelectedBackgroundColor(selectedBackground);
+        adapter.setTextColor(textColor);
     }
 
     public void setTextColor(int textColor) {
         this.textColor = textColor;
-        adapter.setTextColor(textColor);
+        if (adapter != null) {
+            adapter.setTextColor(textColor);
+        }
     }
 
     public void setSelectedTextColor(int selectedTextColor) {
         this.selectedTextColor = selectedTextColor;
-        adapter.setSelectedTextColor(selectedTextColor);
+        if (adapter != null) {
+            adapter.setSelectedTextColor(selectedTextColor);
+        }
     }
 
     public void setSelectedBackground(int selectedBackground) {
         this.selectedBackground = selectedBackground;
-        adapter.setSelectedBackgroundColor(selectedBackground);
+        if (adapter != null) {
+            adapter.setSelectedBackgroundColor(selectedBackground);
+        }
     }
 
     public void setSegmentController(@NonNull SegmentController segmentController) {

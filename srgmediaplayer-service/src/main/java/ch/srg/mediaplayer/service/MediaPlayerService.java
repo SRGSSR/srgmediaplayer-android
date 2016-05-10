@@ -411,7 +411,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         if (dataProvider == null) {
             throw new IllegalArgumentException("No data provider defined");
         }
-        player = new SRGMediaPlayerController(this, dataProvider, TAG);
+        player = new SRGMediaPlayerController(getApplicationContext(), dataProvider, TAG);
         player.setDebugMode(debugMode);
         if (MediaPlayerService.playerDelegateFactory != null) {
             player.setPlayerDelegateFactory(MediaPlayerService.playerDelegateFactory);
