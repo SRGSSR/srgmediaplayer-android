@@ -438,8 +438,12 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 ServiceNotificationBuilder builder = createNotificationBuilder();
                 if (builder != currentServiceNotification && mediaSessionCompat != null) {
                     currentServiceNotification = builder;
-                    notificationManager.notify(NOTIFICATION_ID,
-                            builder.buildNotification(this, mediaSessionCompat));
+                    try {
+                        notificationManager.notify(NOTIFICATION_ID,
+                                builder.buildNotification(this, mediaSessionCompat));
+                    } catch (OutOfMemoryError e) {
+                        Log.d(TAG, "An out of memory occured when trying to build notification, image size?", e);
+                    }
                 }
             }
         } else {
