@@ -256,21 +256,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     } else {
                         position = null;
                     }
-                    if (TextUtils.isEmpty(newMediaIdentifier)) {
-                        Log.e(TAG, "ACTION_PLAY without mediaIdentifier, recovering");
-                        newMediaIdentifier = getCurrentMediaIdentifier();
-                    }
-                    if (intent.hasExtra(ARG_FLAGS)) {
-                        flags = intent.getIntExtra(ARG_FLAGS, 0);
-                    }
-
-                    //requestMediaSession(newMediaIdentifier);
-
-                    try {
-                        prepare(newMediaIdentifier, position, true);
-                    } catch (SRGMediaPlayerException e) {
-                        Log.e(TAG, "Player play " + newMediaIdentifier, e);
-                    }
+                    play(newMediaIdentifier, position, intent.getIntExtra(ARG_FLAGS, 0));
                 }
                 break;
 
@@ -325,6 +311,23 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             stopSelf();
         }
         return (Service.START_NOT_STICKY); /* we don't handle sticky mode */
+    }
+
+    public SRGMediaPlayerController play(String newMediaIdentifier, Long position, int flags) {
+        this.flags = flags;
+        if (TextUtils.isEmpty(newMediaIdentifier)) {
+            Log.e(TAG, "ACTION_PLAY without mediaIdentifier, recovering");
+            newMediaIdentifier = getCurrentMediaIdentifier();
+        }
+
+        //requestMediaSession(newMediaIdentifier);
+
+        try {
+            return prepare(newMediaIdentifier, position, true);
+        } catch (SRGMediaPlayerException e) {
+            Log.e(TAG, "Player play " + newMediaIdentifier, e);
+            return null;
+        }
     }
 
     private boolean hasNonDeadPlayer() {
