@@ -62,9 +62,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     public static final String ACTION_BROADCAST_STATUS_BUNDLE = PREFIX + ".broadcast.STATUS_BUNDLE";
 
     public static final String ARG_MEDIA_IDENTIFIER = "mediaIdentifier";
-    public static final String ARG_POSITION = "position";
+    public static final String ARG_POSITION = "position"; /** Long **/
     public static final String ARG_POSITION_INCREMENENT = "positionIncrement";
-    public static final String ARG_FLAGS = "flags";
     public static final String ARG_FROM_NOTIFICATION = "fromNotification";
 
     public static final String KEY_STATE = "state";
@@ -75,7 +74,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     public static final String KEY_PLAYING = "playing";
 
     private static final int NOTIFICATION_ID = 1;
-    public static final int FLAG_LIVE = 1;
     /**
      * Forbid seeking too close to the end when using relative seek (POSITION_INCREMENT).
      */
@@ -222,16 +220,10 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         Log.v(TAG, this.toString() + " onDestroy");
         isDestroyed = true;
 
-        setForeground(false);
-
         if (chromeCastManager != null) {
             chromeCastManager.removeListener(this);
         }
-
-        if (player != null) {
-            player.release();
-            player = null;
-        }
+        stopPlayer();
     }
 
     @Override
@@ -256,7 +248,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     } else {
                         position = null;
                     }
-                    play(newMediaIdentifier, position, intent.getIntExtra(ARG_FLAGS, 0));
+                    play(newMediaIdentifier, position);
                 }
                 break;
 
@@ -313,8 +305,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         return (Service.START_NOT_STICKY); /* we don't handle sticky mode */
     }
 
-    public SRGMediaPlayerController play(String newMediaIdentifier, Long position, int flags) {
-        this.flags = flags;
+    public SRGMediaPlayerController play(String newMediaIdentifier, Long position) {
         if (TextUtils.isEmpty(newMediaIdentifier)) {
             Log.e(TAG, "ACTION_PLAY without mediaIdentifier, recovering");
             newMediaIdentifier = getCurrentMediaIdentifier();
@@ -518,7 +509,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         updateBundle.putLong(KEY_POSITION, getPosition());
         updateBundle.putLong(KEY_DURATION, getDuration());
         updateBundle.putString(KEY_MEDIA_IDENTIFIER, getCurrentMediaIdentifier());
-        updateBundle.putInt(KEY_FLAGS, flags);
 
         Intent intent = new Intent(ACTION_BROADCAST_STATUS);
         intent.putExtra(ACTION_BROADCAST_STATUS_BUNDLE, updateBundle);
@@ -577,7 +567,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     @Override
     public boolean onUnbind(Intent intent) {
-        mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
         return super.onUnbind(intent);
     }
 
