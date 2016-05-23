@@ -20,17 +20,19 @@ public class ServiceNotificationBuilder {
     private String title;
     private String text;
     private PendingIntent pendingIntent;
-    private Bitmap largeIcon;
-    private int smallIcon;
+    private Bitmap notificationLargeIcon;
+    private Bitmap mediaSessionBitmap;
+    private int notificationSmallIcon;
 
-    public ServiceNotificationBuilder(boolean live, boolean playing, String title, String text, PendingIntent pendingIntent, Bitmap notificationBitmap, @DrawableRes int smallIcon) {
+    public ServiceNotificationBuilder(boolean live, boolean playing, String title, String text, PendingIntent pendingIntent, @DrawableRes int notificationSmallIcon, Bitmap notificationBitmap, Bitmap mediaSessionBitmap) {
         this.live = live;
         this.playing = playing;
         this.title = title;
         this.text = text;
         this.pendingIntent = pendingIntent;
-        this.largeIcon = notificationBitmap;
-        this.smallIcon = smallIcon;
+        this.notificationSmallIcon = notificationSmallIcon;
+        this.notificationLargeIcon = notificationBitmap;
+        this.mediaSessionBitmap = mediaSessionBitmap;
     }
 
     @Override
@@ -44,8 +46,9 @@ public class ServiceNotificationBuilder {
         if (playing != that.playing) return false;
         if (!TextUtils.equals(title, that.title)) return false;
         if (!TextUtils.equals(text, that.text)) return false;
-        if (largeIcon != that.largeIcon) return false;
-        if (smallIcon != that.smallIcon) return false;
+        if (notificationSmallIcon != that.notificationSmallIcon) return false;
+        if (notificationLargeIcon != that.notificationLargeIcon) return false;
+        if (mediaSessionBitmap != that.mediaSessionBitmap) return false;
         if (pendingIntent != null ? !pendingIntent.equals(that.pendingIntent) : that.pendingIntent != null)
             return false;
 
@@ -94,25 +97,24 @@ public class ServiceNotificationBuilder {
             builder.setContentText(text);
         }
 
-        builder.setSmallIcon(smallIcon);
-        if (largeIcon != null) {
-            builder.setLargeIcon(largeIcon);
-            setLargeIconInMediaSession(mediaSessionCompat);
+        builder.setSmallIcon(notificationSmallIcon);
+        if (notificationLargeIcon != null) {
+            builder.setLargeIcon(notificationLargeIcon);
+        }
+        if (mediaSessionBitmap != null) {
+            MediaMetadataCompat currentMetadata = mediaSessionCompat.getController().getMetadata();
+            MediaMetadataCompat.Builder newBuilder = currentMetadata == null
+                    ? new MediaMetadataCompat.Builder()
+                    : new MediaMetadataCompat.Builder(currentMetadata);
+            MediaMetadataCompat metadata = newBuilder
+                    .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, mediaSessionBitmap)
+                    .build();
+            mediaSessionCompat.setMetadata(metadata);
         }
 
         builder.setOngoing(true);
 
         return builder.build();
-    }
-
-    private void setLargeIconInMediaSession(@NonNull MediaSessionCompat mediaSessionCompat) {
-        MediaMetadataCompat currentMetadata = mediaSessionCompat.getController().getMetadata();
-        MediaMetadataCompat.Builder newBuilder = currentMetadata == null
-                ? new MediaMetadataCompat.Builder()
-                : new MediaMetadataCompat.Builder(currentMetadata);
-        mediaSessionCompat.setMetadata(newBuilder
-                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, largeIcon)
-                .build());
     }
 
 }

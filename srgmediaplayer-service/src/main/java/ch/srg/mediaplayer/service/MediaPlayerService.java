@@ -334,24 +334,28 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         String text;
         boolean live;
         PendingIntent pendingIntent;
-        Bitmap mediaArtBitmap;
-        @DrawableRes int smallIcon = R.drawable.ic_play_arrow_white_24dp;
+        Bitmap mediaSessionBitmap;
+        Bitmap notificationBitmap;
+        @DrawableRes int smallIcon;
         String mediaIdentifier = getCurrentMediaIdentifier();
         if (serviceDataProvider != null && mediaIdentifier != null) {
             title = serviceDataProvider.getTitle(mediaIdentifier);
             text = serviceDataProvider.getText(mediaIdentifier);
             live = serviceDataProvider.isLive(mediaIdentifier);
             pendingIntent = serviceDataProvider.getNotificationPendingIntent(mediaIdentifier);
-            mediaArtBitmap = serviceDataProvider.getNotificationLargeIconBitmap(mediaIdentifier);
+            notificationBitmap = serviceDataProvider.getNotificationLargeIconBitmap(mediaIdentifier);
+            mediaSessionBitmap = serviceDataProvider.getMediaSessionBitmap(mediaIdentifier);
             smallIcon = serviceDataProvider.getNotificationSmallIconResourceId(mediaIdentifier);
         } else {
             title = null;
             text = null;
             live = false;
             pendingIntent = null;
-            mediaArtBitmap = null;
+            notificationBitmap = null;
+            mediaSessionBitmap = null;
+            smallIcon = R.drawable.ic_play_arrow_white_24dp;
         }
-        return new ServiceNotificationBuilder(live, isPlaying(), title, text, pendingIntent, mediaArtBitmap, smallIcon);
+        return new ServiceNotificationBuilder(live, isPlaying(), title, text, pendingIntent, smallIcon, notificationBitmap, mediaSessionBitmap);
     }
 
     private void startUpdates() {

@@ -33,12 +33,20 @@ public interface SRGMediaPlayerServiceMetaDataProvider {
     int getNotificationSmallIconResourceId(String mediaIdentifier);
 
     /**
-     * Notification large resource Id.
+     * Notification large resource bitmap.
      *
      * @param mediaIdentifier media identifier
      * @return bitmap to be displayed in service notification or null if not application (and small icon to be displayed)
      */
     Bitmap getNotificationLargeIconBitmap(String mediaIdentifier);
+
+    /**
+     * Media session large resource url. Can be used for a lock screen for instance.
+     *
+     * @param mediaIdentifier media identifier
+     * @return bitmap to be displayed in service notification or null if not application (and small icon to be displayed)
+     */
+    Bitmap getMediaSessionBitmap(String mediaIdentifier);
 
     /**
      * @param mediaIdentifier media identifier
