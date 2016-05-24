@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import ch.srg.mediaplayer.PlayerViewDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.segmentoverlay.R;
 import ch.srg.segmentoverlay.controller.SegmentController;
@@ -23,7 +24,7 @@ import ch.srg.segmentoverlay.model.Segment;
 /**
  * Created by npietri on 20.05.15.
  */
-public class PlayerControlView extends RelativeLayout implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, SegmentController.Listener {
+public class PlayerControlView extends RelativeLayout implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, SegmentController.Listener, PlayerViewDelegate {
     private static final long COMPLETION_TOLERANCE_MS = 5000;
 
     public static final int FULLSCREEN_BUTTON_INVISIBLE = 0;
@@ -103,6 +104,7 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
         }
     }
 
+    @Override
     public void attachToController(SRGMediaPlayerController playerController) {
         this.playerController = playerController;
         update(SRGMediaPlayerController.UNKNOWN_TIME);
