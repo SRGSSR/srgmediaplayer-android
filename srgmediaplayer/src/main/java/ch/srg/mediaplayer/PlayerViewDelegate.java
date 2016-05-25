@@ -8,4 +8,5 @@ public interface PlayerViewDelegate {
 
     void attachToController(SRGMediaPlayerController playerController);
 
+    void setFullScreenButtonState(int fullScreenButtonState);
 }

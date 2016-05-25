@@ -254,6 +254,7 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
         listeners.remove(listener);
     }
 
+    @Override
     public void setFullScreenButtonState(int fullScreenButtonState) {
         this.fullScreenButtonState = fullScreenButtonState;
         updateFullScreenButton();
