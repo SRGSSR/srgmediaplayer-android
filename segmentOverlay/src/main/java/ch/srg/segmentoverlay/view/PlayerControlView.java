@@ -110,6 +110,11 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
         update(SRGMediaPlayerController.UNKNOWN_TIME);
     }
 
+    @Override
+    public void detachFromController(SRGMediaPlayerController srgMediaPlayerController) {
+        this.playerController = null;
+    }
+
     public void setSegmentController(@NonNull SegmentController segmentController) {
         if (this.segmentController != null) {
             this.segmentController.removeListener(this);
