@@ -11,7 +11,6 @@ import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -51,10 +50,11 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
 
     private long seekBarSeekToMs;
 
-    private ArrayList<PlayerControlView.Listener> listeners = new ArrayList<>();
     private int fullScreenButtonState;
     private long currentPosition;
     private long currentDuration;
+    @Nullable
+    private Listener listener;
 
     public PlayerControlView(Context context) {
         this(context, null);
@@ -136,13 +136,11 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
             } else if (v == pauseButton) {
                 playerController.pause();
             } else if (v == replayButton) {
-                ArrayList<Listener> listeners = new ArrayList<>(this.listeners);
-                for (PlayerControlView.Listener listener : listeners) {
+                if (listener != null) {
                     listener.onReplayClick();
                 }
             } else if (v == fullscreenButton) {
-                ArrayList<Listener> listeners = new ArrayList<>(this.listeners);
-                for (PlayerControlView.Listener listener : listeners) {
+                if (listener != null) {
                     listener.onFullscreenClick(fullScreenButtonState == FULLSCREEN_BUTTON_ON);
                 }
             }
@@ -251,12 +249,8 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
         void onFullscreenClick(boolean fullscreen);
     }
 
-    public void addListener(@NonNull PlayerControlView.Listener listener){
-        listeners.add(listener);
-    }
-
-    public void removeListener(@NonNull PlayerControlView.Listener listener){
-        listeners.remove(listener);
+    public void setListener(PlayerControlView.Listener listener){
+        this.listener = listener;
     }
 
     @Override
