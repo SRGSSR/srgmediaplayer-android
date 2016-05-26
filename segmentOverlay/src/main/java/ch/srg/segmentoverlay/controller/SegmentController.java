@@ -23,8 +23,9 @@ import ch.srg.segmentoverlay.model.Segment;
 public class SegmentController implements SegmentClickListener, SRGMediaPlayerController.Listener,  Runnable {
 	private static final long PERIODIC_UPDATE_DELAY = 250;
 	private static final long SEGMENT_HYSTERESIS_MS = 5000;
+	private static final String TAG = "SegmentController";
 
-    private SRGMediaPlayerController playerController;
+	private SRGMediaPlayerController playerController;
 
 	private ArrayList<Segment> segments = new ArrayList<>();
 
@@ -261,7 +262,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 				updateIfNotUserTracked();
 			}
 		} else {
-			throw new IllegalArgumentException("Unexpected player");
+			Log.e(TAG, "Unexpected player");
 		}
 	}
 
