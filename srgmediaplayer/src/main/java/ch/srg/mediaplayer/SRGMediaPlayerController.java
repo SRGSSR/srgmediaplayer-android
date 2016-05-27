@@ -139,7 +139,10 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             WILL_SEEK, // SEEK_STARTED
             DID_SEEK, // SEEK_STOPPED
 
-            EXTERNAL_EVENT;
+            EXTERNAL_EVENT,
+
+            DID_BIND_TO_PLAYER_VIEW,
+            DID_UNBIND_FROM_PLAYER_VIEW
         }
 
         public final Type type;
@@ -1010,7 +1013,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                             Log.v(TAG, renderingView + "binding, surfaceCreated" + mediaPlayerView);
                             try {
                                 if (currentMediaPlayerDelegate != null && ((SurfaceView) renderingView).getHolder() == holder) {
-                                    currentMediaPlayerDelegate.bindRenderingViewInUiThread(mediaPlayerView);
+                                    bindDelegateToRenderingViewInUiThread();
                                 } else {
                                     Log.d(TAG, "Surface created, but media player delegate retired");
                                 }
@@ -1044,7 +1047,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                             Log.v(TAG, renderingView + "binding, surfaceTextureAvailable" + mediaPlayerView);
                             if (currentMediaPlayerDelegate != null && isCurrent(surfaceTexture)) {
                                 try {
-                                    currentMediaPlayerDelegate.bindRenderingViewInUiThread(mediaPlayerView);
+                                    bindDelegateToRenderingViewInUiThread();
                                 } catch (SRGMediaPlayerException e) {
                                     Log.d(TAG, "Error binding view", e);
                                 }
@@ -1097,9 +1100,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     public void run() {
                         try {
                             Log.v(TAG, "binding, bindRenderingViewInUiThread " + mediaPlayerView);
-                            if (currentMediaPlayerDelegate != null) {
-                                currentMediaPlayerDelegate.bindRenderingViewInUiThread(mediaPlayerView);
-                            }
+                            bindDelegateToRenderingViewInUiThread();
                         } catch (SRGMediaPlayerException e) {
                             Log.d(TAG, "Error binding view", e);
                         }
@@ -1119,6 +1120,13 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         // - delegate null only, mediaPlayerView already stored as class attributes and will be set when needed
     }
 
+    private void bindDelegateToRenderingViewInUiThread() throws SRGMediaPlayerException {
+        if (currentMediaPlayerDelegate != null) {
+            currentMediaPlayerDelegate.bindRenderingViewInUiThread(mediaPlayerView);
+        }
+        broadcastEvent(Event.Type.DID_BIND_TO_PLAYER_VIEW);
+    }
+
     /**
      * Clear the current mediaPlayer, unbind the delegate and the overlayController
      *
@@ -1133,6 +1141,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 currentMediaPlayerDelegate.unbindRenderingView();
             }
             mediaPlayerView = null;
+            broadcastEvent(Event.Type.DID_UNBIND_FROM_PLAYER_VIEW);
         }
     }
 
