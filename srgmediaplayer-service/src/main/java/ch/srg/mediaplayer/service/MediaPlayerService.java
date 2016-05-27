@@ -261,6 +261,9 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     // Update notification so that if we are no longer synchronized, the user can
                     // at least force the notification removal with the stop button
                     updateNotification();
+                    // We force the set foreground as the updateNotification could potentially
+                    // be in the wrong state
+                    setForeground(false);
                     break;
 
                 case ACTION_SEEK: {
