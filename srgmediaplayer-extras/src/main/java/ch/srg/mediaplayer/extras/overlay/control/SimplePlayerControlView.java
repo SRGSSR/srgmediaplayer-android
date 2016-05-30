@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -23,6 +24,7 @@ import ch.srg.mediaplayer.SRGMediaPlayerController;
 public class SimplePlayerControlView extends RelativeLayout implements SRGMediaPlayerController.Listener, View.OnClickListener, SeekBar.OnSeekBarChangeListener, Runnable {
 
 	private static final long PERIODIC_UPDATE_DELAY = 250;
+	private static final String TAG = "SimplePlayerControlView";
 	private SRGMediaPlayerController playerController;
 
 	private int themeColor = Color.RED;
@@ -138,7 +140,7 @@ public class SimplePlayerControlView extends RelativeLayout implements SRGMediaP
 		if (mp == playerController) {
 			update();
 		} else {
-			throw new IllegalArgumentException("Unexpected player");
+			Log.e(TAG, "Unexpected player");
 		}
 	}
 

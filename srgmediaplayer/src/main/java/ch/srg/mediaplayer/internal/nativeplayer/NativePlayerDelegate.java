@@ -29,26 +29,31 @@ public class NativePlayerDelegate implements
 		MediaPlayer.OnErrorListener,
 		MediaPlayer.OnCompletionListener {
 
+
+
 	private enum State {
 		IDLE,
 		PREPARING,
 		READY,
 		ERROR,
-		RELEASED
+		RELEASED;
 	}
-
 	private MediaPlayer nativeMp;
 
 	private String videoSourceUrl = null;
+
 	private float videoSourceAspectRatio = SRGMediaPlayerView.DEFAULT_ASPECT_RATIO;
 	private int videoSourceHeight = 0;
-
 	private SRGMediaPlayerView mediaPlayerView;
 
 	private OnPlayerDelegateListener controller;
 
+	private boolean surfaceDisabled = false;
+
 	// We have to maintain state as underlying player does not expose it
 	private State state;
+
+	private boolean mpDisplaySet;
 
 	public NativePlayerDelegate(OnPlayerDelegateListener controller) {
 		this.controller = controller;
@@ -207,6 +212,7 @@ public class NativePlayerDelegate implements
 		if (surfaceView != null && surfaceView.getHolder() != null) {
 			try {
 				nativeMp.setDisplay(surfaceView.getHolder());
+				mpDisplaySet = true;
 			} catch (IllegalArgumentException e) {
 				throw new SRGMediaPlayerException(e);
 			}
@@ -215,7 +221,10 @@ public class NativePlayerDelegate implements
 
 	@Override
 	public void unbindRenderingView() {
-		nativeMp.setDisplay(null);
+		if (mpDisplaySet) {
+			nativeMp.setDisplay(null);
+			mpDisplaySet = false;
+		}
 	}
 
 	@Override
@@ -373,5 +382,9 @@ public class NativePlayerDelegate implements
 	@Override
 	public Long getBandwidthEstimate() {
 		return null;
+	}
+
+	public void setSurfaceDisabled(boolean surfaceDisabled) {
+		this.surfaceDisabled = surfaceDisabled;
 	}
 }

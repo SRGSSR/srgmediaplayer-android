@@ -11,10 +11,10 @@ import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import ch.srg.mediaplayer.PlayerViewDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.segmentoverlay.R;
 import ch.srg.segmentoverlay.controller.SegmentController;
@@ -23,7 +23,7 @@ import ch.srg.segmentoverlay.model.Segment;
 /**
  * Created by npietri on 20.05.15.
  */
-public class PlayerControlView extends RelativeLayout implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, SegmentController.Listener {
+public class PlayerControlView extends RelativeLayout implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, SegmentController.Listener, PlayerViewDelegate {
     private static final long COMPLETION_TOLERANCE_MS = 5000;
 
     public static final int FULLSCREEN_BUTTON_INVISIBLE = 0;
@@ -50,10 +50,11 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
 
     private long seekBarSeekToMs;
 
-    private ArrayList<PlayerControlView.Listener> listeners = new ArrayList<>();
     private int fullScreenButtonState;
     private long currentPosition;
     private long currentDuration;
+    @Nullable
+    private Listener listener;
 
     public PlayerControlView(Context context) {
         this(context, null);
@@ -103,9 +104,15 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
         }
     }
 
+    @Override
     public void attachToController(SRGMediaPlayerController playerController) {
         this.playerController = playerController;
         update(SRGMediaPlayerController.UNKNOWN_TIME);
+    }
+
+    @Override
+    public void detachFromController(SRGMediaPlayerController srgMediaPlayerController) {
+        this.playerController = null;
     }
 
     public void setSegmentController(@NonNull SegmentController segmentController) {
@@ -129,13 +136,11 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
             } else if (v == pauseButton) {
                 playerController.pause();
             } else if (v == replayButton) {
-                ArrayList<Listener> listeners = new ArrayList<>(this.listeners);
-                for (PlayerControlView.Listener listener : listeners) {
+                if (listener != null) {
                     listener.onReplayClick();
                 }
             } else if (v == fullscreenButton) {
-                ArrayList<Listener> listeners = new ArrayList<>(this.listeners);
-                for (PlayerControlView.Listener listener : listeners) {
+                if (listener != null) {
                     listener.onFullscreenClick(fullScreenButtonState == FULLSCREEN_BUTTON_ON);
                 }
             }
@@ -244,14 +249,11 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
         void onFullscreenClick(boolean fullscreen);
     }
 
-    public void addListener(@NonNull PlayerControlView.Listener listener){
-        listeners.add(listener);
+    public void setListener(PlayerControlView.Listener listener){
+        this.listener = listener;
     }
 
-    public void removeListener(@NonNull PlayerControlView.Listener listener){
-        listeners.remove(listener);
-    }
-
+    @Override
     public void setFullScreenButtonState(int fullScreenButtonState) {
         this.fullScreenButtonState = fullScreenButtonState;
         updateFullScreenButton();

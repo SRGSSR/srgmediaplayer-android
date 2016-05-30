@@ -62,9 +62,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     public static final String ACTION_BROADCAST_STATUS_BUNDLE = PREFIX + ".broadcast.STATUS_BUNDLE";
 
     public static final String ARG_MEDIA_IDENTIFIER = "mediaIdentifier";
-    public static final String ARG_POSITION = "position";
+    public static final String ARG_POSITION = "position"; /** Long **/
     public static final String ARG_POSITION_INCREMENENT = "positionIncrement";
-    public static final String ARG_FLAGS = "flags";
     public static final String ARG_FROM_NOTIFICATION = "fromNotification";
 
     public static final String KEY_STATE = "state";
@@ -75,7 +74,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     public static final String KEY_PLAYING = "playing";
 
     private static final int NOTIFICATION_ID = 1;
-    public static final int FLAG_LIVE = 1;
     /**
      * Forbid seeking too close to the end when using relative seek (POSITION_INCREMENT).
      */
@@ -222,16 +220,10 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         Log.v(TAG, this.toString() + " onDestroy");
         isDestroyed = true;
 
-        setForeground(false);
-
         if (chromeCastManager != null) {
             chromeCastManager.removeListener(this);
         }
-
-        if (player != null) {
-            player.release();
-            player = null;
-        }
+        stopPlayer();
     }
 
     @Override
@@ -256,21 +248,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     } else {
                         position = null;
                     }
-                    if (TextUtils.isEmpty(newMediaIdentifier)) {
-                        Log.e(TAG, "ACTION_PLAY without mediaIdentifier, recovering");
-                        newMediaIdentifier = getCurrentMediaIdentifier();
-                    }
-                    if (intent.hasExtra(ARG_FLAGS)) {
-                        flags = intent.getIntExtra(ARG_FLAGS, 0);
-                    }
-
-                    //requestMediaSession(newMediaIdentifier);
-
-                    try {
-                        prepare(newMediaIdentifier, position, true);
-                    } catch (SRGMediaPlayerException e) {
-                        Log.e(TAG, "Player play " + newMediaIdentifier, e);
-                    }
+                    play(newMediaIdentifier, position);
                 }
                 break;
 
@@ -283,6 +261,9 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     // Update notification so that if we are no longer synchronized, the user can
                     // at least force the notification removal with the stop button
                     updateNotification();
+                    // We force the set foreground as the updateNotification could potentially
+                    // be in the wrong state
+                    setForeground(false);
                     break;
 
                 case ACTION_SEEK: {
@@ -327,6 +308,22 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         return (Service.START_NOT_STICKY); /* we don't handle sticky mode */
     }
 
+    public SRGMediaPlayerController play(String newMediaIdentifier, Long position) {
+        if (TextUtils.isEmpty(newMediaIdentifier)) {
+            Log.e(TAG, "ACTION_PLAY without mediaIdentifier, recovering");
+            newMediaIdentifier = getCurrentMediaIdentifier();
+        }
+
+        //requestMediaSession(newMediaIdentifier);
+
+        try {
+            return prepare(newMediaIdentifier, position, true);
+        } catch (SRGMediaPlayerException e) {
+            Log.e(TAG, "Player play " + newMediaIdentifier, e);
+            return null;
+        }
+    }
+
     private boolean hasNonDeadPlayer() {
         return player != null && !player.isReleased() && player.getMediaIdentifier() != null;
     }
@@ -340,24 +337,28 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         String text;
         boolean live;
         PendingIntent pendingIntent;
-        Bitmap mediaArtBitmap;
-        @DrawableRes int smallIcon = R.drawable.ic_play_arrow_white_24dp;
+        Bitmap mediaSessionBitmap;
+        Bitmap notificationBitmap;
+        @DrawableRes int smallIcon;
         String mediaIdentifier = getCurrentMediaIdentifier();
         if (serviceDataProvider != null && mediaIdentifier != null) {
             title = serviceDataProvider.getTitle(mediaIdentifier);
             text = serviceDataProvider.getText(mediaIdentifier);
             live = serviceDataProvider.isLive(mediaIdentifier);
             pendingIntent = serviceDataProvider.getNotificationPendingIntent(mediaIdentifier);
-            mediaArtBitmap = serviceDataProvider.getNotificationLargeIconBitmap(mediaIdentifier);
+            notificationBitmap = serviceDataProvider.getNotificationLargeIconBitmap(mediaIdentifier);
+            mediaSessionBitmap = serviceDataProvider.getMediaSessionBitmap(mediaIdentifier);
             smallIcon = serviceDataProvider.getNotificationSmallIconResourceId(mediaIdentifier);
         } else {
             title = null;
             text = null;
             live = false;
             pendingIntent = null;
-            mediaArtBitmap = null;
+            notificationBitmap = null;
+            mediaSessionBitmap = null;
+            smallIcon = R.drawable.ic_play_arrow_white_24dp;
         }
-        return new ServiceNotificationBuilder(live, isPlaying(), title, text, pendingIntent, mediaArtBitmap, smallIcon);
+        return new ServiceNotificationBuilder(live, isPlaying(), title, text, pendingIntent, smallIcon, notificationBitmap, mediaSessionBitmap);
     }
 
     private void startUpdates() {
@@ -438,8 +439,12 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 ServiceNotificationBuilder builder = createNotificationBuilder();
                 if (builder != currentServiceNotification && mediaSessionCompat != null) {
                     currentServiceNotification = builder;
-                    notificationManager.notify(NOTIFICATION_ID,
-                            builder.buildNotification(this, mediaSessionCompat));
+                    try {
+                        notificationManager.notify(NOTIFICATION_ID,
+                                builder.buildNotification(this, mediaSessionCompat));
+                    } catch (OutOfMemoryError e) {
+                        Log.d(TAG, "An out of memory occured when trying to build notification, image size?", e);
+                    }
                 }
             }
         } else {
@@ -511,7 +516,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         updateBundle.putLong(KEY_POSITION, getPosition());
         updateBundle.putLong(KEY_DURATION, getDuration());
         updateBundle.putString(KEY_MEDIA_IDENTIFIER, getCurrentMediaIdentifier());
-        updateBundle.putInt(KEY_FLAGS, flags);
 
         Intent intent = new Intent(ACTION_BROADCAST_STATUS);
         intent.putExtra(ACTION_BROADCAST_STATUS_BUNDLE, updateBundle);
@@ -570,7 +574,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     @Override
     public boolean onUnbind(Intent intent) {
-        mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
         return super.onUnbind(intent);
     }
 
