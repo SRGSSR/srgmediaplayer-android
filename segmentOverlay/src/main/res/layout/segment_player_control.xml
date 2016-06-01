@@ -48,10 +48,16 @@
     <SeekBar
         android:id="@+id/segment_player_control_seekbar"
         android:layout_width="0dp"
-        android:layout_height="@dimen/player_control_height"
+        android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:maxHeight="@dimen/player_control_height"
-        android:minHeight="@dimen/player_control_height" />
+        android:backgroundTintMode="src_in"
+        android:progressBackgroundTintMode="src_in"
+        android:progressTint="@color/white"
+        android:progressTintMode="src_in"
+        android:secondaryProgressTint="@color/white"
+        android:secondaryProgressTintMode="src_in"
+        android:thumbTint="@color/thumb"
+        android:thumbTintMode="src_in" />
 
     <TextView
         android:id="@+id/segment_player_control_time_right"
