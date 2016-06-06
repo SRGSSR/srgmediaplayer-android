@@ -224,6 +224,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             chromeCastManager.removeListener(this);
         }
         stopPlayer();
+        NotificationManagerCompat.from(this).cancelAll();
     }
 
     @Override
@@ -260,10 +261,10 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     stopPlayer();
                     // Update notification so that if we are no longer synchronized, the user can
                     // at least force the notification removal with the stop button
-                    updateNotification();
+                    NotificationManagerCompat.from(this).cancelAll();
                     // We force the set foreground as the updateNotification could potentially
                     // be in the wrong state
-                    setForeground(false);
+                    stopForeground(true);
                     break;
 
                 case ACTION_SEEK: {
@@ -579,6 +580,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     @Override
     public void onMediaPlayerEvent(SRGMediaPlayerController mp, SRGMediaPlayerController.Event event) {
+        Log.d(TAG, "onMediaPlayerEvent: " + event.toString());
         sendBroadcastStatus(false);
         // TODO Find a clean way to update notification only when necessary
         if (mediaSessionCompat != null) {
