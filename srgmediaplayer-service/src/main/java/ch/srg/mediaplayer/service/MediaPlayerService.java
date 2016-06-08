@@ -264,7 +264,12 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     NotificationManagerCompat.from(this).cancelAll();
                     // We force the set foreground as the updateNotification could potentially
                     // be in the wrong state
-                    stopForeground(true);
+                    try {
+                        stopForeground(true);
+                    } catch (NullPointerException ignored) {
+                        // A null pointer exception is thrown by the system when using the ThreadServiceTestBase
+                        // Catch necessary for tests
+                    }
                     break;
 
                 case ACTION_SEEK: {
