@@ -106,16 +106,6 @@ public class SegmentView extends FrameLayout implements SegmentController.Listen
         segmentController.addListener(this);
     }
 
-    private void update() {
-        if (playerController != null) {
-            long time = playerController.getMediaPosition();
-
-            if (segmentController != null) {
-                segmentController.sendUserTrackedProgress(time);
-            }
-        }
-    }
-
     @Override
     public void onPositionChange(@Nullable String mediaIdentifier, long time, boolean seeking) {
         Segment currentSegment = segmentController.getCurrentSegment();

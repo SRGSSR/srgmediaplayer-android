@@ -123,11 +123,6 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
         segmentController.addListener(this);
     }
 
-    public void update() {
-        long time = playerController != null ? playerController.getMediaPosition() : SRGMediaPlayerController.UNKNOWN_TIME;
-        update(time);
-    }
-
     @Override
     public void onClick(View v) {
         if (playerController != null) {
@@ -257,5 +252,10 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
     public void setFullScreenButtonState(int fullScreenButtonState) {
         this.fullScreenButtonState = fullScreenButtonState;
         updateFullScreenButton();
+    }
+
+    @Override
+    public void update() {
+        // nothing to do. On all done in onPositionChange
     }
 }
