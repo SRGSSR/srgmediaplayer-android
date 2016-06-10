@@ -176,6 +176,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 			return false;
 		} else {
 			playerController.seekTo(mediaPosition);
+			playerController.start();
 			return true;
 		}
 	}
