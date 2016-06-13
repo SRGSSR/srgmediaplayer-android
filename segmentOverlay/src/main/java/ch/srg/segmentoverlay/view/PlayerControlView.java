@@ -5,6 +5,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RelativeLayout;
@@ -164,6 +165,20 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
                 segmentController.seekTo(playerController.getMediaIdentifier(), seekBarSeekToMs);
                 seekBarSeekToMs = -1;
             }
+        }
+    }
+
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        float x = event.getX();
+        float y = event.getY();
+
+        float seekBarX = seekBar.getX();
+        if (x >= seekBarX && x < seekBarX + seekBar.getWidth()) {
+            return seekBar.onTouchEvent(MotionEvent.obtain(event.getDownTime(), event.getEventTime(), event.getAction(), x, y, event.getPressure(), event.getSize(), event.getMetaState(), event.getXPrecision(), event.getYPrecision(), event.getDeviceId(), event.getEdgeFlags()));
+        } else {
+            return true;
         }
     }
 
