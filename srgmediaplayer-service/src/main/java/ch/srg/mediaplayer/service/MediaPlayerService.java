@@ -49,6 +49,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private static final String PREFIX = "ch.srg.mediaplayer.service";
     public static final String ACTION_PLAY = PREFIX + ".action.PLAY";
+    public static final String ACTION_PREPARE = PREFIX + ".action.PREPARE";
     public static final String ACTION_RESUME = PREFIX + ".action.RESUME";
     public static final String ACTION_PAUSE = PREFIX + ".action.PAUSE";
     public static final String ACTION_STOP = PREFIX + ".action.STOP";
@@ -238,6 +239,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     setForeground(true);
                     resume();
                     break;
+                case ACTION_PREPARE:
                 case ACTION_PLAY: {
                     setForeground(true);
 
@@ -249,7 +251,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     } else {
                         position = null;
                     }
-                    play(newMediaIdentifier, position);
+                    play(newMediaIdentifier, position, TextUtils.equals(action, ACTION_PLAY));
                 }
                 break;
 
@@ -314,7 +316,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         return (Service.START_NOT_STICKY); /* we don't handle sticky mode */
     }
 
-    public SRGMediaPlayerController play(String newMediaIdentifier, Long position) {
+    public SRGMediaPlayerController play(String newMediaIdentifier, Long position, boolean autoStart) {
         if (TextUtils.isEmpty(newMediaIdentifier)) {
             Log.e(TAG, "ACTION_PLAY without mediaIdentifier, recovering");
             newMediaIdentifier = getCurrentMediaIdentifier();
@@ -323,7 +325,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         //requestMediaSession(newMediaIdentifier);
 
         try {
-            return prepare(newMediaIdentifier, position, true);
+            return prepare(newMediaIdentifier, position, autoStart);
         } catch (SRGMediaPlayerException e) {
             Log.e(TAG, "Player play " + newMediaIdentifier, e);
             return null;
