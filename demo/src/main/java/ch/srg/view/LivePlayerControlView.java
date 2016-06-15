@@ -12,6 +12,8 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.demo.R;
@@ -123,7 +125,9 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
 
             Log.v(TAG, "Update: " + position + "+" + mediaPlaylistOffset + " / " + duration);
 
-            updateTimes(Math.max(0, position - mediaPlaylistOffset), duration);
+            long correctedPosition = Math.max(0, position - mediaPlaylistOffset);
+            long realPosition = System.currentTimeMillis() - duration + correctedPosition;
+            updateTimes(mediaPlaylistOffset, correctedPosition, duration, realPosition);
 
             playButton.setVisibility(playerController.isPlaying() ? GONE : VISIBLE);
             pauseButton.setVisibility(playerController.isPlaying() ? VISIBLE : GONE);
@@ -133,7 +137,7 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
         }
     }
 
-    private void updateTimes(long position, long duration) {
+    private void updateTimes(long offset, long position, long duration, long realPosition) {
         // TODO Buffer indication
 //        int bufferPercent = playerController.getBufferPercentage();
 //        if (bufferPercent > 0) {
@@ -144,8 +148,10 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
         seekBar.setMax((int) duration);
         seekBar.setProgress((int) (position));
 
-        leftTime.setText(stringForTimeInMs(position));
-        rightTime.setText(stringForTimeInMs(duration));
+        DateFormat df = SimpleDateFormat.getTimeInstance();
+
+        leftTime.setText(stringForTimeInMs(offset) + " + " + stringForTimeInMs(position));
+        rightTime.setText(stringForTimeInMs(duration) + " (" + df.format(new Date(realPosition)) + ")");
     }
 
     private void updateIfNotUserTracked() {

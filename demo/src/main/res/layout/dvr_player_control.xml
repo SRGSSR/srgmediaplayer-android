@@ -17,6 +17,12 @@
             android:layout_alignParentBottom="false"
             android:orientation="horizontal">
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="DVR"
+                android:gravity="center"/>
+
             <Button
                 android:id="@+id/segment_player_control_button_play"
                 android:layout_width="@dimen/player_control_height"
