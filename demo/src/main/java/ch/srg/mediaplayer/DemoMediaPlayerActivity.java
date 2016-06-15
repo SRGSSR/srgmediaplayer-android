@@ -320,7 +320,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
                 srgMediaPlayer.seekTo(duration - 1000 * 60);
                 break;
             case R.id.button_seek_live:
-                srgMediaPlayer.seekTo(duration);
+                srgMediaPlayer.seekTo(0);
                 break;
             case R.id.button_swap_player:
                 swapPlayer();
