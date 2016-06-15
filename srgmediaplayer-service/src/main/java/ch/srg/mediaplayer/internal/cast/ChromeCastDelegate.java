@@ -329,4 +329,8 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
     public Long getBandwidthEstimate() {
         return null;
     }
+
+    public long getPlaylistReferenceTime() {
+        return System.currentTimeMillis();
+    }
 }

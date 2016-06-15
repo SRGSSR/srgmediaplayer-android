@@ -71,6 +71,7 @@ class ExoPlayerDelegate implements
     private HlsChunkSource hlsChunkSource;
     private Long qualityOverride;
     private Long qualityDefault;
+    private long playlistReferenceTime;
 
     @Override
     public void onAvailableRangeChanged(int i, TimeRange timeRange) {
@@ -481,9 +482,18 @@ class ExoPlayerDelegate implements
     }
 
     @Override
-    public void onPlaylistInformation(boolean live, long playlistStartTimeUs) {
+    public void onPlaylistInformation(boolean live) {
         this.live = live;
-        this.playlistStartTimeMs = playlistStartTimeUs / 1000;
+    }
+
+    @Override
+    public void onPlaylistLoaded() {
+        this.playlistReferenceTime = System.currentTimeMillis();
+    }
+
+    @Override
+    public long getPlaylistReferenceTime() {
+        return playlistReferenceTime;
     }
 
     @Override

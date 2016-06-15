@@ -126,7 +126,7 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
             Log.v(TAG, "Update: " + position + "+" + mediaPlaylistOffset + " / " + duration);
 
             long correctedPosition = Math.max(0, position - mediaPlaylistOffset);
-            long realPosition = System.currentTimeMillis() - duration + correctedPosition;
+            long realPosition = playerController.getLiveTime() - duration + correctedPosition;
             updateTimes(mediaPlaylistOffset, correctedPosition, duration, realPosition);
 
             playButton.setVisibility(playerController.isPlaying() ? GONE : VISIBLE);

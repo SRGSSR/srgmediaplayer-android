@@ -387,4 +387,8 @@ public class NativePlayerDelegate implements
 	public void setSurfaceDisabled(boolean surfaceDisabled) {
 		this.surfaceDisabled = surfaceDisabled;
 	}
+
+	public long getPlaylistReferenceTime() {
+		return System.currentTimeMillis();
+	}
 }

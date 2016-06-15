@@ -679,16 +679,17 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     private void periodicUpdateInteral() {
-        if (currentSeekTarget != null) {
-            if (currentMediaPlayerDelegate == null) {
-                currentSeekTarget = null;
-            } else {
+        if (currentMediaPlayerDelegate == null) {
+            currentSeekTarget = null;
+        } else {
+            if (currentSeekTarget != null) {
                 long currentPosition = currentMediaPlayerDelegate.getCurrentPosition();
                 if (currentPosition != UNKNOWN_TIME && currentPosition != currentSeekTarget) {
                     currentSeekTarget = null;
                     postEventInternal(Event.Type.DID_SEEK);
                 }
             }
+            long mediaPlaylistStartTime = currentMediaPlayerDelegate.getPlaylistStartTime();
         }
     }
 
@@ -914,9 +915,22 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      *
      * @return MPST in ms
      */
+    @Deprecated
     public long getMediaPlaylistStartTime() {
+        return 0;
+    }
+
+    /**
+     * Live time, (time of the last playlist load).
+     * <pre>
+     *     getPosition() - getDuration() + getLiveTime() = wall clock time
+     * </pre>
+     *
+     * @return reference wall clock time in ms
+     */
+    public long getLiveTime() {
         if (currentMediaPlayerDelegate != null) {
-            return currentMediaPlayerDelegate.getPlaylistStartTime();
+            return currentMediaPlayerDelegate.getPlaylistReferenceTime();
         } else {
             return UNKNOWN_TIME;
         }

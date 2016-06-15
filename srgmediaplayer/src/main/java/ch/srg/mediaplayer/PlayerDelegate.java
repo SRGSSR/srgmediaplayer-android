@@ -135,4 +135,6 @@ public interface PlayerDelegate {
 	 * @return bandwidth estimate in bits/sec or null if not available.
      */
 	Long getBandwidthEstimate();
+
+	long getPlaylistReferenceTime();
 }
