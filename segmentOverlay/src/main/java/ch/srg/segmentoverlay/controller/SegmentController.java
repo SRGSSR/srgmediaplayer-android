@@ -105,6 +105,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 			if (!TextUtils.isEmpty(mediaIdentifier) && mediaIdentifier.equals(segment.getMediaIdentifier())) {
 				postEvent(Event.Type.SEGMENT_SELECTED, segment);
 				playerController.seekTo(segment.getMarkIn());
+				playerController.start();
 			} else {
 				try {
 					playerController.play(segment.getMediaIdentifier(), segment.getMarkIn());
