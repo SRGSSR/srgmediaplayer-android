@@ -393,7 +393,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     public SRGMediaPlayerController prepare(String mediaIdentifier, @Nullable Long startPosition, boolean autoStart) throws SRGMediaPlayerException {
         if (player != null && !player.isReleased()) {
-            if (mediaIdentifier.equals(player.getMediaIdentifier())) {
+            if (TextUtils.equals(mediaIdentifier, player.getMediaIdentifier())) {
                 if (autoStart) {
                     player.start();
                 }
