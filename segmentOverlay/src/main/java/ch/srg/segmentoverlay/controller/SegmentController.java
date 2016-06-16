@@ -30,11 +30,31 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	private ArrayList<Segment> segments = new ArrayList<>();
 
 	private Set<Listener> listeners = new HashSet<>(); // TODO Weak hash set ?
+
 	private boolean userChangingProgress;
 	@Nullable
 	private Handler handler;
 	private Segment segmentBeingSkipped;
 	private Segment currentSegment;
+
+	private SegmentClickDelegate segmentClickDelegate = new SegmentClickDelegate() {
+		@Override
+		public void onSegmentClick(Segment segment) {
+			String mediaIdentifier = playerController.getMediaIdentifier();
+			currentSegment = segment;
+			if (!TextUtils.isEmpty(mediaIdentifier) && mediaIdentifier.equals(segment.getMediaIdentifier())) {
+				postEvent(Event.Type.SEGMENT_SELECTED, segment);
+				playerController.seekTo(segment.getMarkIn());
+				playerController.start();
+			} else {
+				try {
+					playerController.play(segment.getMediaIdentifier(), segment.getMarkIn());
+				} catch (SRGMediaPlayerException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	};
 
 	public static class Event extends SRGMediaPlayerController.Event {
 		public Segment segment;
@@ -100,19 +120,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	    if (!segment.isBlocked()) {
 		    segmentBeingSkipped = null;
 
-			String mediaIdentifier = playerController.getMediaIdentifier();
-			currentSegment = segment;
-			if (!TextUtils.isEmpty(mediaIdentifier) && mediaIdentifier.equals(segment.getMediaIdentifier())) {
-				postEvent(Event.Type.SEGMENT_SELECTED, segment);
-				playerController.seekTo(segment.getMarkIn());
-				playerController.start();
-			} else {
-				try {
-					playerController.play(segment.getMediaIdentifier(), segment.getMarkIn());
-				} catch (SRGMediaPlayerException e) {
-					e.printStackTrace();
-				}
-			}
+			segmentClickDelegate.onSegmentClick(segment);
 	    } else {
 			postBlockedSegmentEvent(segment, Event.Type.SEGMENT_USER_SEEK_BLOCKED);
 		}
@@ -186,6 +194,10 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 		void onPositionChange(@Nullable String mediaIdentifier, long position, boolean seeking);
 
 		void onSegmentListChanged(List<Segment> segments);
+	}
+
+	public interface SegmentClickDelegate {
+		void onSegmentClick(Segment segment);
 	}
 
 	@Override
@@ -286,5 +298,9 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 
 	public Segment getCurrentSegment() {
 		return currentSegment;
+	}
+
+	public void setSegmentClickDelegate(SegmentClickDelegate segmentClickDelegate) {
+		this.segmentClickDelegate = segmentClickDelegate;
 	}
 }
