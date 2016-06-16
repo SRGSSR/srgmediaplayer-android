@@ -659,9 +659,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 return true;
             case MSG_PERIODIC_UPDATE:
                 periodicUpdateInteral();
-                if (isPlaying()) {
-                    schedulePeriodUpdate();
-                }
+                schedulePeriodUpdate();
                 return true;
             case MSG_FIRE_EVENT:
                 this.postEventInternal((Event) msg.obj);
@@ -689,7 +687,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     postEventInternal(Event.Type.DID_SEEK);
                 }
             }
-            long mediaPlaylistStartTime = currentMediaPlayerDelegate.getPlaylistStartTime();
         }
     }
 
