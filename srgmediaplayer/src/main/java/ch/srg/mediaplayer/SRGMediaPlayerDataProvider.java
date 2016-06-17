@@ -15,10 +15,11 @@ public interface SRGMediaPlayerDataProvider {
 	 * may do a network or database request.
 	 *
 	 * @param mediaIdentifier media identifier
+	 * @param playerDelegate player delegate
 	 * @return Uri to play the media
 	 * @throws SRGMediaPlayerException network or parsing error encapsulated in an SRGMediaPlayerExcpetion
 	 */
-	Uri getUri(String mediaIdentifier) throws SRGMediaPlayerException;
+	Uri getUri(String mediaIdentifier, PlayerDelegate playerDelegate) throws SRGMediaPlayerException;
 
 	/**
 	 * Item type for a media identifier. Must be constant for a single media identifier. This method

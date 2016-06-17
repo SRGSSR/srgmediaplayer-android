@@ -6,6 +6,7 @@ import android.support.annotation.NonNull;
 import java.util.HashMap;
 import java.util.Map;
 
+import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 
@@ -34,7 +35,7 @@ public class MockDataProvider implements SRGMediaPlayerDataProvider {
     private int count;
 
     @Override
-    public Uri getUri(String mediaIdentifier) throws SRGMediaPlayerException {
+    public Uri getUri(String mediaIdentifier, PlayerDelegate playerDelegate) throws SRGMediaPlayerException {
         count++;
         if (data.containsKey(mediaIdentifier)) {
             String uriString = data.get(mediaIdentifier);

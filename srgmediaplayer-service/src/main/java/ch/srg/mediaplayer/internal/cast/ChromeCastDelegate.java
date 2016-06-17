@@ -69,7 +69,7 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
 
     @Override
     public void prepare(Uri videoUri) throws SRGMediaPlayerException {
-        Log.d(TAG, "Prepare: " + videoUri);
+        Log.d(TAG, "Prepare: " + videoUri + " type: " + contentType + " title: " + title);
         controller.onPlayerDelegatePreparing(this);
 
         String metadataTitle;

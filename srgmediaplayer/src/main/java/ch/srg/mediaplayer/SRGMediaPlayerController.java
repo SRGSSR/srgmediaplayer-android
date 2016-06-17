@@ -520,7 +520,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             case MSG_PREPARE_FOR_MEDIA_IDENTIFIER: {
                 String mediaIdentifier = (String) msg.obj;
                 releaseDelegateInternal();
-                prepareForIdentifierInternal(mediaIdentifier, null);
+                prepareForIdentifierInternal(mediaIdentifier, playerDelegateFactory.getDelegateForMediaIdentifier(this, mediaIdentifier));
                 seekToWhenReady = null;
                 return true;
             }

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.segmentoverlay.data.SegmentDataProvider;
@@ -56,9 +57,9 @@ public class MultiDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
 	}
 
 	@Override
-	public Uri getUri(String mediaIdentifier) throws SRGMediaPlayerException {
+	public Uri getUri(String mediaIdentifier, PlayerDelegate playerDelegate) throws SRGMediaPlayerException {
 		return getProvider(mediaIdentifier).
-				getUri(getIdentifier(mediaIdentifier));
+				getUri(getIdentifier(mediaIdentifier), playerDelegate);
 	}
 
 	@Override

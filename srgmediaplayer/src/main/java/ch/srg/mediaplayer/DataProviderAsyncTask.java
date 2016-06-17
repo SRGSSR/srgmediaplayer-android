@@ -31,7 +31,7 @@ public class DataProviderAsyncTask extends AsyncTask<String, Integer, Void> {
 		}
 		try {
 			String mediaIdentifier = params[0];
-			Uri uri = dataProvider.getUri(mediaIdentifier);
+			Uri uri = dataProvider.getUri(mediaIdentifier, playerDelegate);
 			if (uri != null) {
 				controller.onUriLoaded(uri, playerDelegate);
 			} else {
