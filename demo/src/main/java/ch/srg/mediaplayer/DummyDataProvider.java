@@ -33,7 +33,7 @@ public class DummyDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
 		;
 	};
 	@Override
-	public Uri getUri(String mediaIdentifier) {
+	public Uri getUri(String mediaIdentifier, PlayerDelegate playerDelegate) {
 		if (mediaIdentifier.contains("@")){
 			mediaIdentifier = mediaIdentifier.substring(0,mediaIdentifier.indexOf('@'));
 		}

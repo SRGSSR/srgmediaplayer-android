@@ -24,7 +24,7 @@ public class RawHttpDataProvider implements SRGMediaPlayerDataProvider {
     }
 
     @Override
-    public Uri getUri(String mediaIdentifier) throws SRGMediaPlayerException {
+    public Uri getUri(String mediaIdentifier, PlayerDelegate playerDelegate) throws SRGMediaPlayerException {
         return fetch(mediaIdentifier, new URLConnectionProcessor<Uri>() {
             @Override
             public void onSetupHttpURLConnection(HttpURLConnection urlConnection) throws IOException {
