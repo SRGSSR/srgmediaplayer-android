@@ -73,6 +73,11 @@ class ExoPlayerDelegate implements
     private Long qualityDefault;
     private long playlistReferenceTime;
 
+    /**
+     * Workaround for paused live as position and/or duration stay put when one of them should really change.
+     */
+    private long livePauseTime;
+
     @Override
     public void onAvailableRangeChanged(int i, TimeRange timeRange) {
 
@@ -232,6 +237,7 @@ class ExoPlayerDelegate implements
 
     @Override
     public void onHlsChunkSource(HlsChunkSource chunkSource) {
+        livePauseTime = 0;
         this.hlsChunkSource = chunkSource;
         hlsChunkSource.setBitrateEstimateOverride(qualityOverride);
         hlsChunkSource.setBitrateEstimateDefault(qualityDefault);
@@ -266,6 +272,7 @@ class ExoPlayerDelegate implements
 
     @Override
     public void seekTo(long positionInMillis) throws IllegalStateException {
+        livePauseTime = 0;
         exoPlayer.seekTo(positionInMillis);
     }
 
@@ -488,7 +495,14 @@ class ExoPlayerDelegate implements
 
     @Override
     public void onPlaylistLoaded() {
-        this.playlistReferenceTime = System.currentTimeMillis();
+        final long maxAdjustPeriod = 30000;
+        long newTime = System.currentTimeMillis();
+        long period = newTime - (playlistReferenceTime + livePauseTime);
+
+        if (!exoPlayer.getPlayWhenReady() && period < maxAdjustPeriod) {
+            livePauseTime += period;
+        }
+        this.playlistReferenceTime = newTime - livePauseTime;
     }
 
     @Override
