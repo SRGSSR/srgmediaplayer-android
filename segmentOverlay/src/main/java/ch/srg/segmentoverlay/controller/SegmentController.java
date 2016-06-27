@@ -165,12 +165,14 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	}
 
 	public void setSegmentList(List<Segment> segments) {
-		this.segments.clear();
-		if (segments != null) {
-			this.segments.addAll(segments);
-		}
-		for (Listener l : listeners) {
-			l.onSegmentListChanged(segments);
+		if (!this.segments.equals(segments)) {
+			this.segments.clear();
+			if (segments != null) {
+				this.segments.addAll(segments);
+			}
+			for (Listener l : listeners) {
+				l.onSegmentListChanged(segments);
+			}
 		}
 	}
 
