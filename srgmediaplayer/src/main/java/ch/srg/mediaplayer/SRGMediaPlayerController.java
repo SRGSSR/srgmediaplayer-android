@@ -861,7 +861,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     public boolean isPlaying() {
-        return currentMediaPlayerDelegate != null && currentMediaPlayerDelegate.isPlaying() && seekToWhenReady == null;
+        PlayerDelegate delegate = this.currentMediaPlayerDelegate;
+        return delegate != null && delegate.isPlaying() && seekToWhenReady == null;
     }
 
     /**
