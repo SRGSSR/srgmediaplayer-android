@@ -316,7 +316,7 @@ class ExoPlayerDelegate implements
             throw new SRGMediaPlayerException("ExoPlayerDelegate cannot render video in a " + mpv);
         }
         renderingView = mpv.getVideoRenderingView();
-        pushSurface(true);
+        pushSurface(false);
     }
 
     @Override
