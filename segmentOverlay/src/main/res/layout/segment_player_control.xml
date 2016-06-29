@@ -57,7 +57,8 @@
         android:secondaryProgressTint="@color/white"
         android:secondaryProgressTintMode="src_in"
         android:thumbTint="@color/thumb"
-        android:thumbTintMode="src_in" />
+        android:thumbTintMode="src_in"
+        tools:ignore="UnusedAttribute" />
 
     <TextView
         android:id="@+id/segment_player_control_time_right"

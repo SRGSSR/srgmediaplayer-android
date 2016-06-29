@@ -15,6 +15,7 @@
  */
 package ch.srg.mediaplayer.internal.exoplayer;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaCodec;
@@ -221,6 +222,7 @@ public class DashRendererBuilder implements RendererBuilder {
             ChunkSampleSource videoSampleSource = new ChunkSampleSource(videoChunkSource, loadControl,
                     VIDEO_BUFFER_SEGMENTS * BUFFER_SEGMENT_SIZE, mainHandler, player,
                     ExoPlayerDelegate.TYPE_VIDEO);
+            @SuppressLint("InlinedApi")
             TrackRenderer videoRenderer = new MediaCodecVideoTrackRenderer(context, videoSampleSource,
                     MediaCodecSelector.DEFAULT, MediaCodec.VIDEO_SCALING_MODE_SCALE_TO_FIT, 5000, drmSessionManager,
                     true, mainHandler, player, 50);

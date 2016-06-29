@@ -15,6 +15,7 @@
  */
 package ch.srg.mediaplayer.internal.exoplayer;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.media.MediaCodec;
 import android.net.Uri;
@@ -57,6 +58,7 @@ public class ExtractorRendererBuilder implements RendererBuilder {
         DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter(player.getMainHandler(), null);
         DataSource dataSource = new DefaultUriDataSource(context, bandwidthMeter, userAgent);
         ExtractorSampleSource sampleSource = new ExtractorSampleSource(uri, dataSource, allocator, BUFFER_SEGMENT_COUNT * BUFFER_SEGMENT_SIZE);
+        @SuppressLint("InlinedApi")
         MediaCodecVideoTrackRenderer videoRenderer = new MediaCodecVideoTrackRenderer(context, sampleSource, MediaCodecSelector.DEFAULT, MediaCodec.VIDEO_SCALING_MODE_SCALE_TO_FIT, 5000, player.getMainHandler(), player, 50);
         MediaCodecAudioTrackRenderer audioRenderer = new MediaCodecAudioTrackRenderer(sampleSource, MediaCodecSelector.DEFAULT, player.getMainHandler(), player);
 

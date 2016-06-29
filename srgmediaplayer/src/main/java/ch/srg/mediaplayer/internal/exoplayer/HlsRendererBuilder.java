@@ -16,6 +16,7 @@
 
 package ch.srg.mediaplayer.internal.exoplayer;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.media.MediaCodec;
 
@@ -90,6 +91,7 @@ public class HlsRendererBuilder implements RendererBuilder, ManifestCallback<Hls
         DataSource dataSource = new DefaultUriDataSource(context, bandwidthMeter, userAgent);
         HlsChunkSource chunkSource = new HlsChunkSource(true, dataSource, url, manifest, DefaultHlsTrackSelector.newDefaultInstance(context), bandwidthMeter, timestampAdjusterProvider, HlsChunkSource.ADAPTIVE_MODE_SPLICE, player);
         HlsSampleSource sampleSource = new HlsSampleSource(chunkSource, loadControl, BUFFER_SEGMENTS * BUFFER_SEGMENT_SIZE, player.getMainHandler(), player, ExoPlayerDelegate.TYPE_VIDEO);
+        @SuppressLint("InlinedApi")
         MediaCodecVideoTrackRenderer videoRenderer = new MediaCodecVideoTrackRenderer(context, sampleSource, MediaCodecSelector.DEFAULT, MediaCodec.VIDEO_SCALING_MODE_SCALE_TO_FIT, 5000, player.getMainHandler(), player, 50);
         MediaCodecAudioTrackRenderer audioRenderer = new MediaCodecAudioTrackRenderer(sampleSource, MediaCodecSelector.DEFAULT);
 

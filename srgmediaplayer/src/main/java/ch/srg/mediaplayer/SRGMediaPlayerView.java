@@ -1,5 +1,6 @@
 package ch.srg.mediaplayer;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Rect;
@@ -291,6 +292,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
      * Only used for the videorenderingview
      */
     @Override
+    @SuppressLint("ClickableViewAccessibility")
     public boolean onTouch(View v, MotionEvent event) {
         Log.v(SRGMediaPlayerController.TAG, "onTouch videoview " + event.getAction());
         if (v == videoRenderingView) {
