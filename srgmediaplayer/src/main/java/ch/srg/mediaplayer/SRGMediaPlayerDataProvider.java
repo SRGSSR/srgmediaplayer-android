@@ -16,17 +16,18 @@ public interface SRGMediaPlayerDataProvider {
 	interface GetUriAndMediaTypeCallback {
 
 		/**
-		 * Return Uri to play the media identifier. Must be constant for a single media identifier. This method
-		 * may do a network or database request. And Item type for a media identifier. Must be constant for a single media identifier. This method
-		 * may do a network or database request.
+		 * Return Uri to play the media identifier.
+		 * And Item type for a media identifier. Must be constant for a single media identifier.
+		 * This method may do a network or database request.
 		 * @param uri Uri to play the media
 		 * @param mediaType {@link #TYPE_AUDIO} or {@link #TYPE_VIDEO}
          */
 		void onDataLoaded(Uri uri, int mediaType);
 
 		/**
-		 *
-		 */
+		 * Callback return when something wrong appends during the media uri loading
+		 * @param exception Displayable SRGMediaPlayerException
+         */
 		void onDataNotAvailable(SRGMediaPlayerException exception);
 
 	}
