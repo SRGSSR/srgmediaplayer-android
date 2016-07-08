@@ -1,6 +1,7 @@
 package ch.srg.mediaplayer;
 
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -23,8 +24,7 @@ public class RawHttpDataProvider implements SRGMediaPlayerDataProvider {
         this.mediaType = mediaType;
     }
 
-    @Override
-    public Uri getUri(String mediaIdentifier, PlayerDelegate playerDelegate) throws SRGMediaPlayerException {
+    private Uri fetchUri(String mediaIdentifier) throws SRGMediaPlayerException {
         return fetch(mediaIdentifier, new URLConnectionProcessor<Uri>() {
             @Override
             public void onSetupHttpURLConnection(HttpURLConnection urlConnection) throws IOException {
@@ -52,8 +52,22 @@ public class RawHttpDataProvider implements SRGMediaPlayerDataProvider {
     }
 
     @Override
-    public int getMediaType(String mediaIdentifier) throws SRGMediaPlayerException {
-        return mediaType;
+    public void getUriAndMediaType(@NonNull String mediaIdentifier, PlayerDelegate playerDelegate, final GetUriAndMediaTypeCallback callback) {
+        new AsyncTask<String, Void, Void>() {
+
+            @Override
+            protected Void doInBackground(String... mediaIdentifiers) {
+                for (String mediaIdentifier : mediaIdentifiers) {
+                    try {
+                        Uri uri = fetchUri(mediaIdentifier);
+                        callback.onDataLoaded(uri, mediaType);
+                    } catch (SRGMediaPlayerException e) {
+                        callback.onDataNotAvailable(e);
+                    }
+                }
+                return null;
+            }
+        }.execute(mediaIdentifier);
     }
 
     public interface URLConnectionProcessor<T> {
@@ -72,8 +86,7 @@ public class RawHttpDataProvider implements SRGMediaPlayerDataProvider {
 
     private
     @Nullable
-    <T> T fetch(String url,
-                @NonNull URLConnectionProcessor<T> processor) {
+    <T> T fetch(String url, @NonNull URLConnectionProcessor<T> processor) {
         HttpURLConnection httpURLConnection = null;
 
         try

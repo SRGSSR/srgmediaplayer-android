@@ -3,12 +3,19 @@ package ch.srg.mediaplayer.service;
 import android.app.PendingIntent;
 import android.graphics.Bitmap;
 import android.support.annotation.DrawableRes;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+
+import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
+import ch.srg.mediaplayer.SRGMediaPlayerException;
 
 /**
  * Created by seb on 07/07/15.
  */
 public interface SRGMediaPlayerServiceMetaDataProvider {
+    int TYPE_AUDIO = SRGMediaPlayerDataProvider.TYPE_AUDIO;
+    int TYPE_VIDEO = SRGMediaPlayerDataProvider.TYPE_VIDEO;
+
     /**
      * Title to be displayed in notification
      * @param mediaIdentifier media identifier
@@ -67,4 +74,13 @@ public interface SRGMediaPlayerServiceMetaDataProvider {
      * @return user string
      */
     String getText(String mediaIdentifier);
+
+    /**
+     * Item type for a media identifier. Must be constant for a single media identifier. This method
+     * may do a network or database request.
+     * @param mediaIdentifier media identifier
+     * @return {@link #TYPE_AUDIO} or {@link #TYPE_VIDEO}
+     * @throws SRGMediaPlayerException network or parsing error encapsulated in an SRGMediaPlayerExcpetion
+     */
+    int getMediaType(@NonNull String mediaIdentifier) throws SRGMediaPlayerException;
 }

@@ -1,6 +1,7 @@
 package ch.srg.mediaplayer;
 
 import android.net.Uri;
+import android.support.annotation.NonNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,15 +33,17 @@ public class DummyDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
 
 		;
 	};
+
 	@Override
-	public Uri getUri(String mediaIdentifier, PlayerDelegate playerDelegate) {
-		if (mediaIdentifier.contains("@")){
-			mediaIdentifier = mediaIdentifier.substring(0,mediaIdentifier.indexOf('@'));
+	public void getUriAndMediaType(@NonNull String mediaIdentifier, PlayerDelegate playerDelegate, GetUriAndMediaTypeCallback callback) {
+		if (mediaIdentifier.contains("@")) {
+			mediaIdentifier = mediaIdentifier.substring(0, mediaIdentifier.indexOf('@'));
 		}
 		if (data.containsKey(mediaIdentifier)) {
-			return Uri.parse(data.get(mediaIdentifier));
+			callback.onDataLoaded(Uri.parse(data.get(mediaIdentifier)), TYPE_VIDEO);
+		} else {
+			callback.onDataNotAvailable(new SRGMediaPlayerException("Unknown identifier " + mediaIdentifier));
 		}
-		return null;
 	}
 
 	@Override

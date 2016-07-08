@@ -35,18 +35,15 @@ public class MockDataProvider implements SRGMediaPlayerDataProvider {
     private int count;
 
     @Override
-    public Uri getUri(String mediaIdentifier, PlayerDelegate playerDelegate) throws SRGMediaPlayerException {
-        count++;
-        if (data.containsKey(mediaIdentifier)) {
-            String uriString = data.get(mediaIdentifier);
-            return uriString == null ? null : Uri.parse(uriString);
+    public void getUriAndMediaType(@NonNull String mediaIdentifier, PlayerDelegate playerDelegate, GetUriAndMediaTypeCallback callback) {
+        if (mediaIdentifier.contains("@")) {
+            mediaIdentifier = mediaIdentifier.substring(0, mediaIdentifier.indexOf('@'));
         }
-        throw new SRGMediaPlayerException("Invalide identifier");
-    }
-
-    @Override
-    public int getMediaType(@NonNull String mediaIdentifier) throws SRGMediaPlayerException {
-        return 0;
+        if (data.containsKey(mediaIdentifier)) {
+            callback.onDataLoaded(Uri.parse(data.get(mediaIdentifier)), TYPE_VIDEO);
+        } else {
+            callback.onDataNotAvailable(new SRGMediaPlayerException("Unknown identifier " + mediaIdentifier));
+        }
     }
 
     public int getCount() {

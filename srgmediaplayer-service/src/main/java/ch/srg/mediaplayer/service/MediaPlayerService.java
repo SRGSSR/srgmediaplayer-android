@@ -147,7 +147,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         if (player != null) {
             try {
                 String mediaIdentifier = player.getMediaIdentifier();
-                int mediaType = mediaIdentifier == null ? 0 : dataProvider.getMediaType(mediaIdentifier);
+                int mediaType = mediaIdentifier == null ? 0 : serviceDataProvider.getMediaType(mediaIdentifier);
                 if (player.isBoundToMediaPlayerView()
                         && (videoInBackground
                         || mediaType == SRGMediaPlayerDataProvider.TYPE_AUDIO)) {

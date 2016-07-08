@@ -259,7 +259,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     private SRGMediaPlayerDataProvider mediaPlayerDataProvider;
 
-    private DataProviderAsyncTask dataProviderAsyncTask;
+    private PlayerDataRequest dataRequest;
     private State state = State.IDLE;
 
     private boolean playWhenReady = true;
@@ -413,27 +413,40 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         manageKeepScreenOnInternal();
     }
 
-    class PrepareUriData {
-        Uri uri;
-        PlayerDelegate playerDelegate;
+    class PlayerDataRequest implements SRGMediaPlayerDataProvider.GetUriAndMediaTypeCallback {
+        private PlayerDelegate playerDelegate;
+        private Uri resultUri;
+        private int resultMediaType;
+        private boolean cancelled;
 
-        public PrepareUriData(Uri uri, PlayerDelegate playerDelegate) {
-            this.uri = uri;
+        public PlayerDataRequest(PlayerDelegate playerDelegate) {
             this.playerDelegate = playerDelegate;
         }
 
         @Override
         public String toString() {
-            return uri + "/" + playerDelegate;
+            return String.valueOf(playerDelegate);
         }
-    }
 
-    /*package*/ void onUriLoaded(Uri uri, PlayerDelegate playerDelegate) {
-        sendMessage(MSG_PREPARE_FOR_URI, new PrepareUriData(uri, playerDelegate));
-    }
+        @Override
+        public void onDataLoaded(Uri uri, int mediaType) {
+            resultUri = uri;
+            resultMediaType = mediaType;
+            if (!cancelled) {
+                sendMessage(MSG_PREPARE_FOR_URI, this);
+            }
+        }
 
-    /*package*/ void onDataProviderException(SRGMediaPlayerException e) {
-        sendMessage(MSG_DATA_PROVIDER_EXCEPTION, e);
+        @Override
+        public void onDataNotAvailable(SRGMediaPlayerException exception) {
+            if (!cancelled) {
+                sendMessage(MSG_DATA_PROVIDER_EXCEPTION, exception);
+            }
+        }
+
+        public void cancel() {
+            cancelled = true;
+        }
     }
 
     /**
@@ -525,9 +538,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 return true;
             }
             case MSG_PREPARE_FOR_URI: {
-                PrepareUriData data = (PrepareUriData) msg.obj;
-                Uri uri = data.uri;
-                PlayerDelegate playerDelegate = data.playerDelegate;
+                PlayerDataRequest request = (PlayerDataRequest) msg.obj;
+                Uri uri = request.resultUri;
+                PlayerDelegate playerDelegate = request.playerDelegate;
 
                 currentMediaUrl = String.valueOf(uri);
                 postEventInternal(Event.Type.MEDIA_READY_TO_PLAY);
@@ -726,11 +739,11 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
         currentMediaIdentifier = mediaIdentifier;
         currentMediaUrl = null;
-        if (dataProviderAsyncTask != null) {
-            dataProviderAsyncTask.cancel(true);
+        if (dataRequest != null) {
+            dataRequest.cancel();
         }
-        dataProviderAsyncTask = new DataProviderAsyncTask(this, mediaPlayerDataProvider, playerDelegate);
-        dataProviderAsyncTask.execute(mediaIdentifier);
+        dataRequest = new PlayerDataRequest(playerDelegate);
+        mediaPlayerDataProvider.getUriAndMediaType(mediaIdentifier, playerDelegate, dataRequest);
     }
 
     private void createPlayerDelegateInternal(String mediaIdentifier) {

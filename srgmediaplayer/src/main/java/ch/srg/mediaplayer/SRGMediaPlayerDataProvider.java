@@ -28,8 +28,9 @@ public interface SRGMediaPlayerDataProvider {
 		 *
 		 */
 		void onDataNotAvailable(SRGMediaPlayerException exception);
-
 	}
 
 	void getUriAndMediaType(@NonNull String mediaIdentifier, PlayerDelegate playerDelegate, GetUriAndMediaTypeCallback callback);
+
+	void cancel(GetUriAndMediaTypeCallback callback);
 }
