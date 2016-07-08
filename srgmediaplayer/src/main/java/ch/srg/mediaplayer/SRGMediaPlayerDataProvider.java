@@ -11,25 +11,22 @@ public interface SRGMediaPlayerDataProvider {
 	int TYPE_VIDEO = 2;
 
 	/**
-	 * Interface defined to return values for player.
+	 * Uri to play the media identifier. Must be constant for a single media identifier. This method
+	 * may do a network or database request.
+	 *
+	 * @param mediaIdentifier media identifier
+	 * @param playerDelegate player delegate
+	 * @return Uri to play the media
+	 * @throws SRGMediaPlayerException network or parsing error encapsulated in an SRGMediaPlayerExcpetion
 	 */
-	interface GetUriAndMediaTypeCallback {
+	Uri getUri(String mediaIdentifier, PlayerDelegate playerDelegate) throws SRGMediaPlayerException;
 
-		/**
-		 * Return Uri to play the media identifier.
-		 * And Item type for a media identifier. Must be constant for a single media identifier.
-		 * This method may do a network or database request.
-		 * @param uri Uri to play the media
-		 * @param mediaType {@link #TYPE_AUDIO} or {@link #TYPE_VIDEO}
-         */
-		void onDataLoaded(Uri uri, int mediaType);
-
-		/**
-		 * Callback return when something wrong appends during the media uri loading
-		 * @param exception Displayable SRGMediaPlayerException
-         */
-		void onDataNotAvailable(SRGMediaPlayerException exception);
-	}
-
-	void getUriAndMediaType(@NonNull String mediaIdentifier, PlayerDelegate playerDelegate, GetUriAndMediaTypeCallback callback);
+	/**
+	 * Item type for a media identifier. Must be constant for a single media identifier. This method
+	 * may do a network or database request.
+	 * @param mediaIdentifier media identifier
+	 * @return {@link #TYPE_AUDIO} or {@link #TYPE_VIDEO}
+	 * @throws SRGMediaPlayerException network or parsing error encapsulated in an SRGMediaPlayerExcpetion
+	 */
+	int getMediaType(@NonNull String mediaIdentifier) throws SRGMediaPlayerException;
 }
