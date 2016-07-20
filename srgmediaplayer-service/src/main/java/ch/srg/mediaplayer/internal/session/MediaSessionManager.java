@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.support.annotation.NonNull;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -19,8 +20,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import ch.srg.mediaplayer.service.AudioIntentReceiver;
+import ch.srg.mediaplayer.service.NotificationData;
 import ch.srg.mediaplayer.service.R;
-import ch.srg.mediaplayer.service.SRGMediaPlayerServiceMetaDataProvider;
 import ch.srg.mediaplayer.service.utils.AppUtils;
 import ch.srg.mediaplayer.service.utils.FetchBitmapTask;
 
@@ -79,7 +80,7 @@ public class MediaSessionManager {
 
     }
 
-    public MediaSessionCompat requestMediaSession(SRGMediaPlayerServiceMetaDataProvider serviceDataProvider, String mediaIdentifier) {
+    public MediaSessionCompat requestMediaSession(@NonNull NotificationData notificationData) {
         Log.d(TAG, "requestMediaSession");
         if (mediaSessionCompat != null) {
             return mediaSessionCompat;
@@ -88,20 +89,15 @@ public class MediaSessionManager {
         createMediaSessionCompat();
 
         boolean live = false;
-        if (serviceDataProvider != null) {
-            live = serviceDataProvider.isLive(mediaIdentifier);
-        }
+
+        // TODO Handle live for duration
 
         String mediaThumbnailUri = "";
 
         MediaMetadataCompat.Builder meta = new MediaMetadataCompat.Builder();
-        if (serviceDataProvider != null) {
-            String title = serviceDataProvider.getTitle(mediaIdentifier);
-
-            meta.putString(MediaMetadataCompat.METADATA_KEY_TITLE, title);
-        }
+            meta.putString(MediaMetadataCompat.METADATA_KEY_TITLE, notificationData.title);
         if (!live) {
-            meta.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, serviceDataProvider != null ? serviceDataProvider.getDuration(mediaIdentifier) : 0);
+            meta.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, notificationData.duration);
         }
 
         mediaSessionCompat.setMetadata(meta.build());

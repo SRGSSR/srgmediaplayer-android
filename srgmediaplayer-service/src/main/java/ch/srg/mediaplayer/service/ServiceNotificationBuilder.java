@@ -4,8 +4,6 @@ import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.support.annotation.DrawableRes;
 import android.support.annotation.NonNull;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
@@ -15,45 +13,12 @@ import android.text.TextUtils;
 import ch.srg.mediaplayer.service.utils.AppUtils;
 
 public class ServiceNotificationBuilder {
-    private boolean live;
-    private boolean playing;
-    private String title;
-    private String text;
-    private PendingIntent pendingIntent;
-    private Bitmap notificationLargeIcon;
-    private Bitmap mediaSessionBitmap;
-    private int notificationSmallIcon;
+    private NotificationData notificationData;
+private boolean playing;
 
-    public ServiceNotificationBuilder(boolean live, boolean playing, String title, String text, PendingIntent pendingIntent, @DrawableRes int notificationSmallIcon, Bitmap notificationBitmap, Bitmap mediaSessionBitmap) {
-        this.live = live;
+    public ServiceNotificationBuilder(@NonNull NotificationData notificationData, boolean playing) {
+        this.notificationData = notificationData;
         this.playing = playing;
-        this.title = title;
-        this.text = text;
-        this.pendingIntent = pendingIntent;
-        this.notificationSmallIcon = notificationSmallIcon;
-        this.notificationLargeIcon = notificationBitmap;
-        this.mediaSessionBitmap = mediaSessionBitmap;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        ServiceNotificationBuilder that = (ServiceNotificationBuilder) o;
-
-        if (live != that.live) return false;
-        if (playing != that.playing) return false;
-        if (!TextUtils.equals(title, that.title)) return false;
-        if (!TextUtils.equals(text, that.text)) return false;
-        if (notificationSmallIcon != that.notificationSmallIcon) return false;
-        if (notificationLargeIcon != that.notificationLargeIcon) return false;
-        if (mediaSessionBitmap != that.mediaSessionBitmap) return false;
-        if (pendingIntent != null ? !pendingIntent.equals(that.pendingIntent) : that.pendingIntent != null)
-            return false;
-
-        return true;
-
     }
 
     public Notification buildNotification(Context context, @NonNull MediaSessionCompat mediaSessionCompat) {
@@ -73,9 +38,9 @@ public class ServiceNotificationBuilder {
         style.setMediaSession(mediaSessionCompat.getSessionToken());
 
         builder.setStyle(style);
-        builder.setContentIntent(pendingIntent);
+        builder.setContentIntent(notificationData.pendingIntent);
 
-        if (!live) {
+        if (!notificationData.live) {
             if (playing) {
                 builder.addAction(R.drawable.ic_pause_white_36dp, context.getString(R.string.service_notification_pause), piPause);
             } else {
@@ -87,27 +52,27 @@ public class ServiceNotificationBuilder {
         }
 
         builder.addAction(R.drawable.ic_stop_white_36dp, context.getString(R.string.service_notification_stop), piStop);
-        if (!TextUtils.isEmpty(title)) {
-            builder.setContentTitle(title);
+        if (!TextUtils.isEmpty(notificationData.title)) {
+            builder.setContentTitle(notificationData.title);
         } else {
             builder.setContentTitle(appName);
         }
 
-        if (!TextUtils.isEmpty(text)) {
-            builder.setContentText(text);
+        if (!TextUtils.isEmpty(notificationData.text)) {
+            builder.setContentText(notificationData.text);
         }
 
-        builder.setSmallIcon(notificationSmallIcon);
-        if (notificationLargeIcon != null) {
-            builder.setLargeIcon(notificationLargeIcon);
+        builder.setSmallIcon(notificationData.notificationSmallIcon);
+        if (notificationData.notificationLargeIcon != null) {
+            builder.setLargeIcon(notificationData.notificationLargeIcon);
         }
-        if (mediaSessionBitmap != null) {
+        if (notificationData.mediaSessionBitmap != null) {
             MediaMetadataCompat currentMetadata = mediaSessionCompat.getController().getMetadata();
             MediaMetadataCompat.Builder newBuilder = currentMetadata == null
                     ? new MediaMetadataCompat.Builder()
                     : new MediaMetadataCompat.Builder(currentMetadata);
             MediaMetadataCompat metadata = newBuilder
-                    .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, mediaSessionBitmap)
+                    .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, notificationData.mediaSessionBitmap)
                     .build();
             mediaSessionCompat.setMetadata(metadata);
         }

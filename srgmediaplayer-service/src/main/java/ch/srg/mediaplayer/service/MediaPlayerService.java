@@ -6,7 +6,6 @@
  */
 package ch.srg.mediaplayer.service;
 
-import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -14,7 +13,7 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
-import android.support.annotation.DrawableRes;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.LocalBroadcastManager;
@@ -83,7 +82,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     private static final long START_SEEK_THRESHOLD = 2000;
     private static long autoreleaseDelayMs = 10000;
     private static SRGMediaPlayerDataProvider dataProvider;
-    private static SRGMediaPlayerServiceMetaDataProvider serviceDataProvider;
 
     private SRGMediaPlayerController player;
     private boolean isForeground;
@@ -124,10 +122,11 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             }
         }
     };
-
-    public static SRGMediaPlayerServiceMetaDataProvider getServiceDataProvider() {
-        return serviceDataProvider;
-    }
+    private String currentMediaIdentifier;
+    @Nullable
+    private NotificationData currentNotificationData;
+    private boolean currentlyPlaying;
+    private static SRGMediaPlayerServiceMetaDataProvider serviceDataProvider;
 
     public SRGMediaPlayerController getMediaController() {
         return player;
@@ -340,35 +339,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         return player != null ? player.getMediaIdentifier() : null;
     }
 
-    private ServiceNotificationBuilder createNotificationBuilder() {
-        String title;
-        String text;
-        boolean live;
-        PendingIntent pendingIntent;
-        Bitmap mediaSessionBitmap;
-        Bitmap notificationBitmap;
-        @DrawableRes int smallIcon;
-        String mediaIdentifier = getCurrentMediaIdentifier();
-        if (serviceDataProvider != null && mediaIdentifier != null) {
-            title = serviceDataProvider.getTitle(mediaIdentifier);
-            text = serviceDataProvider.getText(mediaIdentifier);
-            live = serviceDataProvider.isLive(mediaIdentifier);
-            pendingIntent = serviceDataProvider.getNotificationPendingIntent(mediaIdentifier);
-            notificationBitmap = serviceDataProvider.getNotificationLargeIconBitmap(mediaIdentifier);
-            mediaSessionBitmap = serviceDataProvider.getMediaSessionBitmap(mediaIdentifier);
-            smallIcon = serviceDataProvider.getNotificationSmallIconResourceId(mediaIdentifier);
-        } else {
-            title = null;
-            text = null;
-            live = false;
-            pendingIntent = null;
-            notificationBitmap = null;
-            mediaSessionBitmap = null;
-            smallIcon = R.drawable.ic_play_arrow_white_24dp;
-        }
-        return new ServiceNotificationBuilder(live, isPlaying(), title, text, pendingIntent, smallIcon, notificationBitmap, mediaSessionBitmap);
-    }
-
     private void startUpdates() {
         statusUpdater = new Runnable() {
             @Override
@@ -433,8 +403,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         handler.removeCallbacks(autoRelease);
     }
 
-    private void requestMediaSession(String mediaIdentifier) {
-        mediaSessionCompat = mediaSessionManager.requestMediaSession(serviceDataProvider, mediaIdentifier);
+    private void requestMediaSession(@NonNull NotificationData notificationData) {
+        mediaSessionCompat = mediaSessionManager.requestMediaSession(notificationData);
     }
 
     private void updateNotification() {
@@ -443,16 +413,10 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             if (!isForeground) {
                 setForeground(true);
             } else {
-                NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-                ServiceNotificationBuilder builder = createNotificationBuilder();
-                if (builder != currentServiceNotification && mediaSessionCompat != null) {
-                    currentServiceNotification = builder;
-                    try {
-                        notificationManager.notify(NOTIFICATION_ID,
-                                builder.buildNotification(this, mediaSessionCompat));
-                    } catch (OutOfMemoryError e) {
-                        Log.d(TAG, "An out of memory occured when trying to build notification, image size?", e);
-                    }
+                String newMediaIdentifier = getCurrentMediaIdentifier();
+                if (!TextUtils.equals(newMediaIdentifier, currentMediaIdentifier)) {
+                    this.currentMediaIdentifier = newMediaIdentifier;
+                    onMediaIdentifierChanged();
                 }
             }
         } else {
@@ -463,14 +427,57 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         }
     }
 
+    private void doNotify() {
+        if (currentNotificationData != null && mediaSessionCompat != null) {
+            ServiceNotificationBuilder builder = new ServiceNotificationBuilder(currentNotificationData, isPlaying());
+            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+            try {
+                notificationManager.notify(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat));
+            } catch (OutOfMemoryError e) {
+                Log.d(TAG, "An out of memory occured when trying to build notification, image size?", e);
+            }
+        }
+    }
+
+    private void onMediaIdentifierChanged() {
+        currentNotificationData = null;
+        final String requestedMediaIdentifier = this.currentMediaIdentifier;
+        serviceDataProvider.getNotificationData(requestedMediaIdentifier, new SRGMediaPlayerServiceMetaDataProvider.GetNotificationDataCallback() {
+            @Override
+            public void onNotificationDataLoaded(NotificationData notificationData) {
+                if (requestedMediaIdentifier.equals(currentMediaIdentifier)) {
+                    currentNotificationData = notificationData;
+                    requestMediaSession(notificationData);
+                    doNotify();
+                }
+            }
+
+            @Override
+            public void onImageLoaded(NotificationData notificationData) {
+                if (requestedMediaIdentifier.equals(currentMediaIdentifier)) {
+                    currentNotificationData = notificationData;
+                    doNotify();
+                }
+            }
+
+            @Override
+            public void onDataNotAvailable() {
+
+            }
+        });
+
+    }
+
     private void setForeground(boolean foreground) {
         try {
             if (foreground != isForeground) {
                 if (foreground) {
-                    ServiceNotificationBuilder builder = createNotificationBuilder();
-                    if (mediaSessionCompat != null) {
-                        currentServiceNotification = builder;
-                        startForeground(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat));
+                    if (currentNotificationData != null) {
+                        ServiceNotificationBuilder builder = new ServiceNotificationBuilder(currentNotificationData, currentlyPlaying);
+                        if (mediaSessionCompat != null) {
+                            currentServiceNotification = builder;
+                            startForeground(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat));
+                        }
                     }
                 } else {
                     stopForeground(true);
@@ -589,14 +596,13 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     public void onMediaPlayerEvent(SRGMediaPlayerController mp, SRGMediaPlayerController.Event event) {
         Log.d(TAG, "onMediaPlayerEvent: " + event.toString());
         sendBroadcastStatus(false);
-        // TODO Find a clean way to update notification only when necessary
-        if (mediaSessionCompat != null) {
-            updateNotification();
+        if (currentlyPlaying != isPlaying()) {
+            currentlyPlaying = isPlaying();
+            doNotify();
         }
         switch (event.type) {
             case MEDIA_READY_TO_PLAY:
                 mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
-                requestMediaSession(mp.getMediaIdentifier());
                 cancelAutoRelease();
                 break;
             case MEDIA_COMPLETED:
@@ -635,10 +641,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         MediaPlayerService.dataProvider = dataProvider;
     }
 
-    public static void setServiceDataProvider(SRGMediaPlayerServiceMetaDataProvider serviceDataProvider) {
-        MediaPlayerService.serviceDataProvider = serviceDataProvider;
-    }
-
     public static void setPlayerDelegateFactory(PlayerDelegateFactory playerDelegateFactory) {
         MediaPlayerService.playerDelegateFactory = playerDelegateFactory;
     }
@@ -655,5 +657,9 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
      */
     public void setVideoInBackground(boolean videoInBackground) {
         this.videoInBackground = videoInBackground;
+    }
+
+    public static void setServiceDataProvider(SRGMediaPlayerServiceMetaDataProvider serviceDataProvider) {
+        MediaPlayerService.serviceDataProvider = serviceDataProvider;
     }
 }
