@@ -74,7 +74,7 @@ public class MultiDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
 			} else {
 				ArrayList<Segment> prefixedSegments = new ArrayList<>(baseList.size());
 				for (Segment s : baseList) {
-					Segment prefixedS = new Segment(prefix + ":" + s.getMediaIdentifier(), s.getIdentifier(), s.getTitle(), s.getDescription(), s.getImageUrl(), s.getBlockingReason(), s.getMarkIn(), s.getMarkOut(), s.getDuration(), s.getPublishedTimestamp(), s.isDisplayable(), s.isFullLength());
+					Segment prefixedS = new Segment(prefix + ":" + s.getMediaIdentifier(), s.getIdentifier(), s.getTitle(), s.getDescription(), s.getImageUrl(), s.getBlockingReason(), s.getMarkIn(), s.getMarkOut(), s.getDuration(), s.getPublishedTimestamp(), s.isDisplayable(), s.isFullLength(), false);
 					prefixedSegments.add(prefixedS);
 				}
 				return prefixedSegments;
