@@ -242,14 +242,17 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
 
     public void setMediaTitle(String title) {
         this.title = title;
+        // TODO Trigger an update of the media info
     }
 
     public void setMediaSubTitle(String subTitle) {
         this.subTitle = subTitle;
+        // TODO Trigger an update of the media info
     }
 
     public void setMediaThumbnailUrl(String mediaThumbnailUrl) {
         this.mediaThumbnailUrl = mediaThumbnailUrl;
+        // TODO Trigger an update of the media info
     }
 
     public void setContentType(String contentType) {
