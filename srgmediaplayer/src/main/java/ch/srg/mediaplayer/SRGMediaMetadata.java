@@ -8,7 +8,7 @@ import android.support.annotation.Nullable;
  */
 public interface SRGMediaMetadata {
     @NonNull
-    String getId();
+    String getUrn();
 
     @Nullable
     String getTitle();
