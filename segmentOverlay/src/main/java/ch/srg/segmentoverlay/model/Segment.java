@@ -2,6 +2,9 @@ package ch.srg.segmentoverlay.model;
 
 import android.support.annotation.NonNull;
 
+/**
+ * Created by zapek on 2014-05-07.
+ */
 public class Segment implements Comparable<Segment> {
 
 	/** Target mediaIdentifier of the media to be played. */
@@ -20,11 +23,10 @@ public class Segment implements Comparable<Segment> {
 	private long publishedTimestamp;
 	private boolean displayable;
 	private boolean fullLength;
-	private boolean favorite;
 
 	public Segment(String mediaIdentifier, String identifier, String title, String description, String imageUrl,
 				   String blocking, long markIn, long markOut, long duration, long publishedTimestamp,
-				   boolean displayable, boolean fullLength, boolean favorite) {
+				   boolean displayable, boolean fullLength) {
 		this.mediaIdentifier = mediaIdentifier;
 		this.identifier = identifier;
 		this.title = title;
@@ -37,7 +39,6 @@ public class Segment implements Comparable<Segment> {
 		this.displayable = displayable;
 		this.fullLength = fullLength;
 		blockingReason = blocking;
-		this.favorite = favorite;
 	}
 
 	public String getTitle() {
@@ -131,9 +132,5 @@ public class Segment implements Comparable<Segment> {
 
 	public boolean isFullLength() {
 		return fullLength;
-	}
-
-	public boolean isFavorite() {
-		return favorite;
 	}
 }
