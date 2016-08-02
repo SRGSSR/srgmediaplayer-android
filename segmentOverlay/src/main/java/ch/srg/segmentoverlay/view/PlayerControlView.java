@@ -175,7 +175,7 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
         float y = event.getY();
 
         float seekBarX = seekBar.getX();
-        if (x >= seekBarX && x < seekBarX + seekBar.getWidth()) {
+        if (event.getAction() == MotionEvent.ACTION_UP || x >= seekBarX && x < seekBarX + seekBar.getWidth()) {
             return seekBar.onTouchEvent(MotionEvent.obtain(event.getDownTime(), event.getEventTime(), event.getAction(), x, y, event.getPressure(), event.getSize(), event.getMetaState(), event.getXPrecision(), event.getYPrecision(), event.getDeviceId(), event.getEdgeFlags()));
         } else {
             return true;
