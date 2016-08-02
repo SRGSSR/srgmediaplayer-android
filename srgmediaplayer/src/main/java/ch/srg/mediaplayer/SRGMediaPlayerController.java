@@ -1499,4 +1499,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             return null;
         }
     }
+
+    public boolean hasVideoTrack() {
+        return getVideoSourceHeight() > 0;
+    }
 }
