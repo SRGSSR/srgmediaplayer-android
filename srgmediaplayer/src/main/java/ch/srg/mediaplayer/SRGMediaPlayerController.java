@@ -466,9 +466,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * @throws IllegalStateException player error
      */
     public void seekTo(long positionMs) throws IllegalStateException {
-        currentSeekTarget = positionMs;
-        sendMessage(MSG_SEEK_TO, positionMs);
-    }
+            currentSeekTarget = positionMs;
+            sendMessage(MSG_SEEK_TO, positionMs);
+        }
 
     public void mute() {
         sendMessage(MSG_SET_MUTE, true);
@@ -782,6 +782,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             currentMediaIdentifier = null;
             currentMediaUrl = null;
             seekToWhenReady = null;
+            currentSeekTarget = null;
         }
     }
 
