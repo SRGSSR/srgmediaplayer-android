@@ -321,7 +321,9 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             newMediaIdentifier = getCurrentMediaIdentifier();
         }
 
-        //requestMediaSession(newMediaIdentifier);
+        currentMediaIdentifier = newMediaIdentifier;
+
+        onMediaIdentifierChanged();
 
         try {
             return prepare(newMediaIdentifier, position, autoStart);
@@ -481,7 +483,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                     }
                 } else {
                     stopForeground(true);
-                    NotificationManagerCompat.from(this).cancel(NOTIFICATION_ID);
+                    NotificationManagerCompat.from(this).cancelAll();
                     currentServiceNotification = null;
                 }
                 isForeground = foreground;
@@ -507,10 +509,13 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     public void stopPlayer() {
         if (player != null) {
+            mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
+            mediaSessionCompat.setActive(false);
+            mediaSessionCompat.release();
+            mediaSessionCompat = null;
             player.release();
             player = null;
             setForeground(false);
-            mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
         }
     }
 
