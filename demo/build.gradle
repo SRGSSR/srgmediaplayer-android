@@ -2,13 +2,13 @@ apply plugin: 'com.android.application'
 apply plugin: 'de.felixschulze.gradle.hockeyapp'
 
 android {
-	compileSdkVersion 23
-	buildToolsVersion "23.0.3"
+	compileSdkVersion 24
+	buildToolsVersion "24.0.1"
 
 	defaultConfig {
 		applicationId "ch.srg.mediaplayer.demo"
 		minSdkVersion 16
-		targetSdkVersion 23
+		targetSdkVersion 24
 
 		versionCode Integer.parseInt(System.getenv().BUILD_NUMBER ?: "0")
 		versionName VERSION_BASE + "." + (System.getenv().BUILD_NUMBER ?: "SNAPSHOT")
@@ -59,7 +59,7 @@ android {
 	}
 }
 
-ext.supportLibraryVersion = '23.3.0'
+ext.supportLibraryVersion = '24.1.1'
 
 dependencies {
 	compile fileTree(include: ['*.jar'], dir: 'libs')
@@ -83,7 +83,7 @@ dependencies {
 	androidTestCompile('com.android.support.test:runner:0.4') {
 		exclude module: 'support-annotations'
 	}
-	androidTestCompile 'com.android.support.test:rules:0.4'
+	androidTestCompile 'com.android.support.test:rules:0.5'
 	androidTestCompile('com.jayway.android.robotium:robotium-solo:5.4.1') {
 		exclude group: 'com.squareup.dagger'
 		exclude group: 'org.hamcrest'
