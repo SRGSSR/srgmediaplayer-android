@@ -316,6 +316,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     public SRGMediaPlayerController play(String newMediaIdentifier, Long position, boolean autoStart) {
+        Log.d(TAG, "play " + newMediaIdentifier);
         if (TextUtils.isEmpty(newMediaIdentifier)) {
             Log.e(TAG, "ACTION_PLAY without mediaIdentifier, recovering");
             newMediaIdentifier = getCurrentMediaIdentifier();
@@ -355,6 +356,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     private void prepare(String mediaIdentifier, Long startPosition) throws SRGMediaPlayerException {
+        Log.d(TAG, "prepare " + mediaIdentifier + " startPosition " + startPosition);
         mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
         createPlayer();
 
@@ -364,6 +366,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     public SRGMediaPlayerController prepare(String mediaIdentifier, @Nullable Long startPosition, boolean autoStart) throws SRGMediaPlayerException {
+        Log.d(TAG, "prepare " + mediaIdentifier + " startPosition " + startPosition + " autoStart " + autoStart);
         if (player != null && !player.isReleased()) {
             if (TextUtils.equals(mediaIdentifier, player.getMediaIdentifier())) {
                 if (autoStart) {
@@ -389,6 +392,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     private void createPlayer() {
+        Log.d(TAG, "create player");
         if (dataProvider == null) {
             throw new IllegalArgumentException("No data provider defined");
         }
@@ -402,10 +406,12 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     private void cancelAutoRelease() {
+        Log.d(TAG, "cancelAutoRelease");
         handler.removeCallbacks(autoRelease);
     }
 
     private void requestMediaSession(@NonNull NotificationData notificationData) {
+        Log.d(TAG, "requestMediaSession: " + notificationData);
         mediaSessionCompat = mediaSessionManager.requestMediaSession(notificationData);
     }
 
@@ -430,6 +436,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     private void doNotify() {
+        Log.d(TAG, "doNotify");
         if (currentNotificationData != null && mediaSessionCompat != null) {
             ServiceNotificationBuilder builder = new ServiceNotificationBuilder(currentNotificationData, isPlaying());
             NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
@@ -442,11 +449,13 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     private void onMediaIdentifierChanged() {
+        Log.d(TAG, "onMediaIdentifierChanged");
         currentNotificationData = null;
         final String requestedMediaIdentifier = this.currentMediaIdentifier;
         serviceDataProvider.getNotificationData(requestedMediaIdentifier, new SRGMediaPlayerServiceMetaDataProvider.GetNotificationDataCallback() {
             @Override
             public void onNotificationDataLoaded(NotificationData notificationData) {
+                Log.d(TAG, "onNotificationDataLoaded: " + notificationData);
                 if (requestedMediaIdentifier.equals(currentMediaIdentifier)) {
                     currentNotificationData = notificationData;
                     requestMediaSession(notificationData);
@@ -456,6 +465,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
             @Override
             public void onImageLoaded(NotificationData notificationData) {
+                Log.d(TAG, "onImageLoaded: " + notificationData);
                 if (requestedMediaIdentifier.equals(currentMediaIdentifier)) {
                     currentNotificationData = notificationData;
                     doNotify();
@@ -471,6 +481,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     private void setForeground(boolean foreground) {
+        Log.d(TAG, "setForeground: " + foreground);
         try {
             if (foreground != isForeground) {
                 if (foreground) {
@@ -496,18 +507,21 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     public void resume() {
+        Log.d(TAG, "resume");
         if (player != null) {
             player.start();
         }
     }
 
     public void pause() {
+        Log.d(TAG, "pause");
         if (player != null) {
             player.pause();
         }
     }
 
     public void stopPlayer() {
+        Log.d(TAG, "stopPlayer");
         if (player != null) {
             mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
             mediaSessionCompat.setActive(false);
@@ -569,6 +583,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     void seekTo(long msec) {
+        Log.d(TAG, "seekTo: " + msec);
         player.seekTo(msec);
     }
 
@@ -577,6 +592,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     private void toggle() {
+        Log.d(TAG, "toggle");
         if (player != null) {
             if (player.isPlaying()) {
                 pause();
@@ -589,17 +605,19 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     @Override
     public IBinder onBind(Intent intent) {
+        Log.d(TAG, "onBind");
         return binder;
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
+        Log.d(TAG, "onUnbind");
         return super.onUnbind(intent);
     }
 
     @Override
     public void onMediaPlayerEvent(SRGMediaPlayerController mp, SRGMediaPlayerController.Event event) {
-        Log.d(TAG, "onMediaPlayerEvent: " + event.toString());
+        //Log.d(TAG, "onMediaPlayerEvent: " + event.toString());
         sendBroadcastStatus(false);
         if (currentlyPlaying != isPlaying()) {
             currentlyPlaying = isPlaying();
@@ -622,6 +640,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     private void startAutoRelease() {
+        Log.d(TAG, "startAutoRelease");
         if (autoreleaseDelayMs > 0) {
             handler.postDelayed(autoRelease, autoreleaseDelayMs);
         } else if (autoreleaseDelayMs == 0) {
@@ -639,14 +658,17 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
      * @param autoreleaseDelayMs time in ms or -1 to disable the auto release feature
      */
     public static void setAutoreleaseDelayMs(long autoreleaseDelayMs) {
+        Log.d(TAG, "setAutoreleaseDelayMs: " + autoreleaseDelayMs);
         MediaPlayerService.autoreleaseDelayMs = autoreleaseDelayMs;
     }
 
     public static void setDataProvider(SRGMediaPlayerDataProvider dataProvider) {
+        Log.d(TAG, "setDataProvider: " + dataProvider);
         MediaPlayerService.dataProvider = dataProvider;
     }
 
     public static void setPlayerDelegateFactory(PlayerDelegateFactory playerDelegateFactory) {
+        Log.d(TAG, "setPlayerDelegateFactory: " + playerDelegateFactory);
         MediaPlayerService.playerDelegateFactory = playerDelegateFactory;
     }
 

@@ -61,4 +61,18 @@ public class NotificationData {
         result = 31 * result + (int) (duration ^ (duration >>> 32));
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "NotificationData{" +
+                "live=" + live +
+                ", title='" + title + '\'' +
+                ", text='" + text + '\'' +
+                ", pendingIntent=" + pendingIntent +
+                ", notificationLargeIcon=" + notificationLargeIcon +
+                ", mediaSessionBitmap=" + mediaSessionBitmap +
+                ", notificationSmallIcon=" + notificationSmallIcon +
+                ", duration=" + duration +
+                '}';
+    }
 }
