@@ -11,7 +11,6 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Binder;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -80,7 +79,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     private static final long SEEK_END_SAFETY_MARGIN_MS = 10000;
     // Do not seek if player is already playing and no further than this to the required position
     private static final long START_SEEK_THRESHOLD = 2000;
-    private static long autoreleaseDelayMs = 10000;
     private static SRGMediaPlayerDataProvider dataProvider;
 
     private SRGMediaPlayerController player;
@@ -91,7 +89,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     private MediaSessionCompat mediaSessionCompat;
 
     private int flags;
-    private final Handler handler = new Handler();
 
     private SRGMediaPlayerController.State currentState;
 
@@ -110,18 +107,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private boolean videoInBackground;
 
-    private Runnable autoRelease = new Runnable() {
-        @Override
-        public void run() {
-            if (player != null && !player.isPlaying()) {
-                if (player.isBoundToMediaPlayerView()) {
-                    startAutoRelease();
-                } else {
-                    stopPlayer();
-                }
-            }
-        }
-    };
     private String currentMediaIdentifier;
     @Nullable
     private NotificationData currentNotificationData;
@@ -347,12 +332,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             @Override
             public void run() {
                 sendBroadcastStatus(false);
-                if (!isDestroyed) {
-                    handler.postDelayed(statusUpdater, 1000);
-                }
             }
         };
-        handler.post(statusUpdater);
     }
 
     private void prepare(String mediaIdentifier, Long startPosition) throws SRGMediaPlayerException {
@@ -402,12 +383,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             player.setPlayerDelegateFactory(MediaPlayerService.playerDelegateFactory);
         }
         player.registerEventListener(this);
-        cancelAutoRelease();
-    }
-
-    private void cancelAutoRelease() {
-        Log.d(TAG, "cancelAutoRelease");
-        handler.removeCallbacks(autoRelease);
     }
 
     private void requestMediaSession(@NonNull NotificationData notificationData) {
@@ -625,41 +600,13 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         }
         switch (event.type) {
             case MEDIA_READY_TO_PLAY:
-                mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
-                cancelAutoRelease();
-                break;
             case MEDIA_COMPLETED:
             case MEDIA_STOPPED:
-                cancelAutoRelease();
+                mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
                 break;
             case PLAYING_STATE_CHANGE:
-                cancelAutoRelease();
-                startAutoRelease();
                 break;
         }
-    }
-
-    private void startAutoRelease() {
-        Log.d(TAG, "startAutoRelease");
-        if (autoreleaseDelayMs > 0) {
-            handler.postDelayed(autoRelease, autoreleaseDelayMs);
-        } else if (autoreleaseDelayMs == 0) {
-            if (player != null && !player.isPlaying() && player.isBoundToMediaPlayerView()) {
-                stopPlayer();
-            }
-        }
-    }
-
-    /**
-     * Configure auto release time. Auto release is used to automatically release the player this
-     * service controls after it has been paused _and_ the player is not bound to a media
-     * player view.
-     *
-     * @param autoreleaseDelayMs time in ms or -1 to disable the auto release feature
-     */
-    public static void setAutoreleaseDelayMs(long autoreleaseDelayMs) {
-        Log.d(TAG, "setAutoreleaseDelayMs: " + autoreleaseDelayMs);
-        MediaPlayerService.autoreleaseDelayMs = autoreleaseDelayMs;
     }
 
     public static void setDataProvider(SRGMediaPlayerDataProvider dataProvider) {
