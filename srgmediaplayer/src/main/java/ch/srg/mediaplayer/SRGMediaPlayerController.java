@@ -782,7 +782,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             currentMediaIdentifier = null;
             currentMediaUrl = null;
             seekToWhenReady = null;
-            currentSeekTarget = null;
         }
     }
 
@@ -854,6 +853,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     protected void releaseInternal() {
+        currentSeekTarget = null;
         setStateInternal(State.RELEASED);
         abandonAudioFocus();
         releaseDelegateInternal();
