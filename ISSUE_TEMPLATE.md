@@ -5,7 +5,7 @@
 
 ### Issue Description
 
-### Steps to reproduce the behaviour
+#### Steps to reproduce the behaviour
 
 ##### Complete stacktrace output
 
