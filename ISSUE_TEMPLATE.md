@@ -5,7 +5,15 @@
 
 ### Issue Description
 
+```
+INSERT DESCRIPTION HERE
+```
+
 #### Steps to reproduce the behaviour
+
+```
+INSERT STEPS HERE
+```
 
 ##### Complete stacktrace output
 
