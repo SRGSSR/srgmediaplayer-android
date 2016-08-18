@@ -25,3 +25,7 @@ local.properties
 .idea/compiler.xml
 .idea/copyright/profiles_settings.xml
 .idea/scopes/scope_settings.xml
+.idea/encodings.xml
+.idea/runConfigurations.xml
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/inspectionProfiles/Project_Default.xml
