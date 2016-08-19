@@ -3,13 +3,10 @@ package ch.srg.mediaplayer.extras.dataproviders;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 
-import java.util.List;
-
 import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.segmentoverlay.data.SegmentDataProvider;
-import ch.srg.segmentoverlay.model.Segment;
 
 /**
  * Created by Axel on 02/03/2015.
@@ -27,8 +24,7 @@ public class DirectMappingDataProvider implements SRGMediaPlayerDataProvider, Se
 	}
 
 	@Override
-	public List<Segment> getSegments(String mediaIdentifier) {
-		return null;
+	public void getSegmentList(String mediaIdentifier, GetSegmentListCallback callback) {
 	}
 
 	@Override
