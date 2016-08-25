@@ -112,6 +112,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     private NotificationData currentNotificationData;
     private boolean currentlyPlaying;
     private static SRGMediaPlayerServiceMetaDataProvider serviceDataProvider;
+    private SRGMediaPlayerCreatedListener srgMediaPlayerCreatedListener;
 
     public SRGMediaPlayerController getMediaController() {
         return player;
@@ -172,6 +173,19 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     @Override
     public void onMediaSessionUpdated() {
 
+    }
+
+    public void registerMediaPlayerCreatedListener(SRGMediaPlayerCreatedListener listener) {
+        srgMediaPlayerCreatedListener = listener;
+        if (player != null && srgMediaPlayerCreatedListener != null) {
+            srgMediaPlayerCreatedListener.onMediaPlayerCreated(player);
+        }
+    }
+
+    public void unregisterMediaPlayerCreatedListener(SRGMediaPlayerCreatedListener listener) {
+        if (listener == srgMediaPlayerCreatedListener){
+            srgMediaPlayerCreatedListener = null;
+        }
     }
 
     public class LocalBinder extends Binder {
@@ -383,6 +397,9 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             player.setPlayerDelegateFactory(MediaPlayerService.playerDelegateFactory);
         }
         player.registerEventListener(this);
+        if (srgMediaPlayerCreatedListener != null) {
+            srgMediaPlayerCreatedListener.onMediaPlayerCreated(player);
+        }
     }
 
     private void requestMediaSession(@NonNull NotificationData notificationData) {
@@ -635,5 +652,9 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     public static void setServiceDataProvider(SRGMediaPlayerServiceMetaDataProvider serviceDataProvider) {
         MediaPlayerService.serviceDataProvider = serviceDataProvider;
+    }
+
+    public interface SRGMediaPlayerCreatedListener {
+        void onMediaPlayerCreated(SRGMediaPlayerController player);
     }
 }
