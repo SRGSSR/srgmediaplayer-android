@@ -70,7 +70,7 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
         super(context, attrs, defStyleAttr);
 
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        inflater.inflate(R.layout.segment_player_control, this, true);
+        inflater.inflate(R.layout.player_control_view, this, true);
 
         setOrientation(HORIZONTAL);
         setGravity(Gravity.CENTER_VERTICAL);
