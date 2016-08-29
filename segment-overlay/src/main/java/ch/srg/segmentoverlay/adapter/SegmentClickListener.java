@@ -9,7 +9,7 @@ import ch.srg.segmentoverlay.model.Segment;
  */
 public interface SegmentClickListener {
 
-    void onClick(View v, Segment segment);
+    void onSegmentClick(View v, Segment segment);
 
     void onLongClick(View v, Segment segment, int position);
 

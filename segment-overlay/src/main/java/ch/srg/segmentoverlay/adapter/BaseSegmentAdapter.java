@@ -7,7 +7,6 @@ import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 
 import ch.srg.segmentoverlay.model.Segment;
@@ -16,7 +15,7 @@ import ch.srg.segmentoverlay.model.Segment;
  * Created by npietri on 21.05.15.
  */
 public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> extends RecyclerView.Adapter<T> {
-	public HashSet<SegmentClickListener> listeners = new HashSet<>();
+	public SegmentClickListener listener;
 	protected Integer textColor;
 	protected Integer selectedTextColor;
 	protected Integer selectedBackgroundColor;
@@ -35,12 +34,14 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
 		setHasStableIds(true);
 	}
 
-	public void addSegmentClickListener(SegmentClickListener clickListener) {
-		listeners.add(clickListener);
+	public void setSegmentClickListener(SegmentClickListener clickListener) {
+		listener = clickListener;
 	}
 
 	public void removeSegmentClickListener(SegmentClickListener clickListener) {
-		listeners.remove(clickListener);
+		if (listener != clickListener){
+			listener = null;
+		}
 	}
 
 	public void addSegmentChangeListener(SegmentChangeListeners listener) {

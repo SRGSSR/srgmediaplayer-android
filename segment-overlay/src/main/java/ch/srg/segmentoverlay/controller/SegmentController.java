@@ -115,7 +115,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	}
 
     @Override
-    public void onClick(View v, Segment segment) {
+    public void onSegmentClick(View v, Segment segment) {
         Log.i("SegmentController", "OnClick :" + segment);
 	    if (!segment.isBlocked()) {
 		    segmentBeingSkipped = null;
