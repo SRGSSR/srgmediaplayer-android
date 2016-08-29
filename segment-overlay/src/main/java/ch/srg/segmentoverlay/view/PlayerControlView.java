@@ -4,11 +4,12 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
-import android.widget.RelativeLayout;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -24,7 +25,7 @@ import ch.srg.segmentoverlay.model.Segment;
 /**
  * Created by npietri on 20.05.15.
  */
-public class PlayerControlView extends RelativeLayout implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, SegmentController.Listener, PlayerViewDelegate {
+public class PlayerControlView extends LinearLayout implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, SegmentController.Listener, PlayerViewDelegate {
     private static final long COMPLETION_TOLERANCE_MS = 5000;
 
     public static final int FULLSCREEN_BUTTON_INVISIBLE = 0;
@@ -70,6 +71,9 @@ public class PlayerControlView extends RelativeLayout implements View.OnClickLis
 
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         inflater.inflate(R.layout.segment_player_control, this, true);
+
+        setOrientation(HORIZONTAL);
+        setGravity(Gravity.CENTER_VERTICAL);
 
         seekBar = (SeekBar) findViewById(R.id.segment_player_control_seekbar);
         seekBar.setOnSeekBarChangeListener(this);

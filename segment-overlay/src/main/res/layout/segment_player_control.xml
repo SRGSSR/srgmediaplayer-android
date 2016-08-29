@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="@dimen/player_control_height"
-    android:gravity="center_vertical">
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" >
 
     <FrameLayout
         android:layout_width="@dimen/player_control_height"
@@ -76,4 +73,4 @@
         android:layout_height="@dimen/player_control_height"
         android:background="@drawable/ic_fullscreen" />
 
-</LinearLayout>
+</merge>
