@@ -440,13 +440,16 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * Resume playing after a pause call or make the controller start immediately after the preparation phase.
      */
     public void start() {
-        sendMessage(MSG_SET_PLAY_WHEN_READY, true);
+        if (!hasLostAudioFocus()) {
+            sendMessage(MSG_SET_PLAY_WHEN_READY, true);
+        }
     }
 
     /**
      * Pause the current media or prevent it from starting immediately if controller in preparation phase.
      */
     public void pause() {
+        resetAudioFocusResume();
         sendMessage(MSG_SET_PLAY_WHEN_READY, false);
     }
 
@@ -1288,7 +1291,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     private void handleAudioFocusGain() {
         if (duckedBecauseTransientFocusLoss) {
-            // TODO Handle ducked volume or something
             unmute();
         }
         if (pausedBecauseFocusLoss && ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_AUTO_RESTART) != 0 || pausedBecauseTransientFocusLoss)) {
@@ -1297,22 +1299,33 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         if (mutedBecauseFocusLoss) {
             unmute();
         }
+        resetAudioFocusResume();
+    }
+
+    private void resetAudioFocusResume() {
         pausedBecauseFocusLoss = false;
         pausedBecauseTransientFocusLoss = false;
         duckedBecauseTransientFocusLoss = false;
     }
 
+    private boolean hasLostAudioFocus() {
+        return pausedBecauseFocusLoss ||
+                pausedBecauseTransientFocusLoss ||
+                duckedBecauseTransientFocusLoss;
+    }
+
     private void handleAudioFocusLoss(boolean transientFocus, boolean mayDuck) {
+        boolean playing = isPlaying();
         if (mayDuck && (audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_DUCK) != 0) {
-            this.duckedBecauseTransientFocusLoss = true;
-            // TODO Handle ducked volume or something
+            this.duckedBecauseTransientFocusLoss = playing;
+            // We could also actually duck. But this is fine for our usage afaics.
             mute();
         } else if ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_PAUSE) != 0) {
-            pausedBecauseFocusLoss = true;
-            pausedBecauseTransientFocusLoss = transientFocus;
+            pausedBecauseFocusLoss = playing;
+            pausedBecauseTransientFocusLoss = playing && transientFocus;
             pause();
         } else if ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_MUTE) != 0) {
-            mutedBecauseFocusLoss = true;
+            mutedBecauseFocusLoss = playing;
             mute();
         }
     }
