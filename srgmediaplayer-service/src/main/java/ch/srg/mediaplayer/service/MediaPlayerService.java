@@ -655,6 +655,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     public interface SRGMediaPlayerCreatedListener {
-        void onMediaPlayerCreated(SRGMediaPlayerController player);
+        void onMediaPlayerCreated(SRGMediaPlayerController mediaPlayerController);
     }
 }
