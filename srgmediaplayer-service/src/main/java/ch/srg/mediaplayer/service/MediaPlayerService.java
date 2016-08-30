@@ -175,10 +175,10 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     }
 
-    public void registerMediaPlayerCreatedListener(SRGMediaPlayerCreatedListener listener) {
+    public void registerMediaPlayerListener(SRGMediaPlayerCreatedListener listener) {
         srgMediaPlayerCreatedListener = listener;
         if (player != null && srgMediaPlayerCreatedListener != null) {
-            srgMediaPlayerCreatedListener.onMediaPlayerCreated(player);
+            srgMediaPlayerCreatedListener.onMediaPlayer(player);
         }
     }
 
@@ -398,7 +398,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         }
         player.registerEventListener(this);
         if (srgMediaPlayerCreatedListener != null) {
-            srgMediaPlayerCreatedListener.onMediaPlayerCreated(player);
+            srgMediaPlayerCreatedListener.onMediaPlayer(player);
         }
     }
 
@@ -655,6 +655,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     public interface SRGMediaPlayerCreatedListener {
-        void onMediaPlayerCreated(SRGMediaPlayerController mediaPlayerController);
+        void onMediaPlayer(SRGMediaPlayerController mediaPlayerController);
     }
 }
