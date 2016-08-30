@@ -28,10 +28,6 @@ import ch.srg.segmentoverlay.model.Segment;
 public class PlayerControlView extends LinearLayout implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, SegmentController.Listener, PlayerViewDelegate {
     private static final long COMPLETION_TOLERANCE_MS = 5000;
 
-    public static final int FULLSCREEN_BUTTON_INVISIBLE = 0;
-    public static final int FULLSCREEN_BUTTON_ON = 1;
-    public static final int FULLSCREEN_BUTTON_OFF = 2;
-
     @Nullable
     private SRGMediaPlayerController playerController;
 
