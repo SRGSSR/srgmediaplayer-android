@@ -1,6 +1,5 @@
 package ch.srg.mediaplayer;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Rect;
@@ -20,7 +19,7 @@ import android.widget.ScrollView;
  * This class is a placeholder for some video.
  * Place it in your layout, or create it programmatically and bind it to a SRGMediaPlayerController to play video
  */
-public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchListener {
+public class SRGMediaPlayerView extends RelativeLayout {
 
     // This code may be used to disallow multiple view on Nexus 5 for exemple
     //
@@ -174,7 +173,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         if (newVideoRenderingView != null) {
             videoRenderingView = newVideoRenderingView;
             updateOnTopInternal(onTop);
-            videoRenderingView.setOnTouchListener(this);
             videoRenderingViewWidth = -1;
             videoRenderingViewHeight = -1;
             RelativeLayout.LayoutParams surfaceParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
@@ -227,13 +225,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         this.touchListener = videoTouchListener;
     }
 
-    /**
-     * This flag is used to track videoRenderView touch event.
-     * It is set by the onTouch attached to the videoRenderView and reset by the dispatchTouchEvent.
-     * This flag prevents the dispatchTouchEvent to send back the event to the VideoTouchListener.
-     */
     private boolean videoRenderViewTrackingTouch = false;
-    private boolean videoRenderViewHandledTouch = false;
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
@@ -241,13 +233,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
 
         //This will trigger the onTouch attached to the videorenderingview if it's the case.
         boolean handled = super.dispatchTouchEvent(event);
-        if (videoRenderViewTrackingTouch) {
-            return handled;
-        }
-        if (videoRenderViewHandledTouch) {
-            videoRenderViewHandledTouch = false;
-            return handled;
-        }
 
         if (touchListener != null) {
             boolean controlHit = isControlHit((int) event.getX(), (int) event.getY());
@@ -263,6 +248,16 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
                     default:
                         break;
                 }
+            } else {
+                if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
+                    videoRenderViewTrackingTouch = true;
+                }
+                if (videoRenderViewTrackingTouch && event.getAction() == MotionEvent.ACTION_UP) {
+                    if (touchListener != null) {
+                        touchListener.onVideoRenderingViewTouched(this);
+                    }
+                    videoRenderViewTrackingTouch = false;
+                }
             }
         }
         return handled;
@@ -270,8 +265,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
 
     public boolean isControlHit(int x, int y) {
         boolean controlHit = false;
-        for(int i = getChildCount(); i >= 0; --i)
-        {
+        for (int i = getChildCount(); i >= 0; --i) {
             View child = getChildAt(i);
             if (child != null) {
                 ViewGroup.LayoutParams layoutParams = child.getLayoutParams();
@@ -287,29 +281,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         }
         return controlHit;
     }
-
-    /**
-     * Only used for the videorenderingview
-     */
-    @Override
-    @SuppressLint("ClickableViewAccessibility")
-    public boolean onTouch(View v, MotionEvent event) {
-        Log.v(SRGMediaPlayerController.TAG, "onTouch videoview " + event.getAction());
-        if (v == videoRenderingView) {
-            if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
-                videoRenderViewTrackingTouch = true;
-            }
-            if (event.getAction() == MotionEvent.ACTION_UP) {
-                if (touchListener != null) {
-                    touchListener.onVideoRenderingViewTouched(this);
-                }
-                videoRenderViewTrackingTouch = false;
-                videoRenderViewHandledTouch = true;
-            }
-        }
-        return true;
-    }
-
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
