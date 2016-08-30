@@ -23,6 +23,7 @@ import android.util.Log;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
+import ch.srg.mediaplayer.SRGMediaPlayerFactory;
 import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
 import ch.srg.mediaplayer.internal.cast.ChromeCastManager;
 import ch.srg.mediaplayer.internal.session.MediaSessionManager;
@@ -42,7 +43,7 @@ import ch.srg.mediaplayer.internal.session.MediaSessionManager;
  * - <b>ACTION_BROADCAST_STATUS_BUNDLE:</b> with <i>KEY_STATE:</i> player status; <i>KEY_POSITION:</i> position within the stream in milliseconds;
  * <i>KEY_DURATION:</i> duration of the stream in milliseconds;
  */
-public class MediaPlayerService extends Service implements SRGMediaPlayerController.Listener, ChromeCastManager.Listener, MediaSessionManager.Listener {
+public class MediaPlayerService extends Service implements SRGMediaPlayerController.Listener, ChromeCastManager.Listener, MediaSessionManager.Listener, SRGMediaPlayerFactory {
     public static final String TAG = "MediaPlayerService";
 
     private static final String PREFIX = "ch.srg.mediaplayer.service";
