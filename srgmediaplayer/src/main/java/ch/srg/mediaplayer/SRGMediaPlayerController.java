@@ -1150,7 +1150,11 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      */
     public void unbindFromMediaPlayerView(SRGMediaPlayerView playerView) {
         if (debugMode && mediaPlayerView != playerView) {
-            throw new IllegalStateException("Trying to unbind from unknown playerView: " + playerView);
+            if (mediaPlayerView != null) {
+                throw new IllegalStateException(String.format("Trying to unbind from unknown playerView: %s instead of %s", playerView, mediaPlayerView));
+            } else {
+                throw new IllegalStateException(String.format("Trying to unbind from %s when not bound", playerView));
+            }
         } else {
             overlayController.bindToVideoContainer(null);
             if (currentMediaPlayerDelegate != null) {
