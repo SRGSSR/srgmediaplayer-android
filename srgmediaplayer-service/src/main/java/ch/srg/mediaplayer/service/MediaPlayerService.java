@@ -113,7 +113,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     private NotificationData currentNotificationData;
     private boolean currentlyPlaying;
     private static SRGMediaPlayerServiceMetaDataProvider serviceDataProvider;
-    private SRGMediaPlayerCreatedListener srgMediaPlayerCreatedListener;
+    private SRGMediaPlayerCreatedListener srgMediaPlayerListener;
 
     public SRGMediaPlayerController getMediaController() {
         return player;
@@ -177,15 +177,15 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     public void registerMediaPlayerListener(SRGMediaPlayerCreatedListener listener) {
-        srgMediaPlayerCreatedListener = listener;
-        if (srgMediaPlayerCreatedListener != null) {
-            srgMediaPlayerCreatedListener.onServiceMediaPlayerChange(player);
+        srgMediaPlayerListener = listener;
+        if (srgMediaPlayerListener != null) {
+            srgMediaPlayerListener.onServiceMediaPlayerChange(player);
         }
     }
 
-    public void unregisterMediaPlayerCreatedListener(SRGMediaPlayerCreatedListener listener) {
-        if (listener == srgMediaPlayerCreatedListener){
-            srgMediaPlayerCreatedListener = null;
+    public void unregisterMediaPlayerListener(SRGMediaPlayerCreatedListener listener) {
+        if (listener == srgMediaPlayerListener){
+            srgMediaPlayerListener = null;
         }
     }
 
@@ -398,8 +398,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             player.setPlayerDelegateFactory(MediaPlayerService.playerDelegateFactory);
         }
         player.registerEventListener(this);
-        if (srgMediaPlayerCreatedListener != null) {
-            srgMediaPlayerCreatedListener.onServiceMediaPlayerChange(player);
+        if (srgMediaPlayerListener != null) {
+            srgMediaPlayerListener.onServiceMediaPlayerChange(player);
         }
     }
 
