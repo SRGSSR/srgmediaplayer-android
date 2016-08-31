@@ -258,6 +258,7 @@ public class SRGMediaPlayerView extends RelativeLayout {
                     }
                     videoRenderViewTrackingTouch = false;
                 }
+                handled = true;
             }
         }
         return handled;
