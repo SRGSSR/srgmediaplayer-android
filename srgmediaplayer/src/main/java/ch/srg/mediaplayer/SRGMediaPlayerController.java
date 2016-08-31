@@ -53,6 +53,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private boolean mutedBecauseFocusLoss;
     private Long qualityOverride;
     private Long qualityDefault;
+    private Throwable fatalError;
 
     public static String getName() {
         return NAME;
@@ -1228,6 +1229,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     private void postErrorEventInternal(boolean fatalError, SRGMediaPlayerException e) {
+        if (fatalError) {
+            this.fatalError = e;
+        }
         postEventInternal(Event.buildErrorEvent(this, fatalError, e));
     }
 
@@ -1520,5 +1524,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     public boolean hasVideoTrack() {
         return getVideoSourceHeight() > 0;
+    }
+
+    public Throwable getFatalError() {
+        return fatalError;
     }
 }
