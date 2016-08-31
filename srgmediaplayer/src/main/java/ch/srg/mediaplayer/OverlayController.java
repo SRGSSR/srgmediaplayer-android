@@ -166,7 +166,7 @@ import android.view.ViewGroup;
                 setForceShowingControlOverlays(true);
                 break;
             case READY:
-                if (playerController.isPlaying()) {
+                if (playerController.isPlaying() && (playerController.hasVideoTrack() || playerController.isRemote())) {
                     postponeOverlayHiding();
                     setForceShowingControlOverlays(false);
                 } else {
