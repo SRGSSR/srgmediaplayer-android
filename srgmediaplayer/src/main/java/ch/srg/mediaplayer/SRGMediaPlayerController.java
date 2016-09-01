@@ -1398,6 +1398,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * @return true if current media position match to seek target
      */
     public boolean isSeekPending() {
+        Long currentSeekTarget = this.currentSeekTarget;
         return currentSeekTarget != null && getMediaPosition() == currentSeekTarget;
     }
 
