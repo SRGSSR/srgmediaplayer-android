@@ -273,7 +273,12 @@ class ExoPlayerDelegate implements
     @Override
     public void seekTo(long positionInMillis) throws IllegalStateException {
         livePauseTime = 0;
-        exoPlayer.seekTo(Math.min(positionInMillis, exoPlayer.getDuration() - 1));
+        long duration = exoPlayer.getDuration();
+        if (duration != ExoPlayer.UNKNOWN_TIME) {
+            exoPlayer.seekTo(Math.min(positionInMillis, duration - 1));
+        } else {
+            throw new IllegalStateException("Unknown duration when trying to seek to " + positionInMillis);
+        }
     }
 
     @Override
