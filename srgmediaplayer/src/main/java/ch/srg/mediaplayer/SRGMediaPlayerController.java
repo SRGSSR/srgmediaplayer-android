@@ -990,14 +990,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      */
     public void bindToMediaPlayerView(SRGMediaPlayerView newView) {
         if (mediaPlayerView != null) {
-            if (mediaPlayerView == newView) {
-                throw new IllegalStateException("Controller already bound to this same player view");
-            } else {
-                throw new IllegalStateException("Controller already bound to player view: "
-                        + mediaPlayerView
-                        + " when trying to connect to "
-                        + newView);
-            }
+            unbindFromMediaPlayerView(mediaPlayerView);
         }
 
         mediaPlayerView = newView;
@@ -1148,13 +1141,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * @param playerView video container to unbind from.
      */
     public void unbindFromMediaPlayerView(SRGMediaPlayerView playerView) {
-        if (debugMode && mediaPlayerView != playerView) {
-            if (mediaPlayerView != null) {
-                throw new IllegalStateException(String.format("Trying to unbind from unknown playerView: %s instead of %s", playerView, mediaPlayerView));
-            } else {
-                throw new IllegalStateException(String.format("Trying to unbind from %s when not bound", playerView));
-            }
-        } else {
+        if (mediaPlayerView == playerView) {
             overlayController.bindToVideoContainer(null);
             if (currentMediaPlayerDelegate != null) {
                 currentMediaPlayerDelegate.unbindRenderingView();
