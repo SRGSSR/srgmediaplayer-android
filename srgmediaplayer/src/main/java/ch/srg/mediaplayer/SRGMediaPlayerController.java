@@ -1416,7 +1416,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         return currentMediaPlayerDelegate != null ? currentMediaPlayerDelegate.getPlaylistStartTime() : 0;
     }
 
-    private boolean isLive() {
+    public boolean isLive() {
         return currentMediaPlayerDelegate != null && currentMediaPlayerDelegate.isLive();
     }
 
