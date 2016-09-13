@@ -14,12 +14,10 @@ import android.widget.TextView;
 import com.bumptech.glide.Glide;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 
 import ch.srg.mediaplayer.demo.R;
 import ch.srg.segmentoverlay.adapter.BaseSegmentAdapter;
-import ch.srg.segmentoverlay.adapter.SegmentClickListener;
 import ch.srg.segmentoverlay.model.Segment;
 
 /**
@@ -118,10 +116,7 @@ public class DemoSegmentAdapter extends BaseSegmentAdapter<DemoSegmentAdapter.Vi
         public boolean onTouch(View v, MotionEvent event) {
             Log.i("DefaultSegmentAdapter", "OnClick :" + getAdapterPosition());
             if (event.getAction() == MotionEvent.ACTION_UP && event.getAction() != MotionEvent.ACTION_MOVE) {
-				HashSet<SegmentClickListener> listeners = new HashSet<>(DemoSegmentAdapter.this.listeners);
-				for (SegmentClickListener listener: listeners) {
-					listener.onClick(v, segment);
-				}
+				listener.onSegmentClick(v, segment);
 			}
             return true;
         }

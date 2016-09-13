@@ -36,6 +36,7 @@ import ch.srg.mediaplayer.extras.overlay.error.SimpleErrorMessage;
 import ch.srg.mediaplayer.internal.exoplayer.ExoPlayerDelegate;
 import ch.srg.mediaplayer.internal.nativeplayer.NativePlayerDelegate;
 import ch.srg.segmentoverlay.controller.SegmentController;
+import ch.srg.segmentoverlay.data.SegmentDataProvider;
 import ch.srg.segmentoverlay.model.Segment;
 import ch.srg.segmentoverlay.view.PlayerControlView;
 import ch.srg.segmentoverlay.view.SegmentView;
@@ -179,7 +180,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
             segmentPlayerControlView.attachToController(srgMediaPlayer);
             segmentPlayerControlView.setSegmentController(segmentController);
         }
-        adapter.addSegmentClickListener(segmentController);
 
         if (segments != null && !segments.isEmpty()) {
             segmentController.setSegmentList(segments);
@@ -424,13 +424,22 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
         }
         switch (event.type) {
             case MEDIA_READY_TO_PLAY:
-                segments = dataProvider.getSegments(mp.getMediaIdentifier());
-                if (segments != null && !segments.isEmpty() && segmentView != null) {
-                    segmentController.setSegmentList(segments);
-                    segmentView.setVisibility(View.VISIBLE);
-                } else if(segments != null && segmentView != null && segments.isEmpty()){
-                    segmentView.setVisibility(View.GONE);
-                }
+                dataProvider.getSegmentList(mp.getMediaIdentifier(), new SegmentDataProvider.GetSegmentListCallback() {
+                    @Override
+                    public void onSegmentListLoaded(List<Segment> srgMediaMetadata) {
+                        if (segments != null && !segments.isEmpty() && segmentView != null) {
+                            segmentController.setSegmentList(segments);
+                            segmentView.setVisibility(View.VISIBLE);
+                        } else if(segments != null && segmentView != null && segments.isEmpty()){
+                            segmentView.setVisibility(View.GONE);
+                        }
+                    }
+
+                    @Override
+                    public void onDataNotAvailable() {
+
+                    }
+                });
                 break;
             case EXTERNAL_EVENT:
                 if (event instanceof SegmentController.Event) {

@@ -43,7 +43,6 @@ public class DummyDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
 		return null;
 	}
 
-	@Override
 	public List<Segment> getSegments(String mediaIdentifier) {
 		List<Segment> segments = new ArrayList<>();
 		segments.add(createSegment("1", "Segment 1", 1000, 60000, false, true));
@@ -63,5 +62,10 @@ public class DummyDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
 	@Override
 	public int getMediaType(String mediaIdentifier) throws SRGMediaPlayerException {
 		return TYPE_VIDEO;
+	}
+
+	@Override
+	public void getSegmentList(String mediaIdentifier, GetSegmentListCallback callback) {
+		callback.onSegmentListLoaded(getSegments(mediaIdentifier));
 	}
 }
