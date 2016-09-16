@@ -77,6 +77,7 @@ class ExoPlayerDelegate implements
      * Workaround for paused live as position and/or duration stay put when one of them should really change.
      */
     private long livePauseTime;
+    private long lastPlaylistLoadTime;
 
     @Override
     public void onAvailableRangeChanged(int i, TimeRange timeRange) {
@@ -238,6 +239,7 @@ class ExoPlayerDelegate implements
     @Override
     public void onHlsChunkSource(HlsChunkSource chunkSource) {
         livePauseTime = 0;
+        lastPlaylistLoadTime = 0;
         this.hlsChunkSource = chunkSource;
         hlsChunkSource.setBitrateEstimateOverride(qualityOverride);
         hlsChunkSource.setBitrateEstimateDefault(qualityDefault);
@@ -273,6 +275,7 @@ class ExoPlayerDelegate implements
     @Override
     public void seekTo(long positionInMillis) throws IllegalStateException {
         livePauseTime = 0;
+        lastPlaylistLoadTime = 0;
         exoPlayer.seekTo(positionInMillis);
     }
 
@@ -410,6 +413,8 @@ class ExoPlayerDelegate implements
     @Override
     public void onPlayWhenReadyCommitted() {
         controller.onPlayerDelegatePlayWhenReadyCommited(this);
+        long currentTimeMillis = System.currentTimeMillis();
+        playlistReferenceTime = currentTimeMillis - livePauseTime;
     }
 
     @Override
@@ -497,12 +502,15 @@ class ExoPlayerDelegate implements
     public void onPlaylistLoaded() {
         final long maxAdjustPeriod = 30000;
         long newTime = System.currentTimeMillis();
-        long period = newTime - (playlistReferenceTime + livePauseTime);
+        if (lastPlaylistLoadTime > 0) {
+            long period = newTime - lastPlaylistLoadTime;
 
-        if (!exoPlayer.getPlayWhenReady() && period < maxAdjustPeriod) {
-            livePauseTime += period;
+            if (!exoPlayer.getPlayWhenReady() && period < maxAdjustPeriod) {
+                livePauseTime += period;
+                this.playlistReferenceTime += period;
+            }
         }
-        this.playlistReferenceTime = newTime - livePauseTime;
+        lastPlaylistLoadTime = newTime;
     }
 
     @Override
