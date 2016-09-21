@@ -16,9 +16,6 @@ import ch.srg.segmentoverlay.model.Segment;
  */
 public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> extends RecyclerView.Adapter<T> {
 	public SegmentClickListener listener;
-	protected Integer textColor;
-	protected Integer selectedTextColor;
-	protected Integer selectedBackgroundColor;
 
 	public abstract boolean updateProgressSegments(@NonNull String mediaIdentifier, long time, String currentSegmentIdentifier);
 
@@ -131,18 +128,6 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
 
 	public ArrayList<Segment> getSegmentsList() {
 		return segments;
-	}
-
-	public void setSelectedBackgroundColor(Integer selectedBackgroundColor) {
-		this.selectedBackgroundColor = selectedBackgroundColor;
-	}
-
-	public void setSelectedTextColor(Integer selectedTextColor) {
-		this.selectedTextColor = selectedTextColor;
-	}
-
-	public void setTextColor(Integer textColor) {
-		this.textColor = textColor;
 	}
 
 	public abstract int getCurrentSegment();

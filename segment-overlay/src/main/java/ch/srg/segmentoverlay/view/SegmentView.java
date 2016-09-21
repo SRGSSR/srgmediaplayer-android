@@ -7,9 +7,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.FrameLayout;
 
 import java.util.List;
 
@@ -22,19 +20,14 @@ import ch.srg.segmentoverlay.model.Segment;
 /**
  * Created by npietri on 20.05.15.
  */
-public class SegmentView extends FrameLayout implements SegmentController.Listener {
+public class SegmentView extends RecyclerView implements SegmentController.Listener {
     private SRGMediaPlayerController playerController;
 
-    private RecyclerView recyclerView;
     private LinearLayoutManager linearLayoutManager;
     private SegmentController segmentController;
 
     @Nullable
     private BaseSegmentAdapter adapter;
-
-    private Integer textColor;
-    private Integer selectedTextColor;
-    private Integer selectedBackground;
 
     public SegmentView(Context context) {
         this(context, null);
@@ -49,19 +42,11 @@ public class SegmentView extends FrameLayout implements SegmentController.Listen
 
         TypedArray a = context.getTheme().obtainStyledAttributes(attrs, R.styleable.SegmentView, 0, 0);
 
-        textColor = a.getColor(R.styleable.SegmentView_text_color, 0);
-        selectedTextColor = a.getColor(R.styleable.SegmentView_text_color, 0);
-        selectedBackground = a.getColor(R.styleable.SegmentView_text_color, 0);
-
-        LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        inflater.inflate(R.layout.segment_view, this, true);
-
-        recyclerView = (RecyclerView) findViewById(R.id.segment_recycler_view);
         linearLayoutManager = new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false);
-        recyclerView.setLayoutManager(linearLayoutManager);
+        setLayoutManager(linearLayoutManager);
 
         // TODO Items change often during seek. Disabling animator fix the flashing, is there a better way to do this?
-        recyclerView.setItemAnimator(null);
+        setItemAnimator(null);
         a.recycle();
     }
 
@@ -71,31 +56,7 @@ public class SegmentView extends FrameLayout implements SegmentController.Listen
 
     public void setBaseAdapter(@NonNull BaseSegmentAdapter adapter) {
         this.adapter = adapter;
-        recyclerView.setAdapter(adapter);
-        adapter.setSelectedTextColor(selectedTextColor);
-        adapter.setSelectedBackgroundColor(selectedBackground);
-        adapter.setTextColor(textColor);
-    }
-
-    public void setTextColor(int textColor) {
-        this.textColor = textColor;
-        if (adapter != null) {
-            adapter.setTextColor(textColor);
-        }
-    }
-
-    public void setSelectedTextColor(int selectedTextColor) {
-        this.selectedTextColor = selectedTextColor;
-        if (adapter != null) {
-            adapter.setSelectedTextColor(selectedTextColor);
-        }
-    }
-
-    public void setSelectedBackground(int selectedBackground) {
-        this.selectedBackground = selectedBackground;
-        if (adapter != null) {
-            adapter.setSelectedBackgroundColor(selectedBackground);
-        }
+        setAdapter(adapter);
     }
 
     public void setSegmentController(@NonNull SegmentController segmentController) {
@@ -113,7 +74,7 @@ public class SegmentView extends FrameLayout implements SegmentController.Listen
         boolean change = mediaIdentifier != null && adapter.updateProgressSegments(mediaIdentifier, time, currentSegmentIdentifier);
         if (change) {
             // TODO Do not do this when using is scrolling the segment view
-            recyclerView.scrollToPosition(adapter.getCurrentSegment());
+            scrollToPosition(adapter.getCurrentSegment());
         }
     }
 

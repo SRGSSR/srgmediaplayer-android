@@ -9,6 +9,6 @@
         android:id="@+id/segment_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        tools:listitem="@layout/item_segment"/>
+        tools:listitem="@layout/default_item_segment"/>
 
 </FrameLayout>
