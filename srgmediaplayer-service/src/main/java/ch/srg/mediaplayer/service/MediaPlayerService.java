@@ -517,9 +517,11 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         Log.d(TAG, "stopPlayer");
         if (player != null) {
             mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
-            mediaSessionCompat.setActive(false);
-            mediaSessionCompat.release();
-            mediaSessionCompat = null;
+            if (mediaSessionCompat != null) {
+                mediaSessionCompat.setActive(false);
+                mediaSessionCompat.release();
+                mediaSessionCompat = null;
+            }
             player.release();
             player = null;
             setForeground(false);
