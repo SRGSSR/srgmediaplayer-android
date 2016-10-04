@@ -235,13 +235,17 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
                     String newMediaIdentifier = intent.getStringExtra(ARG_MEDIA_IDENTIFIER);
 
-                    Long position;
-                    if (intent.hasExtra(ARG_POSITION)) {
-                        position = intent.getLongExtra(ARG_POSITION, 0);
+                    if (newMediaIdentifier != null) {
+                        Long position;
+                        if (intent.hasExtra(ARG_POSITION)) {
+                            position = intent.getLongExtra(ARG_POSITION, 0);
+                        } else {
+                            position = null;
+                        }
+                        play(newMediaIdentifier, position, TextUtils.equals(action, ACTION_PLAY));
                     } else {
-                        position = null;
+                        Log.e(TAG, "Skipping action play for null media identifier");
                     }
-                    play(newMediaIdentifier, position, TextUtils.equals(action, ACTION_PLAY));
                 }
                 break;
 
@@ -309,8 +313,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     public SRGMediaPlayerController play(String newMediaIdentifier, Long position, boolean autoStart) {
         Log.d(TAG, "play " + newMediaIdentifier);
         if (TextUtils.isEmpty(newMediaIdentifier)) {
-            Log.e(TAG, "ACTION_PLAY without mediaIdentifier, recovering");
             newMediaIdentifier = getCurrentMediaIdentifier();
+            Log.e(TAG, "ACTION_PLAY without mediaIdentifier, recovering with " + newMediaIdentifier);
         }
 
         currentMediaIdentifier = newMediaIdentifier;
