@@ -1,11 +1,9 @@
 package ch.srg.mediaplayer.extras.dataproviders;
 
 import android.net.Uri;
-import android.support.annotation.NonNull;
 
 import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
-import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.segmentoverlay.data.SegmentDataProvider;
 
 /**
@@ -19,16 +17,12 @@ public class DirectMappingDataProvider implements SRGMediaPlayerDataProvider, Se
 	}
 
 	@Override
-	public Uri getUri(String mediaIdentifier, PlayerDelegate playerDelegate) {
-		return Uri.parse(mediaIdentifier);
+	public void getUri(String mediaIdentifier, PlayerDelegate playerDelegate, GetUriCallback getUriCallback) {
+		getUriCallback.onUriLoaded(mediaIdentifier, Uri.parse(mediaIdentifier), mediaType);
 	}
 
 	@Override
 	public void getSegmentList(String mediaIdentifier, GetSegmentListCallback callback) {
-	}
-
-	@Override
-	public int getMediaType(@NonNull String mediaIdentifier) throws SRGMediaPlayerException {
-		return mediaType;
+		callback.onDataNotAvailable();
 	}
 }

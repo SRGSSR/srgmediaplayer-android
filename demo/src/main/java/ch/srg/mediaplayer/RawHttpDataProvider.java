@@ -24,8 +24,8 @@ public class RawHttpDataProvider implements SRGMediaPlayerDataProvider {
     }
 
     @Override
-    public Uri getUri(String mediaIdentifier, PlayerDelegate playerDelegate) throws SRGMediaPlayerException {
-        return fetch(mediaIdentifier, new URLConnectionProcessor<Uri>() {
+    public void getUri(final String mediaIdentifier, PlayerDelegate playerDelegate, final GetUriCallback callback) {
+        fetch(mediaIdentifier, new URLConnectionProcessor<Uri>() {
             @Override
             public void onSetupHttpURLConnection(HttpURLConnection urlConnection) throws IOException {
             }
@@ -37,23 +37,20 @@ public class RawHttpDataProvider implements SRGMediaPlayerDataProvider {
                     String item = s.next();
                     Scanner s2 = new Scanner(item).useDelimiter("\"");
                     item = s2.next();
-                    return Uri.parse(item);
+                    callback.onUriLoaded(mediaIdentifier, Uri.parse(item), mediaType);
                 }
                 else {
-                    return null;
+                    callback.onUriLoadFailed(mediaIdentifier, new SRGMediaPlayerException("no data"));
                 }
+                return null;
             }
 
             @Override
             public Uri onHttpURLConnectionError(int httpCode, Exception e) {
+                callback.onUriLoadFailed(mediaIdentifier, new SRGMediaPlayerException(e));
                 return null;
             }
         });
-    }
-
-    @Override
-    public int getMediaType(String mediaIdentifier) throws SRGMediaPlayerException {
-        return mediaType;
     }
 
     public interface URLConnectionProcessor<T> {

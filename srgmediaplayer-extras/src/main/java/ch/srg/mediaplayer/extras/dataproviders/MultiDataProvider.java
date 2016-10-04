@@ -1,15 +1,11 @@
 package ch.srg.mediaplayer.extras.dataproviders;
 
-import android.net.Uri;
-import android.support.annotation.NonNull;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
-import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.segmentoverlay.data.SegmentDataProvider;
 import ch.srg.segmentoverlay.model.Segment;
 
@@ -57,9 +53,8 @@ public class MultiDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
     }
 
     @Override
-    public Uri getUri(String mediaIdentifier, PlayerDelegate playerDelegate) throws SRGMediaPlayerException {
-        return getProvider(mediaIdentifier).
-                getUri(getIdentifier(mediaIdentifier), playerDelegate);
+    public void getUri(String mediaIdentifier, PlayerDelegate playerDelegate, GetUriCallback getUriCallback) {
+        getProvider(mediaIdentifier).getUri(getIdentifier(mediaIdentifier), playerDelegate, getUriCallback);
     }
 
     @Override
@@ -85,11 +80,6 @@ public class MultiDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
                 }
             });
         }
-    }
-
-    @Override
-    public int getMediaType(@NonNull String mediaIdentifier) throws SRGMediaPlayerException {
-        return getProvider(mediaIdentifier).getMediaType(getIdentifier(mediaIdentifier));
     }
 
     public boolean isSupported(String mediaIdentifier) {

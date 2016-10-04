@@ -260,7 +260,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     private SRGMediaPlayerDataProvider mediaPlayerDataProvider;
 
-    private DataProviderAsyncTask dataProviderAsyncTask;
     private State state = State.IDLE;
 
     private boolean playWhenReady = true;
@@ -427,14 +426,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         public String toString() {
             return uri + "/" + playerDelegate;
         }
-    }
-
-    /*package*/ void onUriLoaded(Uri uri, PlayerDelegate playerDelegate) {
-        sendMessage(MSG_PREPARE_FOR_URI, new PrepareUriData(uri, playerDelegate));
-    }
-
-    /*package*/ void onDataProviderException(SRGMediaPlayerException e) {
-        sendMessage(MSG_DATA_PROVIDER_EXCEPTION, e);
     }
 
     /**
@@ -721,18 +712,25 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
     }
 
-    private void prepareForIdentifierInternal(String mediaIdentifier, PlayerDelegate playerDelegate) {
+    private void prepareForIdentifierInternal(String mediaIdentifier, final PlayerDelegate playerDelegate) {
         setStateInternal(State.PREPARING);
         if (mediaIdentifier == null) {
             throw new IllegalArgumentException("Media identifier is null in prepare for identifier");
         }
         currentMediaIdentifier = mediaIdentifier;
         currentMediaUrl = null;
-        if (dataProviderAsyncTask != null) {
-            dataProviderAsyncTask.cancel(true);
-        }
-        dataProviderAsyncTask = new DataProviderAsyncTask(this, mediaPlayerDataProvider, playerDelegate);
-        dataProviderAsyncTask.execute(mediaIdentifier);
+
+        mediaPlayerDataProvider.getUri(mediaIdentifier, playerDelegate, new SRGMediaPlayerDataProvider.GetUriCallback() {
+            @Override
+            public void onUriLoaded(String mediaIdentifier, Uri uri, int mediaType) {
+                sendMessage(MSG_PREPARE_FOR_URI, new PrepareUriData(uri, playerDelegate));
+            }
+
+            @Override
+            public void onUriLoadFailed(String mediaIdentifier, SRGMediaPlayerException exception) {
+                sendMessage(MSG_DATA_PROVIDER_EXCEPTION, exception);
+            }
+        });
     }
 
     private void createPlayerDelegateInternal(String mediaIdentifier) {

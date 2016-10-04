@@ -62,7 +62,10 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     public static final String ACTION_BROADCAST_STATUS_BUNDLE = PREFIX + ".broadcast.STATUS_BUNDLE";
 
     public static final String ARG_MEDIA_IDENTIFIER = "mediaIdentifier";
-    public static final String ARG_POSITION = "position"; /** Long **/
+    public static final String ARG_POSITION = "position";
+    /**
+     * Long
+     **/
     public static final String ARG_POSITION_INCREMENENT = "positionIncrement";
     public static final String ARG_FROM_NOTIFICATION = "fromNotification";
 
@@ -131,19 +134,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     public void onChromeCastApplicationDisconnected() {
         Log.d(TAG, "onChromeCastApplicationDisconnected");
         if (player != null) {
-            try {
-                String mediaIdentifier = player.getMediaIdentifier();
-                int mediaType = mediaIdentifier == null ? 0 : dataProvider.getMediaType(mediaIdentifier);
-                if (player.isBoundToMediaPlayerView()
-                        && (videoInBackground
-                        || mediaType == SRGMediaPlayerDataProvider.TYPE_AUDIO)) {
-                    player.swapPlayerDelegate(null);
-                } else {
-                    player.release();
-                }
-            } catch (SRGMediaPlayerException ignored) {
-                player.release();
-            }
+            player.release();
         }
     }
 
@@ -184,7 +175,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     public void unregisterMediaPlayerListener(SRGMediaPlayerCreatedListener listener) {
-        if (listener == srgMediaPlayerListener){
+        if (listener == srgMediaPlayerListener) {
             srgMediaPlayerListener = null;
         }
     }
