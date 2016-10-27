@@ -1,1 +1,1 @@
-include ':srgmediaplayer', ':srgmediaplayer-extras', ':segmentOverlay', ':srgmediaplayer-service', ':demo'
+include ':srgmediaplayer', ':srgmediaplayer-extras', ':segment-overlay', ':srgmediaplayer-service', ':demo'
