@@ -60,10 +60,24 @@ public class BandwidthOptimizer implements SRGMediaPlayerController.Listener {
         }
     }
 
+    /**
+     * Set the video quality before the first estimate is available.
+     * Represented by bandwidth. Typically used to force a better quality for the first startup.
+     * Can be 0 to force lowest quality or Integer.MAX for highest for instance.
+     *
+     * @param wifiDefaultEstimate quality in bits/sec or null to disable
+     */
     public void setWifiDefaultEstimate(Long wifiDefaultEstimate) {
         this.wifiDefaultEstimate = wifiDefaultEstimate;
     }
 
+    /**
+     * Set the video quality before the first estimate is available.
+     * Represented by bandwidth. Typically used to force a better quality for the first startup.
+     * Can be 0 to force lowest quality or Integer.MAX for highest for instance.
+     *
+     * @param mobileDefaultEstimate quality in bits/sec or null to disable
+     */
     public void setMobileDefaultEstimate(Long mobileDefaultEstimate) {
         this.mobileDefaultEstimate = mobileDefaultEstimate;
     }
