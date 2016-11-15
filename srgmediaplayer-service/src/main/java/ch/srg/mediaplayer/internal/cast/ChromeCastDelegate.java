@@ -298,7 +298,8 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
                         case MediaStatus.IDLE_REASON_ERROR:
                         case MediaStatus.IDLE_REASON_CANCELED:
                         case MediaStatus.IDLE_REASON_INTERRUPTED:
-                            controller.onPlayerDelegateError(this, new SRGMediaPlayerException("ChromeCast " + idleReason));
+                            Log.e(TAG, "onRemoteMediaPlayerStatusUpdated(): Unexpected Idle Reason "
+                                    + idleReason);
                             break;
                         default:
                             Log.e(TAG, "onRemoteMediaPlayerStatusUpdated(): Unexpected Idle Reason "
