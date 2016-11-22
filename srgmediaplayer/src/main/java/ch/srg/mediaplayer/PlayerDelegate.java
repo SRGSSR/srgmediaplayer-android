@@ -5,6 +5,10 @@ import android.net.Uri;
 import android.os.Handler;
 import android.view.View;
 
+import com.google.android.exoplayer.text.Cue;
+
+import java.util.List;
+
 /**
  * Created by Axel on 04/03/2015.
  *
@@ -29,11 +33,14 @@ public interface PlayerDelegate {
 
 		void onPlayerDelegateError(PlayerDelegate delegate, SRGMediaPlayerException e);
 
+		void onPlayerDelegateSubtitleCues(List<Cue> cues);
+
 		SRGMediaPlayerView getMediaPlayerView();
 
 		Handler getMainHandler();
 
 		Context getContext();
+
 	}
 
 	/**
@@ -137,4 +144,8 @@ public interface PlayerDelegate {
 	Long getBandwidthEstimate();
 
 	long getPlaylistReferenceTime();
+
+	List<SubtitleTrack> getSubtitleTrackList();
+
+	void setSubtitleTrack(SubtitleTrack track);
 }

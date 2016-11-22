@@ -8,13 +8,16 @@ import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 
 import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerView;
+import ch.srg.mediaplayer.SubtitleTrack;
 
 /**
  * Created by Axel on 02/03/2015.
@@ -28,8 +31,6 @@ public class NativePlayerDelegate implements
 		MediaPlayer.OnInfoListener,
 		MediaPlayer.OnErrorListener,
 		MediaPlayer.OnCompletionListener {
-
-
 
 	private enum State {
 		IDLE,
@@ -390,5 +391,14 @@ public class NativePlayerDelegate implements
 
 	public long getPlaylistReferenceTime() {
 		return System.currentTimeMillis();
+	}
+
+	@Override
+	public List<SubtitleTrack> getSubtitleTrackList() {
+		return Collections.emptyList();
+	}
+
+	@Override
+	public void setSubtitleTrack(SubtitleTrack track) {
 	}
 }

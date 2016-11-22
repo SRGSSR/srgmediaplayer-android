@@ -1,8 +1,10 @@
 package ch.srg.mediaplayer;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Rect;
+import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -11,9 +13,17 @@ import android.view.View;
 import android.view.ViewDebug;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.view.accessibility.CaptioningManager;
 import android.widget.HorizontalScrollView;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
+
+import com.google.android.exoplayer.text.CaptionStyleCompat;
+import com.google.android.exoplayer.text.Cue;
+import com.google.android.exoplayer.text.SubtitleLayout;
+import com.google.android.exoplayer.util.Util;
+
+import java.util.List;
 
 /**
  * This class is a placeholder for some video.
@@ -49,10 +59,14 @@ public class SRGMediaPlayerView extends RelativeLayout {
     private boolean onTop;
     private boolean adjustToParentScrollView;
     private boolean debugMode;
+    private boolean subtitleViewConfigured;
 
     public boolean isDebugMode() {
         return debugMode;
     }
+
+    @Nullable
+    private SubtitleLayout subtitleLayout;
 
     public void setDebugMode(boolean debugMode) {
         this.debugMode = debugMode;
@@ -557,5 +571,55 @@ public class SRGMediaPlayerView extends RelativeLayout {
 
     public void setAdjustToParentScrollView(boolean adjustToParentScrollView) {
         this.adjustToParentScrollView = adjustToParentScrollView;
+    }
+
+    private void configureSubtitleView() {
+        if (subtitleLayout == null) {
+            for (int i = 0; i < getChildCount(); i++) {
+                if (getChildAt(i) instanceof SubtitleLayout) {
+                    subtitleLayout = (SubtitleLayout) getChildAt(i);
+                    break;
+                }
+            }
+        }
+        if (subtitleLayout != null) {
+            CaptionStyleCompat style;
+            float fontScale;
+            if (Util.SDK_INT >= 19) {
+                style = getUserCaptionStyleV19();
+                fontScale = getUserCaptionFontScaleV19();
+            } else {
+                style = CaptionStyleCompat.DEFAULT;
+                fontScale = 1.0f;
+            }
+            subtitleLayout.setStyle(style);
+            subtitleLayout.setFractionalTextSize(SubtitleLayout.DEFAULT_TEXT_SIZE_FRACTION * fontScale);
+        }
+        subtitleViewConfigured = true;
+    }
+
+    public void setCues(List<Cue> cues) {
+        if (!subtitleViewConfigured) {
+            configureSubtitleView();
+        }
+        if (subtitleLayout != null) {
+            subtitleLayout.setCues(cues);
+        }
+    }
+
+    @TargetApi(19)
+    private float getUserCaptionFontScaleV19() {
+        CaptioningManager captioningManager = getCaptioningManager();
+        return captioningManager.getFontScale();
+    }
+
+    @TargetApi(19)
+    private CaptionStyleCompat getUserCaptionStyleV19() {
+        CaptioningManager captioningManager = getCaptioningManager();
+        return CaptionStyleCompat.createFromCaptionStyle(captioningManager.getUserStyle());
+    }
+
+    private CaptioningManager getCaptioningManager() {
+        return (CaptioningManager) getContext().getSystemService(Context.CAPTIONING_SERVICE);
     }
 }

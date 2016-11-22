@@ -11,6 +11,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -423,6 +424,11 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
             }
         }
         switch (event.type) {
+            case STATE_CHANGE:
+                if (event.state == SRGMediaPlayerController.State.READY) {
+                    setShowSubtitleTrackList(srgMediaPlayer.getSubtitleTrackList());
+                }
+                break;
             case MEDIA_READY_TO_PLAY:
                 dataProvider.getSegmentList(mp.getMediaIdentifier(), new SegmentDataProvider.GetSegmentListCallback() {
                     @Override
@@ -468,6 +474,27 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
                 }
                 break;
         }
+    }
+
+    private void setShowSubtitleTrackList(List<SubtitleTrack> tracks) {
+        ViewGroup container = (ViewGroup) findViewById(R.id.group_subtitles);
+        container.removeAllViews();
+        addButon(container, "[]", null);
+        for (final SubtitleTrack track : tracks) {
+            addButon(container, track.trackId, track);
+        }
+    }
+
+    private void addButon(ViewGroup container, String text, final SubtitleTrack track) {
+        Button button = new Button(this);
+        button.setText(text);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                srgMediaPlayer.setSubtitleTrack(track);
+            }
+        });
+        container.addView(button);
     }
 
     @Override

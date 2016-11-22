@@ -18,9 +18,12 @@ import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
 
+import com.google.android.exoplayer.text.Cue;
+
 import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.WeakHashMap;
 
@@ -461,9 +464,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * @throws IllegalStateException player error
      */
     public void seekTo(long positionMs) throws IllegalStateException {
-            currentSeekTarget = positionMs;
-            sendMessage(MSG_SEEK_TO, positionMs);
-        }
+        currentSeekTarget = positionMs;
+        sendMessage(MSG_SEEK_TO, positionMs);
+    }
 
     public void mute() {
         sendMessage(MSG_SET_MUTE, true);
@@ -564,7 +567,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 if (positionMs == null) {
                     throw new IllegalArgumentException("Missing position for seek to");
                 } else {
-                        seekToWhenReady = positionMs;
+                    seekToWhenReady = positionMs;
                     if (state != State.PREPARING) {
                         postEventInternal(Event.Type.WILL_SEEK);
                         if (currentMediaPlayerDelegate != null) {
@@ -841,6 +844,13 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
     }
 
+    @Override
+    public void onPlayerDelegateSubtitleCues(List<Cue> cues) {
+        if (mediaPlayerView != null) {
+            mediaPlayerView.setCues(cues);
+        }
+    }
+
     /**
      * Release the current player. Once the player is released you have to create a new player
      * if you want to play a new video.
@@ -992,6 +1002,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
 
         mediaPlayerView = newView;
+        mediaPlayerView.setCues(Collections.<Cue>emptyList());
         internalUpdateMediaPlayerViewBound();
         overlayController.bindToVideoContainer(this.mediaPlayerView);
         manageKeepScreenOnInternal();
@@ -1512,5 +1523,19 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     public Throwable getFatalError() {
         return fatalError;
+    }
+
+    public List<SubtitleTrack> getSubtitleTrackList() {
+        if (currentMediaPlayerDelegate != null) {
+            return currentMediaPlayerDelegate.getSubtitleTrackList();
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
+    public void setSubtitleTrack(@Nullable SubtitleTrack track) {
+        if (currentMediaPlayerDelegate != null) {
+            currentMediaPlayerDelegate.setSubtitleTrack(track);
+        }
     }
 }

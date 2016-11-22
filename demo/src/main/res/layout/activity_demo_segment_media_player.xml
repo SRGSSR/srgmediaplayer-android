@@ -58,6 +58,9 @@
             android:textSize="6sp"
             app:overlay_mode="control"/>
 
+        <com.google.android.exoplayer.text.SubtitleLayout android:id="@+id/subtitles"
+                                                          android:layout_width="match_parent"
+                                                          android:layout_height="match_parent"/>
 
         <!--Controls-->
         <ch.srg.segmentoverlay.view.PlayerControlView

@@ -22,6 +22,7 @@ import com.google.android.exoplayer.ExoPlayer;
 import com.google.android.exoplayer.MediaCodecAudioTrackRenderer;
 import com.google.android.exoplayer.MediaCodecTrackRenderer;
 import com.google.android.exoplayer.MediaCodecVideoTrackRenderer;
+import com.google.android.exoplayer.MediaFormat;
 import com.google.android.exoplayer.TimeRange;
 import com.google.android.exoplayer.TrackRenderer;
 import com.google.android.exoplayer.audio.AudioCapabilities;
@@ -39,6 +40,7 @@ import com.google.android.exoplayer.text.TextRenderer;
 import com.google.android.exoplayer.upstream.BandwidthMeter;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -46,15 +48,14 @@ import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerView;
-
+import ch.srg.mediaplayer.SubtitleTrack;
 
 
 /**
  * Created by Axel on 02/03/2015.
  */
 
-public
-class ExoPlayerDelegate implements
+public class ExoPlayerDelegate implements
         PlayerDelegate,
         ExoPlayer.Listener,
         TextRenderer,
@@ -66,7 +67,8 @@ class ExoPlayerDelegate implements
         MediaCodecAudioTrackRenderer.EventListener,
         AudioCapabilitiesReceiver.Listener,
         RendererBuilderCallback,
-        BandwidthMeter.EventListener, StreamingDrmSessionManager.EventListener {
+        BandwidthMeter.EventListener,
+        StreamingDrmSessionManager.EventListener {
 
     private HlsChunkSource hlsChunkSource;
     private Long qualityOverride;
@@ -86,7 +88,9 @@ class ExoPlayerDelegate implements
     public enum ViewType {
         TYPE_SURFACEVIEW,
         TYPE_TEXTUREVIEW
-    };
+    }
+
+    ;
 
     public enum SourceType {
         HLS,
@@ -110,6 +114,7 @@ class ExoPlayerDelegate implements
     private RendererBuilder rendererBuilder;
     private TrackRenderer videoRenderer;
     private TrackRenderer audioRenderer;
+    private TrackRenderer textRenderer;
 
     private String videoSourceUrl = null;
     private float videoSourceAspectRatio = 1.7777f;
@@ -146,7 +151,7 @@ class ExoPlayerDelegate implements
 
     @Override
     public void prepare(Uri videoUri) throws SRGMediaPlayerException {
-        Log.v(TAG, "Preparing " + videoUri + " (" + sourceType  + ")");
+        Log.v(TAG, "Preparing " + videoUri + " (" + sourceType + ")");
         try {
             String videoSourceUrl = videoUri.toString();
             if (videoSourceUrl.equalsIgnoreCase(this.videoSourceUrl)) {
@@ -223,6 +228,8 @@ class ExoPlayerDelegate implements
         }
         this.videoRenderer = renderers[TYPE_VIDEO];
         this.audioRenderer = renderers[TYPE_AUDIO];
+        this.textRenderer = renderers[TYPE_TEXT];
+
         Log.v(TAG,
                 "Using renderers: video:" + videoRenderer + " audio:" + audioRenderer);
         pushSurface(false);
@@ -231,6 +238,8 @@ class ExoPlayerDelegate implements
         }
         exoPlayer.setSelectedTrack(TYPE_AUDIO, ExoPlayer.TRACK_DEFAULT);
         exoPlayer.setSelectedTrack(TYPE_VIDEO, ExoPlayer.TRACK_DEFAULT);
+        exoPlayer.setSelectedTrack(TYPE_TEXT, ExoPlayer.TRACK_DISABLED);
+
         exoPlayer.setPlayWhenReady(true);
         exoPlayer.prepare(renderers);
     }
@@ -516,6 +525,11 @@ class ExoPlayerDelegate implements
     }
 
     @Override
+    public void onCues(List<Cue> cues) {
+        controller.onPlayerDelegateSubtitleCues(cues);
+    }
+
+    @Override
     public boolean isLive() {
         return live;
     }
@@ -561,11 +575,6 @@ class ExoPlayerDelegate implements
     }
 
     @Override
-    public void onCues(List<Cue> list) {
-        Log.v(TAG, "Unhandled dash text event");
-    }
-
-    @Override
     public void onDrmKeysLoaded() {
 
     }
@@ -607,6 +616,26 @@ class ExoPlayerDelegate implements
             return hlsChunkSource.getBitrateEstimate();
         } else {
             return null;
+        }
+    }
+
+    @Override
+    public List<SubtitleTrack> getSubtitleTrackList() {
+        int textTrackCount = exoPlayer.getTrackCount(TYPE_TEXT);
+        ArrayList<SubtitleTrack> subtitleTracks = new ArrayList<>(textTrackCount);
+        for (int i = 0; i < textTrackCount; i++) {
+            MediaFormat trackFormat = exoPlayer.getTrackFormat(TYPE_TEXT, i);
+            subtitleTracks.add(new SubtitleTrack(i, trackFormat.trackId, trackFormat.language));
+        }
+        return subtitleTracks;
+    }
+
+    @Override
+    public void setSubtitleTrack(SubtitleTrack track) {
+        if (track != null) {
+            exoPlayer.setSelectedTrack(TYPE_TEXT, track.index);
+        } else {
+            exoPlayer.setSelectedTrack(TYPE_TEXT, ExoPlayer.TRACK_DISABLED);
         }
     }
 }
