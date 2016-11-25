@@ -35,6 +35,8 @@ import com.google.android.exoplayer.drm.MediaDrmCallback;
 import com.google.android.exoplayer.drm.StreamingDrmSessionManager;
 import com.google.android.exoplayer.hls.HlsChunkSource;
 import com.google.android.exoplayer.hls.HlsSampleSource;
+import com.google.android.exoplayer.metadata.MetadataTrackRenderer;
+import com.google.android.exoplayer.metadata.id3.Id3Frame;
 import com.google.android.exoplayer.text.Cue;
 import com.google.android.exoplayer.text.TextRenderer;
 import com.google.android.exoplayer.upstream.BandwidthMeter;
@@ -68,7 +70,7 @@ public class ExoPlayerDelegate implements
         AudioCapabilitiesReceiver.Listener,
         RendererBuilderCallback,
         BandwidthMeter.EventListener,
-        StreamingDrmSessionManager.EventListener {
+        StreamingDrmSessionManager.EventListener, MetadataTrackRenderer.MetadataRenderer<List<Id3Frame>> {
 
     private HlsChunkSource hlsChunkSource;
     private Long qualityOverride;
@@ -79,11 +81,6 @@ public class ExoPlayerDelegate implements
      * Workaround for paused live as position and/or duration stay put when one of them should really change.
      */
     private long livePauseTime;
-
-    @Override
-    public void onAvailableRangeChanged(int i, TimeRange timeRange) {
-
-    }
 
     public enum ViewType {
         TYPE_SURFACEVIEW,
@@ -98,10 +95,11 @@ public class ExoPlayerDelegate implements
         DASH
     }
 
-    public static final int RENDERER_COUNT = 3;
+    public static final int RENDERER_COUNT = 4;
     public static final int TYPE_VIDEO = 0;
     public static final int TYPE_AUDIO = 1;
     public static final int TYPE_TEXT = 2;
+    public static final int TYPE_METADATA = 3;
     public static final String TAG = SRGMediaPlayerController.TAG;
 
     private final Context context;
@@ -637,6 +635,16 @@ public class ExoPlayerDelegate implements
         } else {
             exoPlayer.setSelectedTrack(TYPE_TEXT, ExoPlayer.TRACK_DISABLED);
         }
+    }
+
+    @Override
+    public void onAvailableRangeChanged(int i, TimeRange timeRange) {
+
+    }
+
+    @Override
+    public void onMetadata(List<Id3Frame> id3Frames) {
+
     }
 }
 
