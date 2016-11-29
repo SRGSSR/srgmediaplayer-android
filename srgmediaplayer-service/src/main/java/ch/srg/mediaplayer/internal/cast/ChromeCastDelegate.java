@@ -2,6 +2,7 @@ package ch.srg.mediaplayer.internal.cast;
 
 import android.content.Context;
 import android.net.Uri;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -352,5 +353,11 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
 
     @Override
     public void setSubtitleTrack(SubtitleTrack track) {
+    }
+
+    @Nullable
+    @Override
+    public SubtitleTrack getSubtitleTrack() {
+        return null;
     }
 }

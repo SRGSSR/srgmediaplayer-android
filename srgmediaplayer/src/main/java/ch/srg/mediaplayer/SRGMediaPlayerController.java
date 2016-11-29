@@ -21,6 +21,7 @@ import android.view.View;
 import com.google.android.exoplayer.text.Cue;
 
 import java.lang.ref.WeakReference;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -1526,6 +1527,13 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     public List<SubtitleTrack> getSubtitleTrackList() {
+        if (debugMode) {
+            return Arrays.asList(
+                    new SubtitleTrack(0, "English", null),
+                    new SubtitleTrack(0, "French", null),
+                    new SubtitleTrack(0, "عربي", null),
+                    new SubtitleTrack(0, "中文", null));
+        }
         if (currentMediaPlayerDelegate != null) {
             return currentMediaPlayerDelegate.getSubtitleTrackList();
         } else {
@@ -1537,5 +1545,13 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         if (currentMediaPlayerDelegate != null) {
             currentMediaPlayerDelegate.setSubtitleTrack(track);
         }
+    }
+
+    @Nullable
+    public SubtitleTrack getSubtitleTrack() {
+        if (currentMediaPlayerDelegate != null) {
+            return currentMediaPlayerDelegate.getSubtitleTrack();
+        }
+        return null;
     }
 }

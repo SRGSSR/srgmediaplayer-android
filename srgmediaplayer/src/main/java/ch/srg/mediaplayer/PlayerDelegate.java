@@ -3,6 +3,7 @@ package ch.srg.mediaplayer;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Handler;
+import android.support.annotation.Nullable;
 import android.view.View;
 
 import com.google.android.exoplayer.text.Cue;
@@ -18,6 +19,9 @@ import java.util.List;
  */
 public interface PlayerDelegate {
 	long UNKNOWN_TIME = -1;
+
+	@Nullable
+	SubtitleTrack getSubtitleTrack();
 
 	interface OnPlayerDelegateListener {
 

@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -51,6 +52,8 @@ import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerView;
 import ch.srg.mediaplayer.SubtitleTrack;
+
+import static com.google.android.exoplayer.ExoPlayer.TRACK_DISABLED;
 
 
 /**
@@ -236,7 +239,7 @@ public class ExoPlayerDelegate implements
         }
         exoPlayer.setSelectedTrack(TYPE_AUDIO, ExoPlayer.TRACK_DEFAULT);
         exoPlayer.setSelectedTrack(TYPE_VIDEO, ExoPlayer.TRACK_DEFAULT);
-        exoPlayer.setSelectedTrack(TYPE_TEXT, ExoPlayer.TRACK_DISABLED);
+        exoPlayer.setSelectedTrack(TYPE_TEXT, TRACK_DISABLED);
 
         exoPlayer.setPlayWhenReady(true);
         exoPlayer.prepare(renderers);
@@ -622,10 +625,15 @@ public class ExoPlayerDelegate implements
         int textTrackCount = exoPlayer.getTrackCount(TYPE_TEXT);
         ArrayList<SubtitleTrack> subtitleTracks = new ArrayList<>(textTrackCount);
         for (int i = 0; i < textTrackCount; i++) {
-            MediaFormat trackFormat = exoPlayer.getTrackFormat(TYPE_TEXT, i);
-            subtitleTracks.add(new SubtitleTrack(i, trackFormat.trackId, trackFormat.language));
+            subtitleTracks.add(getSubtitleTrackByTrackId(i));
         }
         return subtitleTracks;
+    }
+
+    @NonNull
+    private SubtitleTrack getSubtitleTrackByTrackId(int i) {
+        MediaFormat trackFormat = exoPlayer.getTrackFormat(TYPE_TEXT, i);
+        return new SubtitleTrack(i, trackFormat.trackId, trackFormat.language);
     }
 
     @Override
@@ -633,7 +641,18 @@ public class ExoPlayerDelegate implements
         if (track != null) {
             exoPlayer.setSelectedTrack(TYPE_TEXT, track.index);
         } else {
-            exoPlayer.setSelectedTrack(TYPE_TEXT, ExoPlayer.TRACK_DISABLED);
+            exoPlayer.setSelectedTrack(TYPE_TEXT, TRACK_DISABLED);
+        }
+    }
+
+    @Override
+    @Nullable
+    public SubtitleTrack getSubtitleTrack() {
+        int selectedTrack = exoPlayer.getSelectedTrack(TYPE_TEXT);
+        if (selectedTrack == TRACK_DISABLED) {
+            return null;
+        } else {
+            return getSubtitleTrackByTrackId(selectedTrack);
         }
     }
 

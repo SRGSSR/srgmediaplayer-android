@@ -40,6 +40,7 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
     private Button playButton;
     private Button replayButton;
     private Button fullscreenButton;
+    private Button subtitlesButton;
 
     private TextView leftTime;
     private TextView rightTime;
@@ -78,11 +79,13 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
         playButton = (Button) findViewById(R.id.segment_player_control_button_play);
         replayButton = (Button) findViewById(R.id.segment_player_control_button_replay);
         fullscreenButton = (Button) findViewById(R.id.segment_player_control_button_fullscreen);
+        subtitlesButton = (Button) findViewById(R.id.segment_player_control_button_subtitles);
 
         pauseButton.setOnClickListener(this);
         playButton.setOnClickListener(this);
         replayButton.setOnClickListener(this);
         fullscreenButton.setOnClickListener(this);
+        subtitlesButton.setOnClickListener(this);
 
         leftTime = (TextView) findViewById(R.id.segment_player_control_time_left);
         rightTime = (TextView) findViewById(R.id.segment_player_control_time_right);
@@ -138,6 +141,10 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
             } else if (v == fullscreenButton) {
                 if (listener != null) {
                     listener.onFullscreenClick(fullScreenButtonState == FULLSCREEN_BUTTON_ON);
+                }
+            } else if (v == subtitlesButton) {
+                if (listener != null) {
+                    listener.onSubtitleClicked(v);
                 }
             }
         }
@@ -261,12 +268,14 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
     }
 
     public interface Listener {
+        void onSubtitleClicked(View v);
+
         void onReplayClick();
 
         void onFullscreenClick(boolean fullscreen);
     }
 
-    public void setListener(PlayerControlView.Listener listener){
+    public void setListener(PlayerControlView.Listener listener) {
         this.listener = listener;
     }
 

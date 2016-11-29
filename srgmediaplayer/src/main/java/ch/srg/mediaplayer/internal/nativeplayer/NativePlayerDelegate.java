@@ -4,6 +4,7 @@ import android.content.Context;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
+import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
@@ -400,5 +401,11 @@ public class NativePlayerDelegate implements
 
 	@Override
 	public void setSubtitleTrack(SubtitleTrack track) {
+	}
+
+	@Nullable
+	@Override
+	public SubtitleTrack getSubtitleTrack() {
+		return null;
 	}
 }
