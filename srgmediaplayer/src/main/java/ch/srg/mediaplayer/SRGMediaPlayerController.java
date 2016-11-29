@@ -1527,17 +1527,20 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     public List<SubtitleTrack> getSubtitleTrackList() {
-        if (debugMode) {
+        List<SubtitleTrack> result;
+        if (currentMediaPlayerDelegate != null) {
+            result = currentMediaPlayerDelegate.getSubtitleTrackList();
+        } else {
+            result = Collections.emptyList();
+        }
+        if (debugMode && (result == null || result.size() == 0)) {
             return Arrays.asList(
                     new SubtitleTrack(0, "English", null),
                     new SubtitleTrack(0, "French", null),
                     new SubtitleTrack(0, "عربي", null),
                     new SubtitleTrack(0, "中文", null));
-        }
-        if (currentMediaPlayerDelegate != null) {
-            return currentMediaPlayerDelegate.getSubtitleTrackList();
         } else {
-            return Collections.emptyList();
+            return result;
         }
     }
 
