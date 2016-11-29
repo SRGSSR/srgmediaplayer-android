@@ -624,6 +624,7 @@ public class ExoPlayerDelegate implements
     public List<SubtitleTrack> getSubtitleTrackList() {
         int textTrackCount = exoPlayer.getTrackCount(TYPE_TEXT);
         ArrayList<SubtitleTrack> subtitleTracks = new ArrayList<>(textTrackCount);
+
         for (int i = 0; i < textTrackCount; i++) {
             subtitleTracks.add(getSubtitleTrackByTrackId(i));
         }

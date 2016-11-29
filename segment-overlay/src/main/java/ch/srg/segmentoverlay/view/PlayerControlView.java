@@ -40,7 +40,7 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
     private Button playButton;
     private Button replayButton;
     private Button fullscreenButton;
-    private Button subtitlesButton;
+    private Button subtitleButton;
 
     private TextView leftTime;
     private TextView rightTime;
@@ -50,6 +50,7 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
     private long seekBarSeekToMs;
 
     private int fullScreenButtonState;
+    private int subtitleButtonState;
     private long currentPosition;
     private long currentDuration;
     @Nullable
@@ -79,13 +80,13 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
         playButton = (Button) findViewById(R.id.segment_player_control_button_play);
         replayButton = (Button) findViewById(R.id.segment_player_control_button_replay);
         fullscreenButton = (Button) findViewById(R.id.segment_player_control_button_fullscreen);
-        subtitlesButton = (Button) findViewById(R.id.segment_player_control_button_subtitles);
+        subtitleButton = (Button) findViewById(R.id.segment_player_control_button_subtitles);
 
         pauseButton.setOnClickListener(this);
         playButton.setOnClickListener(this);
         replayButton.setOnClickListener(this);
         fullscreenButton.setOnClickListener(this);
-        subtitlesButton.setOnClickListener(this);
+        subtitleButton.setOnClickListener(this);
 
         leftTime = (TextView) findViewById(R.id.segment_player_control_time_left);
         rightTime = (TextView) findViewById(R.id.segment_player_control_time_right);
@@ -95,14 +96,29 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
 
     private void updateFullScreenButton() {
         if (fullscreenButton != null) {
-            if (fullScreenButtonState == FULLSCREEN_BUTTON_INVISIBLE) {
+            if (fullScreenButtonState == BUTTON_STATE_INVISIBLE) {
                 fullscreenButton.setVisibility(View.GONE);
             } else {
                 fullscreenButton.setVisibility(View.VISIBLE);
-                if (fullScreenButtonState == FULLSCREEN_BUTTON_OFF) {
+                if (fullScreenButtonState == BUTTON_STATE_OFF) {
                     fullscreenButton.setBackgroundResource(R.drawable.ic_fullscreen_exit);
                 } else {
                     fullscreenButton.setBackgroundResource(R.drawable.ic_fullscreen);
+                }
+            }
+        }
+    }
+
+    private void updateSubtitleButton() {
+        if (subtitleButton != null) {
+            if (subtitleButtonState == BUTTON_STATE_INVISIBLE) {
+                subtitleButton.setVisibility(View.GONE);
+            } else {
+                subtitleButton.setVisibility(View.VISIBLE);
+                if (subtitleButtonState == BUTTON_STATE_OFF) {
+                    subtitleButton.setBackgroundResource(R.drawable.ic_subtitles_off);
+                } else {
+                    subtitleButton.setBackgroundResource(R.drawable.ic_subtitles_on);
                 }
             }
         }
@@ -140,9 +156,9 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
                 }
             } else if (v == fullscreenButton) {
                 if (listener != null) {
-                    listener.onFullscreenClick(fullScreenButtonState == FULLSCREEN_BUTTON_ON);
+                    listener.onFullscreenClick(fullScreenButtonState == BUTTON_STATE_ON);
                 }
-            } else if (v == subtitlesButton) {
+            } else if (v == subtitleButton) {
                 if (listener != null) {
                     listener.onSubtitleClicked(v);
                 }
@@ -280,9 +296,16 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
     }
 
     @Override
-    public void setFullScreenButtonState(int fullScreenButtonState) {
-        this.fullScreenButtonState = fullScreenButtonState;
+    public void setFullScreenButtonState(int buttonState) {
+        this.fullScreenButtonState = buttonState;
         updateFullScreenButton();
+    }
+
+
+    @Override
+    public void setSubtitleButtonState(int buttonState) {
+        this.subtitleButtonState = buttonState;
+        updateSubtitleButton();
     }
 
     @Override

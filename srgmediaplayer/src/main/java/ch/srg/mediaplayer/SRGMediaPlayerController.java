@@ -10,6 +10,7 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Process;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
@@ -147,7 +148,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             EXTERNAL_EVENT,
 
             DID_BIND_TO_PLAYER_VIEW,
-            DID_UNBIND_FROM_PLAYER_VIEW
+            DID_UNBIND_FROM_PLAYER_VIEW,
+
+            SUBTITLE_DID_CHANGE
         }
 
         public final Type type;
@@ -1526,10 +1529,11 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         return fatalError;
     }
 
+    @NonNull
     public List<SubtitleTrack> getSubtitleTrackList() {
         List<SubtitleTrack> result;
         if (currentMediaPlayerDelegate != null) {
-            result = currentMediaPlayerDelegate.getSubtitleTrackList();
+            result =  currentMediaPlayerDelegate.getSubtitleTrackList();
         } else {
             result = Collections.emptyList();
         }
@@ -1547,6 +1551,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     public void setSubtitleTrack(@Nullable SubtitleTrack track) {
         if (currentMediaPlayerDelegate != null) {
             currentMediaPlayerDelegate.setSubtitleTrack(track);
+            broadcastEvent(Event.Type.SUBTITLE_DID_CHANGE);
         }
     }
 

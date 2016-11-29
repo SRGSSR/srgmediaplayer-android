@@ -71,7 +71,7 @@
         android:id="@+id/segment_player_control_button_subtitles"
         android:layout_width="@dimen/player_control_height"
         android:layout_height="@dimen/player_control_height"
-        android:background="@drawable/ic_fullscreen" />
+        android:background="@drawable/ic_subtitles_off" />
 
     <Button
         android:id="@+id/segment_player_control_button_fullscreen"
