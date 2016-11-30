@@ -620,6 +620,7 @@ public class ExoPlayerDelegate implements
         }
     }
 
+    @NonNull
     @Override
     public List<SubtitleTrack> getSubtitleTrackList() {
         int textTrackCount = exoPlayer.getTrackCount(TYPE_TEXT);
@@ -631,10 +632,14 @@ public class ExoPlayerDelegate implements
         return subtitleTracks;
     }
 
-    @NonNull
+    @Nullable
     private SubtitleTrack getSubtitleTrackByTrackId(int i) {
-        MediaFormat trackFormat = exoPlayer.getTrackFormat(TYPE_TEXT, i);
-        return new SubtitleTrack(i, trackFormat.trackId, trackFormat.language);
+        if (i < 0 || i >= exoPlayer.getTrackCount(TYPE_TEXT)) {
+            return null;
+        } else {
+            MediaFormat trackFormat = exoPlayer.getTrackFormat(TYPE_TEXT, i);
+            return new SubtitleTrack(i, trackFormat.trackId, trackFormat.language);
+        }
     }
 
     @Override
