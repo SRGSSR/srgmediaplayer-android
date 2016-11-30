@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -39,8 +40,8 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
     private Button pauseButton;
     private Button playButton;
     private Button replayButton;
-    private Button fullscreenButton;
-    private Button subtitleButton;
+    private ImageButton fullscreenButton;
+    private ImageButton subtitleButton;
 
     private TextView leftTime;
     private TextView rightTime;
@@ -79,8 +80,8 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
         pauseButton = (Button) findViewById(R.id.segment_player_control_button_pause);
         playButton = (Button) findViewById(R.id.segment_player_control_button_play);
         replayButton = (Button) findViewById(R.id.segment_player_control_button_replay);
-        fullscreenButton = (Button) findViewById(R.id.segment_player_control_button_fullscreen);
-        subtitleButton = (Button) findViewById(R.id.segment_player_control_button_subtitles);
+        fullscreenButton = (ImageButton) findViewById(R.id.segment_player_control_button_fullscreen);
+        subtitleButton = (ImageButton) findViewById(R.id.segment_player_control_button_subtitles);
 
         pauseButton.setOnClickListener(this);
         playButton.setOnClickListener(this);
@@ -101,9 +102,9 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
             } else {
                 fullscreenButton.setVisibility(View.VISIBLE);
                 if (fullScreenButtonState == BUTTON_STATE_OFF) {
-                    fullscreenButton.setBackgroundResource(R.drawable.ic_fullscreen_exit);
+                    fullscreenButton.setImageResource(R.drawable.ic_fullscreen_exit);
                 } else {
-                    fullscreenButton.setBackgroundResource(R.drawable.ic_fullscreen);
+                    fullscreenButton.setImageResource(R.drawable.ic_fullscreen);
                 }
             }
         }
@@ -116,9 +117,9 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
             } else {
                 subtitleButton.setVisibility(View.VISIBLE);
                 if (subtitleButtonState == BUTTON_STATE_OFF) {
-                    subtitleButton.setBackgroundResource(R.drawable.ic_subtitles_off);
+                    subtitleButton.setImageResource(R.drawable.ic_subtitles_off);
                 } else {
-                    subtitleButton.setBackgroundResource(R.drawable.ic_subtitles_on);
+                    subtitleButton.setImageResource(R.drawable.ic_subtitles_on);
                 }
             }
         }

@@ -67,16 +67,18 @@
         android:textSize="10sp"
         tools:ignore="SmallSp" />
 
-    <Button
+    <ImageButton
         android:id="@+id/segment_player_control_button_subtitles"
         android:layout_width="@dimen/player_control_height"
         android:layout_height="@dimen/player_control_height"
-        android:background="@drawable/ic_subtitles_off" />
+        android:src="@drawable/ic_subtitles_off"
+        android:background="@android:color/transparent"/>
 
-    <Button
+    <ImageButton
         android:id="@+id/segment_player_control_button_fullscreen"
         android:layout_width="@dimen/player_control_height"
         android:layout_height="@dimen/player_control_height"
-        android:background="@drawable/ic_fullscreen" />
+        android:src="@drawable/ic_fullscreen"
+        android:background="@android:color/transparent"/>
 
 </merge>
