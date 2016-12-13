@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
-import ch.srg.mediaplayer.internal.session.MediaSessionManager;
+import ch.srg.mediaplayer.service.session.MediaSessionManager;
 import ch.srg.mediaplayer.utils.ThreadServiceTestBase;
 
 /**

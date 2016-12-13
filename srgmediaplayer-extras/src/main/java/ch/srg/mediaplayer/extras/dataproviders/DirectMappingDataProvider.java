@@ -4,7 +4,7 @@ import android.net.Uri;
 
 import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
-import ch.srg.segmentoverlay.data.SegmentDataProvider;
+import ch.srg.mediaplayer.segment.data.SegmentDataProvider;
 
 /**
  * Created by Axel on 02/03/2015.
