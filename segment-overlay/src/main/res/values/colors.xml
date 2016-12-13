@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <color name="white">#FFFFFFFF</color>
-    <color name="white_54">#89ffffff</color>
-    <color name="black">#000000</color>
-    <color name="black_shadow">#7d000000</color>
-    <color name="thumb">#bdbdbd</color>
-</resources>

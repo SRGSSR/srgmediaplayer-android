@@ -1,7 +1,0 @@
-<resources>
-	<declare-styleable name="SegmentView">
-		<attr name="text_color" format="color"/>
-		<attr name="selected_text_color" format="color"/>
-		<attr name="selected_background" format="color"/>
-	</declare-styleable>
-</resources>

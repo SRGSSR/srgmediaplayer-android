@@ -1,6 +1,0 @@
-<resources>
-	<declare-styleable name="SimplePlayerControlView">
-		<attr name="themeColor"
-		      format="color"/>
-	</declare-styleable>
-</resources>

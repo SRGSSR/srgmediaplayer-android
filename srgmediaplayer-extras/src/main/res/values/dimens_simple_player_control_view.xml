@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-	<dimen name="simple_player_control_button_size">46dp</dimen>
-	<dimen name="simple_player_control_margin_inner">8dp</dimen>
-</resources>
