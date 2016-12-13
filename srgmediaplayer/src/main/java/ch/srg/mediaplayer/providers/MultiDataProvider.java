@@ -13,7 +13,7 @@ import ch.srg.mediaplayer.segment.model.Segment;
  * Created by seb on 27/05/15.
  */
 public class MultiDataProvider implements SRGMediaPlayerDataProvider, SegmentDataProvider {
-    HashMap<String, SRGMediaPlayerDataProvider> dataProviders = new HashMap<>();
+    protected HashMap<String, SRGMediaPlayerDataProvider> dataProviders = new HashMap<>();
 
     public void addDataProvider(String prefix, SRGMediaPlayerDataProvider dataProvider) {
         dataProviders.put(prefix, dataProvider);

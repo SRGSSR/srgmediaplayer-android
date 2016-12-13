@@ -1,4 +1,4 @@
-package ch.srg.mediaplayer;
+package ch.srg.mediaplayer.demo;
 
 import android.net.Uri;
 
@@ -7,8 +7,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import ch.srg.segmentoverlay.data.SegmentDataProvider;
-import ch.srg.segmentoverlay.model.Segment;
+import ch.srg.mediaplayer.PlayerDelegate;
+import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
+import ch.srg.mediaplayer.SRGMediaPlayerException;
+import ch.srg.mediaplayer.segment.data.SegmentDataProvider;
+import ch.srg.mediaplayer.segment.model.Segment;
+
 
 /**
  * Created by Axel on 02/03/2015.

@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="#008888"
     android:orientation="vertical"
-    tools:context="ch.srg.mediaplayer.LayoutFragment">
+    tools:context=".LayoutFragment">
 
     <HorizontalScrollView
         android:layout_width="match_parent"

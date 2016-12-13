@@ -5,7 +5,7 @@
               android:layout_height="match_parent"
               android:orientation="vertical"
     android:background="#ff88ff"
-              tools:context="ch.srg.mediaplayer.LayoutFragment">
+              tools:context=".LayoutFragment">
 
     <FrameLayout
         android:layout_width="match_parent"

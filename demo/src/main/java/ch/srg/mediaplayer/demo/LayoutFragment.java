@@ -1,4 +1,4 @@
-package ch.srg.mediaplayer;
+package ch.srg.mediaplayer.demo;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -8,6 +8,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import ch.srg.mediaplayer.SRGMediaPlayerController;
+import ch.srg.mediaplayer.SRGMediaPlayerException;
+import ch.srg.mediaplayer.SRGMediaPlayerView;
 import ch.srg.mediaplayer.demo.DemoApplication;
 import ch.srg.mediaplayer.demo.R;
 

@@ -1,4 +1,4 @@
-package ch.srg.mediaplayer;
+package ch.srg.mediaplayer.demo;
 
 import android.app.Fragment;
 import android.content.res.Configuration;
@@ -29,19 +29,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import ch.srg.mediaplayer.demo.DemoApplication;
-import ch.srg.mediaplayer.demo.R;
-import ch.srg.mediaplayer.extras.dataproviders.MultiDataProvider;
-import ch.srg.mediaplayer.extras.fullscreen.helper.SystemUiHelper;
-import ch.srg.mediaplayer.extras.overlay.error.SimpleErrorMessage;
+import ch.srg.mediaplayer.PlayerDelegate;
+import ch.srg.mediaplayer.SRGMediaPlayerController;
+import ch.srg.mediaplayer.SRGMediaPlayerException;
+import ch.srg.mediaplayer.SRGMediaPlayerView;
+import ch.srg.mediaplayer.SubtitleTrack;
+import ch.srg.mediaplayer.helper.SystemUiHelper;
 import ch.srg.mediaplayer.internal.exoplayer.ExoPlayerDelegate;
 import ch.srg.mediaplayer.internal.nativeplayer.NativePlayerDelegate;
-import ch.srg.segmentoverlay.controller.SegmentController;
-import ch.srg.segmentoverlay.data.SegmentDataProvider;
-import ch.srg.segmentoverlay.model.Segment;
-import ch.srg.segmentoverlay.view.PlayerControlView;
-import ch.srg.segmentoverlay.view.SegmentView;
-import ch.srg.view.LivePlayerControlView;
+import ch.srg.mediaplayer.providers.MultiDataProvider;
+import ch.srg.mediaplayer.segment.controller.SegmentController;
+import ch.srg.mediaplayer.segment.data.SegmentDataProvider;
+import ch.srg.mediaplayer.segment.model.Segment;
+import ch.srg.mediaplayer.segment.view.PlayerControlView;
+import ch.srg.mediaplayer.segment.view.SegmentView;
+import ch.srg.mediaplayer.demo.view.LivePlayerControlView;
 
 public class DemoMediaPlayerActivity extends AppCompatActivity implements
         SRGMediaPlayerController.Listener, View.OnClickListener {
@@ -76,7 +78,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
 
     private SegmentController segmentController;
     private TextView statusLabel;
-    private SimpleErrorMessage errorMessage;
     private MultiDataProvider dataProvider;
     private List<Segment> segments;
     private ListView identifierListView;
@@ -113,7 +114,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
 
         playerView = (SRGMediaPlayerView) findViewById(R.id.demo_video_container);
 
-        errorMessage = (SimpleErrorMessage) findViewById(R.id.error_message);
+        //errorMessage = (SimpleErrorMessage) findViewById(R.id.error_message);
         statusLabel = (TextView) findViewById(R.id.status_label);
         swapPlayerButton = (Button) findViewById(R.id.button_swap_player);
 
@@ -164,7 +165,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
             livePlayerControlView.setPlayerController(srgMediaPlayer);
         }
 
-        errorMessage.attachToController(srgMediaPlayer);
+        //errorMessage.attachToController(srgMediaPlayer);
         srgMediaPlayer.registerEventListener(this);
 
         adapter = new DemoSegmentAdapter(this, new ArrayList<Segment>());

@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="ch.srg.mediaplayer.DemoMediaPlayerActivity">
+    tools:context=".DemoMediaPlayerActivity">
 
     <TextView
         android:id="@+id/top_text"
@@ -46,14 +46,13 @@
             app:overlay_mode="unmanaged" />
 
         <!--Controls-->
-        <ch.srg.mediaplayer.extras.overlay.control.SimplePlayerControlView
+        <ch.srg.mediaplayer.segment.view.PlayerControlView
             android:id="@+id/media_control"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_above="@+id/bottomAnchor"
             android:layout_centerHorizontal="true"
-            app:overlay_mode="control"
-            app:themeColor="#6b001eff" />
+            app:overlay_mode="control" />
         <!--Some text over the controls that stay-->
 
         <TextView
@@ -106,11 +105,12 @@
             android:textColor="#ff00ff57"
             app:overlay_mode="always_shown" />
 
-        <ch.srg.mediaplayer.extras.overlay.error.SimpleErrorMessage
+        <ch.srg.mediaplayer.segment.view.SimpleErrorMessage
             android:id="@+id/error_message"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:overlay_mode="unmanaged" />
+
     </ch.srg.mediaplayer.SRGMediaPlayerView>
 
     <TextView

@@ -1,4 +1,4 @@
-package ch.srg.mediaplayer;
+package ch.srg.mediaplayer.demo;
 
 import android.app.Fragment;
 import android.content.res.Configuration;
@@ -9,10 +9,12 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 
-import ch.srg.mediaplayer.demo.DemoApplication;
-import ch.srg.mediaplayer.demo.R;
-import ch.srg.mediaplayer.extras.fullscreen.helper.SystemUiHelper;
-import ch.srg.mediaplayer.extras.overlay.control.SimplePlayerControlView;
+import ch.srg.mediaplayer.SRGMediaPlayerController;
+import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
+import ch.srg.mediaplayer.SRGMediaPlayerException;
+import ch.srg.mediaplayer.SRGMediaPlayerView;
+import ch.srg.mediaplayer.helper.SystemUiHelper;
+import ch.srg.mediaplayer.segment.view.PlayerControlView;
 
 public class SimplePlayerActivity extends AppCompatActivity implements
         SRGMediaPlayerController.Listener, View.OnClickListener {
@@ -26,7 +28,7 @@ public class SimplePlayerActivity extends AppCompatActivity implements
     private SRGMediaPlayerView playerView;
 
     @Nullable
-    private SimplePlayerControlView playerControlView;
+    private PlayerControlView playerControlView;
 
     private SystemUiHelper uiHelper;
 
@@ -44,7 +46,7 @@ public class SimplePlayerActivity extends AppCompatActivity implements
         playerView = (SRGMediaPlayerView) findViewById(R.id.demo_video_container);
 
         View mediaControl = findViewById(R.id.media_control);
-        playerControlView = (SimplePlayerControlView) mediaControl;
+        playerControlView = (PlayerControlView) mediaControl;
 
         dataProvider = DemoApplication.multiDataProvider;
 

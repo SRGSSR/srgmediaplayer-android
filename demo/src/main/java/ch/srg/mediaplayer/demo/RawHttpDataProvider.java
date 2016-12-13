@@ -1,4 +1,4 @@
-package ch.srg.mediaplayer;
+package ch.srg.mediaplayer.demo;
 
 import android.net.Uri;
 import android.support.annotation.NonNull;
@@ -11,6 +11,10 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Scanner;
+
+import ch.srg.mediaplayer.PlayerDelegate;
+import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
+import ch.srg.mediaplayer.SRGMediaPlayerException;
 
 /**
  * Created by seb on 22/07/15.

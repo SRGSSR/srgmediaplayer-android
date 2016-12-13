@@ -3,7 +3,7 @@
                 xmlns:tools="http://schemas.android.com/tools"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                tools:context="ch.srg.mediaplayer.DemoMediaPlayerActivity">
+                tools:context=".DemoMediaPlayerActivity">
 
     <android.support.v7.widget.Toolbar
         android:id="@+id/toolbar"
@@ -42,7 +42,7 @@
             app:overlay_mode="unmanaged"/>
 
         <!--Controls-->
-        <ch.srg.view.LivePlayerControlView
+        <ch.srg.mediaplayer.demo.view.LivePlayerControlView
             android:id="@+id/media_control"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -51,7 +51,7 @@
             app:overlay_mode="control"/>
         <!--Some text over the controls that stay-->
 
-        <ch.srg.mediaplayer.extras.overlay.error.SimpleErrorMessage
+        <ch.srg.mediaplayer.segment.view.SimpleErrorMessage
             android:id="@+id/error_message"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

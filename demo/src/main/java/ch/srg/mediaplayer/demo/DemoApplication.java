@@ -3,18 +3,16 @@ package ch.srg.mediaplayer.demo;
 import android.app.Application;
 import android.content.Context;
 
-import ch.srg.mediaplayer.DummyDataProvider;
 import ch.srg.mediaplayer.PlayerDelegate;
-import ch.srg.mediaplayer.RawHttpDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
-import ch.srg.mediaplayer.extras.dataproviders.DirectMappingDataProvider;
-import ch.srg.mediaplayer.extras.dataproviders.MultiDataProvider;
 import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
-import ch.srg.mediaplayer.internal.cast.ChromeCastManager;
 import ch.srg.mediaplayer.internal.exoplayer.ExoPlayerDelegate;
 import ch.srg.mediaplayer.internal.nativeplayer.NativePlayerDelegate;
-import ch.srg.mediaplayer.internal.session.MediaSessionManager;
+import ch.srg.mediaplayer.providers.DirectMappingDataProvider;
+import ch.srg.mediaplayer.providers.MultiDataProvider;
 import ch.srg.mediaplayer.service.MediaPlayerService;
+import ch.srg.mediaplayer.service.cast.ChromeCastManager;
+import ch.srg.mediaplayer.service.session.MediaSessionManager;
 
 /**
  * Created by seb on 07/04/15.

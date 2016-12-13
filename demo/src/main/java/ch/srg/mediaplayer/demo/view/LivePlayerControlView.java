@@ -1,4 +1,4 @@
-package ch.srg.view;
+package ch.srg.mediaplayer.demo.view;
 
 import android.content.Context;
 import android.os.Handler;
