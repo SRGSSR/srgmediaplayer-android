@@ -17,7 +17,6 @@ import java.util.Date;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.demo.R;
-import it.moondroid.seekbarhint.library.SeekBarHint;
 
 /**
  * Created by npietri on 20.05.15.
@@ -29,7 +28,7 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
     private final DateFormat liveTimeFormat;
     private SRGMediaPlayerController playerController;
 
-    private SeekBarHint seekBar;
+    private SeekBar seekBar;
 
     private Button pauseButton;
     private Button playButton;
@@ -58,15 +57,8 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         inflater.inflate(R.layout.dvr_player_control, this, true);
 
-        seekBar = (SeekBarHint) findViewById(R.id.dvr_player_control_seekbar);
+        seekBar = (SeekBar) findViewById(R.id.dvr_player_control_seekbar);
         seekBar.setOnSeekBarChangeListener(this);
-        seekBar.setOnProgressChangeListener(new SeekBarHint.OnSeekBarHintProgressChangeListener() {
-            @Override
-            public String onHintTextChanged(SeekBarHint seekBarHint, int i) {
-                return stringForTimeInMs(i - duration);
-            }
-        });
-        seekBar.setPopupStyle(SeekBarHint.POPUP_FOLLOW);
 
         pauseButton = (Button) findViewById(R.id.segment_player_control_button_pause);
         playButton = (Button) findViewById(R.id.segment_player_control_button_play);
