@@ -500,9 +500,14 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
 
     private void onRemoteMediaPlayerStatusUpdated() {
         Log.d(TAG, "onRemoteMediaPlayerStatusUpdated() reached");
-        if (apiClient == null || remoteMediaPlayer == null
-                || remoteMediaPlayer.getMediaStatus() == null) {
-            Log.d(TAG, "mApiClient or remoteMediaPlayer is null, so will not proceed");
+        if (apiClient == null) {
+            Log.d(TAG, "mApiClient is null, so will not proceed");
+            return;
+        } else if (remoteMediaPlayer == null) {
+            Log.d(TAG, "remoteMediaPlayer is null, so will not proceed");
+            return;
+        } else if (remoteMediaPlayer.getMediaStatus() == null) {
+            Log.d(TAG, "remoteMediaPlayer with null media status, so will not proceed");
             return;
         }
 
