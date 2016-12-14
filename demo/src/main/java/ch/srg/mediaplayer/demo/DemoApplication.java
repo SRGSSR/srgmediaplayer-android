@@ -11,6 +11,7 @@ import ch.srg.mediaplayer.internal.nativeplayer.NativePlayerDelegate;
 import ch.srg.mediaplayer.providers.DirectMappingDataProvider;
 import ch.srg.mediaplayer.providers.MultiDataProvider;
 import ch.srg.mediaplayer.service.MediaPlayerService;
+import ch.srg.mediaplayer.service.SRGMediaPlayerServiceMetaDataProvider;
 import ch.srg.mediaplayer.service.cast.ChromeCastManager;
 import ch.srg.mediaplayer.service.session.MediaSessionManager;
 
@@ -76,6 +77,17 @@ public class DemoApplication extends Application {
 			}
 		};
 		MediaPlayerService.setPlayerDelegateFactory(playerDelegateFactory);
+		MediaPlayerService.setServiceDataProvider(new SRGMediaPlayerServiceMetaDataProvider() {
+			@Override
+			public void getNotificationData(String mediaIdentifier, GetNotificationDataCallback getNotificationDataCallback) {
+				getNotificationDataCallback.onDataNotAvailable();
+			}
+
+			@Override
+			public void getMediaMetadata(String mediaIdentifier, GetMediaMetadataCallback callback) {
+				callback.onDataNotAvailable();
+			}
+		});
 	}
 
 	public PlayerDelegateFactory getPlayerDelegateFactory() {

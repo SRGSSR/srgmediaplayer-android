@@ -440,6 +440,9 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         Log.d(TAG, "onMediaIdentifierChanged");
         currentNotificationData = null;
         final String requestedMediaIdentifier = this.currentMediaIdentifier;
+        if (serviceDataProvider == null) {
+            throw new RuntimeException("Call MediaPlayerService.setServiceDataProvider(serviceDataProvider) during application setup");
+        }
         serviceDataProvider.getNotificationData(requestedMediaIdentifier, new SRGMediaPlayerServiceMetaDataProvider.GetNotificationDataCallback() {
             @Override
             public void onNotificationDataLoaded(NotificationData notificationData) {
