@@ -2,5 +2,9 @@
     <string name="details_hms" translatable="false">%1$d:%2$02d:%3$02d</string>
     <string name="details_ms" translatable="false">%1$02d:%2$02d</string>
     <string name="time_pending" translatable="true">--:--</string>
+    <string name="service_notification_pause">Pause</string>
+    <string name="service_notification_play">Play</string>
+    <string name="service_notification_resume">Resume</string>
+    <string name="service_notification_stop">Stop</string>
     <string name="GENERIC_ERROR_MESSAGE">There are some technical problems.\n\nNormal quality service will resume soon.</string>
 </resources>
