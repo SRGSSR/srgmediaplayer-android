@@ -878,6 +878,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      */
     public long getMediaPosition() {
         if (currentMediaPlayerDelegate != null) {
+            Long seekToWhenReady = this.seekToWhenReady;
             if (seekToWhenReady != null) {
                 return seekToWhenReady;
             } else {
