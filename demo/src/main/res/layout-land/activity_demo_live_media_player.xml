@@ -63,7 +63,7 @@
             <!--Some text over the controls that stay-->
 
             <!--Controls-->
-            <ch.srg.mediaplayer.ildemo.view.LivePlayerControlView
+            <ch.srg.mediaplayer.demo.view.LivePlayerControlView
                 android:id="@+id/media_control"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
