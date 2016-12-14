@@ -52,7 +52,7 @@
                 android:minHeight="?attr/actionBarSize"/>
 
             <!--Controls-->
-            <ch.srg.segmentoverlay.view.SegmentView
+            <ch.srg.mediaplayer.segment.view.SegmentView
                 android:id="@+id/segment_demo_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -63,7 +63,7 @@
             <!--Some text over the controls that stay-->
 
             <!--Controls-->
-            <ch.srg.mediaplayer.demo.view.LivePlayerControlView
+            <ch.srg.mediaplayer.ildemo.view.LivePlayerControlView
                 android:id="@+id/media_control"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
