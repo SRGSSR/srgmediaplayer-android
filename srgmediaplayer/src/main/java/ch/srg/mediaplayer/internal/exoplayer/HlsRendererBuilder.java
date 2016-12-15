@@ -97,7 +97,9 @@ public class HlsRendererBuilder implements RendererBuilder, ManifestCallback<Hls
         if (manifest instanceof HlsMasterPlaylist) {
             HlsMasterPlaylist masterPlaylist = (HlsMasterPlaylist) manifest;
             haveSubtitles = !masterPlaylist.subtitles.isEmpty();
-            haveAudios = !masterPlaylist.audios.isEmpty();
+            // Following works with Apple streams but not SWI streams... So we will always force audio
+//            haveAudios = !masterPlaylist.audios.isEmpty();
+            haveAudios = true;
         }
 
         LoadControl loadControl = new DefaultLoadControl(new DefaultAllocator(BUFFER_SEGMENT_SIZE));
