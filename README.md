@@ -1,7 +1,7 @@
-SRG Media Player
+### SRG Media Player ###
 ================
 
-### Current version : 1.2.52 ###
+### Current version : 1.6.516 ###
 
 Building
 --------
