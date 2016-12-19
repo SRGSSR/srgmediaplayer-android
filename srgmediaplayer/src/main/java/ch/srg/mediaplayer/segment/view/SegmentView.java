@@ -7,7 +7,6 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
-import android.view.View;
 
 import java.util.List;
 
@@ -86,11 +85,6 @@ public class SegmentView extends RecyclerView implements SegmentController.Liste
     private void setSegmentList(@Nullable List<Segment> segments) {
         if (adapter != null) {
             adapter.setSegmentList(segments);
-            if (adapter.getSegmentsList().size() <= 1) {
-                setVisibility(View.GONE);
-            } else {
-                setVisibility(View.VISIBLE);
-            }
         }
     }
 }
