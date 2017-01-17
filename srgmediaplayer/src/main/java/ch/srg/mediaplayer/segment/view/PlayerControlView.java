@@ -1,6 +1,7 @@
 package ch.srg.mediaplayer.segment.view;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
@@ -50,10 +51,9 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
 
     private long seekBarSeekToMs;
 
-    private int fullScreenButtonState;
-    private int subtitleButtonState;
     private long currentPosition;
     private long currentDuration;
+
     @Nullable
     private Listener listener;
 
@@ -93,35 +93,19 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
         rightTime = (TextView) findViewById(R.id.segment_player_control_time_right);
 
         updateFullScreenButton();
+        updateSubtitleButton();
     }
 
     private void updateFullScreenButton() {
         if (fullscreenButton != null) {
-            if (fullScreenButtonState == BUTTON_STATE_INVISIBLE) {
-                fullscreenButton.setVisibility(View.GONE);
-            } else {
-                fullscreenButton.setVisibility(View.VISIBLE);
-                if (fullScreenButtonState == BUTTON_STATE_OFF) {
-                    fullscreenButton.setImageResource(R.drawable.ic_fullscreen_exit);
-                } else {
-                    fullscreenButton.setImageResource(R.drawable.ic_fullscreen);
-                }
-            }
+            fullscreenButton.setSelected(getContext().getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT);
         }
     }
 
     private void updateSubtitleButton() {
-        if (subtitleButton != null) {
-            if (subtitleButtonState == BUTTON_STATE_INVISIBLE) {
-                subtitleButton.setVisibility(View.GONE);
-            } else {
-                subtitleButton.setVisibility(View.VISIBLE);
-                if (subtitleButtonState == BUTTON_STATE_OFF) {
-                    subtitleButton.setImageResource(R.drawable.ic_subtitles_off);
-                } else {
-                    subtitleButton.setImageResource(R.drawable.ic_subtitles_on);
-                }
-            }
+        if (subtitleButton != null && playerController != null) {
+            subtitleButton.setVisibility(playerController.getSubtitleTrackList().isEmpty() ? VISIBLE : GONE);
+            subtitleButton.setSelected(playerController.getSubtitleTrack() != null);
         }
     }
 
@@ -157,7 +141,7 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
                 }
             } else if (v == fullscreenButton) {
                 if (listener != null) {
-                    listener.onFullscreenClick(fullScreenButtonState == BUTTON_STATE_ON);
+                    listener.onFullscreenClick(fullscreenButton.isSelected());
                 }
             } else if (v == subtitleButton) {
                 if (listener != null) {
@@ -231,6 +215,7 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
                 pauseButton.setVisibility(View.GONE);
                 replayButton.setVisibility(View.VISIBLE);
             }
+            updateSubtitleButton();
         } else {
             updateTimes(-1, -1);
             playButton.setVisibility(GONE);
@@ -294,19 +279,6 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
 
     public void setListener(PlayerControlView.Listener listener) {
         this.listener = listener;
-    }
-
-    @Override
-    public void setFullScreenButtonState(int buttonState) {
-        this.fullScreenButtonState = buttonState;
-        updateFullScreenButton();
-    }
-
-
-    @Override
-    public void setSubtitleButtonState(int buttonState) {
-        this.subtitleButtonState = buttonState;
-        updateSubtitleButton();
     }
 
     @Override

@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <merge xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" >
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    tools:parentTag="LinearLayout"
+    tools:orientation="horizontal">
 
     <FrameLayout
         android:layout_width="@dimen/player_control_height"
@@ -47,6 +51,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:layout_gravity="center_vertical"
         android:backgroundTintMode="src_in"
         android:progressBackgroundTintMode="src_in"
         android:progressTint="@color/white"
@@ -71,14 +76,14 @@
         android:id="@+id/segment_player_control_button_subtitles"
         android:layout_width="@dimen/player_control_height"
         android:layout_height="@dimen/player_control_height"
-        android:src="@drawable/ic_subtitles_off"
-        android:background="@android:color/transparent"/>
+        android:background="@android:color/transparent"
+        android:src="@drawable/ic_subtitle_selector" />
 
     <ImageButton
         android:id="@+id/segment_player_control_button_fullscreen"
         android:layout_width="@dimen/player_control_height"
         android:layout_height="@dimen/player_control_height"
-        android:src="@drawable/ic_fullscreen"
-        android:background="@android:color/transparent"/>
+        android:background="@android:color/transparent"
+        android:src="@drawable/ic_fullscreen_selector" />
 
 </merge>
