@@ -104,6 +104,7 @@ import android.view.ViewGroup;
     public void updateLoadings(boolean forceUpdate) {
         updateLoadings(forceUpdate,
                 playerController.getState() == SRGMediaPlayerController.State.PREPARING
+                        || playerController.getState() == SRGMediaPlayerController.State.BUFFERING
                         || playerController.isSeekPending());
     }
 
