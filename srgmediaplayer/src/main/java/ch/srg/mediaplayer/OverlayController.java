@@ -104,6 +104,7 @@ import android.view.ViewGroup;
     public void updateLoadings(boolean forceUpdate) {
         updateLoadings(forceUpdate,
                 playerController.getState() == SRGMediaPlayerController.State.PREPARING
+                        || playerController.getState() == SRGMediaPlayerController.State.BUFFERING
                         || playerController.isSeekPending());
     }
 
@@ -166,7 +167,7 @@ import android.view.ViewGroup;
                 setForceShowingControlOverlays(true);
                 break;
             case READY:
-                if (playerController.isPlaying()) {
+                if (playerController.isPlaying() && (playerController.hasVideoTrack() || playerController.isRemote())) {
                     postponeOverlayHiding();
                     setForceShowingControlOverlays(false);
                 } else {

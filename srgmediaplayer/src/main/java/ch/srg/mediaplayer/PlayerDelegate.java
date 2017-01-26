@@ -3,7 +3,13 @@ package ch.srg.mediaplayer;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.view.View;
+
+import com.google.android.exoplayer.text.Cue;
+
+import java.util.List;
 
 /**
  * Created by Axel on 04/03/2015.
@@ -14,6 +20,9 @@ import android.view.View;
  */
 public interface PlayerDelegate {
 	long UNKNOWN_TIME = -1;
+
+	@Nullable
+	SubtitleTrack getSubtitleTrack();
 
 	interface OnPlayerDelegateListener {
 
@@ -29,11 +38,14 @@ public interface PlayerDelegate {
 
 		void onPlayerDelegateError(PlayerDelegate delegate, SRGMediaPlayerException e);
 
+		void onPlayerDelegateSubtitleCues(List<Cue> cues);
+
 		SRGMediaPlayerView getMediaPlayerView();
 
 		Handler getMainHandler();
 
 		Context getContext();
+
 	}
 
 	/**
@@ -137,4 +149,9 @@ public interface PlayerDelegate {
 	Long getBandwidthEstimate();
 
 	long getPlaylistReferenceTime();
+
+	@NonNull
+	List<SubtitleTrack> getSubtitleTrackList();
+
+	void setSubtitleTrack(SubtitleTrack track);
 }

@@ -1,9 +1,10 @@
 package ch.srg.mediaplayer;
 
-import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Rect;
+import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -12,15 +13,23 @@ import android.view.View;
 import android.view.ViewDebug;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.view.accessibility.CaptioningManager;
 import android.widget.HorizontalScrollView;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
+
+import com.google.android.exoplayer.text.CaptionStyleCompat;
+import com.google.android.exoplayer.text.Cue;
+import com.google.android.exoplayer.text.SubtitleLayout;
+import com.google.android.exoplayer.util.Util;
+
+import java.util.List;
 
 /**
  * This class is a placeholder for some video.
  * Place it in your layout, or create it programmatically and bind it to a SRGMediaPlayerController to play video
  */
-public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchListener {
+public class SRGMediaPlayerView extends RelativeLayout {
 
     // This code may be used to disallow multiple view on Nexus 5 for exemple
     //
@@ -50,10 +59,14 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
     private boolean onTop;
     private boolean adjustToParentScrollView;
     private boolean debugMode;
+    private boolean subtitleViewConfigured;
 
     public boolean isDebugMode() {
         return debugMode;
     }
+
+    @Nullable
+    private SubtitleLayout subtitleLayout;
 
     public void setDebugMode(boolean debugMode) {
         this.debugMode = debugMode;
@@ -174,7 +187,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         if (newVideoRenderingView != null) {
             videoRenderingView = newVideoRenderingView;
             updateOnTopInternal(onTop);
-            videoRenderingView.setOnTouchListener(this);
             videoRenderingViewWidth = -1;
             videoRenderingViewHeight = -1;
             RelativeLayout.LayoutParams surfaceParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
@@ -227,13 +239,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         this.touchListener = videoTouchListener;
     }
 
-    /**
-     * This flag is used to track videoRenderView touch event.
-     * It is set by the onTouch attached to the videoRenderView and reset by the dispatchTouchEvent.
-     * This flag prevents the dispatchTouchEvent to send back the event to the VideoTouchListener.
-     */
     private boolean videoRenderViewTrackingTouch = false;
-    private boolean videoRenderViewHandledTouch = false;
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
@@ -241,13 +247,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
 
         //This will trigger the onTouch attached to the videorenderingview if it's the case.
         boolean handled = super.dispatchTouchEvent(event);
-        if (videoRenderViewTrackingTouch) {
-            return handled;
-        }
-        if (videoRenderViewHandledTouch) {
-            videoRenderViewHandledTouch = false;
-            return handled;
-        }
 
         if (touchListener != null) {
             boolean controlHit = isControlHit((int) event.getX(), (int) event.getY());
@@ -263,6 +262,17 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
                     default:
                         break;
                 }
+            } else {
+                if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
+                    videoRenderViewTrackingTouch = true;
+                }
+                if (videoRenderViewTrackingTouch && event.getAction() == MotionEvent.ACTION_UP) {
+                    if (touchListener != null) {
+                        touchListener.onVideoRenderingViewTouched(this);
+                    }
+                    videoRenderViewTrackingTouch = false;
+                }
+                handled = true;
             }
         }
         return handled;
@@ -270,8 +280,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
 
     public boolean isControlHit(int x, int y) {
         boolean controlHit = false;
-        for(int i = getChildCount(); i >= 0; --i)
-        {
+        for (int i = getChildCount(); i >= 0; --i) {
             View child = getChildAt(i);
             if (child != null) {
                 ViewGroup.LayoutParams layoutParams = child.getLayoutParams();
@@ -287,29 +296,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         }
         return controlHit;
     }
-
-    /**
-     * Only used for the videorenderingview
-     */
-    @Override
-    @SuppressLint("ClickableViewAccessibility")
-    public boolean onTouch(View v, MotionEvent event) {
-        Log.v(SRGMediaPlayerController.TAG, "onTouch videoview " + event.getAction());
-        if (v == videoRenderingView) {
-            if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
-                videoRenderViewTrackingTouch = true;
-            }
-            if (event.getAction() == MotionEvent.ACTION_UP) {
-                if (touchListener != null) {
-                    touchListener.onVideoRenderingViewTouched(this);
-                }
-                videoRenderViewTrackingTouch = false;
-                videoRenderViewHandledTouch = true;
-            }
-        }
-        return true;
-    }
-
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
@@ -585,5 +571,55 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
 
     public void setAdjustToParentScrollView(boolean adjustToParentScrollView) {
         this.adjustToParentScrollView = adjustToParentScrollView;
+    }
+
+    private void configureSubtitleView() {
+        if (subtitleLayout == null) {
+            for (int i = 0; i < getChildCount(); i++) {
+                if (getChildAt(i) instanceof SubtitleLayout) {
+                    subtitleLayout = (SubtitleLayout) getChildAt(i);
+                    break;
+                }
+            }
+        }
+        if (subtitleLayout != null) {
+            CaptionStyleCompat style;
+            float fontScale;
+            if (Util.SDK_INT >= 19) {
+                style = getUserCaptionStyleV19();
+                fontScale = getUserCaptionFontScaleV19();
+            } else {
+                style = CaptionStyleCompat.DEFAULT;
+                fontScale = 1.0f;
+            }
+            subtitleLayout.setStyle(style);
+            subtitleLayout.setFractionalTextSize(SubtitleLayout.DEFAULT_TEXT_SIZE_FRACTION * fontScale);
+        }
+        subtitleViewConfigured = true;
+    }
+
+    public void setCues(List<Cue> cues) {
+        if (!subtitleViewConfigured) {
+            configureSubtitleView();
+        }
+        if (subtitleLayout != null) {
+            subtitleLayout.setCues(cues);
+        }
+    }
+
+    @TargetApi(19)
+    private float getUserCaptionFontScaleV19() {
+        CaptioningManager captioningManager = getCaptioningManager();
+        return captioningManager.getFontScale();
+    }
+
+    @TargetApi(19)
+    private CaptionStyleCompat getUserCaptionStyleV19() {
+        CaptioningManager captioningManager = getCaptioningManager();
+        return CaptionStyleCompat.createFromCaptionStyle(captioningManager.getUserStyle());
+    }
+
+    private CaptioningManager getCaptioningManager() {
+        return (CaptioningManager) getContext().getSystemService(Context.CAPTIONING_SERVICE);
     }
 }

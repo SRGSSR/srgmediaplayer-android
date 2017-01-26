@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="service_notification_pause">Pausa</string>
+    <string name="service_notification_play">Play</string>
+    <string name="service_notification_resume">Continua</string>
+    <string name="service_notification_stop">Stop</string>
+    <string name="GENERIC_ERROR_MESSAGE">Opss!\n\nAbbiamo qualche problema tecnico...\n\nCi stiamo lavorando e speriamo di risolverlo presto.</string>
+</resources>

@@ -10,11 +10,6 @@ import android.view.View;
 import net.hockeyapp.android.CrashManager;
 import net.hockeyapp.android.UpdateManager;
 
-import ch.srg.mediaplayer.DemoMediaPlayerActivity;
-import ch.srg.mediaplayer.LayoutsActivity;
-import ch.srg.mediaplayer.MultiDemoMediaPlayerActivity;
-import ch.srg.mediaplayer.SimplePlayerActivity;
-
 public class MainActivity extends Activity implements View.OnClickListener {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {

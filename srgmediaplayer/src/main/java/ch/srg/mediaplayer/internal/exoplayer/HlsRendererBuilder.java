@@ -19,6 +19,7 @@ package ch.srg.mediaplayer.internal.exoplayer;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.media.MediaCodec;
+import android.os.Handler;
 
 import com.google.android.exoplayer.DefaultLoadControl;
 import com.google.android.exoplayer.LoadControl;
@@ -29,10 +30,15 @@ import com.google.android.exoplayer.TrackRenderer;
 import com.google.android.exoplayer.audio.AudioCapabilities;
 import com.google.android.exoplayer.hls.DefaultHlsTrackSelector;
 import com.google.android.exoplayer.hls.HlsChunkSource;
+import com.google.android.exoplayer.hls.HlsMasterPlaylist;
 import com.google.android.exoplayer.hls.HlsPlaylist;
 import com.google.android.exoplayer.hls.HlsPlaylistParser;
 import com.google.android.exoplayer.hls.HlsSampleSource;
 import com.google.android.exoplayer.hls.PtsTimestampAdjusterProvider;
+import com.google.android.exoplayer.metadata.MetadataTrackRenderer;
+import com.google.android.exoplayer.metadata.id3.Id3Frame;
+import com.google.android.exoplayer.metadata.id3.Id3Parser;
+import com.google.android.exoplayer.text.TextTrackRenderer;
 import com.google.android.exoplayer.upstream.DataSource;
 import com.google.android.exoplayer.upstream.DefaultAllocator;
 import com.google.android.exoplayer.upstream.DefaultBandwidthMeter;
@@ -42,6 +48,7 @@ import com.google.android.exoplayer.util.ManifestFetcher;
 import com.google.android.exoplayer.util.ManifestFetcher.ManifestCallback;
 
 import java.io.IOException;
+import java.util.List;
 
 
 /**
@@ -51,6 +58,7 @@ import java.io.IOException;
 public class HlsRendererBuilder implements RendererBuilder, ManifestCallback<HlsPlaylist> {
     private static final int BUFFER_SEGMENT_SIZE = 64 * 1024;
     private static final int BUFFER_SEGMENTS = 256;
+    private static final int TEXT_BUFFER_SEGMENTS = 2;
 
     private final Context context;
     private final String userAgent;
@@ -84,20 +92,50 @@ public class HlsRendererBuilder implements RendererBuilder, ManifestCallback<Hls
 
     @Override
     public void onSingleManifest(HlsPlaylist manifest) {
+        boolean haveSubtitles = false;
+        boolean haveAudios = false;
+        if (manifest instanceof HlsMasterPlaylist) {
+            HlsMasterPlaylist masterPlaylist = (HlsMasterPlaylist) manifest;
+            haveSubtitles = !masterPlaylist.subtitles.isEmpty();
+            // Following works with Apple streams but not SWI streams... So we will always force audio
+//            haveAudios = !masterPlaylist.audios.isEmpty();
+            haveAudios = true;
+        }
+
         LoadControl loadControl = new DefaultLoadControl(new DefaultAllocator(BUFFER_SEGMENT_SIZE));
         DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
         PtsTimestampAdjusterProvider timestampAdjusterProvider = new PtsTimestampAdjusterProvider();
 
         DataSource dataSource = new DefaultUriDataSource(context, bandwidthMeter, userAgent);
         HlsChunkSource chunkSource = new HlsChunkSource(true, dataSource, url, manifest, DefaultHlsTrackSelector.newDefaultInstance(context), bandwidthMeter, timestampAdjusterProvider, HlsChunkSource.ADAPTIVE_MODE_SPLICE, player);
-        HlsSampleSource sampleSource = new HlsSampleSource(chunkSource, loadControl, BUFFER_SEGMENTS * BUFFER_SEGMENT_SIZE, player.getMainHandler(), player, ExoPlayerDelegate.TYPE_VIDEO);
+        Handler mainHandler = player.getMainHandler();
+        HlsSampleSource sampleSource = new HlsSampleSource(chunkSource, loadControl, BUFFER_SEGMENTS * BUFFER_SEGMENT_SIZE, mainHandler, player, ExoPlayerDelegate.TYPE_VIDEO);
         @SuppressLint("InlinedApi")
-        MediaCodecVideoTrackRenderer videoRenderer = new MediaCodecVideoTrackRenderer(context, sampleSource, MediaCodecSelector.DEFAULT, MediaCodec.VIDEO_SCALING_MODE_SCALE_TO_FIT, 5000, player.getMainHandler(), player, 50);
-        MediaCodecAudioTrackRenderer audioRenderer = new MediaCodecAudioTrackRenderer(sampleSource, MediaCodecSelector.DEFAULT);
+        MediaCodecVideoTrackRenderer videoRenderer = new MediaCodecVideoTrackRenderer(context, sampleSource, MediaCodecSelector.DEFAULT, MediaCodec.VIDEO_SCALING_MODE_SCALE_TO_FIT, 5000, mainHandler, player, 50);
+        MetadataTrackRenderer<List<Id3Frame>> id3Renderer = new MetadataTrackRenderer<>(sampleSource, new Id3Parser(), player, mainHandler.getLooper());
+
+        TrackRenderer textRenderer = null;
+        MediaCodecAudioTrackRenderer audioRenderer = null;
+
+        if (haveAudios) {
+            audioRenderer = new MediaCodecAudioTrackRenderer(sampleSource, MediaCodecSelector.DEFAULT);
+        }
+        if (haveSubtitles) {
+            DataSource textDataSource = new DefaultUriDataSource(context, bandwidthMeter, userAgent);
+            HlsChunkSource textChunkSource = new HlsChunkSource(false /* isMaster */, textDataSource,
+                    url, manifest, DefaultHlsTrackSelector.newSubtitleInstance(), bandwidthMeter,
+                    timestampAdjusterProvider, HlsChunkSource.ADAPTIVE_MODE_SPLICE, player);
+            HlsSampleSource textSampleSource = new HlsSampleSource(textChunkSource, loadControl,
+                    TEXT_BUFFER_SEGMENTS * BUFFER_SEGMENT_SIZE, mainHandler, player, ExoPlayerDelegate.TYPE_TEXT);
+            textRenderer = new TextTrackRenderer(textSampleSource, player, mainHandler.getLooper());
+        }
 
         TrackRenderer[] renderers = new TrackRenderer[ExoPlayerDelegate.RENDERER_COUNT];
         renderers[ExoPlayerDelegate.TYPE_VIDEO] = videoRenderer;
         renderers[ExoPlayerDelegate.TYPE_AUDIO] = audioRenderer;
+        renderers[ExoPlayerDelegate.TYPE_TEXT] = textRenderer;
+        renderers[ExoPlayerDelegate.TYPE_METADATA] = id3Renderer;
+
         callback.onRenderers(renderers, bandwidthMeter);
         callback.onHlsChunkSource(chunkSource);
     }

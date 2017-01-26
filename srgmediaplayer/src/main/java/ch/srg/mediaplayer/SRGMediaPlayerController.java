@@ -10,6 +10,7 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Process;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
@@ -18,9 +19,13 @@ import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
 
+import com.google.android.exoplayer.text.Cue;
+
 import java.lang.ref.WeakReference;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.WeakHashMap;
 
@@ -53,6 +58,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private boolean mutedBecauseFocusLoss;
     private Long qualityOverride;
     private Long qualityDefault;
+    private Throwable fatalError;
 
     public static String getName() {
         return NAME;
@@ -142,7 +148,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             EXTERNAL_EVENT,
 
             DID_BIND_TO_PLAYER_VIEW,
-            DID_UNBIND_FROM_PLAYER_VIEW
+            DID_UNBIND_FROM_PLAYER_VIEW,
+
+            SUBTITLE_DID_CHANGE
         }
 
         public final Type type;
@@ -259,7 +267,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     private SRGMediaPlayerDataProvider mediaPlayerDataProvider;
 
-    private DataProviderAsyncTask dataProviderAsyncTask;
     private State state = State.IDLE;
 
     private boolean playWhenReady = true;
@@ -428,25 +435,20 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
     }
 
-    /*package*/ void onUriLoaded(Uri uri, PlayerDelegate playerDelegate) {
-        sendMessage(MSG_PREPARE_FOR_URI, new PrepareUriData(uri, playerDelegate));
-    }
-
-    /*package*/ void onDataProviderException(SRGMediaPlayerException e) {
-        sendMessage(MSG_DATA_PROVIDER_EXCEPTION, e);
-    }
-
     /**
      * Resume playing after a pause call or make the controller start immediately after the preparation phase.
      */
     public void start() {
-        sendMessage(MSG_SET_PLAY_WHEN_READY, true);
+        if (!hasLostAudioFocus()) {
+            sendMessage(MSG_SET_PLAY_WHEN_READY, true);
+        }
     }
 
     /**
      * Pause the current media or prevent it from starting immediately if controller in preparation phase.
      */
     public void pause() {
+        resetAudioFocusResume();
         sendMessage(MSG_SET_PLAY_WHEN_READY, false);
     }
 
@@ -569,11 +571,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 if (positionMs == null) {
                     throw new IllegalArgumentException("Missing position for seek to");
                 } else {
-                    if (state == State.PREPARING) {
-                        seekToWhenReady = positionMs;
-                    } else {
+                    seekToWhenReady = positionMs;
+                    if (state != State.PREPARING) {
                         postEventInternal(Event.Type.WILL_SEEK);
-                        seekToWhenReady = positionMs;
                         if (currentMediaPlayerDelegate != null) {
                             try {
                                 currentMediaPlayerDelegate.seekTo(seekToWhenReady);
@@ -719,18 +719,25 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
     }
 
-    private void prepareForIdentifierInternal(String mediaIdentifier, PlayerDelegate playerDelegate) {
+    private void prepareForIdentifierInternal(String mediaIdentifier, final PlayerDelegate playerDelegate) {
         setStateInternal(State.PREPARING);
         if (mediaIdentifier == null) {
             throw new IllegalArgumentException("Media identifier is null in prepare for identifier");
         }
         currentMediaIdentifier = mediaIdentifier;
         currentMediaUrl = null;
-        if (dataProviderAsyncTask != null) {
-            dataProviderAsyncTask.cancel(true);
-        }
-        dataProviderAsyncTask = new DataProviderAsyncTask(this, mediaPlayerDataProvider, playerDelegate);
-        dataProviderAsyncTask.execute(mediaIdentifier);
+
+        mediaPlayerDataProvider.getUri(mediaIdentifier, playerDelegate, new SRGMediaPlayerDataProvider.GetUriCallback() {
+            @Override
+            public void onUriLoaded(String mediaIdentifier, Uri uri, int mediaType) {
+                sendMessage(MSG_PREPARE_FOR_URI, new PrepareUriData(uri, playerDelegate));
+            }
+
+            @Override
+            public void onUriLoadFailed(String mediaIdentifier, SRGMediaPlayerException exception) {
+                sendMessage(MSG_DATA_PROVIDER_EXCEPTION, exception);
+            }
+        });
     }
 
     private void createPlayerDelegateInternal(String mediaIdentifier) {
@@ -841,6 +848,13 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
     }
 
+    @Override
+    public void onPlayerDelegateSubtitleCues(List<Cue> cues) {
+        if (mediaPlayerView != null) {
+            mediaPlayerView.setCues(cues);
+        }
+    }
+
     /**
      * Release the current player. Once the player is released you have to create a new player
      * if you want to play a new video.
@@ -853,6 +867,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     protected void releaseInternal() {
+        currentSeekTarget = null;
         setStateInternal(State.RELEASED);
         abandonAudioFocus();
         releaseDelegateInternal();
@@ -988,17 +1003,11 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      */
     public void bindToMediaPlayerView(SRGMediaPlayerView newView) {
         if (mediaPlayerView != null) {
-            if (mediaPlayerView == newView) {
-                throw new IllegalStateException("Controller already bound to this same player view");
-            } else {
-                throw new IllegalStateException("Controller already bound to player view: "
-                        + mediaPlayerView
-                        + " when trying to connect to "
-                        + newView);
-            }
+            unbindFromMediaPlayerView(mediaPlayerView);
         }
 
         mediaPlayerView = newView;
+        mediaPlayerView.setCues(Collections.<Cue>emptyList());
         internalUpdateMediaPlayerViewBound();
         overlayController.bindToVideoContainer(this.mediaPlayerView);
         manageKeepScreenOnInternal();
@@ -1146,9 +1155,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * @param playerView video container to unbind from.
      */
     public void unbindFromMediaPlayerView(SRGMediaPlayerView playerView) {
-        if (debugMode && mediaPlayerView != playerView) {
-            throw new IllegalStateException("Trying to unbind from unknown playerView: " + playerView);
-        } else {
+        if (mediaPlayerView == playerView) {
             overlayController.bindToVideoContainer(null);
             if (currentMediaPlayerDelegate != null) {
                 currentMediaPlayerDelegate.unbindRenderingView();
@@ -1221,6 +1228,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     private void postErrorEventInternal(boolean fatalError, SRGMediaPlayerException e) {
+        if (fatalError) {
+            this.fatalError = e;
+        }
         postEventInternal(Event.buildErrorEvent(this, fatalError, e));
     }
 
@@ -1288,7 +1298,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     private void handleAudioFocusGain() {
         if (duckedBecauseTransientFocusLoss) {
-            // TODO Handle ducked volume or something
             unmute();
         }
         if (pausedBecauseFocusLoss && ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_AUTO_RESTART) != 0 || pausedBecauseTransientFocusLoss)) {
@@ -1297,22 +1306,33 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         if (mutedBecauseFocusLoss) {
             unmute();
         }
+        resetAudioFocusResume();
+    }
+
+    private void resetAudioFocusResume() {
         pausedBecauseFocusLoss = false;
         pausedBecauseTransientFocusLoss = false;
         duckedBecauseTransientFocusLoss = false;
     }
 
+    private boolean hasLostAudioFocus() {
+        return pausedBecauseFocusLoss ||
+                pausedBecauseTransientFocusLoss ||
+                duckedBecauseTransientFocusLoss;
+    }
+
     private void handleAudioFocusLoss(boolean transientFocus, boolean mayDuck) {
+        boolean playing = isPlaying();
         if (mayDuck && (audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_DUCK) != 0) {
-            this.duckedBecauseTransientFocusLoss = true;
-            // TODO Handle ducked volume or something
+            this.duckedBecauseTransientFocusLoss = playing;
+            // We could also actually duck. But this is fine for our usage afaics.
             mute();
         } else if ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_PAUSE) != 0) {
-            pausedBecauseFocusLoss = true;
-            pausedBecauseTransientFocusLoss = transientFocus;
+            pausedBecauseFocusLoss = playing;
+            pausedBecauseTransientFocusLoss = playing && transientFocus;
             pause();
         } else if ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_MUTE) != 0) {
-            mutedBecauseFocusLoss = true;
+            mutedBecauseFocusLoss = playing;
             mute();
         }
     }
@@ -1377,6 +1397,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * @return true if current media position match to seek target
      */
     public boolean isSeekPending() {
+        Long currentSeekTarget = this.currentSeekTarget;
         return currentSeekTarget != null && getMediaPosition() == currentSeekTarget;
     }
 
@@ -1409,7 +1430,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         return currentMediaPlayerDelegate != null ? currentMediaPlayerDelegate.getPlaylistStartTime() : 0;
     }
 
-    private boolean isLive() {
+    public boolean isLive() {
         return currentMediaPlayerDelegate != null && currentMediaPlayerDelegate.isLive();
     }
 
@@ -1499,5 +1520,47 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         } else {
             return null;
         }
+    }
+
+    public boolean hasVideoTrack() {
+        return getVideoSourceHeight() > 0;
+    }
+
+    public Throwable getFatalError() {
+        return fatalError;
+    }
+
+    @NonNull
+    public List<SubtitleTrack> getSubtitleTrackList() {
+        List<SubtitleTrack> result;
+        if (currentMediaPlayerDelegate != null) {
+            result =  currentMediaPlayerDelegate.getSubtitleTrackList();
+        } else {
+            result = Collections.emptyList();
+        }
+        if (debugMode && (result == null || result.size() == 0)) {
+            return Arrays.asList(
+                    new SubtitleTrack(0, "English", null),
+                    new SubtitleTrack(0, "French", null),
+                    new SubtitleTrack(0, "عربي", null),
+                    new SubtitleTrack(0, "中文", null));
+        } else {
+            return result;
+        }
+    }
+
+    public void setSubtitleTrack(@Nullable SubtitleTrack track) {
+        if (currentMediaPlayerDelegate != null) {
+            currentMediaPlayerDelegate.setSubtitleTrack(track);
+            broadcastEvent(Event.Type.SUBTITLE_DID_CHANGE);
+        }
+    }
+
+    @Nullable
+    public SubtitleTrack getSubtitleTrack() {
+        if (currentMediaPlayerDelegate != null) {
+            return currentMediaPlayerDelegate.getSubtitleTrack();
+        }
+        return null;
     }
 }

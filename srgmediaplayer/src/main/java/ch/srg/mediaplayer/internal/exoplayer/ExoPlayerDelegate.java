@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -22,6 +23,7 @@ import com.google.android.exoplayer.ExoPlayer;
 import com.google.android.exoplayer.MediaCodecAudioTrackRenderer;
 import com.google.android.exoplayer.MediaCodecTrackRenderer;
 import com.google.android.exoplayer.MediaCodecVideoTrackRenderer;
+import com.google.android.exoplayer.MediaFormat;
 import com.google.android.exoplayer.TimeRange;
 import com.google.android.exoplayer.TrackRenderer;
 import com.google.android.exoplayer.audio.AudioCapabilities;
@@ -34,11 +36,14 @@ import com.google.android.exoplayer.drm.MediaDrmCallback;
 import com.google.android.exoplayer.drm.StreamingDrmSessionManager;
 import com.google.android.exoplayer.hls.HlsChunkSource;
 import com.google.android.exoplayer.hls.HlsSampleSource;
+import com.google.android.exoplayer.metadata.MetadataTrackRenderer;
+import com.google.android.exoplayer.metadata.id3.Id3Frame;
 import com.google.android.exoplayer.text.Cue;
 import com.google.android.exoplayer.text.TextRenderer;
 import com.google.android.exoplayer.upstream.BandwidthMeter;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -46,15 +51,16 @@ import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerView;
+import ch.srg.mediaplayer.SubtitleTrack;
 
+import static com.google.android.exoplayer.ExoPlayer.TRACK_DISABLED;
 
 
 /**
  * Created by Axel on 02/03/2015.
  */
 
-public
-class ExoPlayerDelegate implements
+public class ExoPlayerDelegate implements
         PlayerDelegate,
         ExoPlayer.Listener,
         TextRenderer,
@@ -66,7 +72,8 @@ class ExoPlayerDelegate implements
         MediaCodecAudioTrackRenderer.EventListener,
         AudioCapabilitiesReceiver.Listener,
         RendererBuilderCallback,
-        BandwidthMeter.EventListener, StreamingDrmSessionManager.EventListener {
+        BandwidthMeter.EventListener,
+        StreamingDrmSessionManager.EventListener, MetadataTrackRenderer.MetadataRenderer<List<Id3Frame>> {
 
     private HlsChunkSource hlsChunkSource;
     private Long qualityOverride;
@@ -77,17 +84,13 @@ class ExoPlayerDelegate implements
      * Workaround for paused live as position and/or duration stay put when one of them should really change.
      */
     private long livePauseTime;
-    private long lastPlaylistLoadTime;
-
-    @Override
-    public void onAvailableRangeChanged(int i, TimeRange timeRange) {
-
-    }
 
     public enum ViewType {
         TYPE_SURFACEVIEW,
         TYPE_TEXTUREVIEW
-    };
+    }
+
+    ;
 
     public enum SourceType {
         HLS,
@@ -95,10 +98,11 @@ class ExoPlayerDelegate implements
         DASH
     }
 
-    public static final int RENDERER_COUNT = 3;
+    public static final int RENDERER_COUNT = 4;
     public static final int TYPE_VIDEO = 0;
     public static final int TYPE_AUDIO = 1;
     public static final int TYPE_TEXT = 2;
+    public static final int TYPE_METADATA = 3;
     public static final String TAG = SRGMediaPlayerController.TAG;
 
     private final Context context;
@@ -111,6 +115,7 @@ class ExoPlayerDelegate implements
     private RendererBuilder rendererBuilder;
     private TrackRenderer videoRenderer;
     private TrackRenderer audioRenderer;
+    private TrackRenderer textRenderer;
 
     private String videoSourceUrl = null;
     private float videoSourceAspectRatio = 1.7777f;
@@ -147,7 +152,7 @@ class ExoPlayerDelegate implements
 
     @Override
     public void prepare(Uri videoUri) throws SRGMediaPlayerException {
-        Log.v(TAG, "Preparing " + videoUri + " (" + sourceType  + ")");
+        Log.v(TAG, "Preparing " + videoUri + " (" + sourceType + ")");
         try {
             String videoSourceUrl = videoUri.toString();
             if (videoSourceUrl.equalsIgnoreCase(this.videoSourceUrl)) {
@@ -224,6 +229,8 @@ class ExoPlayerDelegate implements
         }
         this.videoRenderer = renderers[TYPE_VIDEO];
         this.audioRenderer = renderers[TYPE_AUDIO];
+        this.textRenderer = renderers[TYPE_TEXT];
+
         Log.v(TAG,
                 "Using renderers: video:" + videoRenderer + " audio:" + audioRenderer);
         pushSurface(false);
@@ -232,6 +239,8 @@ class ExoPlayerDelegate implements
         }
         exoPlayer.setSelectedTrack(TYPE_AUDIO, ExoPlayer.TRACK_DEFAULT);
         exoPlayer.setSelectedTrack(TYPE_VIDEO, ExoPlayer.TRACK_DEFAULT);
+        exoPlayer.setSelectedTrack(TYPE_TEXT, TRACK_DISABLED);
+
         exoPlayer.setPlayWhenReady(true);
         exoPlayer.prepare(renderers);
     }
@@ -239,7 +248,6 @@ class ExoPlayerDelegate implements
     @Override
     public void onHlsChunkSource(HlsChunkSource chunkSource) {
         livePauseTime = 0;
-        lastPlaylistLoadTime = 0;
         this.hlsChunkSource = chunkSource;
         hlsChunkSource.setBitrateEstimateOverride(qualityOverride);
         hlsChunkSource.setBitrateEstimateDefault(qualityDefault);
@@ -275,8 +283,12 @@ class ExoPlayerDelegate implements
     @Override
     public void seekTo(long positionInMillis) throws IllegalStateException {
         livePauseTime = 0;
-        lastPlaylistLoadTime = 0;
-        exoPlayer.seekTo(positionInMillis);
+        long duration = exoPlayer.getDuration();
+        if (duration != ExoPlayer.UNKNOWN_TIME) {
+            exoPlayer.seekTo(Math.min(positionInMillis, duration - 1));
+        } else {
+            throw new IllegalStateException("Unknown duration when trying to seek to " + positionInMillis);
+        }
     }
 
     @Override
@@ -413,8 +425,6 @@ class ExoPlayerDelegate implements
     @Override
     public void onPlayWhenReadyCommitted() {
         controller.onPlayerDelegatePlayWhenReadyCommited(this);
-        long currentTimeMillis = System.currentTimeMillis();
-        playlistReferenceTime = currentTimeMillis - livePauseTime;
     }
 
     @Override
@@ -502,20 +512,22 @@ class ExoPlayerDelegate implements
     public void onPlaylistLoaded() {
         final long maxAdjustPeriod = 30000;
         long newTime = System.currentTimeMillis();
-        if (lastPlaylistLoadTime > 0) {
-            long period = newTime - lastPlaylistLoadTime;
+        long period = newTime - (playlistReferenceTime + livePauseTime);
 
-            if (!exoPlayer.getPlayWhenReady() && period < maxAdjustPeriod) {
-                livePauseTime += period;
-                this.playlistReferenceTime += period;
-            }
+        if (!exoPlayer.getPlayWhenReady() && period < maxAdjustPeriod) {
+            livePauseTime += period;
         }
-        lastPlaylistLoadTime = newTime;
+        this.playlistReferenceTime = newTime - livePauseTime;
     }
 
     @Override
     public long getPlaylistReferenceTime() {
         return playlistReferenceTime;
+    }
+
+    @Override
+    public void onCues(List<Cue> cues) {
+        controller.onPlayerDelegateSubtitleCues(cues);
     }
 
     @Override
@@ -564,11 +576,6 @@ class ExoPlayerDelegate implements
     }
 
     @Override
-    public void onCues(List<Cue> list) {
-        Log.v(TAG, "Unhandled dash text event");
-    }
-
-    @Override
     public void onDrmKeysLoaded() {
 
     }
@@ -611,6 +618,58 @@ class ExoPlayerDelegate implements
         } else {
             return null;
         }
+    }
+
+    @NonNull
+    @Override
+    public List<SubtitleTrack> getSubtitleTrackList() {
+        int textTrackCount = exoPlayer.getTrackCount(TYPE_TEXT);
+        ArrayList<SubtitleTrack> subtitleTracks = new ArrayList<>(textTrackCount);
+
+        for (int i = 0; i < textTrackCount; i++) {
+            subtitleTracks.add(getSubtitleTrackByTrackId(i));
+        }
+        return subtitleTracks;
+    }
+
+    @Nullable
+    private SubtitleTrack getSubtitleTrackByTrackId(int i) {
+        if (i < 0 || i >= exoPlayer.getTrackCount(TYPE_TEXT)) {
+            return null;
+        } else {
+            MediaFormat trackFormat = exoPlayer.getTrackFormat(TYPE_TEXT, i);
+            return new SubtitleTrack(i, trackFormat.trackId, trackFormat.language);
+        }
+    }
+
+    @Override
+    public void setSubtitleTrack(SubtitleTrack track) {
+        if (track != null) {
+            exoPlayer.setSelectedTrack(TYPE_TEXT, track.index);
+        } else {
+            exoPlayer.setSelectedTrack(TYPE_TEXT, TRACK_DISABLED);
+        }
+    }
+
+    @Override
+    @Nullable
+    public SubtitleTrack getSubtitleTrack() {
+        int selectedTrack = exoPlayer.getSelectedTrack(TYPE_TEXT);
+        if (selectedTrack == TRACK_DISABLED) {
+            return null;
+        } else {
+            return getSubtitleTrackByTrackId(selectedTrack);
+        }
+    }
+
+    @Override
+    public void onAvailableRangeChanged(int i, TimeRange timeRange) {
+
+    }
+
+    @Override
+    public void onMetadata(List<Id3Frame> id3Frames) {
+
     }
 }
 

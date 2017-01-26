@@ -10,7 +10,5 @@ public interface PlayerViewDelegate {
 
     void detachFromController(SRGMediaPlayerController srgMediaPlayerController);
 
-    void setFullScreenButtonState(int fullScreenButtonState);
-
     void update();
 }
