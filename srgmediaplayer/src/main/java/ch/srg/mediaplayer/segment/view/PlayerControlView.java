@@ -104,7 +104,7 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
 
     private void updateSubtitleButton() {
         if (subtitleButton != null && playerController != null) {
-            subtitleButton.setVisibility(playerController.getSubtitleTrackList().isEmpty() ? VISIBLE : GONE);
+            subtitleButton.setVisibility(playerController.getSubtitleTrackList().isEmpty() ? GONE : VISIBLE);
             subtitleButton.setSelected(playerController.getSubtitleTrack() != null);
         }
     }
