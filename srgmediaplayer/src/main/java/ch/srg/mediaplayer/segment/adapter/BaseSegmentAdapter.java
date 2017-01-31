@@ -1,6 +1,5 @@
 package ch.srg.mediaplayer.segment.adapter;
 
-import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
@@ -19,14 +18,11 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
 
     public abstract boolean updateProgressSegments(@NonNull String mediaIdentifier, long time, String currentSegmentIdentifier);
 
-    protected Context context;
-
     protected ArrayList<Segment> segments;
 
     protected ArrayList<SegmentChangeListeners> segmentChangeListeners = new ArrayList<>();
 
-    protected BaseSegmentAdapter(Context context, List<Segment> segmentsList) {
-        this.context = context;
+    protected BaseSegmentAdapter(List<Segment> segmentsList) {
         segments = new ArrayList<>(segmentsList);
         setHasStableIds(true);
     }
