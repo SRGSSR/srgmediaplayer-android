@@ -110,6 +110,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     private LocalBinder binder = new LocalBinder();
 
     private boolean videoInBackground;
+    private static boolean notificationEnabled;
 
     private String currentMediaIdentifier;
     @Nullable
@@ -404,28 +405,30 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     private void updateNotification() {
-        Log.v(TAG, "updateNotification");
-        if (hasNonDeadPlayer()) {
-            if (!isForeground) {
-                setForeground(true);
-            } else {
-                String newMediaIdentifier = getCurrentMediaIdentifier();
-                if (!TextUtils.equals(newMediaIdentifier, currentMediaIdentifier)) {
-                    this.currentMediaIdentifier = newMediaIdentifier;
-                    onMediaIdentifierChanged();
+        Log.v(TAG, "updateNotification: " + notificationEnabled);
+        if (notificationEnabled) {
+            if (hasNonDeadPlayer()) {
+                if (!isForeground) {
+                    setForeground(true);
+                } else {
+                    String newMediaIdentifier = getCurrentMediaIdentifier();
+                    if (!TextUtils.equals(newMediaIdentifier, currentMediaIdentifier)) {
+                        this.currentMediaIdentifier = newMediaIdentifier;
+                        onMediaIdentifierChanged();
+                    }
                 }
-            }
-        } else {
-            if (isForeground) {
-                Log.v(TAG, "No player when updating notification. Going to background");
-                setForeground(false);
+            } else {
+                if (isForeground) {
+                    Log.v(TAG, "No player when updating notification. Going to background");
+                    setForeground(false);
+                }
             }
         }
     }
 
     private void doNotify() {
         Log.d(TAG, "doNotify");
-        if (currentNotificationData != null && mediaSessionCompat != null) {
+        if (currentNotificationData != null && mediaSessionCompat != null && notificationEnabled) {
             ServiceNotificationBuilder builder = new ServiceNotificationBuilder(currentNotificationData, isPlaying());
             NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
             try {
@@ -657,5 +660,9 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     public interface SRGMediaPlayerCreatedListener {
         void onServiceMediaPlayerChange(@Nullable SRGMediaPlayerController mediaPlayerController);
+    }
+
+    public static void setNotificationEnabled(boolean notificationEnabled) {
+        MediaPlayerService.notificationEnabled = notificationEnabled;
     }
 }
