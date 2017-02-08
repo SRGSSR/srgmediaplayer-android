@@ -18,10 +18,13 @@ import android.widget.HorizontalScrollView;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 
-import com.google.android.exoplayer.text.CaptionStyleCompat;
-import com.google.android.exoplayer.text.Cue;
-import com.google.android.exoplayer.text.SubtitleLayout;
-import com.google.android.exoplayer.util.Util;
+import com.google.android.exoplayer2.text.CaptionStyleCompat;
+import com.google.android.exoplayer2.text.Cue;
+import com.google.android.exoplayer2.util.Util;
+import com.google.android.exoplayer2.text.CaptionStyleCompat;
+import com.google.android.exoplayer2.text.Cue;
+import com.google.android.exoplayer2.ui.SubtitleView;
+import com.google.android.exoplayer2.util.Util;
 
 import java.util.List;
 
@@ -66,7 +69,7 @@ public class SRGMediaPlayerView extends RelativeLayout {
     }
 
     @Nullable
-    private SubtitleLayout subtitleLayout;
+    private SubtitleView subtitleView;
 
     public void setDebugMode(boolean debugMode) {
         this.debugMode = debugMode;
@@ -574,15 +577,15 @@ public class SRGMediaPlayerView extends RelativeLayout {
     }
 
     private void configureSubtitleView() {
-        if (subtitleLayout == null) {
+        if (subtitleView == null) {
             for (int i = 0; i < getChildCount(); i++) {
-                if (getChildAt(i) instanceof SubtitleLayout) {
-                    subtitleLayout = (SubtitleLayout) getChildAt(i);
+                if (getChildAt(i) instanceof SubtitleView) {
+                    subtitleView = (SubtitleView) getChildAt(i);
                     break;
                 }
             }
         }
-        if (subtitleLayout != null) {
+        if (subtitleView != null) {
             CaptionStyleCompat style;
             float fontScale;
             if (Util.SDK_INT >= 19) {
@@ -592,8 +595,8 @@ public class SRGMediaPlayerView extends RelativeLayout {
                 style = CaptionStyleCompat.DEFAULT;
                 fontScale = 1.0f;
             }
-            subtitleLayout.setStyle(style);
-            subtitleLayout.setFractionalTextSize(SubtitleLayout.DEFAULT_TEXT_SIZE_FRACTION * fontScale);
+            subtitleView.setStyle(style);
+            subtitleView.setFractionalTextSize(SubtitleView.DEFAULT_TEXT_SIZE_FRACTION * fontScale);
         }
         subtitleViewConfigured = true;
     }
@@ -602,8 +605,8 @@ public class SRGMediaPlayerView extends RelativeLayout {
         if (!subtitleViewConfigured) {
             configureSubtitleView();
         }
-        if (subtitleLayout != null) {
-            subtitleLayout.setCues(cues);
+        if (subtitleView != null) {
+            subtitleView.setCues(cues);
         }
     }
 

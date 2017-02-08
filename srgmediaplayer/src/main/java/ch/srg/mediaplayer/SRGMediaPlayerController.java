@@ -19,7 +19,7 @@ import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
 
-import com.google.android.exoplayer.text.Cue;
+import com.google.android.exoplayer2.text.Cue;
 
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
