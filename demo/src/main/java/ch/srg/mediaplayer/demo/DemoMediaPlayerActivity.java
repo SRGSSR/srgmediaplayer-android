@@ -168,7 +168,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
         //errorMessage.attachToController(srgMediaPlayer);
         srgMediaPlayer.registerEventListener(this);
 
-        adapter = new DemoSegmentAdapter(this, new ArrayList<Segment>());
+        adapter = new DemoSegmentAdapter(new ArrayList<Segment>());
 
         segmentView = (SegmentView) findViewById(R.id.segment_demo_view);
 

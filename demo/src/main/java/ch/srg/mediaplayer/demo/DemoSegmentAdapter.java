@@ -30,8 +30,8 @@ public class DemoSegmentAdapter extends BaseSegmentAdapter<DemoSegmentAdapter.Vi
     private int currentSegment;
     private long currentTime;
 
-    public DemoSegmentAdapter(Context context, List<Segment> segmentsList) {
-        super(context, segmentsList);
+    public DemoSegmentAdapter(List<Segment> segmentsList) {
+        super(segmentsList);
     }
 
     @Override
@@ -56,7 +56,7 @@ public class DemoSegmentAdapter extends BaseSegmentAdapter<DemoSegmentAdapter.Vi
 
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(context).inflate(R.layout.item_demo_segment, parent, false);
+        View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_demo_segment, parent, false);
         return new ViewHolder(v);
     }
 
@@ -69,7 +69,7 @@ public class DemoSegmentAdapter extends BaseSegmentAdapter<DemoSegmentAdapter.Vi
         if (isScalingSupported(finalUrl)) {
             finalUrl += "/scale/width/" + holder.thumbnail1.getMeasuredWidth();
         }
-        Glide.with(context).load(finalUrl).centerCrop().crossFade().into(holder.thumbnail1);
+        Glide.with(holder.itemView.getContext()).load(finalUrl).centerCrop().crossFade().into(holder.thumbnail1);
 
         holder.title.setText(segment.getTitle());
         holder.title.append("\n");
