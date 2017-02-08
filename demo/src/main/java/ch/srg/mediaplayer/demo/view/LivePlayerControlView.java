@@ -42,6 +42,7 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
     private long mediaPlaylistOffset;
     private Handler handler;
     private boolean userChangingProgress;
+    private TextView streamIndication;
 
     public LivePlayerControlView(Context context) {
         this(context, null);
@@ -57,6 +58,8 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         inflater.inflate(R.layout.dvr_player_control, this, true);
 
+
+        streamIndication = (TextView) findViewById(R.id.stream_indication);
         seekBar = (SeekBar) findViewById(R.id.dvr_player_control_seekbar);
         seekBar.setOnSeekBarChangeListener(this);
 
@@ -111,6 +114,7 @@ public class LivePlayerControlView extends RelativeLayout implements View.OnClic
 
     private void update() {
         if (playerController != null) {
+            streamIndication.setText(playerController.isLive() ? "LIVE" : "OnDemand");
             position = playerController.getMediaPosition();
             duration = playerController.getMediaDuration();
             mediaPlaylistOffset = playerController.getMediaPlaylistStartTime();
