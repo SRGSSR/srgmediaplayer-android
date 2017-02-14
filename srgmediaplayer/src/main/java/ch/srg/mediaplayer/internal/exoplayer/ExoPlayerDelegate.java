@@ -405,10 +405,6 @@ public class ExoPlayerDelegate implements
         this.videoTrack = videoTrack;
     }
 
-    public static boolean isSupported() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN;
-    }
-
     @Override
     public boolean isRemote() {
         return false;

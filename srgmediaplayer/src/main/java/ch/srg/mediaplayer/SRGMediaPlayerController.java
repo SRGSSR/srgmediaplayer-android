@@ -31,7 +31,6 @@ import java.util.WeakHashMap;
 
 import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
 import ch.srg.mediaplayer.internal.exoplayer.ExoPlayerDelegate;
-import ch.srg.mediaplayer.internal.nativeplayer.NativePlayerDelegate;
 
 /**
  * Handle the playback of media.
@@ -322,12 +321,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         playerDelegateFactory = new PlayerDelegateFactory() {
             @Override
             public PlayerDelegate getDelegateForMediaIdentifier(PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, String mediaIdentifier) {
-                if (ExoPlayerDelegate.isSupported()) {
-                    return new ExoPlayerDelegate(SRGMediaPlayerController.this.context,
-                            SRGMediaPlayerController.this, ExoPlayerDelegate.SourceType.HLS);
-                } else {
-                    return new NativePlayerDelegate(SRGMediaPlayerController.this);
-                }
+                return new ExoPlayerDelegate(SRGMediaPlayerController.this.context,
+                        SRGMediaPlayerController.this, ExoPlayerDelegate.SourceType.HLS);
             }
         };
 
@@ -1534,7 +1529,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     public List<SubtitleTrack> getSubtitleTrackList() {
         List<SubtitleTrack> result;
         if (currentMediaPlayerDelegate != null) {
-            result =  currentMediaPlayerDelegate.getSubtitleTrackList();
+            result = currentMediaPlayerDelegate.getSubtitleTrackList();
         } else {
             result = Collections.emptyList();
         }
