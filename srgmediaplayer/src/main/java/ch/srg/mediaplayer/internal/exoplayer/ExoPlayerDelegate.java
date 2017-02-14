@@ -76,19 +76,12 @@ public class ExoPlayerDelegate implements
         TYPE_TEXTUREVIEW
     }
 
-    ;
-
     public enum SourceType {
         HLS,
         EXTRACTOR,
         DASH
     }
 
-    public static final int RENDERER_COUNT = 4;
-    public static final int TYPE_VIDEO = 0;
-    public static final int TYPE_AUDIO = 1;
-    public static final int TYPE_TEXT = 2;
-    public static final int TYPE_METADATA = 3;
     public static final String TAG = SRGMediaPlayerController.TAG;
 
     private final Context context;
@@ -101,13 +94,10 @@ public class ExoPlayerDelegate implements
 
     private String videoSourceUrl = null;
     private float videoSourceAspectRatio = 1.7777f;
-    private int videoSourceHeight = 0;
 
     private View renderingView;
 
     private OnPlayerDelegateListener controller;
-    private boolean audioTrack = true;
-    private boolean videoTrack = true;
 
     private boolean live;
 
@@ -259,8 +249,16 @@ public class ExoPlayerDelegate implements
     }
 
     @Override
-    public int getVideoSourceHeight() {
-        return videoSourceHeight;
+    public boolean hasVideoTrack() {
+        TrackSelectionArray currentTrackSelections = exoPlayer.getCurrentTrackSelections();
+        for (int i = 0; i < currentTrackSelections.length; i++) {
+            if (exoPlayer.getRendererType(i) == C.TRACK_TYPE_VIDEO) {
+                if (currentTrackSelections.get(i) != null) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override
@@ -393,16 +391,6 @@ public class ExoPlayerDelegate implements
         if (exoPlayer.getPlaybackState() != ExoPlayer.STATE_IDLE) {
             throw new IllegalStateException("track activation change after init not supported");
         }
-    }
-
-    public void setAudioTrack(boolean audioTrack) {
-        checkStateForTrackActivation();
-        this.audioTrack = audioTrack;
-    }
-
-    public void setVideoTrack(boolean videoTrack) {
-        checkStateForTrackActivation();
-        this.videoTrack = videoTrack;
     }
 
     @Override

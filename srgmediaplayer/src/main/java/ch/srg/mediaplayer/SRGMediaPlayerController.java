@@ -961,14 +961,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
     }
 
-    public int getVideoSourceHeight() {
-        if (currentMediaPlayerDelegate != null) {
-            return currentMediaPlayerDelegate.getVideoSourceHeight();
-        } else {
-            return -1;
-        }
-    }
-
     public void showControlOverlays() {
         overlayController.showControlOverlays();
     }
@@ -1518,7 +1510,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     public boolean hasVideoTrack() {
-        return getVideoSourceHeight() > 0;
+        return currentMediaPlayerDelegate != null && currentMediaPlayerDelegate.hasVideoTrack();
     }
 
     public Throwable getFatalError() {

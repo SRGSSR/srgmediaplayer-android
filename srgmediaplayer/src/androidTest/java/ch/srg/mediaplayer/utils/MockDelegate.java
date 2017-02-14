@@ -134,8 +134,8 @@ public class MockDelegate implements PlayerDelegate {
     }
 
     @Override
-    public int getVideoSourceHeight() {
-        return 0;
+    public boolean hasVideoTrack() {
+        return false;
     }
 
     @Override

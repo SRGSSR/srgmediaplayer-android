@@ -190,10 +190,9 @@ public class NativePlayerDelegate implements
 	}
 
 	@Override
-	public int getVideoSourceHeight() {
-		return videoSourceHeight;
+	public boolean hasVideoTrack() {
+		return nativeMp.getVideoHeight() > 0;
 	}
-
 
 	@Override
 	public boolean canRenderInView(View view) {

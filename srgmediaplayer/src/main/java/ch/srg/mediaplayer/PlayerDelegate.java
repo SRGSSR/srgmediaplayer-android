@@ -24,6 +24,8 @@ public interface PlayerDelegate {
 	@Nullable
 	SubtitleTrack getSubtitleTrack();
 
+	boolean hasVideoTrack();
+
 	interface OnPlayerDelegateListener {
 
 		void onPlayerDelegatePreparing(PlayerDelegate delegate);
@@ -112,8 +114,6 @@ public interface PlayerDelegate {
 	int getBufferPercentage();
 
 	long getBufferPosition();
-
-	int getVideoSourceHeight();
 
 	void release() throws IllegalStateException;
 

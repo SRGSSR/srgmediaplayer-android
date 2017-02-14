@@ -209,8 +209,8 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
     }
 
     @Override
-    public int getVideoSourceHeight() {
-        return 0;
+    public boolean hasVideoTrack() {
+        return false;
     }
 
     @Override
