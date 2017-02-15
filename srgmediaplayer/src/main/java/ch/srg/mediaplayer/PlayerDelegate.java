@@ -40,7 +40,7 @@ public interface PlayerDelegate {
 
 		void onPlayerDelegateError(PlayerDelegate delegate, SRGMediaPlayerException e);
 
-		void onPlayerDelegateSubtitleCues(List<Cue> cues);
+		void onPlayerDelegateSubtitleCues(PlayerDelegate delegate, List<Cue> cues);
 
 		SRGMediaPlayerView getMediaPlayerView();
 

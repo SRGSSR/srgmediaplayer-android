@@ -92,6 +92,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private static final int MSG_PLAYER_DELEGATE_BUFFERING = 103;
     private static final int MSG_PLAYER_DELEGATE_COMPLETED = 104;
     private static final int MSG_PLAYER_DELEGATE_PLAY_WHEN_READY_COMMITED = 105;
+    private static final int MSG_PLAYER_DELEGATE_SUBTITLE_CUES = 106;
     private static final int MSG_DATA_PROVIDER_EXCEPTION = 200;
     private static final int MSG_PERIODIC_UPDATE = 300;
     private static final int MSG_FIRE_EVENT = 400;
@@ -505,7 +506,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     @Override
-    public boolean handleMessage(Message msg) {
+    public boolean handleMessage(final Message msg) {
         if (isReleased()) {
             logE("handleMessage when released: skipping " + msg);
             return true;
@@ -652,12 +653,23 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             case MSG_PLAYER_DELEGATE_PLAY_WHEN_READY_COMMITED:
                 postEventInternal(Event.Type.PLAYING_STATE_CHANGE);
                 return true;
+            case MSG_PLAYER_DELEGATE_SUBTITLE_CUES:
+                final List<Cue> cueList = (List<Cue>) msg.obj;
+                mainHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (mediaPlayerView != null) {
+                            mediaPlayerView.setCues(cueList);
+                        }
+                    }
+                });
+                return true;
             case MSG_PERIODIC_UPDATE:
                 periodicUpdateInteral();
                 schedulePeriodUpdate();
                 return true;
             case MSG_FIRE_EVENT:
-                this.postEventInternal((Event) msg.obj);
+                postEventInternal((Event) msg.obj);
                 return true;
             default: {
                 String message = "Unknown message: " + msg.what + " / " + msg.obj;
@@ -844,9 +856,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     @Override
-    public void onPlayerDelegateSubtitleCues(List<Cue> cues) {
-        if (mediaPlayerView != null) {
-            mediaPlayerView.setCues(cues);
+    public void onPlayerDelegateSubtitleCues(PlayerDelegate delegate, List<Cue> cues) {
+        if (delegate == currentMediaPlayerDelegate) {
+            sendMessage(MSG_PLAYER_DELEGATE_SUBTITLE_CUES, cues);
         }
     }
 

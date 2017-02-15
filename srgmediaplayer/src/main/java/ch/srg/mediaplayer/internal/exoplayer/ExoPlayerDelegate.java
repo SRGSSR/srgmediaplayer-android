@@ -2,15 +2,12 @@
 package ch.srg.mediaplayer.internal.exoplayer;
 
 import android.content.Context;
-import android.graphics.SurfaceTexture;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
-import android.view.Surface;
-import android.view.SurfaceHolder;
+import android.util.Pair;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
@@ -20,6 +17,7 @@ import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.audio.AudioCapabilities;
@@ -27,25 +25,26 @@ import com.google.android.exoplayer2.audio.AudioCapabilitiesReceiver;
 import com.google.android.exoplayer2.drm.DrmSessionManager;
 import com.google.android.exoplayer2.drm.FrameworkMediaCrypto;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
-import com.google.android.exoplayer2.metadata.id3.Id3Frame;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.dash.DashMediaSource;
 import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
+import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.text.TextRenderer;
 import com.google.android.exoplayer2.trackselection.AdaptiveVideoTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.trackselection.FixedTrackSelection;
+import com.google.android.exoplayer2.trackselection.MappingTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
-import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import ch.srg.mediaplayer.PlayerDelegate;
@@ -61,17 +60,23 @@ import ch.srg.mediaplayer.SubtitleTrack;
 
 public class ExoPlayerDelegate implements
         PlayerDelegate,
-        AudioCapabilitiesReceiver.Listener, ExoPlayer.EventListener {
+        AudioCapabilitiesReceiver.Listener,
+        ExoPlayer.EventListener,
+        TextRenderer.Output {
 
     public static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
     private final EventLogger eventLogger;
     private final DefaultTrackSelector trackSelector;
-    private final TrackSelectionHelper trackSelectionHelper;
     private Long qualityOverride;
     private Long qualityDefault;
     private long playlistReferenceTime;
     private Boolean playWhenReady;
     private Integer playbackState;
+
+    @Override
+    public void onCues(List<Cue> cues) {
+        controller.onPlayerDelegateSubtitleCues(this, cues);
+    }
 
     public enum ViewType {
         TYPE_SURFACEVIEW,
@@ -124,16 +129,13 @@ public class ExoPlayerDelegate implements
 
         DrmSessionManager<FrameworkMediaCrypto> drmSessionManager = null;
 
-        boolean useExtensionRenderers = true;
-        @SimpleExoPlayer.ExtensionRendererMode int extensionRendererMode = SimpleExoPlayer.EXTENSION_RENDERER_MODE_PREFER;
-
         trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
-        trackSelectionHelper = new TrackSelectionHelper(trackSelector, videoTrackSelectionFactory);
         eventLogger = new EventLogger(trackSelector);
 
         exoPlayer = ExoPlayerFactory.newSimpleInstance(context, trackSelector, new DefaultLoadControl(),
-                drmSessionManager, extensionRendererMode);
+                drmSessionManager, SimpleExoPlayer.EXTENSION_RENDERER_MODE_PREFER);
         exoPlayer.addListener(this);
+        exoPlayer.setTextOutput(this);
         exoPlayer.setAudioDebugListener(eventLogger);
         exoPlayer.setVideoDebugListener(eventLogger);
         exoPlayer.setMetadataOutput(eventLogger);
@@ -434,22 +436,80 @@ public class ExoPlayerDelegate implements
     @NonNull
     @Override
     public List<SubtitleTrack> getSubtitleTrackList() {
-        return new ArrayList<>();
+        ArrayList<SubtitleTrack> subtitleTracks = new ArrayList<>();
+
+        MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+        TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(getSubtitleRendererId());
+        for (int i = 0; i < trackGroups.length; i++) {
+            TrackGroup trackGroup = trackGroups.get(i);
+            for (int j = 0; j < trackGroup.length; j++) {
+                subtitleTracks.add(getSubtitleTrack(trackGroup, i, j));
+            }
+        }
+        return subtitleTracks;
+    }
+
+    @NonNull
+    private SubtitleTrack getSubtitleTrack(TrackGroup trackGroup, int i, int j) {
+        Format format = trackGroup.getFormat(j);
+        return new SubtitleTrack(new Pair<>(i, j), format.id, format.language);
     }
 
     @Nullable
-    private SubtitleTrack getSubtitleTrackByTrackId(int i) {
-        return null;
+    private SubtitleTrack getSubtitleTrackByTrackId(int i, int j) {
+        MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+        TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(getSubtitleRendererId());
+        TrackGroup trackGroup = trackGroups.get(i);
+        return getSubtitleTrack(trackGroup, i, j);
+    }
+
+    private int getSubtitleRendererId() {
+        MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+
+        for (int i = 0; i < mappedTrackInfo.length; i++) {
+            if (mappedTrackInfo.getTrackGroups(i).length > 0
+                    && exoPlayer.getRendererType(i) == C.TRACK_TYPE_TEXT) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     @Override
     public void setSubtitleTrack(SubtitleTrack track) {
+        int rendererIndex = getSubtitleRendererId();
+        MappingTrackSelector.MappedTrackInfo trackInfo = trackSelector.getCurrentMappedTrackInfo();
+        TrackGroupArray trackGroups = trackInfo.getTrackGroups(rendererIndex);
+        if (rendererIndex != -1) {
+            trackSelector.setRendererDisabled(rendererIndex, track == null);
+            if (track != null) {
+                TrackSelection.Factory factory = new FixedTrackSelection.Factory();
+                Pair<Integer, Integer> integerPair = (Pair<Integer, Integer>) track.tag;
+                int groupIndex = integerPair.first;
+                int trackIndex = integerPair.second;
+                MappingTrackSelector.SelectionOverride override = new MappingTrackSelector.SelectionOverride(factory, groupIndex, trackIndex);
+                trackSelector.setSelectionOverride(rendererIndex, trackGroups, override);
+            } else {
+                trackSelector.clearSelectionOverride(rendererIndex, trackGroups);
+            }
+        }
     }
 
     @Override
     @Nullable
     public SubtitleTrack getSubtitleTrack() {
-        return null;
+        int rendererIndex = getSubtitleRendererId();
+
+        MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+        TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(rendererIndex);
+
+        MappingTrackSelector.SelectionOverride override = trackSelector.getSelectionOverride(rendererIndex, trackGroups);
+        int[] tracks = override.tracks;
+        if (tracks.length == 0) {
+            return null;
+        } else {
+            return getSubtitleTrackByTrackId(override.groupIndex, tracks[0]);
+        }
     }
 
 

@@ -1,12 +1,12 @@
 package ch.srg.mediaplayer;
 
 public class SubtitleTrack {
-    public int index;
+    public Object tag;
     public String trackId;
     public String language;
 
-    public SubtitleTrack(int index, String trackId, String language) {
-        this.index = index;
+    public SubtitleTrack(Object tag, String trackId, String language) {
+        this.tag = tag;
         this.trackId = trackId;
         this.language = language;
     }
@@ -18,7 +18,7 @@ public class SubtitleTrack {
 
         SubtitleTrack that = (SubtitleTrack) o;
 
-        if (index != that.index) return false;
+        if (tag != null ? !tag.equals(that.tag) : that.tag != null) return false;
         if (trackId != null ? !trackId.equals(that.trackId) : that.trackId != null) return false;
         return language != null ? language.equals(that.language) : that.language == null;
 
@@ -26,7 +26,7 @@ public class SubtitleTrack {
 
     @Override
     public int hashCode() {
-        int result = index;
+        int result = tag != null ? tag.hashCode() : 0;
         result = 31 * result + (trackId != null ? trackId.hashCode() : 0);
         result = 31 * result + (language != null ? language.hashCode() : 0);
         return result;
