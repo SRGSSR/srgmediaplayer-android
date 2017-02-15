@@ -15,11 +15,13 @@ import ch.srg.mediaplayer.service.utils.AppUtils;
 
 public class ServiceNotificationBuilder {
     private NotificationData notificationData;
-private boolean playing;
+    private boolean playing;
+    private boolean disablePause;
 
-    public ServiceNotificationBuilder(@NonNull NotificationData notificationData, boolean playing) {
+    public ServiceNotificationBuilder(@NonNull NotificationData notificationData, boolean playing, boolean disablePause) {
         this.notificationData = notificationData;
         this.playing = playing;
+        this.disablePause = disablePause;
     }
 
     public Notification buildNotification(Context context, @NonNull MediaSessionCompat mediaSessionCompat) {
@@ -41,7 +43,7 @@ private boolean playing;
         builder.setStyle(style);
         builder.setContentIntent(notificationData.pendingIntent);
 
-        if (!notificationData.live) {
+        if (!disablePause) {
             if (playing) {
                 builder.addAction(R.drawable.ic_pause_white_36dp, context.getString(R.string.service_notification_pause), piPause);
             } else {

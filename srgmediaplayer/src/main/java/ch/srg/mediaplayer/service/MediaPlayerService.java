@@ -46,6 +46,8 @@ import ch.srg.mediaplayer.service.session.MediaSessionManager;
 public class MediaPlayerService extends Service implements SRGMediaPlayerController.Listener, ChromeCastManager.Listener, MediaSessionManager.Listener, SRGMediaPlayerFactory {
     public static final String TAG = "MediaPlayerService";
 
+    private static final int MIN_DVR_MEDIA_DURATION = 600000;
+
     private static final String PREFIX = "ch.srg.mediaplayer.service";
     public static final String ACTION_PLAY = PREFIX + ".action.PLAY";
     public static final String ACTION_PREPARE = PREFIX + ".action.PREPARE";
@@ -429,7 +431,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     private void doNotify() {
         Log.d(TAG, "doNotify");
         if (currentNotificationData != null && mediaSessionCompat != null && notificationEnabled) {
-            ServiceNotificationBuilder builder = new ServiceNotificationBuilder(currentNotificationData, isPlaying());
+            boolean disablePause = player == null || (player.isLive() && player.getMediaDuration() < MIN_DVR_MEDIA_DURATION);
+            ServiceNotificationBuilder builder = new ServiceNotificationBuilder(currentNotificationData, isPlaying(), disablePause);
             NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
             try {
                 notificationManager.notify(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat));
@@ -480,7 +483,8 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
             if (foreground != isForeground) {
                 if (foreground) {
                     if (currentNotificationData != null) {
-                        ServiceNotificationBuilder builder = new ServiceNotificationBuilder(currentNotificationData, currentlyPlaying);
+                        boolean disablePause = player == null || (player.isLive() && player.getMediaDuration() < MIN_DVR_MEDIA_DURATION);
+                        ServiceNotificationBuilder builder = new ServiceNotificationBuilder(currentNotificationData, currentlyPlaying, disablePause);
                         if (mediaSessionCompat != null) {
                             currentServiceNotification = builder;
                             startForeground(NOTIFICATION_ID, builder.buildNotification(this, mediaSessionCompat));
