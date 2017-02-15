@@ -421,7 +421,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
             if (mp == null) {
                 statusLabel.setText(String.format("Event %s", event));
             } else {
-                statusLabel.setText(String.format("Event %s, %s/%s, definition=%dp", event, stringForTime(mp.getMediaPosition()), stringForTime(mp.getMediaDuration()), mp.getVideoSourceHeight()));
+                statusLabel.setText(String.format("Event %s, %s/%s, videoTrack=%b", event, stringForTime(mp.getMediaPosition()), stringForTime(mp.getMediaDuration()), mp.hasVideoTrack()));
             }
         }
         switch (event.type) {
