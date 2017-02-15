@@ -439,20 +439,30 @@ public class ExoPlayerDelegate implements
         ArrayList<SubtitleTrack> subtitleTracks = new ArrayList<>();
 
         MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
-        TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(getSubtitleRendererId());
-        for (int i = 0; i < trackGroups.length; i++) {
-            TrackGroup trackGroup = trackGroups.get(i);
-            for (int j = 0; j < trackGroup.length; j++) {
-                subtitleTracks.add(getSubtitleTrack(trackGroup, i, j));
+        int subtitleRendererId = getSubtitleRendererId();
+        if (mappedTrackInfo != null && subtitleRendererId != -1) {
+            TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(subtitleRendererId);
+            for (int i = 0; i < trackGroups.length; i++) {
+                TrackGroup trackGroup = trackGroups.get(i);
+                for (int j = 0; j < trackGroup.length; j++) {
+                    SubtitleTrack subtitleTrack = getSubtitleTrack(trackGroup, i, j);
+                    if (subtitleTrack != null) {
+                        subtitleTracks.add(subtitleTrack);
+                    }
+                }
             }
         }
         return subtitleTracks;
     }
 
-    @NonNull
+    @Nullable
     private SubtitleTrack getSubtitleTrack(TrackGroup trackGroup, int i, int j) {
         Format format = trackGroup.getFormat(j);
-        return new SubtitleTrack(new Pair<>(i, j), format.id, format.language);
+        if (format.id != null || format.language != null) {
+            return new SubtitleTrack(new Pair<>(i, j), format.id, format.language);
+        } else {
+            return null;
+        }
     }
 
     @Nullable
@@ -466,10 +476,12 @@ public class ExoPlayerDelegate implements
     private int getSubtitleRendererId() {
         MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
 
-        for (int i = 0; i < mappedTrackInfo.length; i++) {
-            if (mappedTrackInfo.getTrackGroups(i).length > 0
-                    && exoPlayer.getRendererType(i) == C.TRACK_TYPE_TEXT) {
-                return i;
+        if (mappedTrackInfo != null) {
+            for (int i = 0; i < mappedTrackInfo.length; i++) {
+                if (mappedTrackInfo.getTrackGroups(i).length > 0
+                        && exoPlayer.getRendererType(i) == C.TRACK_TYPE_TEXT) {
+                    return i;
+                }
             }
         }
         return -1;
@@ -479,8 +491,8 @@ public class ExoPlayerDelegate implements
     public void setSubtitleTrack(SubtitleTrack track) {
         int rendererIndex = getSubtitleRendererId();
         MappingTrackSelector.MappedTrackInfo trackInfo = trackSelector.getCurrentMappedTrackInfo();
-        TrackGroupArray trackGroups = trackInfo.getTrackGroups(rendererIndex);
-        if (rendererIndex != -1) {
+        if (rendererIndex != -1 && trackInfo != null) {
+            TrackGroupArray trackGroups = trackInfo.getTrackGroups(rendererIndex);
             trackSelector.setRendererDisabled(rendererIndex, track == null);
             if (track != null) {
                 TrackSelection.Factory factory = new FixedTrackSelection.Factory();
@@ -501,17 +513,18 @@ public class ExoPlayerDelegate implements
         int rendererIndex = getSubtitleRendererId();
 
         MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
-        TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(rendererIndex);
+        if (mappedTrackInfo != null && rendererIndex != -1) {
+            TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(rendererIndex);
 
-        MappingTrackSelector.SelectionOverride override = trackSelector.getSelectionOverride(rendererIndex, trackGroups);
-        int[] tracks = override.tracks;
-        if (tracks.length == 0) {
-            return null;
-        } else {
-            return getSubtitleTrackByTrackId(override.groupIndex, tracks[0]);
+            MappingTrackSelector.SelectionOverride override = trackSelector.getSelectionOverride(rendererIndex, trackGroups);
+            if (override != null) {
+                int[] tracks = override.tracks;
+                if (tracks.length != 0) {
+                    return getSubtitleTrackByTrackId(override.groupIndex, tracks[0]);
+                }
+            }
         }
+        return null;
     }
-
-
 }
 
