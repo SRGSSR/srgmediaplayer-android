@@ -70,6 +70,8 @@ public class ExoPlayerDelegate implements
     private Long qualityOverride;
     private Long qualityDefault;
     private long playlistReferenceTime;
+    private Boolean playWhenReady;
+    private Integer playbackState;
 
     public enum ViewType {
         TYPE_SURFACEVIEW,
@@ -346,19 +348,26 @@ public class ExoPlayerDelegate implements
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
         Log.v(TAG, toString() + " exo state change: " + playWhenReady + " " + playbackState);
-        switch (playbackState) {
-            case ExoPlayer.STATE_IDLE:
-                //controller.onPlayerDelegateStateChanged(this, SRGMediaPlayerController.State.IDLE);
-                break;
-            case ExoPlayer.STATE_BUFFERING:
-                controller.onPlayerDelegateBuffering(this);
-                break;
-            case ExoPlayer.STATE_READY:
-                controller.onPlayerDelegateReady(this);
-                break;
-            case ExoPlayer.STATE_ENDED:
-                controller.onPlayerDelegateCompleted(this);
-                break;
+        if (this.playbackState == null || this.playbackState != playbackState) {
+            switch (playbackState) {
+                case ExoPlayer.STATE_IDLE:
+                    //controller.onPlayerDelegateStateChanged(this, SRGMediaPlayerController.State.IDLE);
+                    break;
+                case ExoPlayer.STATE_BUFFERING:
+                    controller.onPlayerDelegateBuffering(this);
+                    break;
+                case ExoPlayer.STATE_READY:
+                    controller.onPlayerDelegateReady(this);
+                    break;
+                case ExoPlayer.STATE_ENDED:
+                    controller.onPlayerDelegateCompleted(this);
+                    break;
+            }
+            this.playbackState = playbackState;
+        }
+        if (this.playWhenReady == null || this.playWhenReady != playWhenReady) {
+            controller.onPlayerDelegatePlayWhenReadyCommited(this);
+            this.playWhenReady = playWhenReady;
         }
     }
 
