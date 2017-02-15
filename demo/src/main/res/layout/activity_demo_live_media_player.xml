@@ -57,10 +57,11 @@
             android:layout_height="match_parent"
             app:overlay_mode="unmanaged"/>
 
-        <com.google.android.exoplayer.text.SubtitleLayout
+        <com.google.android.exoplayer2.ui.SubtitleView
             android:id="@+id/subtitles"
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>
+
     </ch.srg.mediaplayer.SRGMediaPlayerView>
 
     <HorizontalScrollView

@@ -482,7 +482,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
         container.removeAllViews();
         addButon(container, "[]", null);
         for (final SubtitleTrack track : tracks) {
-            addButon(container, track.trackId, track);
+            addButon(container, track.trackId + " " + track.language, track);
         }
     }
 
