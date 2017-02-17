@@ -1,13 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
-
-<!--
-  ~ Copyright (c) 2014. Radio Télévision Suisse
-  ~ All Rights Reserved
-  -->
-
-<selector xmlns:android="http://schemas.android.com/apk/res/android">
-	<item android:state_pressed="true" android:drawable="@drawable/player_control_pause_pressed"/>
-	<item android:state_enabled="false" android:drawable="@drawable/player_control_pause_pressed"/>
-	<!--<item android:state_focused="true" android:drawable="@drawable/player_control_pause_focused" />-->
-	<item android:drawable="@drawable/player_control_pause_base"/>
-</selector>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        android:width="24dp"
+        android:height="24dp"
+        android:viewportWidth="24.0"
+        android:viewportHeight="24.0">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M6,19h4L10,5L6,5v14zM14,5v14h4L18,5h-4z"/>
+</vector>

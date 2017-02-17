@@ -45,16 +45,16 @@ public class ServiceNotificationBuilder {
 
         if (!disablePause) {
             if (playing) {
-                builder.addAction(R.drawable.ic_pause_white_36dp, context.getString(R.string.service_notification_pause), piPause);
+                builder.addAction(R.drawable.player_control_pause, context.getString(R.string.service_notification_pause), piPause);
             } else {
-                builder.addAction(R.drawable.ic_play_arrow_white_36dp, context.getString(R.string.service_notification_resume), piPause);
+                builder.addAction(R.drawable.player_control_play, context.getString(R.string.service_notification_resume), piPause);
             }
             style.setShowActionsInCompactView(0, 1);
         } else {
             style.setShowActionsInCompactView(0);
         }
 
-        builder.addAction(R.drawable.ic_stop_white_36dp, context.getString(R.string.service_notification_stop), piStop);
+        builder.addAction(R.drawable.player_control_stop, context.getString(R.string.service_notification_stop), piStop);
         if (!TextUtils.isEmpty(notificationData.title)) {
             builder.setContentTitle(notificationData.title);
         } else {
