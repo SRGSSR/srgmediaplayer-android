@@ -137,7 +137,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     public void onChromeCastApplicationDisconnected() {
         Log.d(TAG, "onChromeCastApplicationDisconnected");
         if (player != null) {
-            player.release();
+            player.swapPlayerDelegate(null);
         }
     }
 
