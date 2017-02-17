@@ -868,6 +868,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      */
     public void release() {
         if (mediaPlayerView != null) {
+            showControlOverlays();
             unbindFromMediaPlayerView(mediaPlayerView);
         }
         sendMessage(MSG_RELEASE);
