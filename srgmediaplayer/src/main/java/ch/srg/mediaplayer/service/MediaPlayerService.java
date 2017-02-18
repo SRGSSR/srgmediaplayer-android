@@ -20,12 +20,14 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.google.android.gms.cast.framework.CastSession;
+import com.google.android.gms.cast.framework.SessionManagerListener;
+
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerFactory;
 import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
-import ch.srg.mediaplayer.service.cast.ChromeCastManager;
 import ch.srg.mediaplayer.service.session.MediaSessionManager;
 
 /**
@@ -43,7 +45,7 @@ import ch.srg.mediaplayer.service.session.MediaSessionManager;
  * - <b>ACTION_BROADCAST_STATUS_BUNDLE:</b> with <i>KEY_STATE:</i> player status; <i>KEY_POSITION:</i> position within the stream in milliseconds;
  * <i>KEY_DURATION:</i> duration of the stream in milliseconds;
  */
-public class MediaPlayerService extends Service implements SRGMediaPlayerController.Listener, ChromeCastManager.Listener, MediaSessionManager.Listener, SRGMediaPlayerFactory {
+public class MediaPlayerService extends Service implements SRGMediaPlayerController.Listener, MediaSessionManager.Listener, SRGMediaPlayerFactory {
     public static final String TAG = "MediaPlayerService";
 
     private static final int MIN_DVR_MEDIA_DURATION = 600000;
@@ -104,8 +106,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     private static PlayerDelegateFactory playerDelegateFactory;
     private static boolean debugMode;
 
-    @Nullable
-    private ChromeCastManager chromeCastManager;
     private MediaSessionManager mediaSessionManager;
 
     ServiceNotificationBuilder currentServiceNotification;
@@ -121,28 +121,13 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     private static SRGMediaPlayerServiceMetaDataProvider serviceDataProvider;
     private SRGMediaPlayerCreatedListener srgMediaPlayerListener;
 
+    private CastSession castSession;
+    private SessionManagerListener<CastSession> sessionManagerListener;
+
+    private static boolean isChromecastConnected = false;
+
     public SRGMediaPlayerController getMediaController() {
         return player;
-    }
-
-    @Override
-    public void onChromeCastApplicationConnected() {
-        Log.d(TAG, "onChromeCastApplicationConnected");
-        if (player != null) {
-            player.swapPlayerDelegate(null);
-        }
-    }
-
-    @Override
-    public void onChromeCastApplicationDisconnected() {
-        Log.d(TAG, "onChromeCastApplicationDisconnected");
-        if (player != null) {
-            player.swapPlayerDelegate(null);
-        }
-    }
-
-    @Override
-    public void onChromeCastPlayerStatusUpdated(int state, int idleReason) {
     }
 
     @Override
@@ -199,10 +184,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 		 */
         MusicControl.pause(this); /* XXX: this is not the proper place for this, should be in the play part */
 
-        if (ChromeCastManager.isInstantiated()) {
-            chromeCastManager = ChromeCastManager.getInstance();
-            chromeCastManager.addListener(this);
-        }
+        setupCastListener();
 
         MediaSessionManager.initialize(this);
         mediaSessionManager = MediaSessionManager.getInstance();
@@ -214,9 +196,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         Log.v(TAG, this.toString() + " onDestroy");
         isDestroyed = true;
 
-        if (chromeCastManager != null) {
-            chromeCastManager.removeListener(this);
-        }
         stopPlayer();
         NotificationManagerCompat.from(this).cancelAll();
     }
@@ -430,7 +409,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private void doNotify() {
         Log.d(TAG, "doNotify");
-        if (currentNotificationData != null && mediaSessionCompat != null && notificationEnabled) {
+        if (currentNotificationData != null && mediaSessionCompat != null && notificationEnabled && !player.isRemote()) {
             boolean disablePause = player == null || (player.isLive() && player.getMediaDuration() < MIN_DVR_MEDIA_DURATION);
             ServiceNotificationBuilder builder = new ServiceNotificationBuilder(currentNotificationData, isPlaying(), disablePause);
             NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
@@ -668,5 +647,70 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     public static void setNotificationEnabled(boolean notificationEnabled) {
         MediaPlayerService.notificationEnabled = notificationEnabled;
+    }
+
+    private void setupCastListener() {
+        sessionManagerListener = new SessionManagerListener<CastSession>() {
+
+            @Override
+            public void onSessionEnded(CastSession session, int error) {
+                onApplicationDisconnected();
+            }
+
+            @Override
+            public void onSessionResumed(CastSession session, boolean wasSuspended) {
+                onApplicationConnected(session);
+            }
+
+            @Override
+            public void onSessionResumeFailed(CastSession session, int error) {
+                onApplicationDisconnected();
+            }
+
+            @Override
+            public void onSessionStarted(CastSession session, String sessionId) {
+                onApplicationConnected(session);
+            }
+
+            @Override
+            public void onSessionStartFailed(CastSession session, int error) {
+                onApplicationDisconnected();
+            }
+
+            @Override
+            public void onSessionStarting(CastSession session) {
+            }
+
+            @Override
+            public void onSessionEnding(CastSession session) {
+            }
+
+            @Override
+            public void onSessionResuming(CastSession session, String sessionId) {
+            }
+
+            @Override
+            public void onSessionSuspended(CastSession session, int reason) {
+            }
+
+            private void onApplicationConnected(CastSession castSession) {
+                MediaPlayerService.this.castSession = castSession;
+                isChromecastConnected = true;
+                if (player != null) {
+                    player.swapPlayerDelegate(null);
+                }
+            }
+
+            private void onApplicationDisconnected() {
+                isChromecastConnected = false;
+                if (player != null) {
+                    player.swapPlayerDelegate(null);
+                }
+            }
+        };
+    }
+
+    public static boolean isChromecastConnected(){
+        return isChromecastConnected;
     }
 }

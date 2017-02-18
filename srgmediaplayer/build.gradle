@@ -39,7 +39,7 @@ dependencies {
     // Use lower version of media router as recommended by Support library team to prevent an issue
     compile "com.android.support:mediarouter-v7:25.0.1"
     compile "com.android.support:support-media-compat:$rootProject.supportLibraryVersion"
-    compile "com.google.android.gms:play-services-cast:$rootProject.googlePlayServiceVersion"
+    compile "com.google.android.gms:play-services-cast-framework:$rootProject.googlePlayServiceVersion"
 
     compile 'com.github.bumptech.glide:glide:3.7.0'
 }
