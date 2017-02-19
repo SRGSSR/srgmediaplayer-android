@@ -22,7 +22,7 @@
 
     <meta-data
         android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
-        android:value=".service.cast.ChromeCastManager" />
+        android:value="ch.srg.mediaplayer.service.cast.ChromeCastManager" />
 
     </application>
 </manifest>

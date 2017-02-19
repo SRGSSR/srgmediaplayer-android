@@ -6,6 +6,8 @@ package ch.srg.mediaplayer;
 public interface SRGMediaPlayerMetaDataProvider {
 	void getMediaMetadata(String mediaIdentifier, GetMediaMetadataCallback callback);
 
+	SRGMediaMetadata getMediaMetadata(String mediaIdentifier);
+
 	interface GetMediaMetadataCallback {
 		void onMediaMetadataLoaded(SRGMediaMetadata srgMediaMetadata);
 

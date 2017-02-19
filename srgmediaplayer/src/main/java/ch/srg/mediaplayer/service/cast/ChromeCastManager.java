@@ -1,6 +1,8 @@
 package ch.srg.mediaplayer.service.cast;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.IdRes;
 import android.support.annotation.Nullable;
 import android.view.Menu;
@@ -20,15 +22,13 @@ import java.util.List;
 public class ChromeCastManager implements OptionsProvider {
     private static final String TAG = "ChromeCastManager";
 
-    private static Context context;
+    private static boolean isApplicationConnected;
 
     @Override
     public CastOptions getCastOptions(Context context) {
-        ChromeCastManager.context = context;
-        CastOptions options = new CastOptions.Builder()
-                .setReceiverApplicationId()
+        return new CastOptions.Builder()
+                .setReceiverApplicationId("CC1AD845")
                 .build();
-        return options;
     }
 
     @Override
@@ -36,17 +36,32 @@ public class ChromeCastManager implements OptionsProvider {
         return null;
     }
 
-    public static boolean isApplicationConnected() {
-        return CastContext.getSharedInstance(context).getSessionManager().getCurrentCastSession().isConnected();
+    public static boolean isApplicationConnected(final Context context) {
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                CastContext castContext = CastContext.getSharedInstance(context);
+                if (castContext.getSessionManager() != null && castContext.getSessionManager().getCurrentCastSession() != null) {
+                    isApplicationConnected = castContext.getSessionManager().getCurrentCastSession().isConnected();
+                } else {
+                    isApplicationConnected = false;
+                }
+            }
+        });
+        return isApplicationConnected;
     }
 
     @Nullable
-    public static RemoteMediaClient getRemoteMediaClient() {
+    public static RemoteMediaClient getRemoteMediaClient(Context context) {
         return CastContext.getSharedInstance(context).getSessionManager().getCurrentCastSession().getRemoteMediaClient();
     }
 
     public static void addMediaRouterButtonIfSupported(Context context, Menu menu, @IdRes int media_route_menu_item) {
-        CastContext.getSharedInstance(context);
         CastButtonFactory.setUpMediaRouteButton(context, menu, media_route_menu_item);
+    }
+
+    public static void registerContext(Context context) {
+        CastContext.getSharedInstance(context);
     }
 }

@@ -2,8 +2,9 @@ package ch.srg.mediaplayer.service.cast;
 
 import android.content.Context;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.Nullable;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 
@@ -26,7 +27,7 @@ import ch.srg.mediaplayer.SubtitleTrack;
 
 /**
  * Copyright (c) SRG SSR. All rights reserved.
- *
+ * <p>
  * License information is available from the LICENSE file.
  */
 public class ChromeCastDelegate implements PlayerDelegate {
@@ -39,10 +40,15 @@ public class ChromeCastDelegate implements PlayerDelegate {
     private long pendingSeekTo;
     private String contentType;
     private boolean live;
+    private long approximateStreamPosition;
+    private boolean isPlaying;
+
+    private Handler mainHandler;
 
     private Uri videoUri;
     @Nullable
     private RemoteMediaClient remoteMediaClient;
+    @Nullable
     private SRGMediaMetadata srgMediaMetadata;
     private MediaInfo mediaInfo;
 
@@ -72,82 +78,115 @@ public class ChromeCastDelegate implements PlayerDelegate {
 
     @Override
     public void prepare(Uri videoUri) throws SRGMediaPlayerException {
-        Log.d(TAG, "Prepare: " + videoUri + " type: " + contentType + " title: " + srgMediaMetadata == null ? "" : srgMediaMetadata.getTitle());
+        Log.d(TAG, "Prepare: " + videoUri + " type: " + contentType);
         this.videoUri = videoUri;
         controller.onPlayerDelegatePreparing(this);
+        mainHandler = new Handler(Looper.getMainLooper());
 
-        remoteMediaClient = ChromeCastManager.getRemoteMediaClient();
-        mediaInfo = buildMediaInfo();
-        if (remoteMediaClient != null) {
-            remoteMediaClient.load(mediaInfo, playIfReady, pendingSeekTo);
-        }
-
-        Log.d(TAG, "onPlayerDelegatePlayWhenReadyCommited");
-        delegateReady = true;
-        controller.onPlayerDelegateReady(ChromeCastDelegate.this);
-    }
-
-    @Override
-    public void playIfReady(boolean playIfReady) throws IllegalStateException {
-        Log.d(TAG, "PlayIfReady: " + playIfReady);
-
-        if (mediaInfo != null && this.playIfReady != playIfReady) {
-            if (playIfReady) {
-                if (remoteMediaClient != null && remoteMediaClient.getMediaStatus().getPlayerState() == MediaStatus.PLAYER_STATE_PAUSED) {
-                    Log.d(TAG, "remoteMediaPlayer.play");
-                    remoteMediaClient.play();
-                }
-            } else {
-                Log.d(TAG, "remoteMediaPlayer.pause");
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                ChromeCastManager.registerContext(controller.getContext());
+                remoteMediaClient = ChromeCastManager.getRemoteMediaClient(controller.getContext());
+                mediaInfo = buildMediaInfo();
                 if (remoteMediaClient != null) {
-                    remoteMediaClient.pause();
+                    remoteMediaClient.load(mediaInfo, playIfReady, pendingSeekTo);
                 }
+                Log.d(TAG, "onPlayerDelegatePlayWhenReadyCommited");
+                delegateReady = true;
+                controller.onPlayerDelegateReady(ChromeCastDelegate.this);
             }
-        }
-
-        this.playIfReady = playIfReady;
+        });
     }
 
     @Override
-    public void seekTo(long positionInMillis) throws IllegalStateException {
+    public void playIfReady(final boolean playIfReady) throws IllegalStateException {
+        Log.d(TAG, "PlayIfReady: " + playIfReady);
+        // Get a handler that can be used to post to the main thread
+        mainHandler = new Handler(Looper.getMainLooper());
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (mediaInfo != null && ChromeCastDelegate.this.playIfReady != playIfReady) {
+                    if (playIfReady) {
+                        if (remoteMediaClient != null && remoteMediaClient.getMediaStatus().getPlayerState() == MediaStatus.PLAYER_STATE_PAUSED) {
+                            Log.d(TAG, "remoteMediaPlayer.play");
+                            remoteMediaClient.play();
+                        }
+                    } else {
+                        Log.d(TAG, "remoteMediaPlayer.pause");
+                        if (remoteMediaClient != null) {
+                            remoteMediaClient.pause();
+                        }
+                    }
+                }
+
+                ChromeCastDelegate.this.playIfReady = playIfReady;
+            }
+        });
+    }
+
+    @Override
+    public void seekTo(final long positionInMillis) throws IllegalStateException {
         Log.d(TAG, "seekTo: " + positionInMillis);
-        if (delegateReady) {
-            if (remoteMediaClient != null) {
-                if (isActive() && remoteMediaClient.isPlaying()) {
-                    controller.onPlayerDelegateBuffering(this);
-                    Log.d(TAG, "remoteMediaPlayer.seek");
-                    remoteMediaClient.seek(positionInMillis);
-                    controller.onPlayerDelegateReady(this);
+
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (delegateReady) {
+                    if (remoteMediaClient != null) {
+                        if (isActive()) {
+                            controller.onPlayerDelegateBuffering(ChromeCastDelegate.this);
+                            Log.d(TAG, "remoteMediaPlayer.seek");
+                            remoteMediaClient.seek(positionInMillis);
+                            controller.onPlayerDelegateReady(ChromeCastDelegate.this);
+                        } else {
+                            remoteMediaClient.load(mediaInfo, playIfReady, positionInMillis);
+                        }
+                    }
                 } else {
-                    remoteMediaClient.load(mediaInfo, playIfReady, positionInMillis);
+                    pendingSeekTo = positionInMillis;
                 }
             }
-        } else {
-            pendingSeekTo = positionInMillis;
-        }
+        });
     }
 
     @Override
     public boolean isPlaying() {
         if (remoteMediaClient != null) {
-            return remoteMediaClient.isPlaying();
+            mainHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    isPlaying = remoteMediaClient.isPlaying();
+                }
+            });
         }
-        return false;
+        return isPlaying;
     }
 
     @Override
-    public void setMuted(boolean muted) {
+    public void setMuted(final boolean muted) {
         if (remoteMediaClient != null) {
-            remoteMediaClient.setStreamMute(muted);
+            mainHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    remoteMediaClient.setStreamMute(muted);
+                }
+            });
         }
     }
 
     @Override
     public long getCurrentPosition() {
         if (remoteMediaClient != null) {
-            return remoteMediaClient.getApproximateStreamPosition();
+            mainHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    approximateStreamPosition = remoteMediaClient.getApproximateStreamPosition();
+                }
+            });
         }
-        return 0;
+        return approximateStreamPosition;
     }
 
     @Override
@@ -172,16 +211,22 @@ public class ChromeCastDelegate implements PlayerDelegate {
 
     @Override
     public void release() throws IllegalStateException {
-        remoteMediaClient.stop();
+        if (remoteMediaClient != null) {
+            mainHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        remoteMediaClient.stop();
+                    } catch (IllegalStateException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
     }
 
     private boolean isActive() {
-        MediaInfo remoteMediaInformation = null;
-        if (remoteMediaClient != null) {
-            remoteMediaInformation = remoteMediaClient.getMediaInfo();
-        }
-        return remoteMediaInformation != null && mediaInfo != null
-                && TextUtils.equals(remoteMediaInformation.getContentId(), mediaInfo.getContentId());
+        return mediaInfo != null;
     }
 
     @Override
@@ -245,22 +290,25 @@ public class ChromeCastDelegate implements PlayerDelegate {
         return null;
     }
 
-    public void setSRGMediaMetadata(SRGMediaMetadata srgMediaMetadata) {
+    public void setSRGMediaMetadata(final SRGMediaMetadata srgMediaMetadata) {
         this.srgMediaMetadata = srgMediaMetadata;
     }
 
     private MediaInfo buildMediaInfo() {
-        MediaMetadata movieMetadata = new MediaMetadata(MediaMetadata.MEDIA_TYPE_MOVIE);
+        MediaMetadata metadata = new MediaMetadata(MediaMetadata.MEDIA_TYPE_GENERIC);
 
-        movieMetadata.putString(MediaMetadata.KEY_SUBTITLE, srgMediaMetadata.getDescription());
-        movieMetadata.putString(MediaMetadata.KEY_TITLE, srgMediaMetadata.getTitle());
-        movieMetadata.addImage(new WebImage(Uri.parse(srgMediaMetadata.getImageUrl())));
+        if (srgMediaMetadata != null) {
+            metadata.putString(MediaMetadata.KEY_TITLE, srgMediaMetadata.getTitle() != null ? srgMediaMetadata.getTitle() : "");
+            metadata.putString(MediaMetadata.KEY_SUBTITLE, srgMediaMetadata.getDescription() != null ? srgMediaMetadata.getDescription() : "");
+            metadata.addImage(new WebImage(Uri.parse(srgMediaMetadata.getImageUrl())));
+        }
+
 
         return new MediaInfo.Builder(videoUri.toString())
                 .setStreamType(live ? MediaInfo.STREAM_TYPE_LIVE : MediaInfo.STREAM_TYPE_BUFFERED)
                 .setContentType(contentType)
-                .setMetadata(movieMetadata)
-                .setStreamDuration(srgMediaMetadata.getDuration())
+                .setMetadata(metadata)
+                .setStreamDuration(live ? 0 : srgMediaMetadata != null ? srgMediaMetadata.getDuration() : 0)
                 .build();
     }
 }

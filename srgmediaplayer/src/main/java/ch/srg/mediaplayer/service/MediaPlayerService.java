@@ -184,8 +184,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 		 */
         MusicControl.pause(this); /* XXX: this is not the proper place for this, should be in the play part */
 
-        setupCastListener();
-
         MediaSessionManager.initialize(this);
         mediaSessionManager = MediaSessionManager.getInstance();
         mediaSessionManager.addListener(this);
@@ -409,7 +407,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private void doNotify() {
         Log.d(TAG, "doNotify");
-        if (currentNotificationData != null && mediaSessionCompat != null && notificationEnabled && !player.isRemote()) {
+        if (currentNotificationData != null && mediaSessionCompat != null && notificationEnabled && player != null && !player.isRemote()) {
             boolean disablePause = player == null || (player.isLive() && player.getMediaDuration() < MIN_DVR_MEDIA_DURATION);
             ServiceNotificationBuilder builder = new ServiceNotificationBuilder(currentNotificationData, isPlaying(), disablePause);
             NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
@@ -649,68 +647,4 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         MediaPlayerService.notificationEnabled = notificationEnabled;
     }
 
-    private void setupCastListener() {
-        sessionManagerListener = new SessionManagerListener<CastSession>() {
-
-            @Override
-            public void onSessionEnded(CastSession session, int error) {
-                onApplicationDisconnected();
-            }
-
-            @Override
-            public void onSessionResumed(CastSession session, boolean wasSuspended) {
-                onApplicationConnected(session);
-            }
-
-            @Override
-            public void onSessionResumeFailed(CastSession session, int error) {
-                onApplicationDisconnected();
-            }
-
-            @Override
-            public void onSessionStarted(CastSession session, String sessionId) {
-                onApplicationConnected(session);
-            }
-
-            @Override
-            public void onSessionStartFailed(CastSession session, int error) {
-                onApplicationDisconnected();
-            }
-
-            @Override
-            public void onSessionStarting(CastSession session) {
-            }
-
-            @Override
-            public void onSessionEnding(CastSession session) {
-            }
-
-            @Override
-            public void onSessionResuming(CastSession session, String sessionId) {
-            }
-
-            @Override
-            public void onSessionSuspended(CastSession session, int reason) {
-            }
-
-            private void onApplicationConnected(CastSession castSession) {
-                MediaPlayerService.this.castSession = castSession;
-                isChromecastConnected = true;
-                if (player != null) {
-                    player.swapPlayerDelegate(null);
-                }
-            }
-
-            private void onApplicationDisconnected() {
-                isChromecastConnected = false;
-                if (player != null) {
-                    player.swapPlayerDelegate(null);
-                }
-            }
-        };
-    }
-
-    public static boolean isChromecastConnected(){
-        return isChromecastConnected;
-    }
 }
