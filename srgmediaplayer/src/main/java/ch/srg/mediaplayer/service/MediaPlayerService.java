@@ -407,7 +407,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     private void doNotify() {
         Log.d(TAG, "doNotify");
-        if (currentNotificationData != null && mediaSessionCompat != null && notificationEnabled && player != null && !player.isRemote()) {
+        if (currentNotificationData != null && mediaSessionCompat != null && notificationEnabled && player != null) {
             boolean disablePause = player == null || (player.isLive() && player.getMediaDuration() < MIN_DVR_MEDIA_DURATION);
             ServiceNotificationBuilder builder = new ServiceNotificationBuilder(currentNotificationData, isPlaying(), disablePause);
             NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
