@@ -12,6 +12,7 @@ import com.google.android.gms.cast.framework.CastContext;
 import com.google.android.gms.cast.framework.CastOptions;
 import com.google.android.gms.cast.framework.OptionsProvider;
 import com.google.android.gms.cast.framework.SessionProvider;
+import com.google.android.gms.cast.framework.media.CastMediaOptions;
 import com.google.android.gms.cast.framework.media.RemoteMediaClient;
 
 import java.util.List;
@@ -26,8 +27,12 @@ public class ChromeCastManager implements OptionsProvider {
 
     @Override
     public CastOptions getCastOptions(Context context) {
+        CastMediaOptions mediaOptions = new CastMediaOptions.Builder()
+                .setNotificationOptions(null)
+                .build();
         return new CastOptions.Builder()
                 .setReceiverApplicationId("CC1AD845")
+                .setCastMediaOptions(mediaOptions)
                 .build();
     }
 
