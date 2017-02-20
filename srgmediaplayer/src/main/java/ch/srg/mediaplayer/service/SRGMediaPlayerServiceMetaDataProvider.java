@@ -3,7 +3,9 @@ package ch.srg.mediaplayer.service;
 import ch.srg.mediaplayer.SRGMediaPlayerMetaDataProvider;
 
 /**
- * Created by seb on 07/07/15.
+ * Copyright (c) SRG SSR. All rights reserved.
+ *
+ * License information is available from the LICENSE file.
  */
 public interface SRGMediaPlayerServiceMetaDataProvider extends SRGMediaPlayerMetaDataProvider {
     void getNotificationData(String mediaIdentifier, GetNotificationDataCallback getNotificationDataCallback);
