@@ -548,6 +548,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                             }
                         }
                         currentMediaPlayerDelegate.prepare(uri);
+                    } else {
+                        handleFatalExceptionInternal(new SRGMediaPlayerException("No delegate for this media identifier"));
                     }
                 } catch (SRGMediaPlayerException e) {
                     logE("onUriLoaded", e);
