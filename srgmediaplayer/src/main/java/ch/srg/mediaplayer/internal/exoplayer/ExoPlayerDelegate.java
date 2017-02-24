@@ -43,6 +43,8 @@ import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
+import com.google.android.exoplayer2.upstream.FileDataSource;
+import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -85,8 +87,9 @@ public class ExoPlayerDelegate implements
 
     public enum SourceType {
         HLS,
-        EXTRACTOR,
-        DASH
+        HTTP_PROGRESSIVE,
+        DASH,
+        LOCAL_FILE;
     }
 
     public static final String TAG = SRGMediaPlayerController.TAG;
@@ -165,26 +168,29 @@ public class ExoPlayerDelegate implements
             }
             this.videoSourceUrl = videoSourceUrl;
 
-            String userAgent = "SRGLibrary/2.0alpha";
-
-            DefaultHttpDataSourceFactory httpDataSourceFactory = new DefaultHttpDataSourceFactory(userAgent, BANDWIDTH_METER);
-            DefaultDataSourceFactory dataSourceFactory = new DefaultDataSourceFactory(context, BANDWIDTH_METER, httpDataSourceFactory);
+            DefaultDataSourceFactory httpDataSourceFactory = getHttpDataSourceFactory();
 
             MediaSource mediaSource;
 
             switch (sourceType) {
                 case DASH:
-                    mediaSource = new DashMediaSource(videoUri, dataSourceFactory,
-                            new DefaultDashChunkSource.Factory(dataSourceFactory), mainHandler, eventLogger);
+                    mediaSource = new DashMediaSource(videoUri, httpDataSourceFactory,
+                            new DefaultDashChunkSource.Factory(httpDataSourceFactory), mainHandler, eventLogger);
                     break;
                 case HLS:
-                    mediaSource = new HlsMediaSource(videoUri, dataSourceFactory, mainHandler, eventLogger);
+                    mediaSource = new HlsMediaSource(videoUri, httpDataSourceFactory, mainHandler, eventLogger);
                     break;
-                case EXTRACTOR:
-                default:
-                    mediaSource = new ExtractorMediaSource(videoUri, dataSourceFactory, new DefaultExtractorsFactory(),
+                case HTTP_PROGRESSIVE:
+                    mediaSource = new ExtractorMediaSource(videoUri, httpDataSourceFactory, new DefaultExtractorsFactory(),
                             mainHandler, eventLogger);
                     break;
+                case LOCAL_FILE:
+                    FileDataSourceFactory fileDataSourceFactory = new FileDataSourceFactory();
+                    mediaSource = new ExtractorMediaSource(videoUri, fileDataSourceFactory, new DefaultExtractorsFactory(),
+                            mainHandler, eventLogger);
+                    break;
+                default:
+                    throw new IllegalStateException("Invalid source type: " + sourceType);
             }
 
             exoPlayer.prepare(mediaSource);
@@ -193,6 +199,14 @@ public class ExoPlayerDelegate implements
             release();
             throw new SRGMediaPlayerException(e);
         }
+    }
+
+    @NonNull
+    private DefaultDataSourceFactory getHttpDataSourceFactory() {
+        String userAgent = "SRGLibrary/2.0alpha";
+
+        DefaultHttpDataSourceFactory httpDataSourceFactory = new DefaultHttpDataSourceFactory(userAgent, BANDWIDTH_METER);
+        return new DefaultDataSourceFactory(context, BANDWIDTH_METER, httpDataSourceFactory);
     }
 
     @Override
