@@ -30,7 +30,7 @@ public class MediaPlayerServiceTest extends ThreadServiceTestBase<MediaPlayerSer
 
     public MediaPlayerServiceTest() {
         super(MediaPlayerService.class);
-        MediaPlayerService.setDataProvider(new DirectMappingDataProvider(SRGMediaPlayerDataProvider.TYPE_AUDIO));
+        MediaPlayerService.setDataProvider(new DirectMappingDataProvider(SRGMediaPlayerDataProvider.MEDIA_TYPE_AUDIO));
     }
 
     public void testHlsPlayStopWithDelay() {

@@ -63,7 +63,7 @@ public class MockDelegate implements PlayerDelegate {
     }
 
     @Override
-    public void prepare(Uri videoUri) throws SRGMediaPlayerException {
+    public void prepare(Uri videoUri, int streamType) throws SRGMediaPlayerException {
         try {
             String videoSourceUrl = videoUri.toString();
             if (videoSourceUrl.equalsIgnoreCase(this.videoSourceUrl)) {

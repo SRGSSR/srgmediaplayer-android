@@ -43,7 +43,6 @@ import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
-import com.google.android.exoplayer2.upstream.FileDataSource;
 import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
 
 import java.util.ArrayList;
@@ -51,6 +50,7 @@ import java.util.List;
 
 import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
+import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerView;
 import ch.srg.mediaplayer.SubtitleTrack;
@@ -85,13 +85,6 @@ public class ExoPlayerDelegate implements
         TYPE_TEXTUREVIEW
     }
 
-    public enum SourceType {
-        HLS,
-        HTTP_PROGRESSIVE,
-        DASH,
-        LOCAL_FILE;
-    }
-
     public static final String TAG = SRGMediaPlayerController.TAG;
 
     private final Context context;
@@ -100,7 +93,6 @@ public class ExoPlayerDelegate implements
     private AudioCapabilities audioCapabilities;
 
     private SimpleExoPlayer exoPlayer;
-    private SourceType sourceType = SourceType.HLS;
 
     private String videoSourceUrl = null;
     private float videoSourceAspectRatio = 1.7777f;
@@ -119,8 +111,7 @@ public class ExoPlayerDelegate implements
 
     private Handler mainHandler;
 
-    public ExoPlayerDelegate(Context context, OnPlayerDelegateListener controller, SourceType sourceType) {
-        this.sourceType = sourceType;
+    public ExoPlayerDelegate(Context context, OnPlayerDelegateListener controller) {
         this.context = context;
         audioCapabilitiesReceiver = new AudioCapabilitiesReceiver(context, this);
         this.controller = controller;
@@ -151,8 +142,8 @@ public class ExoPlayerDelegate implements
 
 
     @Override
-    public void prepare(Uri videoUri) throws SRGMediaPlayerException {
-        Log.v(TAG, "Preparing " + videoUri + " (" + sourceType + ")");
+    public void prepare(Uri videoUri, int streamType) throws SRGMediaPlayerException {
+        Log.v(TAG, "Preparing " + videoUri + " (" + streamType + ")");
         try {
             String videoSourceUrl = videoUri.toString();
             if (videoSourceUrl.equalsIgnoreCase(this.videoSourceUrl)) {
@@ -172,25 +163,25 @@ public class ExoPlayerDelegate implements
 
             MediaSource mediaSource;
 
-            switch (sourceType) {
-                case DASH:
+            switch (streamType) {
+                case SRGMediaPlayerDataProvider.STREAM_DASH:
                     mediaSource = new DashMediaSource(videoUri, httpDataSourceFactory,
                             new DefaultDashChunkSource.Factory(httpDataSourceFactory), mainHandler, eventLogger);
                     break;
-                case HLS:
+                case SRGMediaPlayerDataProvider.STREAM_HLS:
                     mediaSource = new HlsMediaSource(videoUri, httpDataSourceFactory, mainHandler, eventLogger);
                     break;
-                case HTTP_PROGRESSIVE:
+                case SRGMediaPlayerDataProvider.STREAM_HTTP_PROGRESSIVE:
                     mediaSource = new ExtractorMediaSource(videoUri, httpDataSourceFactory, new DefaultExtractorsFactory(),
                             mainHandler, eventLogger);
                     break;
-                case LOCAL_FILE:
+                case SRGMediaPlayerDataProvider.STREAM_LOCAL_FILE:
                     FileDataSourceFactory fileDataSourceFactory = new FileDataSourceFactory();
                     mediaSource = new ExtractorMediaSource(videoUri, fileDataSourceFactory, new DefaultExtractorsFactory(),
                             mainHandler, eventLogger);
                     break;
                 default:
-                    throw new IllegalStateException("Invalid source type: " + sourceType);
+                    throw new IllegalStateException("Invalid source type: " + streamType);
             }
 
             exoPlayer.prepare(mediaSource);

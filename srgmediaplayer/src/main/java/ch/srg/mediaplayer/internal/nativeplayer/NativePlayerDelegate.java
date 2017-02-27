@@ -71,7 +71,7 @@ public class NativePlayerDelegate implements
 	}
 
 	@Override
-	public void prepare(Uri videoUri) throws SRGMediaPlayerException {
+	public void prepare(Uri videoUri, int streamType) throws SRGMediaPlayerException {
 		Log.v(SRGMediaPlayerController.TAG, "Preparing " + videoUri);
 		if (state != State.IDLE) {
 			throw new IllegalStateException("Prepare can only be called once. prepare in " + state);

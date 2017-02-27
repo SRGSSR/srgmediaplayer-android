@@ -81,9 +81,10 @@ public interface PlayerDelegate {
 	 * to throw an exception if the videoUri is null or if the developer try to play the same video.
 	 *
 	 * @param videoUri
+	 * @param streamType
 	 * @throws SRGMediaPlayerException
 	 */
-	void prepare(Uri videoUri) throws SRGMediaPlayerException;
+	void prepare(Uri videoUri, int streamType) throws SRGMediaPlayerException;
 
 	/**
 	 * Delegate don't need to keep the playing intention state

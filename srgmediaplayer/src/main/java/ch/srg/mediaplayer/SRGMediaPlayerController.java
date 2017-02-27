@@ -323,7 +323,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             @Override
             public PlayerDelegate getDelegateForMediaIdentifier(PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, String mediaIdentifier) {
                 return new ExoPlayerDelegate(SRGMediaPlayerController.this.context,
-                        SRGMediaPlayerController.this, ExoPlayerDelegate.SourceType.HLS);
+                        SRGMediaPlayerController.this);
             }
         };
 
@@ -421,12 +421,14 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         PlayerDelegate playerDelegate;
         Long position;
         String mediaIdentifier;
+        int streamType;
 
-        public PrepareUriData(Uri uri, PlayerDelegate playerDelegate, String mediaIdentifier, Long position) {
+        public PrepareUriData(Uri uri, PlayerDelegate playerDelegate, String mediaIdentifier, Long position, int streamType) {
             this.uri = uri;
             this.playerDelegate = playerDelegate;
             this.mediaIdentifier = mediaIdentifier;
             this.position = position;
+            this.streamType = streamType;
         }
 
         @Override
@@ -553,7 +555,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                             } catch (IllegalStateException ignored) {
                             }
                         }
-                        currentMediaPlayerDelegate.prepare(uri);
+                        currentMediaPlayerDelegate.prepare(uri, data.streamType);
                     } else {
                         handleFatalExceptionInternal(new SRGMediaPlayerException("No delegate for this media identifier"));
                     }
@@ -744,8 +746,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
         mediaPlayerDataProvider.getUri(mediaIdentifier, playerDelegate, new SRGMediaPlayerDataProvider.GetUriCallback() {
             @Override
-            public void onUriLoaded(String mediaIdentifier, Uri uri, String realMediaIdentifier, Long position, int mediaType) {
-                sendMessage(MSG_PREPARE_FOR_URI, new PrepareUriData(uri, playerDelegate, realMediaIdentifier, position));
+            public void onUriLoaded(String mediaIdentifier, Uri uri, String realMediaIdentifier, Long position, int mediaType, int streamType) {
+                sendMessage(MSG_PREPARE_FOR_URI, new PrepareUriData(uri, playerDelegate, realMediaIdentifier, position, streamType));
             }
 
             @Override
