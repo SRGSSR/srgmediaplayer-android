@@ -27,12 +27,12 @@ ext {
 	buildToolsVersion = '25.0.1'
 
 	//libs
-	supportLibraryVersion = '25.0.1'
+	supportLibraryVersion = '25.2.0'
 	SRGLibraryVersion = '1.4.314@aar'
 	SRGSnapLibraryVersion = '1.4.246-SNAPSHOT@aar'
 	androidSupportTest = '0.5'
 	espressoVersion = '2.2.2'
 	butterknifeVersion = '8.4.0'
 	leakCanaryVersion = '1.4'
-	googlePlayServiceVersion = '10.0.1'
+	googlePlayServiceVersion = '10.2.0'
 }
