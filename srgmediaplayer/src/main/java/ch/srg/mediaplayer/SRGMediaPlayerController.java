@@ -419,10 +419,14 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     class PrepareUriData {
         Uri uri;
         PlayerDelegate playerDelegate;
+        Long position;
+        String mediaIdentifier;
 
-        public PrepareUriData(Uri uri, PlayerDelegate playerDelegate) {
+        public PrepareUriData(Uri uri, PlayerDelegate playerDelegate, String mediaIdentifier, Long position) {
             this.uri = uri;
             this.playerDelegate = playerDelegate;
+            this.mediaIdentifier = mediaIdentifier;
+            this.position = position;
         }
 
         @Override
@@ -526,8 +530,10 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 PrepareUriData data = (PrepareUriData) msg.obj;
                 Uri uri = data.uri;
                 PlayerDelegate playerDelegate = data.playerDelegate;
+                seekToWhenReady = data.position;
 
                 currentMediaUrl = String.valueOf(uri);
+                currentMediaIdentifier = data.mediaIdentifier;
                 postEventInternal(Event.Type.MEDIA_READY_TO_PLAY);
                 try {
                     if (playerDelegate == null) {
@@ -738,8 +744,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
         mediaPlayerDataProvider.getUri(mediaIdentifier, playerDelegate, new SRGMediaPlayerDataProvider.GetUriCallback() {
             @Override
-            public void onUriLoaded(String mediaIdentifier, Uri uri, int mediaType) {
-                sendMessage(MSG_PREPARE_FOR_URI, new PrepareUriData(uri, playerDelegate));
+            public void onUriLoaded(String mediaIdentifier, Uri uri, String realMediaIdentifier, Long position, int mediaType) {
+                sendMessage(MSG_PREPARE_FOR_URI, new PrepareUriData(uri, playerDelegate, realMediaIdentifier, position));
             }
 
             @Override
