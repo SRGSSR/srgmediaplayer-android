@@ -22,6 +22,9 @@ import ch.srg.mediaplayer.SRGMediaPlayerView;
 import ch.srg.mediaplayer.SubtitleTrack;
 import ch.srg.mediaplayer.service.cast.exceptions.NoConnectionException;
 
+import static ch.srg.mediaplayer.SRGMediaPlayerDataProvider.STREAM_HLS;
+import static ch.srg.mediaplayer.SRGMediaPlayerDataProvider.STREAM_HTTP_PROGRESSIVE;
+
 
 /**
  * Created by npietri on 19.10.15.
@@ -43,7 +46,6 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
     private long lastKnownPosition;
     private long lastKnownDuration;
     private String contentType;
-    private boolean live;
     private int currentState;
 
     public ChromeCastDelegate(OnPlayerDelegateListener controller) {
@@ -97,7 +99,7 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
 
         mediaInfo = new MediaInfo.Builder(String.valueOf(videoUri))
                 .setContentType(contentType)
-                .setStreamType(live ? MediaInfo.STREAM_TYPE_LIVE : MediaInfo.STREAM_TYPE_BUFFERED)
+                .setStreamType(streamType == STREAM_HTTP_PROGRESSIVE ? MediaInfo.STREAM_TYPE_LIVE : MediaInfo.STREAM_TYPE_BUFFERED)
                 .setMetadata(mediaMetadata)
                 .build();
         try {
@@ -262,10 +264,6 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
 
     public void setContentType(String contentType) {
         this.contentType = contentType;
-    }
-
-    public void setLive(boolean live) {
-        this.live = live;
     }
 
     @Override
