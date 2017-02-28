@@ -36,6 +36,10 @@ public interface SRGMediaMetadata {
     @Nullable
     String getShowTitle();
 
+    boolean isLive();
+
+    boolean hasDownload();
+
     @Nullable
     String getDownloadUri(String quality);
 
