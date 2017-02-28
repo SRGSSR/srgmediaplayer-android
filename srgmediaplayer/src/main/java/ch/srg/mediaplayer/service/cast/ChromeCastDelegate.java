@@ -22,6 +22,10 @@ import ch.srg.mediaplayer.SRGMediaPlayerView;
 import ch.srg.mediaplayer.SubtitleTrack;
 import ch.srg.mediaplayer.service.cast.exceptions.NoConnectionException;
 
+import static android.R.attr.breadCrumbShortTitle;
+import static android.R.attr.defaultHeight;
+import static android.R.attr.streamType;
+import static ch.srg.mediaplayer.SRGMediaPlayerDataProvider.STREAM_DASH;
 import static ch.srg.mediaplayer.SRGMediaPlayerDataProvider.STREAM_HLS;
 import static ch.srg.mediaplayer.SRGMediaPlayerDataProvider.STREAM_HTTP_PROGRESSIVE;
 
@@ -45,7 +49,6 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
     private String mediaThumbnailUrl;
     private long lastKnownPosition;
     private long lastKnownDuration;
-    private String contentType;
     private int currentState;
 
     public ChromeCastDelegate(OnPlayerDelegateListener controller) {
@@ -76,7 +79,7 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
 
     @Override
     public void prepare(Uri videoUri, int streamType) throws SRGMediaPlayerException {
-        Log.d(TAG, "Prepare: " + videoUri + " type: " + contentType + " title: " + title);
+        Log.d(TAG, "Prepare: " + videoUri + " type: " + streamType + " title: " + title);
         controller.onPlayerDelegatePreparing(this);
 
         String metadataTitle;
@@ -97,8 +100,23 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
             mediaMetadata.addImage(new WebImage(Uri.parse(mediaThumbnailUrl)));
         }
 
+        String mimeType;
+        switch (streamType) {
+            case STREAM_HTTP_PROGRESSIVE:
+                mimeType = "audio/mp3";
+                break;
+            case STREAM_HLS:
+                mimeType = "application/x-mpegurl";
+                break;
+            case STREAM_DASH:
+                mimeType = "application/dash+xml";
+                break;
+            default:
+                mimeType = null;
+        }
+
         mediaInfo = new MediaInfo.Builder(String.valueOf(videoUri))
-                .setContentType(contentType)
+                .setContentType(mimeType)
                 .setStreamType(streamType == STREAM_HTTP_PROGRESSIVE ? MediaInfo.STREAM_TYPE_LIVE : MediaInfo.STREAM_TYPE_BUFFERED)
                 .setMetadata(mediaMetadata)
                 .build();
@@ -260,10 +278,6 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
     public void setMediaThumbnailUrl(String mediaThumbnailUrl) {
         this.mediaThumbnailUrl = mediaThumbnailUrl;
         // TODO Trigger an update of the media info
-    }
-
-    public void setContentType(String contentType) {
-        this.contentType = contentType;
     }
 
     @Override
