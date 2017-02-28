@@ -3,7 +3,9 @@ package ch.srg.mediaplayer.segment.model;
 import android.support.annotation.NonNull;
 
 /**
- * Created by zapek on 2014-05-07.
+ * Copyright (c) SRG SSR. All rights reserved.
+ *
+ * License information is available from the LICENSE file.
  */
 public class Segment implements Comparable<Segment> {
 
