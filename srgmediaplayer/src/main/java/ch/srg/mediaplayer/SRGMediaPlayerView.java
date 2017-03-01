@@ -181,6 +181,7 @@ public class SRGMediaPlayerView extends RelativeLayout {
     }
 
     public void setVideoRenderingView(View newVideoRenderingView) {
+        Log.v(SRGMediaPlayerController.TAG, "setVideoRenderingView");
         if (videoRenderingView == newVideoRenderingView) {
             return;
         }
@@ -192,8 +193,6 @@ public class SRGMediaPlayerView extends RelativeLayout {
             updateOnTopInternal(onTop);
             videoRenderingViewWidth = -1;
             videoRenderingViewHeight = -1;
-            RelativeLayout.LayoutParams surfaceParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
-            videoRenderingView.setLayoutParams(surfaceParams);
             addView(videoRenderingView, 0);
         }
 
@@ -213,6 +212,7 @@ public class SRGMediaPlayerView extends RelativeLayout {
 
     public void setScaleMode(ScaleMode scaleMode) {
         this.scaleMode = scaleMode;
+        requestLayout();
     }
 
     public void setOnTop(boolean onTop) {
@@ -302,11 +302,11 @@ public class SRGMediaPlayerView extends RelativeLayout {
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        // We do the layout first, the onMeasure will compute the actual size correctly based on resizeMode and aspectRatio
         super.onLayout(changed, left, top, right, bottom);
 
         //Then we do some math to force actual size of the videoRenderingView
         if (videoRenderingView != null) {
+            int l = left, t = top, r = right, b = bottom;
             int videoContainerWidth = right - left;
             int videoContainerHeight = bottom - top;
             int surfaceWidth = videoContainerWidth;
@@ -314,8 +314,18 @@ public class SRGMediaPlayerView extends RelativeLayout {
             float videoContainerAspectRatio = videoContainerWidth / (float) videoContainerHeight;
             if (actualVideoAspectRatio > videoContainerAspectRatio) {
                 surfaceHeight = (int) Math.ceil(surfaceWidth / actualVideoAspectRatio);
+                if (scaleMode == ScaleMode.CENTER_INSIDE) {
+                    int padding = (bottom - top - surfaceHeight) / 2;
+                    t = top + padding;
+                    b = bottom - padding;
+                }
             } else if (actualVideoAspectRatio < videoContainerAspectRatio) {
                 surfaceWidth = (int) Math.ceil(surfaceHeight * actualVideoAspectRatio);
+                if (scaleMode == ScaleMode.CENTER_INSIDE) {
+                    int padding = (right - left - surfaceWidth) / 2;
+                    l = left + padding;
+                    r = right - padding;
+                }
 //            } else {
                 //Nothing values already set above
             }
@@ -328,18 +338,10 @@ public class SRGMediaPlayerView extends RelativeLayout {
                 if (videoRenderingView instanceof SurfaceView) {
                     ((SurfaceView) videoRenderingView).getHolder().setFixedSize(surfaceWidth, surfaceHeight);
                 }
-                RelativeLayout.LayoutParams surfaceParams = new RelativeLayout.LayoutParams(videoRenderingViewWidth, videoRenderingViewHeight);
-                if (scaleMode == ScaleMode.TOP_INSIDE) {
-                    surfaceParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
-                    surfaceParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-                } else if (scaleMode == ScaleMode.CENTER_INSIDE) {
-                    surfaceParams.addRule(RelativeLayout.CENTER_IN_PARENT);
-                } else {
-                    throw new IllegalArgumentException("Scale mode not supported " + scaleMode);
-                }
-
-                videoRenderingView.setLayoutParams(surfaceParams);
             }
+
+
+            videoRenderingView.layout(l, t, r, b);
         }
     }
 
