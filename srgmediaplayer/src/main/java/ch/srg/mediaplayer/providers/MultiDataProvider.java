@@ -1,11 +1,14 @@
 package ch.srg.mediaplayer.providers;
 
+import android.net.Uri;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
+import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.segment.data.SegmentDataProvider;
 import ch.srg.mediaplayer.segment.model.Segment;
 
@@ -53,8 +56,19 @@ public class MultiDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
     }
 
     @Override
-    public void getUri(String mediaIdentifier, PlayerDelegate playerDelegate, GetUriCallback getUriCallback) {
-        getProvider(mediaIdentifier).getUri(getIdentifier(mediaIdentifier), playerDelegate, getUriCallback);
+    public void getUri(final String originalMediaIdentifier, PlayerDelegate playerDelegate, final GetUriCallback getUriCallback) {
+        final String originalPrefix = getPrefix(originalMediaIdentifier);
+        getProvider(originalMediaIdentifier).getUri(getIdentifier(originalMediaIdentifier), playerDelegate, new GetUriCallback() {
+            @Override
+            public void onUriLoaded(String mediaIdentifier, Uri uri, String realMediaIdentifier, Long position, int mediaType, int streamType) {
+                getUriCallback.onUriLoaded(originalMediaIdentifier, uri, originalPrefix + ":" + realMediaIdentifier, position, mediaType, streamType);
+            }
+
+            @Override
+            public void onUriLoadFailed(String mediaIdentifier, SRGMediaPlayerException exception) {
+                getUriCallback.onUriLoadFailed(originalMediaIdentifier, exception);
+            }
+        });
     }
 
     @Override
