@@ -22,9 +22,6 @@ import ch.srg.mediaplayer.SRGMediaPlayerView;
 import ch.srg.mediaplayer.SubtitleTrack;
 import ch.srg.mediaplayer.service.cast.exceptions.NoConnectionException;
 
-import static android.R.attr.breadCrumbShortTitle;
-import static android.R.attr.defaultHeight;
-import static android.R.attr.streamType;
 import static ch.srg.mediaplayer.SRGMediaPlayerDataProvider.STREAM_DASH;
 import static ch.srg.mediaplayer.SRGMediaPlayerDataProvider.STREAM_HLS;
 import static ch.srg.mediaplayer.SRGMediaPlayerDataProvider.STREAM_HTTP_PROGRESSIVE;
@@ -36,6 +33,7 @@ import static ch.srg.mediaplayer.SRGMediaPlayerDataProvider.STREAM_HTTP_PROGRESS
 public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Listener {
 
     private static final String TAG = "ChromeCastDelegate";
+
     private final OnPlayerDelegateListener controller;
     private final ChromeCastManager chromeCastManager;
 
