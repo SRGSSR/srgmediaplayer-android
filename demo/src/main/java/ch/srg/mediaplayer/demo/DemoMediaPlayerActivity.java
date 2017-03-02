@@ -347,7 +347,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
             newPlayerDelegate = new NativePlayerDelegate(srgMediaPlayer);
             buttonText = "ExoPlayer";
         } else {
-            newPlayerDelegate = DemoApplication.createExoPlayerDelegate(this, srgMediaPlayer, ExoPlayerDelegate.SourceType.HLS);
+            newPlayerDelegate = DemoApplication.createExoPlayerDelegate(this, srgMediaPlayer);
             buttonText = "NativePlayer";
         }
         srgMediaPlayer.swapPlayerDelegate(newPlayerDelegate);

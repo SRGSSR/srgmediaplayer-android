@@ -43,7 +43,7 @@ public class DummyDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
 		if (uriString == null) {
 			callback.onUriLoadFailed(mediaIdentifier, new SRGMediaPlayerException("no uri"));
 		} else {
-			callback.onUriLoaded(mediaIdentifier, Uri.parse(uriString), TYPE_VIDEO);
+			callback.onUriLoaded(mediaIdentifier, Uri.parse(uriString), mediaIdentifier, null, MEDIA_TYPE_VIDEO, STREAM_HLS);
 		}
 	}
 

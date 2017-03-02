@@ -53,23 +53,23 @@ public class DemoApplication extends Application {
 		dummyDataProvider = new DummyDataProvider();
 		multiDataProvider = new MultiDataProvider();
 		multiDataProvider.addDataProvider("dummy", dummyDataProvider);
-		multiDataProvider.addDataProvider("directVideo", new DirectMappingDataProvider(SRGMediaPlayerDataProvider.TYPE_VIDEO));
-		multiDataProvider.addDataProvider("aac", new DirectMappingDataProvider(SRGMediaPlayerDataProvider.TYPE_AUDIO));
-		multiDataProvider.addDataProvider("dash", new DirectMappingDataProvider(SRGMediaPlayerDataProvider.TYPE_VIDEO));
-		multiDataProvider.addDataProvider("native", new DirectMappingDataProvider(SRGMediaPlayerDataProvider.TYPE_AUDIO));
-		multiDataProvider.addDataProvider("rawHttp", new RawHttpDataProvider(SRGMediaPlayerDataProvider.TYPE_VIDEO));
+		multiDataProvider.addDataProvider("directVideo", new DirectMappingDataProvider(SRGMediaPlayerDataProvider.MEDIA_TYPE_VIDEO));
+		multiDataProvider.addDataProvider("aac", new DirectMappingDataProvider(SRGMediaPlayerDataProvider.MEDIA_TYPE_AUDIO));
+		multiDataProvider.addDataProvider("dash", new DirectMappingDataProvider(SRGMediaPlayerDataProvider.MEDIA_TYPE_VIDEO));
+		multiDataProvider.addDataProvider("native", new DirectMappingDataProvider(SRGMediaPlayerDataProvider.MEDIA_TYPE_AUDIO));
+		multiDataProvider.addDataProvider("rawHttp", new RawHttpDataProvider(SRGMediaPlayerDataProvider.MEDIA_TYPE_VIDEO));
 
 		playerDelegateFactory = new PlayerDelegateFactory() {
 			@Override
 			public PlayerDelegate getDelegateForMediaIdentifier(PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, String mediaIdentifier) {
 				switch (multiDataProvider.getPrefix(mediaIdentifier)) {
 					case "aac":
-						return createExoPlayerDelegate(DemoApplication.this, srgMediaPlayer, ExoPlayerDelegate.SourceType.EXTRACTOR);
+						return createExoPlayerDelegate(DemoApplication.this, srgMediaPlayer);
 					case "dash":
-						return createExoPlayerDelegate(DemoApplication.this,srgMediaPlayer, ExoPlayerDelegate.SourceType.DASH);
+						return createExoPlayerDelegate(DemoApplication.this,srgMediaPlayer);
 					case "directVideo":
 					case "dummy":
-						return createExoPlayerDelegate(DemoApplication.this,srgMediaPlayer, ExoPlayerDelegate.SourceType.HLS);
+						return createExoPlayerDelegate(DemoApplication.this,srgMediaPlayer);
 					case "native":
 						return new NativePlayerDelegate(srgMediaPlayer);
 				}
@@ -94,8 +94,8 @@ public class DemoApplication extends Application {
 		return playerDelegateFactory;
 	}
 
-	public static ExoPlayerDelegate createExoPlayerDelegate(Context context, PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, ExoPlayerDelegate.SourceType sourceType) {
-		ExoPlayerDelegate exoPlayerDelegate = new ExoPlayerDelegate(context, srgMediaPlayer, sourceType);
+	public static ExoPlayerDelegate createExoPlayerDelegate(Context context, PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer) {
+		ExoPlayerDelegate exoPlayerDelegate = new ExoPlayerDelegate(context, srgMediaPlayer);
 		exoPlayerDelegate.setViewType(ExoPlayerDelegate.ViewType.TYPE_TEXTUREVIEW);
 		return exoPlayerDelegate;
 	}
