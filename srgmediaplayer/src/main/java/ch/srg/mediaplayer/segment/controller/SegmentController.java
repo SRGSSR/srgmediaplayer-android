@@ -183,6 +183,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	public boolean seekTo(String mediaIdentifier, long mediaPosition) {
 		Segment segment = getSegment(mediaIdentifier, mediaPosition);
 		if (segment != null && segment.isBlocked()) {
+			postBlockedSegmentEvent(segment, Event.Type.SEGMENT_SKIPPED_BLOCKED);
 			seekTo(mediaIdentifier, segment.getMarkOut());
 			return false;
 		} else {
