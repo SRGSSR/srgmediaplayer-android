@@ -25,6 +25,7 @@ import ch.srg.mediaplayer.service.cast.exceptions.NoConnectionException;
 import static ch.srg.mediaplayer.SRGMediaPlayerDataProvider.STREAM_DASH;
 import static ch.srg.mediaplayer.SRGMediaPlayerDataProvider.STREAM_HLS;
 import static ch.srg.mediaplayer.SRGMediaPlayerDataProvider.STREAM_HTTP_PROGRESSIVE;
+import static ch.srg.mediaplayer.SRGMediaPlayerDataProvider.STREAM_LOCAL_FILE;
 
 
 /**
@@ -109,8 +110,10 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
             case STREAM_DASH:
                 mimeType = "application/dash+xml";
                 break;
+            case STREAM_LOCAL_FILE:
             default:
-                mimeType = null;
+                controller.onPlayerDelegateError(this, new SRGMediaPlayerException("Invalid stream type " + streamType));
+                return;
         }
 
         mediaInfo = new MediaInfo.Builder(String.valueOf(videoUri))
