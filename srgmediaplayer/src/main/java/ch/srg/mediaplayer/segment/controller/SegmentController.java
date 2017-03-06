@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.WeakHashMap;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
@@ -55,6 +56,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 			}
 		}
 	};
+	private static WeakHashMap<SRGMediaPlayerController, SegmentController> controllers = new WeakHashMap<>();
 
 	public static class Event extends SRGMediaPlayerController.Event {
 		public Segment segment;
@@ -110,7 +112,17 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 		}
 	}
 
-	public SegmentController(@NonNull SRGMediaPlayerController playerController) {
+	public static SegmentController attachOrCreate(@NonNull SRGMediaPlayerController playerController) {
+		// TODO Temporary measure until we integrate SegmentController in SRGMediaPlayerController
+		SegmentController segmentController = controllers.get(playerController);
+		if (segmentController == null) {
+			segmentController = new SegmentController(playerController);
+			controllers.put(playerController, segmentController);
+		}
+		return segmentController;
+	}
+
+	private SegmentController(@NonNull SRGMediaPlayerController playerController) {
 		this.playerController = playerController;
 	}
 
@@ -294,7 +306,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 	public void stopListening() {
 		if (handler != null) {
 			playerController.unregisterEventListener(this);
-			handler.removeCallbacks(this);
+			handler.removeCallbacksAndMessages(null);
 			handler = null;
 		}
 	}
