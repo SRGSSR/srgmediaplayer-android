@@ -7,9 +7,11 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 
 import java.util.List;
 
+import ch.srg.mediaplayer.ControlTouchListener;
 import ch.srg.mediaplayer.R;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.segment.adapter.BaseSegmentAdapter;
@@ -24,6 +26,9 @@ public class SegmentView extends RecyclerView implements SegmentController.Liste
 
     private LinearLayoutManager linearLayoutManager;
     private SegmentController segmentController;
+
+    @Nullable
+    private ControlTouchListener controlTouchListener;
 
     @Nullable
     private BaseSegmentAdapter adapter;
@@ -86,5 +91,18 @@ public class SegmentView extends RecyclerView implements SegmentController.Liste
         if (adapter != null) {
             adapter.setSegmentList(segments);
         }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent e) {
+        boolean handled = super.onTouchEvent(e);
+        if (handled && controlTouchListener != null) {
+            controlTouchListener.onMediaControlTouched();
+        }
+        return handled;
+    }
+
+    public void setControlTouchListener(ControlTouchListener controlTouchListener) {
+        this.controlTouchListener = controlTouchListener;
     }
 }

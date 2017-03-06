@@ -21,7 +21,7 @@ import android.view.ViewGroup;
  * The order of execution of A / B will have an impact on whether the player controls are displayed or not, this is bad.
  *
  */
-/*package*/ class OverlayController implements SRGMediaPlayerView.VideoTouchListener, SRGMediaPlayerController.Listener {
+/*package*/ class OverlayController implements ControlTouchListener, SRGMediaPlayerController.Listener {
 
     private static final String TAG = SRGMediaPlayerController.TAG;
 
@@ -63,16 +63,7 @@ import android.view.ViewGroup;
     }
 
     @Override
-    public void onVideoRenderingViewTouched(SRGMediaPlayerView srgMediaPlayerView) {
-        if (!showingControlOverlays) {
-            showControlOverlays();
-        } else {
-            hideControlOverlays();
-        }
-    }
-
-    @Override
-    public void onVideoOverlayTouched(SRGMediaPlayerView srgMediaPlayerView) {
+    public void onMediaControlTouched() {
         if (!showingControlOverlays) {
             showControlOverlays();
         } else {
@@ -91,11 +82,11 @@ import android.view.ViewGroup;
             return;
         }
         if (this.videoContainer != null) {
-            this.videoContainer.setVideoTouchListener(null);
+            this.videoContainer.setControlTouchListener(null);
         }
         this.videoContainer = videoContainer;
         if (this.videoContainer != null) {
-            this.videoContainer.setVideoTouchListener(this);
+            this.videoContainer.setControlTouchListener(this);
         }
         propagateControlVisibility();
         updateLoadings(true);

@@ -21,10 +21,7 @@ import android.widget.ScrollView;
 import com.google.android.exoplayer2.text.CaptionStyleCompat;
 import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.util.Util;
-import com.google.android.exoplayer2.text.CaptionStyleCompat;
-import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.ui.SubtitleView;
-import com.google.android.exoplayer2.util.Util;
 
 import java.util.List;
 
@@ -32,7 +29,7 @@ import java.util.List;
  * This class is a placeholder for some video.
  * Place it in your layout, or create it programmatically and bind it to a SRGMediaPlayerController to play video
  */
-public class SRGMediaPlayerView extends RelativeLayout {
+public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchListener {
 
     // This code may be used to disallow multiple view on Nexus 5 for exemple
     //
@@ -75,16 +72,6 @@ public class SRGMediaPlayerView extends RelativeLayout {
         this.debugMode = debugMode;
     }
 
-    /**
-     * Interface definition for a callback to be invoked when touch event occurs.
-     */
-    public interface VideoTouchListener {
-
-        void onVideoRenderingViewTouched(SRGMediaPlayerView srgMediaPlayerView);
-
-        void onVideoOverlayTouched(SRGMediaPlayerView srgMediaPlayerView);
-    }
-
     public enum ScaleMode {
         CENTER_INSIDE,
         TOP_INSIDE,
@@ -101,7 +88,8 @@ public class SRGMediaPlayerView extends RelativeLayout {
     private View videoRenderingView;
     private int videoRenderingViewWidth = -1;
     private int videoRenderingViewHeight = -1;
-    private VideoTouchListener touchListener;
+    @Nullable
+    private ControlTouchListener touchListener;
 
     public SRGMediaPlayerView(Context context) {
         this(context, null, 0);
@@ -238,8 +226,8 @@ public class SRGMediaPlayerView extends RelativeLayout {
         }
     }
 
-    public void setVideoTouchListener(VideoTouchListener videoTouchListener) {
-        this.touchListener = videoTouchListener;
+    public void setControlTouchListener(ControlTouchListener controlTouchListener) {
+        this.touchListener = controlTouchListener;
     }
 
     private boolean videoRenderViewTrackingTouch = false;
@@ -256,10 +244,10 @@ public class SRGMediaPlayerView extends RelativeLayout {
             if (controlHit) {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_MOVE:
-                        touchListener.onVideoOverlayTouched(this);
+                        touchListener.onMediaControlTouched();
                         break;
                     case MotionEvent.ACTION_UP:
-                        touchListener.onVideoOverlayTouched(this);
+                        touchListener.onMediaControlTouched();
                         break;
                     case MotionEvent.ACTION_DOWN:
                     default:
@@ -269,11 +257,13 @@ public class SRGMediaPlayerView extends RelativeLayout {
                 if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
                     videoRenderViewTrackingTouch = true;
                 }
-                if (videoRenderViewTrackingTouch && event.getAction() == MotionEvent.ACTION_UP) {
+                if (videoRenderViewTrackingTouch) {
                     if (touchListener != null) {
-                        touchListener.onVideoRenderingViewTouched(this);
+                        touchListener.onMediaControlTouched();
                     }
-                    videoRenderViewTrackingTouch = false;
+                    if (event.getAction() == MotionEvent.ACTION_UP) {
+                        videoRenderViewTrackingTouch = false;
+                    }
                 }
                 handled = true;
             }
@@ -626,5 +616,12 @@ public class SRGMediaPlayerView extends RelativeLayout {
 
     private CaptioningManager getCaptioningManager() {
         return (CaptioningManager) getContext().getSystemService(Context.CAPTIONING_SERVICE);
+    }
+
+    @Override
+    public void onMediaControlTouched() {
+        if (touchListener != null) {
+            touchListener.onMediaControlTouched();
+        }
     }
 }
