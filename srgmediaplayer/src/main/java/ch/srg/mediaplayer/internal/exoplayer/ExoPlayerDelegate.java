@@ -66,11 +66,9 @@ public class ExoPlayerDelegate implements
         ExoPlayer.EventListener,
         TextRenderer.Output {
 
-    public static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
+    private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
     private final EventLogger eventLogger;
     private final DefaultTrackSelector trackSelector;
-    private Long qualityOverride;
-    private Long qualityDefault;
     private long playlistReferenceTime;
     private Boolean playWhenReady;
     private Integer playbackState;
@@ -102,8 +100,6 @@ public class ExoPlayerDelegate implements
     private OnPlayerDelegateListener controller;
 
     private boolean live;
-
-    private long playlistStartTimeMs;
 
     private ViewType viewType = ViewType.TYPE_SURFACEVIEW;
 
@@ -425,12 +421,12 @@ public class ExoPlayerDelegate implements
 
     @Override
     public void setQualityOverride(Long quality) {
-        this.qualityOverride = quality;
+
     }
 
     @Override
     public void setQualityDefault(Long quality) {
-        this.qualityDefault = quality;
+
     }
 
     @Override
