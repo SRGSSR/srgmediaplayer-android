@@ -52,7 +52,7 @@ import android.view.ViewGroup;
         this.handler = handler;
         this.playerController = playerController;
         showControlOverlays();
-        updateWithPlayer();
+        updateWithPlayer(false);
     }
 
     public void setForceShowingControlOverlays(boolean forceShowingControlOverlays) {
@@ -139,7 +139,7 @@ import android.view.ViewGroup;
             case PLAYING_STATE_CHANGE:
             case WILL_SEEK:
             case DID_SEEK:
-                updateWithPlayer();
+                updateWithPlayer(false);
                 break;
             case MEDIA_COMPLETED:
                 setForceShowingControlOverlays(true);
@@ -148,7 +148,11 @@ import android.view.ViewGroup;
 
     }
 
-    private void updateWithPlayer() {
+    public void forceUpdate() {
+        updateWithPlayer(true);
+    }
+
+    private void updateWithPlayer(boolean forceUpdate) {
         SRGMediaPlayerController.State state = playerController.getState();
         switch (state) {
             case PREPARING:
@@ -168,7 +172,7 @@ import android.view.ViewGroup;
             default:
                 throw new IllegalArgumentException("Unhandled state: " + state);
         }
-        updateLoadings(false);
+        updateLoadings(forceUpdate);
     }
 
     private void updateLoadings(boolean forceUpdate, boolean loading) {

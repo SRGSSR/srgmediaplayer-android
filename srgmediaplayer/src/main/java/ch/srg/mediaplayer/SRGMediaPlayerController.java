@@ -887,7 +887,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         sendMessage(MSG_RELEASE);
     }
 
-    protected void releaseInternal() {
+    private void releaseInternal() {
         currentSeekTarget = null;
         setStateInternal(State.RELEASED);
         abandonAudioFocus();
@@ -1001,6 +1001,10 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         } else {
             overlayController.showControlOverlays();
         }
+    }
+
+    public void forceOverlayUpdate() {
+        overlayController.forceUpdate();
     }
 
     public boolean isBoundToMediaPlayerView() {
