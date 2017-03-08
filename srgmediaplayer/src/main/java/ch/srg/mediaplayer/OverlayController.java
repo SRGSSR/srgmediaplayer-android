@@ -8,18 +8,17 @@ import android.view.ViewGroup;
 
 /**
  * Created by Axel on 09/03/2015.
- *
+ * <p>
  * TODO OverlayController should handle visibility directly instead of messing with child's visibility.
  * Problematic use cases:
  * SRGMediaPlayerView.applyOverlayMode(playerControlView, SRGMediaPlayerView.LayoutParams.OVERLAY_CONTROL);
  * playerControlView.setVisibility(View.VISIBLE);
- *  -> the second visibility should not have any impact. the overlay mode itself should be applied directly
- *
- *  The potential race condition is when the app does:
- *  A) play.showControls()
+ * -> the second visibility should not have any impact. the overlay mode itself should be applied directly
+ * <p>
+ * The potential race condition is when the app does:
+ * A) play.showControls()
  * B) SRGMediaPlayerView.applyOverlayMode(playerControlView, SRGMediaPlayerView.LayoutParams.OVERLAY_CONTROL);
  * The order of execution of A / B will have an impact on whether the player controls are displayed or not, this is bad.
- *
  */
 /*package*/ class OverlayController implements ControlTouchListener, SRGMediaPlayerController.Listener {
 
@@ -157,13 +156,16 @@ import android.view.ViewGroup;
         switch (state) {
             case PREPARING:
             case BUFFERING:
-            case RELEASED:
+                break;
             case IDLE:
+                setForceShowingControlOverlays(false);
+                hideControlOverlays();
+                break;
+            case RELEASED:
                 setForceShowingControlOverlays(true);
                 break;
             case READY:
                 if (playerController.isPlaying() && playerController.hasVideoTrack() && !playerController.isRemote()) {
-                    postponeOverlayHiding();
                     setForceShowingControlOverlays(false);
                 } else {
                     setForceShowingControlOverlays(true);
