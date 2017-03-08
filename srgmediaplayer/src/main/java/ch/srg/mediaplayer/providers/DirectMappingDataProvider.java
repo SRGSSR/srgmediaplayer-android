@@ -10,9 +10,11 @@ import ch.srg.mediaplayer.segment.data.SegmentDataProvider;
  * Created by Axel on 02/03/2015.
  */
 public class DirectMappingDataProvider implements SRGMediaPlayerDataProvider, SegmentDataProvider {
+
+	@SRGMediaType
 	private int mediaType;
 
-	public DirectMappingDataProvider(int mediaType) {
+	public DirectMappingDataProvider(@SRGMediaType int mediaType) {
 		this.mediaType = mediaType;
 	}
 
