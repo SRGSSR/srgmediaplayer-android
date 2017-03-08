@@ -139,7 +139,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
     }
 
 	@Override
-	public void onLongClick(View v, Segment segment, int position) {
+	public void onSegmentLongClick(View v, Segment segment, int position) {
 
 	}
 

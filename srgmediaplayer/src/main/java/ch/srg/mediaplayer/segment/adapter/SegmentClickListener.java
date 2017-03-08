@@ -11,6 +11,6 @@ public interface SegmentClickListener {
 
     void onSegmentClick(View v, Segment segment);
 
-    void onLongClick(View v, Segment segment, int position);
+    void onSegmentLongClick(View v, Segment segment, int position);
 
 }
