@@ -19,7 +19,9 @@ import ch.srg.mediaplayer.segment.adapter.SegmentClickListener;
 import ch.srg.mediaplayer.segment.model.Segment;
 
 /**
- * Created by npietri on 26.05.15.
+ * Copyright (c) SRG SSR. All rights reserved.
+ *
+ * License information is available from the LICENSE file.
  */
 public class SegmentController implements SegmentClickListener, SRGMediaPlayerController.Listener,  Runnable {
 	private static final long PERIODIC_UPDATE_DELAY = 250;
