@@ -11,7 +11,9 @@ import java.util.List;
 import ch.srg.mediaplayer.segment.model.Segment;
 
 /**
- * Created by npietri on 21.05.15.
+ * Copyright (c) SRG SSR. All rights reserved.
+ *
+ * License information is available from the LICENSE file.
  */
 public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> extends RecyclerView.Adapter<T> {
     public SegmentClickListener listener;
