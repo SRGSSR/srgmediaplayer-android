@@ -350,10 +350,10 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     }
 
     private void prepare(String mediaIdentifier, Long startPosition) throws SRGMediaPlayerException {
-        Log.d(TAG, "prepare " + mediaIdentifier + " startPosition " + startPosition);
         mediaSessionManager.clearMediaSession(mediaSessionCompat != null ? mediaSessionCompat.getSessionToken() : null);
         createPlayer();
 
+        Log.d(TAG, "preparing " + player.getControllerId());
         if (player.play(mediaIdentifier, startPosition)) {
             startUpdates();
         }
@@ -373,6 +373,7 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
                 }
                 return player;
             } else {
+                Log.v(TAG, "Releasing " + player.getControllerId());
                 player.release();
             }
         }
