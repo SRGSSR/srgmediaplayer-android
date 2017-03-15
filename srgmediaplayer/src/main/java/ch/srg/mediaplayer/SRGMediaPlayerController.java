@@ -69,10 +69,25 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     public static final long UNKNOWN_TIME = PlayerDelegate.UNKNOWN_TIME;
 
+    /**
+     * Disable audio focus handling. Always play audio.
+     */
     public static final int AUDIO_FOCUS_FLAG_DISABLED = 0;
+    /**
+     * Mute when losing audio focus.
+     */
     public static final int AUDIO_FOCUS_FLAG_MUTE = 1;
+    /**
+     * Pause stream when losing audio focus. Do not auto restart unless AUDIO_FOCUS_FLAG_AUTO_RESTART is also set.
+     */
     public static final int AUDIO_FOCUS_FLAG_PAUSE = 2;
+    /**
+     * Duck volume when losing audio focus.
+     */
     public static final int AUDIO_FOCUS_FLAG_DUCK = 4;
+    /**
+     * If set, stream auto restart after gaining audio focus, must be used with AUDIO_FOCUS_FLAG_PAUSE to pause.
+     */
     public static final int AUDIO_FOCUS_FLAG_AUTO_RESTART = 8;
 
     private static final int MSG_PREPARE_FOR_MEDIA_IDENTIFIER = 3;
