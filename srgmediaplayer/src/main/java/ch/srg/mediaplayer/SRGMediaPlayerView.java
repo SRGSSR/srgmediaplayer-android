@@ -9,6 +9,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceView;
+import android.view.TextureView;
 import android.view.View;
 import android.view.ViewDebug;
 import android.view.ViewGroup;
@@ -20,8 +21,8 @@ import android.widget.ScrollView;
 
 import com.google.android.exoplayer2.text.CaptionStyleCompat;
 import com.google.android.exoplayer2.text.Cue;
-import com.google.android.exoplayer2.util.Util;
 import com.google.android.exoplayer2.ui.SubtitleView;
+import com.google.android.exoplayer2.util.Util;
 
 import java.util.List;
 
@@ -54,6 +55,8 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
     //			}
     //		}
 
+
+    public static final String TAG = "SRGMediaPlayerView";
     public static final float DEFAULT_ASPECT_RATIO = 16 / 9f;
     public static final String UNKNOWN_DIMENSION = "0x0";
     private boolean onTop;
@@ -151,7 +154,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
     }
 
     /**
-     * Set the desired aspect ratio for the ViceoContainer
+     * Set the desired aspect ratio for the VideoContainer
      *
      * @param desiredAspect the desired aspect ratio (width/height)
      * @return true if the VideoContainer accept the ratio (auto mode), false if the ratio is already fixed
@@ -296,28 +299,22 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
 
         //Then we do some math to force actual size of the videoRenderingView
         if (videoRenderingView != null) {
-            int l = left, t = top, r = right, b = bottom;
+            int l = 0, t = 0;
             int videoContainerWidth = right - left;
             int videoContainerHeight = bottom - top;
-            int surfaceWidth = videoContainerWidth;
-            int surfaceHeight = videoContainerHeight;
+            int surfaceWidth = videoRenderingView.getMeasuredWidth();
+            int surfaceHeight = videoRenderingView.getMeasuredHeight();
             float videoContainerAspectRatio = videoContainerWidth / (float) videoContainerHeight;
-            if (actualVideoAspectRatio > videoContainerAspectRatio) {
-                surfaceHeight = (int) Math.ceil(surfaceWidth / actualVideoAspectRatio);
+            if (aspectRatio > videoContainerAspectRatio) {
+                surfaceHeight = (int) Math.ceil(surfaceWidth / aspectRatio);
                 if (scaleMode == ScaleMode.CENTER_INSIDE) {
-                    int padding = (bottom - top - surfaceHeight) / 2;
-                    t = top + padding;
-                    b = bottom - padding;
+                    t = (videoContainerHeight - surfaceHeight) / 2;
                 }
-            } else if (actualVideoAspectRatio < videoContainerAspectRatio) {
-                surfaceWidth = (int) Math.ceil(surfaceHeight * actualVideoAspectRatio);
+            } else if (aspectRatio < videoContainerAspectRatio) {
+                surfaceWidth = (int) Math.ceil(surfaceHeight * aspectRatio);
                 if (scaleMode == ScaleMode.CENTER_INSIDE) {
-                    int padding = (right - left - surfaceWidth) / 2;
-                    l = left + padding;
-                    r = right - padding;
+                    l = (videoContainerWidth - surfaceWidth) / 2;
                 }
-//            } else {
-                //Nothing values already set above
             }
 
             //check against last set values
@@ -327,11 +324,14 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
                 //for surfaceView ensure setFixedSize. May be unnecessary
                 if (videoRenderingView instanceof SurfaceView) {
                     ((SurfaceView) videoRenderingView).getHolder().setFixedSize(surfaceWidth, surfaceHeight);
+                } else if (videoRenderingView instanceof TextureView){
+                    RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) videoRenderingView.getLayoutParams();
+                    lp.width = surfaceWidth;
+                    lp.height = surfaceHeight;
                 }
             }
-
-
-            videoRenderingView.layout(l, t, r, b);
+            videoRenderingView.setY(t);
+            videoRenderingView.setX(l);
         }
     }
 
