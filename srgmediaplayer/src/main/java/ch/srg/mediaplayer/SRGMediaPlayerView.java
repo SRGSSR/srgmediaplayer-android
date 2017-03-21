@@ -302,8 +302,8 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
             int l = 0, t = 0;
             int videoContainerWidth = right - left;
             int videoContainerHeight = bottom - top;
-            int surfaceWidth = videoRenderingView.getMeasuredWidth();
-            int surfaceHeight = videoRenderingView.getMeasuredHeight();
+            int surfaceWidth = videoContainerWidth;
+            int surfaceHeight = videoContainerHeight;
             float videoContainerAspectRatio = videoContainerWidth / (float) videoContainerHeight;
             if (aspectRatio > videoContainerAspectRatio) {
                 surfaceHeight = (int) Math.ceil(surfaceWidth / aspectRatio);
