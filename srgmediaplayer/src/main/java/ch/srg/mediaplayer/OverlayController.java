@@ -110,17 +110,17 @@ import android.view.ViewGroup;
     }
 
     public void showControlOverlays() {
-        playerController.broadcastEvent(SRGMediaPlayerController.Event.Type.OVERLAY_CONTROL_DISPLAYED);
         showingControlOverlays = true;
+        playerController.broadcastEvent(SRGMediaPlayerController.Event.Type.OVERLAY_CONTROL_DISPLAYED);
         propagateControlVisibility();
         postponeOverlayHiding();
     }
 
     public void hideControlOverlays() {
         if (!forceShowingOverlays) {
+            showingControlOverlays = false;
             playerController.broadcastEvent(SRGMediaPlayerController.Event.Type.OVERLAY_CONTROL_HIDDEN);
             handler.removeCallbacks(hideOverlaysRunnable);
-            showingControlOverlays = false;
             propagateControlVisibility();
         }
     }
