@@ -22,7 +22,7 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
 
     protected ArrayList<Segment> segments;
 
-    protected ArrayList<SegmentChangeListeners> segmentChangeListeners = new ArrayList<>();
+    protected ArrayList<SegmentChangeListener> segmentChangeListeners = new ArrayList<>();
 
     protected BaseSegmentAdapter(List<Segment> segmentsList) {
         segments = new ArrayList<>(segmentsList);
@@ -39,11 +39,11 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
         }
     }
 
-    public void addSegmentChangeListener(SegmentChangeListeners listener) {
+    public void addSegmentChangeListener(SegmentChangeListener listener) {
         segmentChangeListeners.add(listener);
     }
 
-    public void removeSegmentChangeListener(SegmentChangeListeners listeners) {
+    public void removeSegmentChangeListener(SegmentChangeListener listeners) {
         segmentChangeListeners.remove(listeners);
     }
 
