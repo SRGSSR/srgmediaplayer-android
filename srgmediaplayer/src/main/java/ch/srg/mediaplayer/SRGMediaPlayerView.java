@@ -245,17 +245,17 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
         if (touchListener != null) {
             boolean controlHit = isControlHit((int) event.getX(), (int) event.getY());
             if (controlHit) {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_MOVE:
-                        touchListener.onMediaControlTouched();
-                        break;
-                    case MotionEvent.ACTION_UP:
-                        touchListener.onMediaControlTouched();
-                        break;
-                    case MotionEvent.ACTION_DOWN:
-                    default:
-                        break;
-                }
+                touchListener.onMediaControlTouched();
+//                switch (event.getAction()) {
+//                    case MotionEvent.ACTION_MOVE:
+//                        break;
+//                    case MotionEvent.ACTION_UP:
+//                        touchListener.onMediaControlTouched();
+//                        break;
+//                    case MotionEvent.ACTION_DOWN:
+//                    default:
+//                        break;
+//                }
             } else {
                 if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
                     videoRenderViewTrackingTouch = true;
