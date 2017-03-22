@@ -8,5 +8,5 @@ import ch.srg.mediaplayer.segment.model.Segment;
  * License information is available from the LICENSE file.
  */
 public interface SegmentChangeListener {
-    void onSegmentChange(Segment segment);
+    void onSegmentHighlighted(Segment segment);
 }

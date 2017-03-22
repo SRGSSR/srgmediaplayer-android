@@ -7,6 +7,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 
 import java.util.List;
@@ -74,11 +75,11 @@ public class SegmentView extends RecyclerView implements SegmentController.Liste
 
     @Override
     public void onPositionChange(@Nullable String mediaIdentifier, long time, boolean seeking) {
-        Segment currentSegment = segmentController.getCurrentSegment();
-        String currentSegmentIdentifier = (!seeking && currentSegment != null) ? currentSegment.getIdentifier() : null;
-        boolean change = mediaIdentifier != null && adapter.updateProgressSegments(mediaIdentifier, time, currentSegmentIdentifier);
+        boolean change =
+                mediaIdentifier != null
+                && adapter != null
+                && adapter.updateProgressSegments(mediaIdentifier, time);
         if (change) {
-            // TODO Do not do this when using is scrolling the segment view
             scrollToPosition(adapter.getCurrentSegment());
         }
     }

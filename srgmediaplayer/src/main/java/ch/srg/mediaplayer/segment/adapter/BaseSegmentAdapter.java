@@ -18,7 +18,7 @@ import ch.srg.mediaplayer.segment.model.Segment;
 public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> extends RecyclerView.Adapter<T> {
     public SegmentClickListener listener;
 
-    public abstract boolean updateProgressSegments(@NonNull String mediaIdentifier, long time, String currentSegmentIdentifier);
+    public abstract boolean updateProgressSegments(@NonNull String mediaIdentifier, long time);
 
     protected ArrayList<Segment> segments;
 
