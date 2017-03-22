@@ -69,6 +69,7 @@ public class SegmentView extends RecyclerView implements SegmentController.Liste
         }
         this.segmentController = segmentController;
         segmentController.addListener(this);
+        setSegmentList(segmentController.getSegments());
     }
 
     @Override

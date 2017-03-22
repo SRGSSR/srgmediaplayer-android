@@ -317,6 +317,10 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 		return currentSegment;
 	}
 
+	public ArrayList<Segment> getSegments() {
+		return segments;
+	}
+
 	public void setSegmentClickDelegate(SegmentClickDelegate segmentClickDelegate) {
 		this.segmentClickDelegate = segmentClickDelegate;
 	}
