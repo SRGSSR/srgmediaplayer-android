@@ -44,7 +44,6 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 		@Override
 		public void onSegmentClick(Segment segment) {
 			String mediaIdentifier = playerController.getMediaIdentifier();
-			currentSegment = segment;
 			if (!TextUtils.isEmpty(mediaIdentifier) && mediaIdentifier.equals(segment.getMediaIdentifier())) {
 				postEvent(Event.Type.SEGMENT_SELECTED, segment);
 				playerController.seekTo(segment.getMarkIn());
@@ -135,6 +134,8 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 		    segmentBeingSkipped = null;
 
 			segmentClickDelegate.onSegmentClick(segment);
+
+			currentSegment = segment;
 	    } else {
 			postBlockedSegmentEvent(segment, Event.Type.SEGMENT_USER_SEEK_BLOCKED);
 		}

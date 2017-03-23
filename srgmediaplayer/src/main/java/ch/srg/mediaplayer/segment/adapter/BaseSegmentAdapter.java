@@ -8,24 +8,29 @@ import android.text.TextUtils;
 import java.util.ArrayList;
 import java.util.List;
 
+import ch.srg.mediaplayer.segment.controller.SegmentController;
 import ch.srg.mediaplayer.segment.model.Segment;
 
 /**
  * Copyright (c) SRG SSR. All rights reserved.
- *
+ * <p>
  * License information is available from the LICENSE file.
  */
 public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> extends RecyclerView.Adapter<T> {
+    @Nullable
+    private SegmentController segmentController;
+    @Nullable
     public SegmentClickListener listener;
+    @NonNull
+    protected ArrayList<Segment> segments = new ArrayList<>();
 
-    public abstract boolean updateProgressSegments(@NonNull String mediaIdentifier, long time);
+    private final ArrayList<SegmentChangeListener> segmentChangeListeners = new ArrayList<>();
 
-    protected ArrayList<Segment> segments;
+    private int currentSegment;
+    private long currentTime;
+    private String currentMediaIdentifier;
 
-    protected ArrayList<SegmentChangeListener> segmentChangeListeners = new ArrayList<>();
-
-    protected BaseSegmentAdapter(List<Segment> segmentsList) {
-        segments = new ArrayList<>(segmentsList);
+    protected BaseSegmentAdapter() {
         setHasStableIds(true);
     }
 
@@ -47,7 +52,7 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
         segmentChangeListeners.remove(listeners);
     }
 
-    public void setSegmentList(@Nullable List<Segment> segmentList) {
+    private void filterSegmentList(@Nullable List<Segment> segmentList) {
         segments.clear();
         if (segmentList != null) {
             for (Segment s : segmentList) {
@@ -59,10 +64,6 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
         notifyDataSetChanged();
     }
 
-    public int getDisplayableSegmentsListSize() {
-        return segments.size();
-    }
-
     @Override
     public long getItemId(int position) {
         return segments.get(position).getIdentifier().hashCode();
@@ -72,7 +73,7 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
         return segments.get(position).getIdentifier();
     }
 
-    public int getSegmentIndex(@NonNull String mediaIdentifier, long time) {
+    private int getSegmentIndex(@NonNull String mediaIdentifier, long time) {
         int segmentIndex;
         segmentIndex = findLogicalSegment(mediaIdentifier, time);
         if (segmentIndex == -1) {
@@ -81,7 +82,7 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
         return segmentIndex;
     }
 
-    public int getSegmentIndex(@NonNull String mediaIdentifier, String segmentIdentifier) {
+    private int getSegmentIndex(@NonNull String mediaIdentifier, String segmentIdentifier) {
         int segmentIndex;
         segmentIndex = findLogicalSegment(mediaIdentifier, segmentIdentifier);
         if (segmentIndex == -1) {
@@ -90,7 +91,7 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
         return segmentIndex;
     }
 
-    public int findPhysicalSegment(@NonNull String mediaIdentifier) {
+    private int findPhysicalSegment(@NonNull String mediaIdentifier) {
         for (int i = 0; i < segments.size(); i++) {
             Segment segment = segments.get(i);
             if ((mediaIdentifier.equals(segment.getMediaIdentifier())
@@ -102,7 +103,7 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
         return -1;
     }
 
-    public int findLogicalSegment(@NonNull String mediaIdentifier, long time) {
+    private int findLogicalSegment(@NonNull String mediaIdentifier, long time) {
         for (int i = 0; i < segments.size(); i++) {
             Segment segment = segments.get(i);
             if (mediaIdentifier.equals(segment.getMediaIdentifier())
@@ -113,7 +114,7 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
         return -1;
     }
 
-    public int findLogicalSegment(@NonNull String mediaIdentifier, String segmentIdentifier) {
+    private int findLogicalSegment(@NonNull String mediaIdentifier, String segmentIdentifier) {
         for (int i = 0; i < segments.size(); i++) {
             Segment segment = segments.get(i);
             if (mediaIdentifier.equals(segment.getMediaIdentifier())
@@ -124,9 +125,49 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
         return -1;
     }
 
-    public ArrayList<Segment> getSegmentsList() {
-        return segments;
+    public int getCurrentSegment() {
+        return currentSegment;
     }
 
-    public abstract int getCurrentSegment();
+    protected String getCurrentMediaIdentifier() {
+        return currentMediaIdentifier;
+    }
+
+    protected long getCurrentTime() {
+        return currentTime;
+    }
+
+    public boolean updateProgressSegments(@NonNull String mediaIdentifier, long time) {
+        boolean segmentChange = false;
+        this.currentMediaIdentifier = mediaIdentifier;
+        if (time != currentTime) {
+            currentTime = time;
+            if (currentSegment != -1) {
+                notifyItemChanged(currentSegment);
+            }
+            int newSegment = segments.indexOf(segmentController != null ? segmentController.getCurrentSegment() : null);
+            segmentChange = newSegment != currentSegment;
+            if (segmentChange) {
+                int start = Math.max(0, Math.min(currentSegment, newSegment));
+                int count = Math.abs(currentSegment - newSegment) + 1;
+                currentSegment = newSegment;
+                notifyItemRangeChanged(start, count);
+                if (currentSegment >= 0) {
+                    for (SegmentChangeListener l : segmentChangeListeners) {
+                        l.onSegmentHighlighted(segments.get(currentSegment));
+                    }
+                }
+            }
+        }
+        return segmentChange;
+    }
+
+    public void updateWithSegmentController(@Nullable SegmentController segmentController) {
+        this.segmentController = segmentController;
+        if (segmentController != null) {
+            filterSegmentList(segmentController.getSegments());
+        } else {
+            segments = new ArrayList<>();
+        }
+    }
 }

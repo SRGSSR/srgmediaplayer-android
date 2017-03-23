@@ -7,7 +7,6 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 
 import java.util.List;
@@ -23,8 +22,6 @@ import ch.srg.mediaplayer.segment.model.Segment;
  * Created by npietri on 20.05.15.
  */
 public class SegmentView extends RecyclerView implements SegmentController.Listener {
-    private SRGMediaPlayerController playerController;
-
     private LinearLayoutManager linearLayoutManager;
     private SegmentController segmentController;
 
@@ -55,13 +52,10 @@ public class SegmentView extends RecyclerView implements SegmentController.Liste
         a.recycle();
     }
 
-    public void attachToController(SRGMediaPlayerController playerController) {
-        this.playerController = playerController;
-    }
-
     public void setBaseAdapter(@NonNull BaseSegmentAdapter adapter) {
         this.adapter = adapter;
         setAdapter(adapter);
+        adapter.updateWithSegmentController(segmentController);
     }
 
     public void setSegmentController(@NonNull SegmentController segmentController) {
@@ -70,7 +64,9 @@ public class SegmentView extends RecyclerView implements SegmentController.Liste
         }
         this.segmentController = segmentController;
         segmentController.addListener(this);
-        setSegmentList(segmentController.getSegments());
+        if (adapter != null) {
+            adapter.updateWithSegmentController(segmentController);
+        }
     }
 
     @Override
@@ -86,12 +82,8 @@ public class SegmentView extends RecyclerView implements SegmentController.Liste
 
     @Override
     public void onSegmentListChanged(List<Segment> segments) {
-        setSegmentList(segments);
-    }
-
-    private void setSegmentList(@Nullable List<Segment> segments) {
         if (adapter != null) {
-            adapter.setSegmentList(segments);
+            adapter.updateWithSegmentController(segmentController);
         }
     }
 
