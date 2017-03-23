@@ -331,7 +331,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         this.mainHandler = new Handler(Looper.getMainLooper(), this);
         this.tag = tag;
 
-        overlayController = new OverlayController(this, mainHandler);
+        overlayController = new OverlayController(this);
         registerEventListener(overlayController);
 
         playerDelegateFactory = new PlayerDelegateFactory() {
@@ -1007,19 +1007,23 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     public void hideControlOverlays() {
-        overlayController.hideControlOverlays();
+        overlayController.hideControlOverlaysImmediately();
     }
 
     public void toggleOverlay() {
         if (overlayController.isOverlayVisible()) {
-            overlayController.hideControlOverlays();
+            overlayController.hideControlOverlaysImmediately();
         } else {
             overlayController.showControlOverlays();
         }
     }
 
-    public void forceOverlayUpdate() {
-        overlayController.forceUpdate();
+    public void setForceLoaders(Boolean forceLoaders) {
+        overlayController.setForceLoaders(forceLoaders);
+    }
+
+    public void setForceControls(Boolean forceControls) {
+        overlayController.setForceControls(forceControls);
     }
 
     public boolean isBoundToMediaPlayerView() {
@@ -1455,7 +1459,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     public void updateOverlayVisibilities() {
-        overlayController.propagateControlVisibility();
+        overlayController.propagateOverlayVisibility();
     }
 
     private long getPlaylistStartTime() {
