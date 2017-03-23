@@ -348,7 +348,9 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
         final int specHeightMode = MeasureSpec.getMode(heightMeasureSpec);
 
         if (specWidthMode == MeasureSpec.EXACTLY && specHeightMode == MeasureSpec.EXACTLY) {
-            Log.w(SRGMediaPlayerController.TAG, "Aspect ratio cannot be supported with these layout constraints");
+            if (!autoAspect) {
+                Log.w(SRGMediaPlayerController.TAG, "Aspect ratio cannot be supported with these layout constraints");
+            }
         } else if (specWidthMode == MeasureSpec.EXACTLY) {
             int width = specWidth;
             int height = (int) (width / aspectRatio);
