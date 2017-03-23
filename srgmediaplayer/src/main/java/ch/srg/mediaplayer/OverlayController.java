@@ -11,7 +11,9 @@ import android.view.ViewGroup;
 /**
  * Created by Axel on 09/03/2015.
  * <p>
- * TODO OverlayController should handle visibility directly instead of messing with child's visibility.
+ *
+ * TODO Check that the following is no longer a problem
+ *
  * Problematic use cases:
  * SRGMediaPlayerView.applyOverlayMode(playerControlView, SRGMediaPlayerView.LayoutParams.OVERLAY_CONTROL);
  * playerControlView.setVisibility(View.VISIBLE);
@@ -42,7 +44,7 @@ import android.view.ViewGroup;
     @Nullable
     private Boolean controlsForced;
 
-    private boolean isPlayerStateForceShowingOverlays() {
+    private boolean doesPlayerStateRequiresControls() {
         SRGMediaPlayerController.State state = playerController.getState();
 
         boolean notPlaying = !playerController.isPlaying();
@@ -88,7 +90,7 @@ import android.view.ViewGroup;
         updateLoadings();
     }
 
-    public void updateLoadings() {
+    private void updateLoadings() {
         if (loadingForced != null) {
             updateLoadings(loadingForced);
         } else {
@@ -99,7 +101,7 @@ import android.view.ViewGroup;
         }
     }
 
-    public boolean isOverlayVisible() {
+    boolean isControlsVisible() {
         return showingControlOverlays;
     }
 
@@ -110,7 +112,7 @@ import android.view.ViewGroup;
         }
     }
 
-    public void showControlOverlays() {
+    void showControlOverlays() {
         if (!showingControlOverlays) {
             showingControlOverlays = true;
             playerController.broadcastEvent(SRGMediaPlayerController.Event.Type.OVERLAY_CONTROL_DISPLAYED);
@@ -119,8 +121,8 @@ import android.view.ViewGroup;
         }
     }
 
-    public void hideControlOverlaysImmediately() {
-        if (!isPlayerStateForceShowingOverlays()) {
+    void hideControlOverlaysImmediately() {
+        if (!doesPlayerStateRequiresControls()) {
             if (showingControlOverlays) {
                 showingControlOverlays = false;
                 playerController.broadcastEvent(SRGMediaPlayerController.Event.Type.OVERLAY_CONTROL_HIDDEN);
@@ -152,7 +154,7 @@ import android.view.ViewGroup;
 
     private void updateWithPlayer() {
         if (controlsForced == null) {
-            if (isPlayerStateForceShowingOverlays()) {
+            if (doesPlayerStateRequiresControls()) {
                 showControlOverlays();
             } else {
                 ensureControlsHiding();
@@ -178,7 +180,7 @@ import android.view.ViewGroup;
         }
     }
 
-    public void propagateOverlayVisibility() {
+    void propagateOverlayVisibility() {
         Log.v(TAG, "visibility: " + showingControlOverlays + ", " + controlsForced + " | " + showingLoadings + ", " + loadingForced);
         if (videoContainer != null) {
             int childCount = videoContainer.getChildCount();
@@ -208,11 +210,11 @@ import android.view.ViewGroup;
         }
     }
 
-    public boolean isShowingLoadingOverlays() {
+    private boolean isShowingLoadingOverlays() {
         return loadingForced != null ? loadingForced : showingLoadings;
     }
 
-    public boolean isShowingControlOverlays() {
+    boolean isShowingControlOverlays() {
         return controlsForced != null ? controlsForced : showingControlOverlays;
     }
 
@@ -221,7 +223,7 @@ import android.view.ViewGroup;
      *
      * @param overlayAutoHideDelay auto hide delay in ms
      */
-    public static void setOverlayAutoHideDelay(int overlayAutoHideDelay) {
+    static void setOverlayAutoHideDelay(int overlayAutoHideDelay) {
         OverlayController.overlayAutoHideDelay = overlayAutoHideDelay;
     }
 
@@ -229,7 +231,7 @@ import android.view.ViewGroup;
     public boolean handleMessage(Message msg) {
         switch (msg.what) {
             case MSG_HIDE_CONTROLS:
-                if (!isPlayerStateForceShowingOverlays()) {
+                if (!doesPlayerStateRequiresControls()) {
                     hideControlOverlaysImmediately();
                 }
                 return true;
@@ -238,12 +240,12 @@ import android.view.ViewGroup;
         }
     }
 
-    public void setForceControls(Boolean controlsForced) {
+    void setForceControls(Boolean controlsForced) {
         this.controlsForced = controlsForced;
         propagateOverlayVisibility();
     }
 
-    public void setForceLoaders(Boolean loadingForced) {
+    void setForceLoaders(Boolean loadingForced) {
         this.loadingForced = loadingForced;
         propagateOverlayVisibility();
     }
