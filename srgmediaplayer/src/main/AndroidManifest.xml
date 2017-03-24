@@ -13,11 +13,5 @@
         <service
             android:name=".service.MediaPlayerService"
             android:exported="false" />
-        <receiver android:name=".service.AudioIntentReceiver">
-            <intent-filter>
-                <!-- TODO: this event should be listened to in a dynamic way (ie. only when playing sound), not from here as it starts the service just for that -->
-                <action android:name="android.media.AUDIO_BECOMING_NOISY" />
-            </intent-filter>
-        </receiver>
     </application>
 </manifest>
