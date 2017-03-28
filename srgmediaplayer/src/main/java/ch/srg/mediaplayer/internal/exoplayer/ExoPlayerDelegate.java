@@ -291,8 +291,8 @@ public class ExoPlayerDelegate implements
 
     @Override
     public void unbindRenderingView() {
+        exoPlayer.clearVideoSurface();
         renderingView = null;
-//        exoPlayer.sendMessage(videoRenderer, MediaCodecVideoTrackRenderer.MSG_SET_SURFACE, null);
     }
 
     private void pushSurface(boolean blockForSurfacePush) {
