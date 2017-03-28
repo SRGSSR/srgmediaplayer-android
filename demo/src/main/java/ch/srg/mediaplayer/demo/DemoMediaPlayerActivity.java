@@ -168,7 +168,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
         //errorMessage.attachToController(srgMediaPlayer);
         srgMediaPlayer.registerEventListener(this);
 
-        adapter = new DemoSegmentAdapter(new ArrayList<Segment>());
+        adapter = new DemoSegmentAdapter();
 
         segmentView = (SegmentView) findViewById(R.id.segment_demo_view);
 
@@ -176,7 +176,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
         if (segmentView != null) {
             segmentView.setBaseAdapter(adapter);
             segmentView.setSegmentController(segmentController);
-            segmentView.attachToController(srgMediaPlayer);
         }
         if (segmentPlayerControlView != null) {
             segmentPlayerControlView.attachToController(srgMediaPlayer);

@@ -9,11 +9,8 @@ import android.view.ViewGroup;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerView;
-import ch.srg.mediaplayer.demo.DemoApplication;
-import ch.srg.mediaplayer.demo.R;
 
 public class MultiDemoMediaPlayerActivity extends ActionBarActivity implements
-        SRGMediaPlayerView.VideoTouchListener,
         SRGMediaPlayerController.Listener {
 
 	public static final String PLAYER_TAG = "main";
@@ -104,35 +101,11 @@ public class MultiDemoMediaPlayerActivity extends ActionBarActivity implements
 			}
 		}
 
-		// Override video touch listener from OverlayController... this is dodgy
-		for (SRGMediaPlayerView view : views) {
-			view.setVideoTouchListener(this);
-		}
-
 	}
 
 	@Override
 	public void onMediaPlayerEvent(SRGMediaPlayerController mp, SRGMediaPlayerController.Event event) {
 
-	}
-
-	@Override
-	public void onVideoOverlayTouched(SRGMediaPlayerView SRGMediaPlayerView) {
-	}
-
-	@Override
-	public void onVideoRenderingViewTouched(SRGMediaPlayerView view) {
-		int newTop = -1;
-		for (int i = 0; i < mediaPlayers.length; i++) {
-			if (mediaPlayers[i].getMediaPlayerView() == view) {
-				newTop = i;
-			}
-		}
-
-		if (newTop == -1) {
-			throw new IllegalStateException("No player for " + view);
-		}
-		selectPlayer(newTop);
 	}
 
 	private void selectPlayer(int newTop) {

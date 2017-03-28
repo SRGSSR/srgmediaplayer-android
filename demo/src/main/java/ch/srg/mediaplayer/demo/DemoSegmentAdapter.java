@@ -1,6 +1,5 @@
 package ch.srg.mediaplayer.demo;
 
-import android.content.Context;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -29,30 +28,6 @@ public class DemoSegmentAdapter extends BaseSegmentAdapter<DemoSegmentAdapter.Vi
 
     private int currentSegment;
     private long currentTime;
-
-    public DemoSegmentAdapter(List<Segment> segmentsList) {
-        super(segmentsList);
-    }
-
-    @Override
-    public boolean updateProgressSegments(String mediaIdentifier, long time, String currentSegmentIdentifier) {
-        boolean segmentChange = false;
-        if (time != currentTime) {
-            currentTime = time;
-            if (currentSegment != -1) {
-                notifyItemChanged(currentSegment);
-            }
-            int newSegment = getSegmentIndex(mediaIdentifier, time);
-            segmentChange = newSegment != currentSegment;
-            if (segmentChange) {
-                int start = Math.max(0, Math.min(currentSegment, newSegment));
-                int count = Math.abs(currentSegment - newSegment) + 1;
-                notifyItemRangeChanged(start, count);
-                currentSegment = newSegment;
-            }
-        }
-        return segmentChange;
-    }
 
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -119,13 +94,6 @@ public class DemoSegmentAdapter extends BaseSegmentAdapter<DemoSegmentAdapter.Vi
             }
             return true;
         }
-    }
-
-    @Override
-    public void setSegmentList(List<Segment> segmentsList) {
-        super.setSegmentList(segmentsList);
-        currentTime = -1;
-        currentSegment = -1;
     }
 
     private boolean isScalingSupported(String url) {
