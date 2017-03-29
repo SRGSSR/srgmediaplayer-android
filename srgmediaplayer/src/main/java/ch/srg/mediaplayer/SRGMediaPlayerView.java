@@ -317,6 +317,8 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
                 }
             }
 
+            videoRenderingView.setY(t);
+            videoRenderingView.setX(l);
             //check against last set values
             if (videoRenderingViewWidth != surfaceWidth || videoRenderingViewHeight != surfaceHeight) {
                 videoRenderingViewWidth = surfaceWidth;
@@ -324,14 +326,23 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
                 //for surfaceView ensure setFixedSize. May be unnecessary
                 if (videoRenderingView instanceof SurfaceView) {
                     ((SurfaceView) videoRenderingView).getHolder().setFixedSize(surfaceWidth, surfaceHeight);
-                } else if (videoRenderingView instanceof TextureView){
+                } else if (videoRenderingView instanceof TextureView) {
                     RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) videoRenderingView.getLayoutParams();
                     lp.width = surfaceWidth;
                     lp.height = surfaceHeight;
+                    videoRenderingView.setLayoutParams(lp);
+                }
+                if (isDebugMode()) {
+                    Log.d(TAG, "onLayout: Update videoRenderingView size " +
+                            "videoRenderingViewWidth=" + videoRenderingViewWidth +
+                            " videoRenderingViewHeight=" + videoRenderingViewHeight);
                 }
             }
-            videoRenderingView.setY(t);
-            videoRenderingView.setX(l);
+            if (isDebugMode()) {
+                Log.d(TAG, "onLayout: l=" + l + " t=" + t
+                        + " surfaceWidth=" + surfaceWidth + " surfaceHeight=" + surfaceHeight
+                        + " videoContainerWidth=" + videoContainerWidth + " videoContainerHeight=" + videoContainerHeight);
+            }
         }
     }
 
@@ -385,7 +396,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
             widthMeasureSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
         }
         if (isDebugMode()) {
-            Log.v(SRGMediaPlayerController.TAG, String.format("onMeasure W:%d/%s, H:%d/%s -> %d,%d",
+            Log.v(TAG, String.format("onMeasure W:%d/%s, H:%d/%s -> %d,%d",
                     specWidth, modeName(specWidthMode), specHeight, modeName(specHeightMode),
                     MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec)));
         }
