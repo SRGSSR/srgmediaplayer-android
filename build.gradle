@@ -6,7 +6,7 @@ buildscript {
 		jcenter()
 	}
 	dependencies {
-		classpath 'com.android.tools.build:gradle:2.1.0'
+		classpath 'com.android.tools.build:gradle:2.3.0'
 		classpath 'de.felixschulze.gradle:gradle-hockeyapp-plugin:3.2'
 	}
 }
