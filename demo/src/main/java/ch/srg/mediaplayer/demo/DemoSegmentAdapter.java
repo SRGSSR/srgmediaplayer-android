@@ -106,7 +106,7 @@ public class DemoSegmentAdapter extends BaseSegmentAdapter<DemoSegmentAdapter.Vi
     }
 
     @Override
-    public int getCurrentSegment() {
+    public int getCurrentSegmentIndex() {
         return currentSegment;
     }
 }

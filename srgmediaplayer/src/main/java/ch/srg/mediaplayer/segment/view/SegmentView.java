@@ -13,7 +13,6 @@ import java.util.List;
 
 import ch.srg.mediaplayer.ControlTouchListener;
 import ch.srg.mediaplayer.R;
-import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.segment.adapter.BaseSegmentAdapter;
 import ch.srg.mediaplayer.segment.controller.SegmentController;
 import ch.srg.mediaplayer.segment.model.Segment;
@@ -76,7 +75,7 @@ public class SegmentView extends RecyclerView implements SegmentController.Liste
                 && adapter != null
                 && adapter.updateProgressSegments(mediaIdentifier, time);
         if (change) {
-            scrollToPosition(adapter.getCurrentSegment());
+            scrollToPosition(adapter.getCurrentSegmentIndex());
         }
     }
 

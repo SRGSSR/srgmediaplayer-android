@@ -26,7 +26,7 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
 
     private final ArrayList<SegmentChangeListener> segmentChangeListeners = new ArrayList<>();
 
-    private int currentSegment;
+    private int currentSegmentIndex;
     private long currentTime;
     private String currentMediaIdentifier;
 
@@ -125,8 +125,8 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
         return -1;
     }
 
-    public int getCurrentSegment() {
-        return currentSegment;
+    public int getCurrentSegmentIndex() {
+        return currentSegmentIndex;
     }
 
     protected String getCurrentMediaIdentifier() {
@@ -142,19 +142,19 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
         this.currentMediaIdentifier = mediaIdentifier;
         if (time != currentTime) {
             currentTime = time;
-            if (currentSegment != -1) {
-                notifyItemChanged(currentSegment);
+            if (currentSegmentIndex != -1) {
+                notifyItemChanged(currentSegmentIndex);
             }
-            int newSegment = segments.indexOf(segmentController != null ? segmentController.getCurrentSegment() : null);
-            segmentChange = newSegment != currentSegment;
+            int newSegmentIndex = segments.indexOf(segmentController != null ? segmentController.getSegment(mediaIdentifier, time) : null);
+            segmentChange = newSegmentIndex != currentSegmentIndex;
             if (segmentChange) {
-                int start = Math.max(0, Math.min(currentSegment, newSegment));
-                int count = Math.abs(currentSegment - newSegment) + 1;
-                currentSegment = newSegment;
+                int start = Math.max(0, Math.min(currentSegmentIndex, newSegmentIndex));
+                int count = Math.abs(currentSegmentIndex - newSegmentIndex) + 1;
+                currentSegmentIndex = newSegmentIndex;
                 notifyItemRangeChanged(start, count);
-                if (currentSegment >= 0) {
+                if (currentSegmentIndex >= 0) {
                     for (SegmentChangeListener l : segmentChangeListeners) {
-                        l.onSegmentHighlighted(segments.get(currentSegment));
+                        l.onSegmentHighlighted(segments.get(currentSegmentIndex));
                     }
                 }
             }
