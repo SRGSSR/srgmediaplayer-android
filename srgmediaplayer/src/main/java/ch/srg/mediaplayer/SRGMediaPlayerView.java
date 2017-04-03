@@ -85,7 +85,9 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
     public enum ScaleMode {
         CENTER_INSIDE,
         TOP_INSIDE,
+        /** Not currently supported. */
         CENTER_CROP,
+        /** Not currently supported. */
         FIT
     }
 
