@@ -42,13 +42,14 @@ public interface PlayerDelegate {
 
 		void onPlayerDelegateSubtitleCues(PlayerDelegate delegate, List<Cue> cues);
 
+		void onPlayerDelegateVideoSizeChanged(PlayerDelegate delegate, int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio);
+
 		SRGMediaPlayerView getMediaPlayerView();
 
 		Handler getMainHandler();
 
 		Context getContext();
-
-	}
+    }
 
 	/**
 	 * Check if the view passed to the player is capable to render video.

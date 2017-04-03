@@ -93,7 +93,6 @@ public class ExoPlayerDelegate implements
     private SimpleExoPlayer exoPlayer;
 
     private String videoSourceUrl = null;
-    private float videoSourceAspectRatio = 1.7777f;
 
     private View renderingView;
 
@@ -128,6 +127,17 @@ public class ExoPlayerDelegate implements
         exoPlayer.setTextOutput(this);
         exoPlayer.setAudioDebugListener(eventLogger);
         exoPlayer.setVideoDebugListener(eventLogger);
+        exoPlayer.setVideoListener(new SimpleExoPlayer.VideoListener() {
+            @Override
+            public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
+                ExoPlayerDelegate.this.controller.onPlayerDelegateVideoSizeChanged(ExoPlayerDelegate.this, width, height, unappliedRotationDegrees, pixelWidthHeightRatio);
+            }
+
+            @Override
+            public void onRenderedFirstFrame() {
+
+            }
+        });
         exoPlayer.setMetadataOutput(eventLogger);
     }
 
@@ -301,7 +311,6 @@ public class ExoPlayerDelegate implements
         } else if (renderingView instanceof TextureView) {
             exoPlayer.setVideoTextureView((TextureView) renderingView);
         }
-        recomputeVideoContainerConstrains();
     }
 
 
@@ -313,18 +322,6 @@ public class ExoPlayerDelegate implements
 
     private void applyMuted() {
         exoPlayer.setVolume(muted ? 0f : 1f);
-    }
-
-    private void recomputeVideoContainerConstrains() {
-        SRGMediaPlayerView mediaPlayerView = controller.getMediaPlayerView();
-        if (mediaPlayerView == null || renderingView == null) {
-            return; //nothing to do now.
-        }
-        if (Float.isNaN(videoSourceAspectRatio) || Float.isInfinite(videoSourceAspectRatio)) {
-            videoSourceAspectRatio = 16f / 10;
-        }
-        mediaPlayerView.setVideoAspectRatio(videoSourceAspectRatio);
-        mediaPlayerView.invalidate();
     }
 
     // #############################################
