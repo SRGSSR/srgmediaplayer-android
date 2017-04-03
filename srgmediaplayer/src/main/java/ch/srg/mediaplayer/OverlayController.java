@@ -69,6 +69,15 @@ import android.view.ViewGroup;
         }
     }
 
+    @Override
+    public void onMediaControlBackgroundTouched() {
+        if (!showingControlOverlays) {
+            showControlOverlays();
+        } else {
+            hideControlOverlaysImmediately();
+        }
+    }
+
     /**
      * Bind the SRGMediaPlayerView touch event to the overlayController for handle touch and switch
      * visibility of views if necessary.

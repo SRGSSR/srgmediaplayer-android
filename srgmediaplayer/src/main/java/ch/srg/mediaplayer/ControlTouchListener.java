@@ -5,4 +5,6 @@ package ch.srg.mediaplayer;
  */
 public interface ControlTouchListener {
     void onMediaControlTouched();
+
+    void onMediaControlBackgroundTouched();
 }

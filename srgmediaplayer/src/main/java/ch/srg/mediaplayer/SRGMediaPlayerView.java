@@ -243,29 +243,17 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
         boolean handled = super.dispatchTouchEvent(event);
 
         if (touchListener != null) {
-            boolean controlHit = isControlHit((int) event.getX(), (int) event.getY());
-            if (controlHit) {
+            boolean controlHandled = isControlHit((int) event.getX(), (int) event.getY()) && handled;
+            if (controlHandled) {
                 touchListener.onMediaControlTouched();
-//                switch (event.getAction()) {
-//                    case MotionEvent.ACTION_MOVE:
-//                        break;
-//                    case MotionEvent.ACTION_UP:
-//                        touchListener.onMediaControlTouched();
-//                        break;
-//                    case MotionEvent.ACTION_DOWN:
-//                    default:
-//                        break;
-//                }
             } else {
                 if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
                     videoRenderViewTrackingTouch = true;
                 }
                 if (videoRenderViewTrackingTouch) {
-                    if (touchListener != null) {
-                        touchListener.onMediaControlTouched();
-                    }
                     if (event.getAction() == MotionEvent.ACTION_UP) {
                         videoRenderViewTrackingTouch = false;
+                        touchListener.onMediaControlBackgroundTouched();
                     }
                 }
                 handled = true;
@@ -637,4 +625,12 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
             touchListener.onMediaControlTouched();
         }
     }
+
+    @Override
+    public void onMediaControlBackgroundTouched() {
+        if (touchListener != null) {
+            touchListener.onMediaControlBackgroundTouched();
+        }
+    }
 }
+
