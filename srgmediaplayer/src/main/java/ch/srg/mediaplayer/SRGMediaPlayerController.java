@@ -1,6 +1,7 @@
 package ch.srg.mediaplayer;
 
 import android.content.Context;
+import android.content.IntentFilter;
 import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
 import android.net.Uri;
@@ -31,6 +32,7 @@ import java.util.WeakHashMap;
 
 import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
 import ch.srg.mediaplayer.internal.exoplayer.ExoPlayerDelegate;
+import ch.srg.mediaplayer.service.AudioIntentReceiver;
 
 /**
  * Handle the playback of media.
@@ -58,6 +60,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private Long qualityOverride;
     private Long qualityDefault;
     private Throwable fatalError;
+    private AudioIntentReceiver becomingNoisyReceiver;
 
     public static String getName() {
         return NAME;
@@ -665,6 +668,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 setStateInternal(State.PREPARING);
                 return true;
             case MSG_PLAYER_DELEGATE_READY:
+                startBecomingNoisyReceiver();
                 setStateInternal(State.READY);
                 applyStateInternal();
                 return true;
@@ -716,6 +720,11 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 }
             }
         }
+    }
+
+    private void startBecomingNoisyReceiver() {
+        becomingNoisyReceiver = new AudioIntentReceiver(this);
+        context.registerReceiver(becomingNoisyReceiver, new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY));
     }
 
     private void periodicUpdateInteral() {
@@ -919,6 +928,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         if (mediaPlayerView != null) {
             showControlOverlays();
             unbindFromMediaPlayerView(mediaPlayerView);
+        }
+        if (becomingNoisyReceiver != null) {
+            context.unregisterReceiver(becomingNoisyReceiver);
         }
         sendMessage(MSG_RELEASE);
     }

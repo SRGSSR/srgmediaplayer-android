@@ -14,9 +14,16 @@ import android.media.AudioManager;
 import android.util.Log;
 import android.view.KeyEvent;
 
+import ch.srg.mediaplayer.SRGMediaPlayerController;
+
 public class AudioIntentReceiver extends BroadcastReceiver {
+	SRGMediaPlayerController mediaPlayerController;
 
 	private static final String TAG = MediaPlayerService.TAG;
+
+	public AudioIntentReceiver(SRGMediaPlayerController mediaPlayerController) {
+		this.mediaPlayerController = mediaPlayerController;
+	}
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
@@ -24,7 +31,9 @@ public class AudioIntentReceiver extends BroadcastReceiver {
 		{
 			Log.d(TAG, "ACTION_AUDIO_BECOMING_NOISY");
 
-			sendAction(context, MediaPlayerService.ACTION_PAUSE);
+			if (mediaPlayerController != null) {
+				mediaPlayerController.pause();
+			}
 		}
 		else if (intent.getAction().equals(Intent.ACTION_MEDIA_BUTTON))
 		{
