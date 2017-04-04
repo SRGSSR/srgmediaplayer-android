@@ -930,7 +930,13 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             unbindFromMediaPlayerView(mediaPlayerView);
         }
         if (becomingNoisyReceiver != null) {
-            context.unregisterReceiver(becomingNoisyReceiver);
+            try {
+                context.unregisterReceiver(becomingNoisyReceiver);
+            } catch (IllegalArgumentException ignored) {
+                // Prevent crash if race condition during receiver unregistering
+                Log.e(TAG, "Becoming noisy receiver was not registered");
+            }
+            becomingNoisyReceiver = null;
         }
         sendMessage(MSG_RELEASE);
     }
