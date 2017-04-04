@@ -1,5 +1,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="ch.srg.mediaplayer">
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
-	<application/>
+    package="ch.srg.mediaplayer">
+
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- The following permissions are only necessary for tests. It would be necessary to get read of
+      them if someone wanted to build an app with the service that does not acccess the internet... -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
+    <application android:allowBackup="true">
+        <service
+            android:name=".service.MediaPlayerService"
+            android:exported="false" />
+    </application>
 </manifest>

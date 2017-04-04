@@ -18,6 +18,7 @@
             android:orientation="horizontal">
 
             <TextView
+                android:id="@+id/stream_indication"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:text="DVR"
@@ -25,7 +26,7 @@
 
             <Button
                 android:id="@+id/segment_player_control_button_play"
-                android:layout_width="@dimen/player_control_height"
+                android:layout_width="@dimen/player_control_width"
                 android:layout_height="@dimen/player_control_height"
                 android:layout_marginLeft="@dimen/segment_player_control_margin_inner"
                 android:background="@drawable/player_control_play"
@@ -34,7 +35,7 @@
 
             <Button
                 android:id="@+id/segment_player_control_button_pause"
-                android:layout_width="@dimen/player_control_height"
+                android:layout_width="@dimen/player_control_width"
                 android:layout_height="@dimen/player_control_height"
                 android:layout_marginLeft="@dimen/segment_player_control_margin_inner"
                 android:background="@drawable/player_control_pause"
@@ -43,7 +44,7 @@
 
             <Button
                 android:id="@+id/segment_player_control_button_replay"
-                android:layout_width="@dimen/player_control_height"
+                android:layout_width="@dimen/player_control_width"
                 android:layout_height="@dimen/player_control_height"
                 android:layout_marginLeft="@dimen/segment_player_control_margin_inner"
                 android:background="@drawable/player_control_replay"
@@ -63,7 +64,7 @@
             android:textColor="#7bffffff"
             android:textSize="10dp" />
 
-        <it.moondroid.seekbarhint.library.SeekBarHint
+        <SeekBar
             android:id="@+id/dvr_player_control_seekbar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

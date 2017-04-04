@@ -1,7 +1,6 @@
 package ch.srg.mediaplayer.utils;
 
 import android.net.Uri;
-import android.support.annotation.NonNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,18 +34,14 @@ public class MockDataProvider implements SRGMediaPlayerDataProvider {
     private int count;
 
     @Override
-    public Uri getUri(String mediaIdentifier, PlayerDelegate playerDelegate) throws SRGMediaPlayerException {
+    public void getUri(String mediaIdentifier, PlayerDelegate playerDelegate, GetUriCallback callback) {
         count++;
-        if (data.containsKey(mediaIdentifier)) {
-            String uriString = data.get(mediaIdentifier);
-            return uriString == null ? null : Uri.parse(uriString);
+        String uriString = data.get(mediaIdentifier);
+        if (uriString == null) {
+            callback.onUriLoadFailed(mediaIdentifier, new SRGMediaPlayerException("no uri"));
+        } else {
+            callback.onUriLoaded(mediaIdentifier, Uri.parse(uriString), mediaIdentifier, null, MEDIA_TYPE_VIDEO, STREAM_HLS);
         }
-        throw new SRGMediaPlayerException("Invalide identifier");
-    }
-
-    @Override
-    public int getMediaType(@NonNull String mediaIdentifier) throws SRGMediaPlayerException {
-        return 0;
     }
 
     public int getCount() {

@@ -27,19 +27,19 @@
             android:label="@string/title_activity_demo_media_player">
         </activity>
         <activity
-            android:name="ch.srg.mediaplayer.DemoMediaPlayerActivity"
+            android:name=".DemoMediaPlayerActivity"
             android:label="@string/title_activity_demo_media_player">
         </activity>
         <activity
-            android:name="ch.srg.mediaplayer.MultiDemoMediaPlayerActivity"
+            android:name=".MultiDemoMediaPlayerActivity"
             android:label="@string/title_activity_demo_media_player">
         </activity>
         <activity
-            android:name="ch.srg.mediaplayer.LayoutsActivity"
+            android:name=".LayoutsActivity"
             android:label="@string/title_activity_demo_media_player">
         </activity>
         <activity
-            android:name="ch.srg.mediaplayer.SimplePlayerActivity"
+            android:name=".SimplePlayerActivity"
             android:label="@string/title_activity_demo_media_player">
         </activity>
 
@@ -50,7 +50,5 @@
             android:value="@integer/google_play_services_version" />
 
     </application>
-
-
 
 </manifest>

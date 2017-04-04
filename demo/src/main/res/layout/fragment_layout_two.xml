@@ -5,7 +5,7 @@
               android:layout_height="match_parent"
               android:orientation="vertical"
     android:background="#ff88ff"
-              tools:context="ch.srg.mediaplayer.LayoutFragment">
+              tools:context=".LayoutFragment">
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -30,7 +30,7 @@
             android:layout_centerInParent="true"
             app:overlay_mode="loading"/>
 
-        <ch.srg.mediaplayer.extras.overlay.error.SimpleErrorMessage
+        <ch.srg.mediaplayer.segment.view.SimpleErrorMessage
             android:id="@+id/error_message"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

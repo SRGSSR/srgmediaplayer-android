@@ -2,14 +2,19 @@ package ch.srg.mediaplayer.utils;
 
 import android.content.Context;
 import android.net.Uri;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
+
+import java.util.Collections;
+import java.util.List;
 
 import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerView;
+import ch.srg.mediaplayer.SubtitleTrack;
 
 /**
  * Created by npietri on 12.06.15.
@@ -58,7 +63,7 @@ public class MockDelegate implements PlayerDelegate {
     }
 
     @Override
-    public void prepare(Uri videoUri) throws SRGMediaPlayerException {
+    public void prepare(Uri videoUri, int streamType) throws SRGMediaPlayerException {
         try {
             String videoSourceUrl = videoUri.toString();
             if (videoSourceUrl.equalsIgnoreCase(this.videoSourceUrl)) {
@@ -129,8 +134,8 @@ public class MockDelegate implements PlayerDelegate {
     }
 
     @Override
-    public int getVideoSourceHeight() {
-        return 0;
+    public boolean hasVideoTrack() {
+        return false;
     }
 
     @Override
@@ -193,5 +198,20 @@ public class MockDelegate implements PlayerDelegate {
 
     public long getPlaylistReferenceTime() {
         return System.currentTimeMillis();
+    }
+
+    @Override
+    public List<SubtitleTrack> getSubtitleTrackList() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public void setSubtitleTrack(SubtitleTrack track) {
+    }
+
+    @Nullable
+    @Override
+    public SubtitleTrack getSubtitleTrack() {
+        return null;
     }
 }

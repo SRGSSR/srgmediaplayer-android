@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="ch.srg.mediaplayer.SimplePlayerActivity">
+    tools:context=".SimplePlayerActivity">
 
     <ch.srg.mediaplayer.SRGMediaPlayerView
         android:id="@+id/demo_video_container"
@@ -34,7 +34,7 @@
             app:overlay_mode="unmanaged" />
 
         <!--Controls-->
-        <ch.srg.mediaplayer.extras.overlay.control.SimplePlayerControlView
+        <ch.srg.mediaplayer.segment.view.PlayerControlView
             android:id="@+id/media_control"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -43,7 +43,7 @@
             app:overlay_mode="control" />
         <!--Some text over the controls that stay-->
 
-        <ch.srg.mediaplayer.extras.overlay.error.SimpleErrorMessage
+        <ch.srg.mediaplayer.segment.view.SimpleErrorMessage
             android:id="@+id/error_message"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

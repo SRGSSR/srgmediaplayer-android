@@ -2,30 +2,35 @@ package ch.srg.mediaplayer;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Message;
+import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
 /**
  * Created by Axel on 09/03/2015.
+ * <p>
  *
- * TODO OverlayController should handle visibility directly instead of messing with child's visibility.
+ * TODO Check that the following is no longer a problem
+ *
  * Problematic use cases:
  * SRGMediaPlayerView.applyOverlayMode(playerControlView, SRGMediaPlayerView.LayoutParams.OVERLAY_CONTROL);
  * playerControlView.setVisibility(View.VISIBLE);
- *  -> the second visibility should not have any impact. the overlay mode itself should be applied directly
- *
- *  The potential race condition is when the app does:
- *  A) play.showControls()
+ * -> the second visibility should not have any impact. the overlay mode itself should be applied directly
+ * <p>
+ * The potential race condition is when the app does:
+ * A) play.showControls()
  * B) SRGMediaPlayerView.applyOverlayMode(playerControlView, SRGMediaPlayerView.LayoutParams.OVERLAY_CONTROL);
  * The order of execution of A / B will have an impact on whether the player controls are displayed or not, this is bad.
- *
  */
-/*package*/ class OverlayController implements SRGMediaPlayerView.VideoTouchListener, SRGMediaPlayerController.Listener {
+/*package*/ class OverlayController implements ControlTouchListener, SRGMediaPlayerController.Listener, Handler.Callback {
 
     private static final String TAG = SRGMediaPlayerController.TAG;
 
-    public static int overlayAutoHideDelay = 3000;
+    private static final int MSG_HIDE_CONTROLS = 1;
+
+    private static int overlayAutoHideDelay = 3000;
 
     private SRGMediaPlayerView videoContainer;
     private SRGMediaPlayerController playerController;
@@ -33,50 +38,43 @@ import android.view.ViewGroup;
     private boolean showingControlOverlays = true;
     private boolean showingLoadings = true;
 
-    private boolean forceShowingOverlays = false;
+    private final Handler handler = new Handler(this);
+    @Nullable
+    private Boolean loadingForced;
+    @Nullable
+    private Boolean controlsForced;
 
-    private long lastOverlayPostponingTime = 0L;
+    private boolean doesPlayerStateRequiresControls() {
+        SRGMediaPlayerController.State state = playerController.getState();
 
-    private Handler handler = new Handler();
+        boolean notPlaying = !playerController.isPlaying();
+        boolean paused = state == SRGMediaPlayerController.State.READY && notPlaying;
+        boolean remote = playerController.isRemote();
 
-    private Runnable hideOverlaysRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (!forceShowingOverlays) {
-                hideControlOverlays();
-            }
-        }
-    };
+        return remote || paused || playerController.isReleased();
+    }
 
-    public OverlayController(SRGMediaPlayerController playerController, Handler handler) {
-        this.handler = handler;
+    OverlayController(SRGMediaPlayerController playerController) {
         this.playerController = playerController;
         showControlOverlays();
         updateWithPlayer();
     }
 
-    public void setForceShowingControlOverlays(boolean forceShowingControlOverlays) {
-        this.forceShowingOverlays = forceShowingControlOverlays;
-        if (forceShowingControlOverlays) {
+    @Override
+    public void onMediaControlTouched() {
+        if (!showingControlOverlays) {
             showControlOverlays();
+        } else {
+            postponeControlsHiding();
         }
     }
 
     @Override
-    public void onVideoRenderingViewTouched(SRGMediaPlayerView srgMediaPlayerView) {
+    public void onMediaControlBackgroundTouched() {
         if (!showingControlOverlays) {
             showControlOverlays();
         } else {
-            hideControlOverlays();
-        }
-    }
-
-    @Override
-    public void onVideoOverlayTouched(SRGMediaPlayerView srgMediaPlayerView) {
-        if (!showingControlOverlays) {
-            showControlOverlays();
-        } else {
-            postponeOverlayHiding();
+            hideControlOverlaysImmediately();
         }
     }
 
@@ -86,51 +84,60 @@ import android.view.ViewGroup;
      *
      * @param videoContainer video container to bind to
      */
-    public void bindToVideoContainer(SRGMediaPlayerView videoContainer) {
+    void bindToVideoContainer(SRGMediaPlayerView videoContainer) {
         if (videoContainer == this.videoContainer) {
             return;
         }
         if (this.videoContainer != null) {
-            this.videoContainer.setVideoTouchListener(null);
+            this.videoContainer.setControlTouchListener(null);
         }
         this.videoContainer = videoContainer;
         if (this.videoContainer != null) {
-            this.videoContainer.setVideoTouchListener(this);
+            this.videoContainer.setControlTouchListener(this);
         }
-        propagateControlVisibility();
-        updateLoadings(true);
+        propagateOverlayVisibility();
+        updateLoadings();
     }
 
-    public void updateLoadings(boolean forceUpdate) {
-        updateLoadings(forceUpdate,
-                playerController.getState() == SRGMediaPlayerController.State.PREPARING
-                        || playerController.isSeekPending());
+    private void updateLoadings() {
+        if (loadingForced != null) {
+            updateLoadings(loadingForced);
+        } else {
+            updateLoadings(
+                    playerController.getState() == SRGMediaPlayerController.State.PREPARING
+                            || playerController.getState() == SRGMediaPlayerController.State.BUFFERING
+                            || playerController.isSeekPending());
+        }
     }
 
-    public boolean isOverlayVisible() {
+    boolean isControlsVisible() {
         return showingControlOverlays;
     }
 
-    private void setLoadingsVisibility(boolean forceUpdate, boolean visible) {
-        if (forceUpdate || showingLoadings != visible) {
+    private void setLoadingsVisibility(boolean visible) {
+        if (showingLoadings != visible) {
             showingLoadings = visible;
-            handleSpecificVisibility(SRGMediaPlayerView.LayoutParams.OVERLAY_LOADING, visible);
+            propagateOverlayVisibility();
         }
     }
 
-    public void showControlOverlays() {
-        playerController.broadcastEvent(SRGMediaPlayerController.Event.Type.OVERLAY_CONTROL_DISPLAYED);
-        showingControlOverlays = true;
-        propagateControlVisibility();
-        postponeOverlayHiding();
+    void showControlOverlays() {
+        if (!showingControlOverlays) {
+            showingControlOverlays = true;
+            playerController.broadcastEvent(SRGMediaPlayerController.Event.Type.OVERLAY_CONTROL_DISPLAYED);
+            propagateOverlayVisibility();
+            postponeControlsHiding();
+        }
     }
 
-    public void hideControlOverlays() {
-        if (!forceShowingOverlays) {
-            playerController.broadcastEvent(SRGMediaPlayerController.Event.Type.OVERLAY_CONTROL_HIDDEN);
-            handler.removeCallbacks(hideOverlaysRunnable);
-            showingControlOverlays = false;
-            propagateControlVisibility();
+    void hideControlOverlaysImmediately() {
+        if (!doesPlayerStateRequiresControls()) {
+            if (showingControlOverlays) {
+                showingControlOverlays = false;
+                playerController.broadcastEvent(SRGMediaPlayerController.Event.Type.OVERLAY_CONTROL_HIDDEN);
+                handler.removeMessages(MSG_HIDE_CONTROLS);
+                propagateOverlayVisibility();
+            }
         }
     }
 
@@ -150,50 +157,40 @@ import android.view.ViewGroup;
                 updateWithPlayer();
                 break;
             case MEDIA_COMPLETED:
-                setForceShowingControlOverlays(true);
                 break;
         }
-
     }
 
     private void updateWithPlayer() {
-        SRGMediaPlayerController.State state = playerController.getState();
-        switch (state) {
-            case PREPARING:
-            case BUFFERING:
-            case RELEASED:
-            case IDLE:
-                setForceShowingControlOverlays(true);
-                break;
-            case READY:
-                if (playerController.isPlaying()) {
-                    postponeOverlayHiding();
-                    setForceShowingControlOverlays(false);
-                } else {
-                    setForceShowingControlOverlays(true);
-                }
-                break;
-            default:
-                throw new IllegalArgumentException("Unhandled state: " + state);
+        if (controlsForced == null) {
+            if (doesPlayerStateRequiresControls()) {
+                showControlOverlays();
+            } else {
+                ensureControlsHiding();
+            }
         }
-        updateLoadings(false);
-    }
-
-    private void updateLoadings(boolean forceUpdate, boolean loading) {
-        setLoadingsVisibility(forceUpdate, loading);
-    }
-
-    private void postponeOverlayHiding() {
-        long now = System.currentTimeMillis();
-        if (now > lastOverlayPostponingTime + 250) {
-            lastOverlayPostponingTime = now;
-            handler.removeCallbacks(hideOverlaysRunnable);
-            handler.postDelayed(hideOverlaysRunnable, overlayAutoHideDelay);
+        if (loadingForced == null) {
+            updateLoadings();
         }
     }
 
-    public void propagateControlVisibility() {
-        Log.v(TAG, "control visibility: " + showingControlOverlays);
+    private void updateLoadings(boolean loading) {
+        setLoadingsVisibility(loading);
+    }
+
+    private void postponeControlsHiding() {
+        handler.removeMessages(MSG_HIDE_CONTROLS);
+        handler.sendEmptyMessageDelayed(MSG_HIDE_CONTROLS, overlayAutoHideDelay);
+    }
+
+    private void ensureControlsHiding() {
+        if (showingControlOverlays && !handler.hasMessages(MSG_HIDE_CONTROLS)) {
+            postponeControlsHiding();
+        }
+    }
+
+    void propagateOverlayVisibility() {
+        Log.v(TAG, "visibility: " + showingControlOverlays + ", " + controlsForced + " | " + showingLoadings + ", " + loadingForced);
         if (videoContainer != null) {
             int childCount = videoContainer.getChildCount();
             for (int i = 0; i < childCount; i++) {
@@ -204,13 +201,15 @@ import android.view.ViewGroup;
                     SRGMediaPlayerView.LayoutParams lp = (SRGMediaPlayerView.LayoutParams) vlp;
                     switch (lp.overlayMode) {
                         case SRGMediaPlayerView.LayoutParams.OVERLAY_CONTROL:
-                            child.setVisibility(showingControlOverlays ? View.VISIBLE : View.GONE);
+                            child.setVisibility(isShowingControlOverlays() ? View.VISIBLE : View.GONE);
                             break;
                         case SRGMediaPlayerView.LayoutParams.OVERLAY_ALWAYS_SHOWN:
                             child.setVisibility(View.VISIBLE);
                             break;
-                        case SRGMediaPlayerView.LayoutParams.OVERLAY_UNMANAGED:
                         case SRGMediaPlayerView.LayoutParams.OVERLAY_LOADING:
+                            child.setVisibility(isShowingLoadingOverlays() ? View.VISIBLE : View.GONE);
+                            break;
+                        case SRGMediaPlayerView.LayoutParams.OVERLAY_UNMANAGED:
                         default:
                             // Do nothing.
                             break;
@@ -220,23 +219,12 @@ import android.view.ViewGroup;
         }
     }
 
-    private void handleSpecificVisibility(int type, boolean visible) {
-        if (videoContainer != null && videoContainer.getVisibility() == View.VISIBLE) {
-            for (int i = 0; i < videoContainer.getChildCount(); i++) {
-                View child = videoContainer.getChildAt(i);
-                ViewGroup.LayoutParams vlp = child.getLayoutParams();
-                if (vlp != null && vlp instanceof SRGMediaPlayerView.LayoutParams) {
-                    SRGMediaPlayerView.LayoutParams lp = (SRGMediaPlayerView.LayoutParams) vlp;
-                    if (lp.overlayMode == type) {
-                        child.setVisibility(visible ? View.VISIBLE : View.GONE);
-                    }
-                }
-            }
-        }
+    private boolean isShowingLoadingOverlays() {
+        return loadingForced != null ? loadingForced : showingLoadings;
     }
 
-    public boolean isShowingControlOverlays() {
-        return showingControlOverlays;
+    boolean isShowingControlOverlays() {
+        return controlsForced != null ? controlsForced : showingControlOverlays;
     }
 
     /**
@@ -244,7 +232,30 @@ import android.view.ViewGroup;
      *
      * @param overlayAutoHideDelay auto hide delay in ms
      */
-    public static void setOverlayAutoHideDelay(int overlayAutoHideDelay) {
+    static void setOverlayAutoHideDelay(int overlayAutoHideDelay) {
         OverlayController.overlayAutoHideDelay = overlayAutoHideDelay;
+    }
+
+    @Override
+    public boolean handleMessage(Message msg) {
+        switch (msg.what) {
+            case MSG_HIDE_CONTROLS:
+                if (!doesPlayerStateRequiresControls()) {
+                    hideControlOverlaysImmediately();
+                }
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    void setForceControls(Boolean controlsForced) {
+        this.controlsForced = controlsForced;
+        propagateOverlayVisibility();
+    }
+
+    void setForceLoaders(Boolean loadingForced) {
+        this.loadingForced = loadingForced;
+        propagateOverlayVisibility();
     }
 }

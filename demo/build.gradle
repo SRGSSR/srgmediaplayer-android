@@ -2,13 +2,13 @@ apply plugin: 'com.android.application'
 apply plugin: 'de.felixschulze.gradle.hockeyapp'
 
 android {
-	compileSdkVersion 23
-	buildToolsVersion "23.0.3"
+	compileSdkVersion rootProject.compileSdkVersion
+	buildToolsVersion rootProject.buildToolsVersion
 
 	defaultConfig {
+		minSdkVersion rootProject.minSdkVersion
+		targetSdkVersion rootProject.targetSdkVersion
 		applicationId "ch.srg.mediaplayer.demo"
-		minSdkVersion 16
-		targetSdkVersion 23
 
 		versionCode Integer.parseInt(System.getenv().BUILD_NUMBER ?: "0")
 		versionName VERSION_BASE + "." + (System.getenv().BUILD_NUMBER ?: "SNAPSHOT")
@@ -59,31 +59,26 @@ android {
 	}
 }
 
-ext.supportLibraryVersion = '23.3.0'
-
 dependencies {
 	compile fileTree(include: ['*.jar'], dir: 'libs')
 
 	compile 'com.squareup.dagger:dagger:1.2.1'
 	provided 'com.squareup.dagger:dagger-compiler:1.2.1'
 
-	compile "com.android.support:appcompat-v7:$supportLibraryVersion"
-	compile "com.android.support:design:$supportLibraryVersion"
-	compile "com.android.support:mediarouter-v7:$supportLibraryVersion"
-	compile 'com.google.android.gms:play-services-cast:8.4.0'
+	compile "com.android.support:appcompat-v7:$rootProject.supportLibraryVersion"
+	compile "com.android.support:design:$rootProject.supportLibraryVersion"
+	compile "com.android.support:mediarouter-v7:$rootProject.supportLibraryVersion"
+	compile "com.google.android.gms:play-services-cast:$rootProject.googlePlayServiceVersion"
 	compile 'com.github.bumptech.glide:glide:3.7.0'
 
 	compile project(':srgmediaplayer')
-	compile project(':segment-overlay')
-	compile project(':srgmediaplayer-extras')
-	compile project(':srgmediaplayer-service')
 
-	androidTestCompile "com.android.support:support-annotations:$supportLibraryVersion"
+	androidTestCompile "com.android.support:support-annotations:$rootProject.supportLibraryVersion"
 
 	androidTestCompile('com.android.support.test:runner:0.4') {
 		exclude module: 'support-annotations'
 	}
-	androidTestCompile 'com.android.support.test:rules:0.4'
+	androidTestCompile 'com.android.support.test:rules:0.5'
 	androidTestCompile('com.jayway.android.robotium:robotium-solo:5.4.1') {
 		exclude group: 'com.squareup.dagger'
 		exclude group: 'org.hamcrest'
@@ -91,7 +86,6 @@ dependencies {
 	}
 
 	compile 'net.hockeyapp.android:HockeySDK:3.5.0'
-	compile 'com.github.SRGSSR:SeekBarHint:16a4891'
 }
 
 hockeyapp {
@@ -111,5 +105,3 @@ def gitLastCommit() {
 		return 'git log -1 --no-merges --pretty=oneline --abbrev-commit'.execute().text.trim() + "\n" + "git status -s".execute().text.trim()
 	}
 }
-
-apply from: '../utilities.gradle'

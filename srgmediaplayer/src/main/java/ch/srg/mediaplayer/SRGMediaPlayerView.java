@@ -1,26 +1,36 @@
 package ch.srg.mediaplayer;
 
-import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Rect;
+import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceView;
+import android.view.TextureView;
 import android.view.View;
 import android.view.ViewDebug;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.view.accessibility.CaptioningManager;
 import android.widget.HorizontalScrollView;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
+
+import com.google.android.exoplayer2.text.CaptionStyleCompat;
+import com.google.android.exoplayer2.text.Cue;
+import com.google.android.exoplayer2.ui.SubtitleView;
+import com.google.android.exoplayer2.util.Util;
+
+import java.util.List;
 
 /**
  * This class is a placeholder for some video.
  * Place it in your layout, or create it programmatically and bind it to a SRGMediaPlayerController to play video
  */
-public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchListener {
+public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchListener {
 
     // This code may be used to disallow multiple view on Nexus 5 for exemple
     //
@@ -45,39 +55,50 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
     //			}
     //		}
 
+
+    public static final String TAG = "SRGMediaPlayerView";
     public static final float DEFAULT_ASPECT_RATIO = 16 / 9f;
     public static final String UNKNOWN_DIMENSION = "0x0";
+    public static final int ASPECT_RATIO_SQUARE = 1;
+    public static final int ASPECT_RATIO_4_3 = 2;
+    public static final int ASPECT_RATIO_16_10 = 3;
+    public static final int ASPECT_RATIO_16_9 = 4;
+    public static final int ASPECT_RATIO_21_9 = 5;
+    public static final int ASPECT_RATIO_AUTO = 0;
+    private static final float ASPECT_RATIO_TOLERANCE = 0.01f;
     private boolean onTop;
     private boolean adjustToParentScrollView;
     private boolean debugMode;
+    private boolean subtitleViewConfigured;
 
     public boolean isDebugMode() {
         return debugMode;
     }
 
+    @Nullable
+    private SubtitleView subtitleView;
+
     public void setDebugMode(boolean debugMode) {
         this.debugMode = debugMode;
-    }
-
-    /**
-     * Interface definition for a callback to be invoked when touch event occurs.
-     */
-    public interface VideoTouchListener {
-
-        void onVideoRenderingViewTouched(SRGMediaPlayerView srgMediaPlayerView);
-
-        void onVideoOverlayTouched(SRGMediaPlayerView srgMediaPlayerView);
     }
 
     public enum ScaleMode {
         CENTER_INSIDE,
         TOP_INSIDE,
+        /** Not currently supported. */
         CENTER_CROP,
+        /** Not currently supported. */
         FIT
     }
 
     private boolean autoAspect = true;
-    private float aspectRatio = DEFAULT_ASPECT_RATIO;
+    /**
+     * Aspect ratio of the entire container.
+     */
+    private float containerAspectRatio = DEFAULT_ASPECT_RATIO;
+    /**
+     * Aspect ratio of the video being played.
+     */
     private float actualVideoAspectRatio = DEFAULT_ASPECT_RATIO;
 
     private ScaleMode scaleMode = null;
@@ -85,7 +106,8 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
     private View videoRenderingView;
     private int videoRenderingViewWidth = -1;
     private int videoRenderingViewHeight = -1;
-    private VideoTouchListener touchListener;
+    @Nullable
+    private ControlTouchListener touchListener;
 
     public SRGMediaPlayerView(Context context) {
         this(context, null, 0);
@@ -116,55 +138,60 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
                 break;
         }
         int aspectVal = a.getInteger(R.styleable.SRGMediaPlayerView_containerAspectRatio, 0);
-        switch (aspectVal) {
-            case 1: // square
-                aspectRatio = 1f;
-                autoAspect = false;
-                break;
-            case 2: // standard_4_3
-                aspectRatio = 4 / 3f;
-                autoAspect = false;
-                break;
-            case 3: // wide_16_10
-                aspectRatio = 16 / 10f;
-                autoAspect = false;
-                break;
-            case 4: // hdvideo_16_9
-                aspectRatio = 16 / 9f;
-                autoAspect = false;
-                break;
-            case 5: // movie_21_9
-                aspectRatio = 21 / 9f;
-                autoAspect = false;
-                break;
-            case 0:
-            default:
-                autoAspect = true;
-                break;
-        }
+        updateAspectRatio(aspectVal);
         adjustToParentScrollView = a.getBoolean(R.styleable.SRGMediaPlayerView_adjustToParentScrollView, true);
         a.recycle();
     }
 
-    /**
-     * Set the desired aspect ratio for the ViceoContainer
-     *
-     * @param desiredAspect the desired aspect ratio (width/height)
-     * @return true if the VideoContainer accept the ratio (auto mode), false if the ratio is already fixed
-     */
-    public boolean setVideoAspectRatio(float desiredAspect) {
-        actualVideoAspectRatio = desiredAspect;
-        if (autoAspect) {
-            this.aspectRatio = desiredAspect;
-            if (aspectRatio != desiredAspect) {
-                requestLayout();
-            }
-            return true;
+    private void updateAspectRatio(int aspectMode) {
+        switch (aspectMode) {
+            case ASPECT_RATIO_SQUARE: // square
+                containerAspectRatio = 1f;
+                autoAspect = false;
+                break;
+            case ASPECT_RATIO_4_3: // standard_4_3
+                containerAspectRatio = 4 / 3f;
+                autoAspect = false;
+                break;
+            case ASPECT_RATIO_16_10: // wide_16_10
+                containerAspectRatio = 16 / 10f;
+                autoAspect = false;
+                break;
+            case ASPECT_RATIO_16_9: // hdvideo_16_9
+                containerAspectRatio = 16 / 9f;
+                autoAspect = false;
+                break;
+            case ASPECT_RATIO_21_9: // movie_21_9
+                containerAspectRatio = 21 / 9f;
+                autoAspect = false;
+                break;
+            case ASPECT_RATIO_AUTO:
+            default:
+                autoAspect = true;
+                break;
         }
-        return false;
     }
 
+    /**
+     * Set the video aspect ratio for the video being played by the container
+     *
+     * @param videoAspect the video aspect ratio
+     */
+    public void setVideoAspectRatio(float videoAspect) {
+        if (Math.abs(actualVideoAspectRatio - videoAspect) > ASPECT_RATIO_TOLERANCE) {
+            actualVideoAspectRatio = videoAspect;
+            if (autoAspect) {
+                this.containerAspectRatio = videoAspect;
+            }
+            requestLayout();
+        }
+    }
+
+    public void setVideoAspectMode(int aspectMode) {
+        updateAspectRatio(aspectMode);
+    }
     public void setVideoRenderingView(View newVideoRenderingView) {
+        Log.v(SRGMediaPlayerController.TAG, "setVideoRenderingView");
         if (videoRenderingView == newVideoRenderingView) {
             return;
         }
@@ -174,11 +201,8 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         if (newVideoRenderingView != null) {
             videoRenderingView = newVideoRenderingView;
             updateOnTopInternal(onTop);
-            videoRenderingView.setOnTouchListener(this);
             videoRenderingViewWidth = -1;
             videoRenderingViewHeight = -1;
-            RelativeLayout.LayoutParams surfaceParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
-            videoRenderingView.setLayoutParams(surfaceParams);
             addView(videoRenderingView, 0);
         }
 
@@ -198,6 +222,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
 
     public void setScaleMode(ScaleMode scaleMode) {
         this.scaleMode = scaleMode;
+        requestLayout();
     }
 
     public void setOnTop(boolean onTop) {
@@ -223,17 +248,11 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         }
     }
 
-    public void setVideoTouchListener(VideoTouchListener videoTouchListener) {
-        this.touchListener = videoTouchListener;
+    public void setControlTouchListener(ControlTouchListener controlTouchListener) {
+        this.touchListener = controlTouchListener;
     }
 
-    /**
-     * This flag is used to track videoRenderView touch event.
-     * It is set by the onTouch attached to the videoRenderView and reset by the dispatchTouchEvent.
-     * This flag prevents the dispatchTouchEvent to send back the event to the VideoTouchListener.
-     */
     private boolean videoRenderViewTrackingTouch = false;
-    private boolean videoRenderViewHandledTouch = false;
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
@@ -241,28 +260,22 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
 
         //This will trigger the onTouch attached to the videorenderingview if it's the case.
         boolean handled = super.dispatchTouchEvent(event);
-        if (videoRenderViewTrackingTouch) {
-            return handled;
-        }
-        if (videoRenderViewHandledTouch) {
-            videoRenderViewHandledTouch = false;
-            return handled;
-        }
 
         if (touchListener != null) {
-            boolean controlHit = isControlHit((int) event.getX(), (int) event.getY());
-            if (controlHit) {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_MOVE:
-                        touchListener.onVideoOverlayTouched(this);
-                        break;
-                    case MotionEvent.ACTION_UP:
-                        touchListener.onVideoOverlayTouched(this);
-                        break;
-                    case MotionEvent.ACTION_DOWN:
-                    default:
-                        break;
+            boolean controlHandled = isControlHit((int) event.getX(), (int) event.getY()) && handled;
+            if (controlHandled) {
+                touchListener.onMediaControlTouched();
+            } else {
+                if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
+                    videoRenderViewTrackingTouch = true;
                 }
+                if (videoRenderViewTrackingTouch) {
+                    if (event.getAction() == MotionEvent.ACTION_UP) {
+                        videoRenderViewTrackingTouch = false;
+                        touchListener.onMediaControlBackgroundTouched();
+                    }
+                }
+                handled = true;
             }
         }
         return handled;
@@ -270,8 +283,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
 
     public boolean isControlHit(int x, int y) {
         boolean controlHit = false;
-        for(int i = getChildCount(); i >= 0; --i)
-        {
+        for (int i = getChildCount(); i >= 0; --i) {
             View child = getChildAt(i);
             if (child != null) {
                 ViewGroup.LayoutParams layoutParams = child.getLayoutParams();
@@ -288,49 +300,41 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         return controlHit;
     }
 
-    /**
-     * Only used for the videorenderingview
-     */
-    @Override
-    @SuppressLint("ClickableViewAccessibility")
-    public boolean onTouch(View v, MotionEvent event) {
-        Log.v(SRGMediaPlayerController.TAG, "onTouch videoview " + event.getAction());
-        if (v == videoRenderingView) {
-            if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
-                videoRenderViewTrackingTouch = true;
-            }
-            if (event.getAction() == MotionEvent.ACTION_UP) {
-                if (touchListener != null) {
-                    touchListener.onVideoRenderingViewTouched(this);
-                }
-                videoRenderViewTrackingTouch = false;
-                videoRenderViewHandledTouch = true;
-            }
-        }
-        return true;
-    }
-
-
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        // We do the layout first, the onMeasure will compute the actual size correctly based on resizeMode and aspectRatio
         super.onLayout(changed, left, top, right, bottom);
 
         //Then we do some math to force actual size of the videoRenderingView
         if (videoRenderingView != null) {
+            int l = 0, t = 0;
             int videoContainerWidth = right - left;
             int videoContainerHeight = bottom - top;
             int surfaceWidth = videoContainerWidth;
             int surfaceHeight = videoContainerHeight;
             float videoContainerAspectRatio = videoContainerWidth / (float) videoContainerHeight;
-            if (actualVideoAspectRatio > videoContainerAspectRatio) {
-                surfaceHeight = (int) Math.ceil(surfaceWidth / actualVideoAspectRatio);
-            } else if (actualVideoAspectRatio < videoContainerAspectRatio) {
-                surfaceWidth = (int) Math.ceil(surfaceHeight * actualVideoAspectRatio);
-//            } else {
-                //Nothing values already set above
+            switch (scaleMode) {
+                case CENTER_INSIDE:
+                case TOP_INSIDE:
+                    if (actualVideoAspectRatio > videoContainerAspectRatio) {
+                        surfaceHeight = (int) Math.ceil(surfaceWidth / actualVideoAspectRatio);
+                        if (scaleMode == ScaleMode.CENTER_INSIDE) {
+                            t = (videoContainerHeight - surfaceHeight) / 2;
+                        }
+                    } else if (actualVideoAspectRatio < videoContainerAspectRatio) {
+                        surfaceWidth = (int) Math.ceil(surfaceHeight * actualVideoAspectRatio);
+                        if (scaleMode == ScaleMode.CENTER_INSIDE) {
+                            l = (videoContainerWidth - surfaceWidth) / 2;
+                        }
+                    }
+                    break;
+                case CENTER_CROP:
+                case FIT:
+                default:
+                    throw new IllegalStateException("Unsupported scale mode: " + scaleMode);
             }
 
+            videoRenderingView.setY(t);
+            videoRenderingView.setX(l);
             //check against last set values
             if (videoRenderingViewWidth != surfaceWidth || videoRenderingViewHeight != surfaceHeight) {
                 videoRenderingViewWidth = surfaceWidth;
@@ -338,18 +342,22 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
                 //for surfaceView ensure setFixedSize. May be unnecessary
                 if (videoRenderingView instanceof SurfaceView) {
                     ((SurfaceView) videoRenderingView).getHolder().setFixedSize(surfaceWidth, surfaceHeight);
+                } else if (videoRenderingView instanceof TextureView) {
+                    RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) videoRenderingView.getLayoutParams();
+                    lp.width = surfaceWidth;
+                    lp.height = surfaceHeight;
+                    videoRenderingView.setLayoutParams(lp);
                 }
-                RelativeLayout.LayoutParams surfaceParams = new RelativeLayout.LayoutParams(videoRenderingViewWidth, videoRenderingViewHeight);
-                if (scaleMode == ScaleMode.TOP_INSIDE) {
-                    surfaceParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
-                    surfaceParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-                } else if (scaleMode == ScaleMode.CENTER_INSIDE) {
-                    surfaceParams.addRule(RelativeLayout.CENTER_IN_PARENT);
-                } else {
-                    throw new IllegalArgumentException("Scale mode not supported " + scaleMode);
+                if (isDebugMode()) {
+                    Log.d(TAG, "onLayout: Update videoRenderingView size " +
+                            "videoRenderingViewWidth=" + videoRenderingViewWidth +
+                            " videoRenderingViewHeight=" + videoRenderingViewHeight);
                 }
-
-                videoRenderingView.setLayoutParams(surfaceParams);
+            }
+            if (isDebugMode()) {
+                Log.d(TAG, "onLayout: l=" + l + " t=" + t
+                        + " surfaceWidth=" + surfaceWidth + " surfaceHeight=" + surfaceHeight
+                        + " videoContainerWidth=" + videoContainerWidth + " videoContainerHeight=" + videoContainerHeight);
             }
         }
     }
@@ -367,10 +375,12 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         final int specHeightMode = MeasureSpec.getMode(heightMeasureSpec);
 
         if (specWidthMode == MeasureSpec.EXACTLY && specHeightMode == MeasureSpec.EXACTLY) {
-            Log.w(SRGMediaPlayerController.TAG, "Aspect ratio cannot be supported with these layout constraints");
+            if (!autoAspect) {
+                Log.w(SRGMediaPlayerController.TAG, "Aspect ratio cannot be supported with these layout constraints");
+            }
         } else if (specWidthMode == MeasureSpec.EXACTLY) {
             int width = specWidth;
-            int height = (int) (width / aspectRatio);
+            int height = (int) (width / containerAspectRatio);
 
             int maxHeight;
             maxHeight = specHeightMode == MeasureSpec.AT_MOST ? specHeight : MEASURED_SIZE_MASK;
@@ -380,13 +390,13 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
 
             if (height > maxHeight) {
                 height = maxHeight;
-                width = (int) (height * aspectRatio);
+                width = (int) (height * containerAspectRatio);
                 widthMeasureSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
             }
             heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
         } else if (specHeightMode == MeasureSpec.EXACTLY) {
             int height = specHeight;
-            int width = (int) (height * aspectRatio);
+            int width = (int) (height * containerAspectRatio);
 
             int maxWidth;
             maxWidth = specWidthMode == MeasureSpec.AT_MOST ? specWidth : MEASURED_SIZE_MASK;
@@ -396,13 +406,13 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
 
             if (width > maxWidth) {
                 width = maxWidth;
-                height = (int) (width / aspectRatio);
+                height = (int) (width / containerAspectRatio);
                 heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
             }
             widthMeasureSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
         }
         if (isDebugMode()) {
-            Log.v(SRGMediaPlayerController.TAG, String.format("onMeasure W:%d/%s, H:%d/%s -> %d,%d",
+            Log.v(TAG, String.format("onMeasure W:%d/%s, H:%d/%s -> %d,%d",
                     specWidth, modeName(specWidthMode), specHeight, modeName(specHeightMode),
                     MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec)));
         }
@@ -459,7 +469,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
         sb.append(", videoRenderingViewWidth=").append(videoRenderingViewWidth);
         sb.append(", videoRenderingViewHeight=").append(videoRenderingViewHeight);
         sb.append(", scaleMode=").append(scaleMode);
-        sb.append(", aspectRatio=").append(aspectRatio);
+        sb.append(", containerAspectRatio=").append(containerAspectRatio);
         sb.append(", onTop=").append(onTop);
         sb.append(", autoAspect=").append(autoAspect);
         sb.append(", actualVideoAspectRatio=").append(actualVideoAspectRatio);
@@ -586,4 +596,69 @@ public class SRGMediaPlayerView extends RelativeLayout implements View.OnTouchLi
     public void setAdjustToParentScrollView(boolean adjustToParentScrollView) {
         this.adjustToParentScrollView = adjustToParentScrollView;
     }
+
+    private void configureSubtitleView() {
+        if (subtitleView == null) {
+            for (int i = 0; i < getChildCount(); i++) {
+                if (getChildAt(i) instanceof SubtitleView) {
+                    subtitleView = (SubtitleView) getChildAt(i);
+                    break;
+                }
+            }
+        }
+        if (subtitleView != null) {
+            CaptionStyleCompat style;
+            float fontScale;
+            if (Util.SDK_INT >= 19) {
+                style = getUserCaptionStyleV19();
+                fontScale = getUserCaptionFontScaleV19();
+            } else {
+                style = CaptionStyleCompat.DEFAULT;
+                fontScale = 1.0f;
+            }
+            subtitleView.setStyle(style);
+            subtitleView.setFractionalTextSize(SubtitleView.DEFAULT_TEXT_SIZE_FRACTION * fontScale);
+        }
+        subtitleViewConfigured = true;
+    }
+
+    public void setCues(List<Cue> cues) {
+        if (!subtitleViewConfigured) {
+            configureSubtitleView();
+        }
+        if (subtitleView != null) {
+            subtitleView.setCues(cues);
+        }
+    }
+
+    @TargetApi(19)
+    private float getUserCaptionFontScaleV19() {
+        CaptioningManager captioningManager = getCaptioningManager();
+        return captioningManager.getFontScale();
+    }
+
+    @TargetApi(19)
+    private CaptionStyleCompat getUserCaptionStyleV19() {
+        CaptioningManager captioningManager = getCaptioningManager();
+        return CaptionStyleCompat.createFromCaptionStyle(captioningManager.getUserStyle());
+    }
+
+    private CaptioningManager getCaptioningManager() {
+        return (CaptioningManager) getContext().getSystemService(Context.CAPTIONING_SERVICE);
+    }
+
+    @Override
+    public void onMediaControlTouched() {
+        if (touchListener != null) {
+            touchListener.onMediaControlTouched();
+        }
+    }
+
+    @Override
+    public void onMediaControlBackgroundTouched() {
+        if (touchListener != null) {
+            touchListener.onMediaControlBackgroundTouched();
+        }
+    }
 }
+

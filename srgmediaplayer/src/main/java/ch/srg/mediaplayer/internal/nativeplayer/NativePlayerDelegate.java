@@ -4,17 +4,21 @@ import android.content.Context;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
+import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 
 import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerView;
+import ch.srg.mediaplayer.SubtitleTrack;
 
 /**
  * Created by Axel on 02/03/2015.
@@ -28,8 +32,6 @@ public class NativePlayerDelegate implements
 		MediaPlayer.OnInfoListener,
 		MediaPlayer.OnErrorListener,
 		MediaPlayer.OnCompletionListener {
-
-
 
 	private enum State {
 		IDLE,
@@ -69,7 +71,7 @@ public class NativePlayerDelegate implements
 	}
 
 	@Override
-	public void prepare(Uri videoUri) throws SRGMediaPlayerException {
+	public void prepare(Uri videoUri, int streamType) throws SRGMediaPlayerException {
 		Log.v(SRGMediaPlayerController.TAG, "Preparing " + videoUri);
 		if (state != State.IDLE) {
 			throw new IllegalStateException("Prepare can only be called once. prepare in " + state);
@@ -188,10 +190,9 @@ public class NativePlayerDelegate implements
 	}
 
 	@Override
-	public int getVideoSourceHeight() {
-		return videoSourceHeight;
+	public boolean hasVideoTrack() {
+		return nativeMp.getVideoHeight() > 0;
 	}
-
 
 	@Override
 	public boolean canRenderInView(View view) {
@@ -390,5 +391,20 @@ public class NativePlayerDelegate implements
 
 	public long getPlaylistReferenceTime() {
 		return System.currentTimeMillis();
+	}
+
+	@Override
+	public List<SubtitleTrack> getSubtitleTrackList() {
+		return Collections.emptyList();
+	}
+
+	@Override
+	public void setSubtitleTrack(SubtitleTrack track) {
+	}
+
+	@Nullable
+	@Override
+	public SubtitleTrack getSubtitleTrack() {
+		return null;
 	}
 }
