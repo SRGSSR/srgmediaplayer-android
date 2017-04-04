@@ -7,12 +7,12 @@
     tools:orientation="horizontal">
 
     <FrameLayout
-        android:layout_width="@dimen/player_control_height"
+        android:layout_width="@dimen/player_control_width"
         android:layout_height="@dimen/player_control_height">
 
         <Button
             android:id="@+id/segment_player_control_button_play"
-            android:layout_width="@dimen/player_control_height"
+            android:layout_width="@dimen/player_control_width"
             android:layout_height="@dimen/player_control_height"
             android:background="@drawable/player_control_play"
             android:visibility="gone"
@@ -20,7 +20,7 @@
 
         <Button
             android:id="@+id/segment_player_control_button_pause"
-            android:layout_width="@dimen/player_control_height"
+            android:layout_width="@dimen/player_control_width"
             android:layout_height="@dimen/player_control_height"
             android:background="@drawable/player_control_pause"
             android:visibility="gone"
@@ -28,7 +28,7 @@
 
         <Button
             android:id="@+id/segment_player_control_button_replay"
-            android:layout_width="@dimen/player_control_height"
+            android:layout_width="@dimen/player_control_width"
             android:layout_height="@dimen/player_control_height"
             android:background="@drawable/player_control_replay"
             android:visibility="gone"
@@ -38,7 +38,7 @@
 
     <TextView
         android:id="@+id/segment_player_control_time_left"
-        android:layout_width="@dimen/player_control_height"
+        android:layout_width="@dimen/player_control_duration_text_width"
         android:layout_height="@dimen/player_control_height"
         android:gravity="center"
         android:text="@string/time_pending"
@@ -64,7 +64,7 @@
 
     <TextView
         android:id="@+id/segment_player_control_time_right"
-        android:layout_width="@dimen/player_control_height"
+        android:layout_width="@dimen/player_control_duration_text_width"
         android:layout_height="@dimen/player_control_height"
         android:gravity="center"
         android:text="@string/time_pending"
@@ -74,14 +74,14 @@
 
     <ImageButton
         android:id="@+id/segment_player_control_button_subtitles"
-        android:layout_width="@dimen/player_control_height"
+        android:layout_width="@dimen/player_control_width"
         android:layout_height="@dimen/player_control_height"
         android:background="@android:color/transparent"
         android:src="@drawable/ic_subtitle_selector" />
 
     <ImageButton
         android:id="@+id/segment_player_control_button_fullscreen"
-        android:layout_width="@dimen/player_control_height"
+        android:layout_width="@dimen/player_control_width"
         android:layout_height="@dimen/player_control_height"
         android:background="@android:color/transparent"
         android:src="@drawable/ic_fullscreen_selector" />
