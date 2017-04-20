@@ -24,7 +24,7 @@ public class DateParser {
         this.format = format;
         switch (format) {
             case DATE_FORMAT_ISO_8601:
-                sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US);
+                sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX", Locale.US);
                 break;
 
             default:
