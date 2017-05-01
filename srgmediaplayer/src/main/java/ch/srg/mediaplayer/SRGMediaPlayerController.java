@@ -551,7 +551,15 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 PrepareUriData data = (PrepareUriData) msg.obj;
                 Uri uri = data.uri;
                 PlayerDelegate playerDelegate = data.playerDelegate;
-                seekToWhenReady = data.position;
+                if (seekToWhenReady == null) {
+                    // TODO
+                    // Here we have an issue: we handle restore to position only when the dataprovider
+                    // does not give us a position to seek to (segment mark in in IL case).
+                    // When the dataprovider does give a position to seek to, we don't know which
+                    // position to take as the seekto could have occurred before or
+                    // after the seek. And we don't know the segment range either...
+                    seekToWhenReady = data.position;
+                }
 
                 currentMediaUrl = String.valueOf(uri);
                 currentMediaIdentifier = data.mediaIdentifier;
