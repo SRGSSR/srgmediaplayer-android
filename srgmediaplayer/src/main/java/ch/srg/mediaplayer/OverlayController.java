@@ -124,7 +124,9 @@ import android.view.ViewGroup;
     void showControlOverlays() {
         if (!showingControlOverlays) {
             showingControlOverlays = true;
-            playerController.broadcastEvent(SRGMediaPlayerController.Event.Type.OVERLAY_CONTROL_DISPLAYED);
+            if (controlsForced == null) {
+                playerController.broadcastEvent(SRGMediaPlayerController.Event.Type.OVERLAY_CONTROL_DISPLAYED);
+            }
             propagateOverlayVisibility();
             postponeControlsHiding();
         }
@@ -134,7 +136,9 @@ import android.view.ViewGroup;
         if (!doesPlayerStateRequiresControls()) {
             if (showingControlOverlays) {
                 showingControlOverlays = false;
-                playerController.broadcastEvent(SRGMediaPlayerController.Event.Type.OVERLAY_CONTROL_HIDDEN);
+                if (controlsForced == null) {
+                    playerController.broadcastEvent(SRGMediaPlayerController.Event.Type.OVERLAY_CONTROL_HIDDEN);
+                }
                 handler.removeMessages(MSG_HIDE_CONTROLS);
                 propagateOverlayVisibility();
             }
@@ -251,6 +255,9 @@ import android.view.ViewGroup;
 
     void setForceControls(Boolean controlsForced) {
         this.controlsForced = controlsForced;
+        if (controlsForced != null) {
+            handler.removeMessages(MSG_HIDE_CONTROLS);
+        }
         propagateOverlayVisibility();
     }
 
