@@ -741,7 +741,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         } else {
             if (currentSeekTarget != null) {
                 long currentPosition = currentMediaPlayerDelegate.getCurrentPosition();
-                if (currentPosition != UNKNOWN_TIME && currentPosition != currentSeekTarget) {
+                if (currentPosition != UNKNOWN_TIME
+                        && currentPosition != currentSeekTarget
+                        || !playWhenReady) {
                     currentSeekTarget = null;
                     postEventInternal(Event.Type.DID_SEEK);
                 }
