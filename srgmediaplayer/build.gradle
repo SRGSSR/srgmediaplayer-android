@@ -40,7 +40,7 @@ dependencies {
     compile "com.android.support:support-media-compat:$rootProject.supportLibraryVersion"
     compile "com.google.android.gms:play-services-cast:$rootProject.googlePlayServiceVersion"
 
-    compile 'com.github.bumptech.glide:glide:3.7.0'
+    compile 'com.github.bumptech.glide:glide:3.8.0'
 }
 
 apply from: '../utilities.gradle'
