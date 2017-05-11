@@ -1,9 +1,9 @@
 .background {
-  background: center no-repeat url(background.png);
+  background: center no-repeat url(https://www.rts.ch/2017/04/11/16/17/7069749.image/16x9/scale/width/1200);
 }
 
 .logo {
-  background-image: url(logo.png);
+  background-image: url(https://www.rts.ch/2017/04/11/16/17/7069749.image/16x9/scale/width/200);
 }
 
 .progressBar {
@@ -11,10 +11,10 @@
 }
 
 .splash {
-  background-image: url(splash.png);
+  background-image: url(https://www.rts.ch/2017/04/11/16/17/7069749.image/16x9/scale/width/200);
 }
 
 .watermark {
-  background-image: url(watermark.png);
+  background-image: url(https://www.rts.ch/2017/04/11/16/17/7069749.image/16x9/scale/width/200);
   background-size: 57px 57px;
 }
