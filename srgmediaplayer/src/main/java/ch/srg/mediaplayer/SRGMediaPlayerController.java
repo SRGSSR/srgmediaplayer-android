@@ -300,6 +300,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     @Nullable
     private PlayerDelegate currentMediaPlayerDelegate;
+    @Nullable
     private SRGMediaPlayerView mediaPlayerView;
 
     private OverlayController overlayController;
@@ -707,7 +708,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 mainHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        mediaPlayerView.setVideoAspectRatio(aspectRatio);
+                        if (mediaPlayerView != null) {
+                            mediaPlayerView.setVideoAspectRatio(aspectRatio);
+                        }
                     }
                 });
                 return true;
@@ -1086,13 +1089,13 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * @param newView player view
      * @throws IllegalStateException if a player view is already attached to this controller
      */
-    public void bindToMediaPlayerView(SRGMediaPlayerView newView) {
+    public void bindToMediaPlayerView(@NonNull SRGMediaPlayerView newView) {
         if (mediaPlayerView != null) {
             unbindFromMediaPlayerView(mediaPlayerView);
         }
 
         mediaPlayerView = newView;
-        mediaPlayerView.setCues(Collections.<Cue>emptyList());
+        newView.setCues(Collections.<Cue>emptyList());
         internalUpdateMediaPlayerViewBound();
         overlayController.bindToVideoContainer(this.mediaPlayerView);
         manageKeepScreenOnInternal();
