@@ -1,5 +1,7 @@
 package ch.srg.mediaplayer.segment.adapter;
 
+import android.support.annotation.Nullable;
+
 import ch.srg.mediaplayer.segment.model.Segment;
 
 /**
@@ -8,5 +10,5 @@ import ch.srg.mediaplayer.segment.model.Segment;
  * License information is available from the LICENSE file.
  */
 public interface SegmentChangeListener {
-    void onSegmentHighlighted(Segment segment);
+    void onSegmentHighlighted(@Nullable Segment segment);
 }
