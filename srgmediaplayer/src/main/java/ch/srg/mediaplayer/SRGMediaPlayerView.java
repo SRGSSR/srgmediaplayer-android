@@ -271,6 +271,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
                 }
                 if (videoRenderViewTrackingTouch) {
                     if (event.getAction() == MotionEvent.ACTION_UP) {
+                        onVideoRenderViewClicked();
                         videoRenderViewTrackingTouch = false;
                         touchListener.onMediaControlBackgroundTouched();
                     }
@@ -279,6 +280,10 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
             }
         }
         return handled;
+    }
+
+    protected void onVideoRenderViewClicked() {
+
     }
 
     public boolean isControlHit(int x, int y) {
