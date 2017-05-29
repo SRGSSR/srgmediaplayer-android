@@ -11,9 +11,9 @@ import android.view.ViewGroup;
 /**
  * Created by Axel on 09/03/2015.
  * <p>
- *
+ * <p>
  * TODO Check that the following is no longer a problem
- *
+ * <p>
  * Problematic use cases:
  * SRGMediaPlayerView.applyOverlayMode(playerControlView, SRGMediaPlayerView.LayoutParams.OVERLAY_CONTROL);
  * playerControlView.setVisibility(View.VISIBLE);
@@ -103,10 +103,7 @@ import android.view.ViewGroup;
         if (loadingForced != null) {
             updateLoadings(loadingForced);
         } else {
-            updateLoadings(
-                    playerController.getState() == SRGMediaPlayerController.State.PREPARING
-                            || playerController.getState() == SRGMediaPlayerController.State.BUFFERING
-                            || playerController.isSeekPending());
+            updateLoadings(playerController.isLoading());
         }
     }
 

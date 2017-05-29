@@ -1651,4 +1651,13 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
         return null;
     }
+
+    /**
+     * @return loading state (preparing, buffering or seek pending)
+     */
+    public boolean isLoading() {
+        return getState() == SRGMediaPlayerController.State.PREPARING
+                || getState() == SRGMediaPlayerController.State.BUFFERING
+                || isSeekPending();
+    }
 }
