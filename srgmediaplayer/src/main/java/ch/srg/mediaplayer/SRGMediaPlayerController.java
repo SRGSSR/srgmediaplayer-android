@@ -605,9 +605,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 if (positionMs == null) {
                     throw new IllegalArgumentException("Missing position for seek to");
                 } else {
-                    seekToWhenReady = positionMs;
                     if (state != State.PREPARING) {
                         postEventInternal(Event.Type.WILL_SEEK);
+                        seekToWhenReady = positionMs;
                         if (currentMediaPlayerDelegate != null) {
                             try {
                                 currentMediaPlayerDelegate.seekTo(seekToWhenReady);
@@ -615,6 +615,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                             } catch (IllegalStateException ignored) {
                             }
                         }
+                    } else {
+                        seekToWhenReady = positionMs;
                     }
                 }
                 return true;
