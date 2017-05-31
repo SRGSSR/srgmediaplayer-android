@@ -45,7 +45,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 		public void onSegmentClick(Segment segment) {
 			String mediaIdentifier = playerController.getMediaIdentifier();
 			if (!TextUtils.isEmpty(mediaIdentifier) && mediaIdentifier.equals(segment.getMediaIdentifier())) {
-				postEvent(Event.Type.SEGMENT_SELECTED, segment);
+				postSegmentSelectedEvent(segment);
 				playerController.seekTo(segment.getMarkIn());
 				playerController.start();
 			} else {
@@ -146,12 +146,16 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 
 	}
 
-	public void postEvent(Event.Type type, Segment segment) {
+	private void postEvent(Event.Type type, Segment segment) {
 		playerController.broadcastEvent(new Event(playerController, type, segment));
 	}
 
-	public void postBlockedSegmentEvent(Segment segment, Event.Type type) {
+	private void postBlockedSegmentEvent(Segment segment, Event.Type type) {
 		playerController.broadcastEvent(new Event(playerController, type, segment, segment.getBlockingReason()));
+	}
+
+	public void postSegmentSelectedEvent(Segment segment) {
+		postEvent(Event.Type.SEGMENT_SELECTED, segment);
 	}
 
 	private void notifyPositionChange(String mediaIdentifier, long time, boolean seeking) {
