@@ -8,7 +8,7 @@ import android.util.Log;
 import android.view.View;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -32,7 +32,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 
 	private ArrayList<Segment> segments = new ArrayList<>();
 
-	private Set<Listener> listeners = new HashSet<>(); // TODO Weak hash set ?
+	private Set<Listener> listeners = Collections.newSetFromMap(new WeakHashMap<Listener, Boolean>());
 
 	private boolean userChangingProgress;
 	@Nullable
@@ -175,6 +175,9 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 		userChangingProgress = false;
 	}
 
+	/**
+	 * Warning: listener is not retained (weak hash map).
+	 */
 	public void addListener(Listener listener) {
 		listeners.add(listener);
 	}
