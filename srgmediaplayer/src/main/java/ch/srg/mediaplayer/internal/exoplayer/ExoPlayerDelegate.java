@@ -200,7 +200,7 @@ public class ExoPlayerDelegate implements
 
     @NonNull
     private DefaultDataSourceFactory getHttpDataSourceFactory() {
-        String userAgent = "SRGLibrary/2.0alpha";
+        String userAgent = "curl/Letterbox_2.0"; // temporarily using curl/ user agent to force subtitles with Akamai beta
 
         DefaultHttpDataSourceFactory httpDataSourceFactory = new DefaultHttpDataSourceFactory(userAgent, BANDWIDTH_METER);
         return new DefaultDataSourceFactory(context, BANDWIDTH_METER, httpDataSourceFactory);
