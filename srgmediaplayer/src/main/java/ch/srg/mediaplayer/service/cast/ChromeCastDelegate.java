@@ -105,7 +105,7 @@ public class ChromeCastDelegate implements PlayerDelegate, ChromeCastManager.Lis
                 mimeType = "audio/mp3";
                 break;
             case STREAM_HLS:
-                mimeType = "application/x-mpegurl";
+                mimeType = "application/x-mpegURL";
                 break;
             case STREAM_DASH:
                 mimeType = "application/dash+xml";

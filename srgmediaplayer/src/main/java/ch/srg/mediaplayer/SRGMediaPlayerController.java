@@ -300,6 +300,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     @Nullable
     private PlayerDelegate currentMediaPlayerDelegate;
+    @Nullable
     private SRGMediaPlayerView mediaPlayerView;
 
     private OverlayController overlayController;
@@ -551,7 +552,15 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 PrepareUriData data = (PrepareUriData) msg.obj;
                 Uri uri = data.uri;
                 PlayerDelegate playerDelegate = data.playerDelegate;
-                seekToWhenReady = data.position;
+                if (seekToWhenReady == null) {
+                    // TODO
+                    // Here we have an issue: we handle restore to position only when the dataprovider
+                    // does not give us a position to seek to (segment mark in in IL case).
+                    // When the dataprovider does give a position to seek to, we don't know which
+                    // position to take as the seekto could have occurred before or
+                    // after the seek. And we don't know the segment range either...
+                    seekToWhenReady = data.position;
+                }
 
                 currentMediaUrl = String.valueOf(uri);
                 currentMediaIdentifier = data.mediaIdentifier;
@@ -596,9 +605,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 if (positionMs == null) {
                     throw new IllegalArgumentException("Missing position for seek to");
                 } else {
-                    seekToWhenReady = positionMs;
                     if (state != State.PREPARING) {
                         postEventInternal(Event.Type.WILL_SEEK);
+                        seekToWhenReady = positionMs;
                         if (currentMediaPlayerDelegate != null) {
                             try {
                                 currentMediaPlayerDelegate.seekTo(seekToWhenReady);
@@ -606,6 +615,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                             } catch (IllegalStateException ignored) {
                             }
                         }
+                    } else {
+                        seekToWhenReady = positionMs;
                     }
                 }
                 return true;
@@ -699,7 +710,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 mainHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        mediaPlayerView.setVideoAspectRatio(aspectRatio);
+                        if (mediaPlayerView != null) {
+                            mediaPlayerView.setVideoAspectRatio(aspectRatio);
+                        }
                     }
                 });
                 return true;
@@ -733,7 +746,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         } else {
             if (currentSeekTarget != null) {
                 long currentPosition = currentMediaPlayerDelegate.getCurrentPosition();
-                if (currentPosition != UNKNOWN_TIME && currentPosition != currentSeekTarget) {
+                if (currentPosition != UNKNOWN_TIME
+                        && currentPosition != currentSeekTarget
+                        || !playWhenReady) {
                     currentSeekTarget = null;
                     postEventInternal(Event.Type.DID_SEEK);
                 }
@@ -1076,13 +1091,13 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * @param newView player view
      * @throws IllegalStateException if a player view is already attached to this controller
      */
-    public void bindToMediaPlayerView(SRGMediaPlayerView newView) {
+    public void bindToMediaPlayerView(@NonNull SRGMediaPlayerView newView) {
         if (mediaPlayerView != null) {
             unbindFromMediaPlayerView(mediaPlayerView);
         }
 
         mediaPlayerView = newView;
-        mediaPlayerView.setCues(Collections.<Cue>emptyList());
+        newView.setCues(Collections.<Cue>emptyList());
         internalUpdateMediaPlayerViewBound();
         overlayController.bindToVideoContainer(this.mediaPlayerView);
         manageKeepScreenOnInternal();
@@ -1637,5 +1652,14 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             return currentMediaPlayerDelegate.getSubtitleTrack();
         }
         return null;
+    }
+
+    /**
+     * @return loading state (preparing, buffering or seek pending)
+     */
+    public boolean isLoading() {
+        return getState() == SRGMediaPlayerController.State.PREPARING
+                || getState() == SRGMediaPlayerController.State.BUFFERING
+                || isSeekPending();
     }
 }

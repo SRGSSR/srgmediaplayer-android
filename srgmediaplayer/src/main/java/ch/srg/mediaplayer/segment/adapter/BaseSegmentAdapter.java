@@ -152,10 +152,8 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
                 int count = Math.abs(currentSegmentIndex - newSegmentIndex) + 1;
                 currentSegmentIndex = newSegmentIndex;
                 notifyItemRangeChanged(start, count);
-                if (currentSegmentIndex >= 0) {
-                    for (SegmentChangeListener l : segmentChangeListeners) {
-                        l.onSegmentHighlighted(segments.get(currentSegmentIndex));
-                    }
+                for (SegmentChangeListener l : segmentChangeListeners) {
+                    l.onSegmentHighlighted(currentSegmentIndex >= 0 ? segments.get(currentSegmentIndex) : null);
                 }
             }
         }

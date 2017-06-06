@@ -35,4 +35,5 @@ ext {
 	butterknifeVersion = '8.4.0'
 	leakCanaryVersion = '1.4'
 	googlePlayServiceVersion = '10.2.0'
+	exoPlayerVersion = "2.2.0"
 }

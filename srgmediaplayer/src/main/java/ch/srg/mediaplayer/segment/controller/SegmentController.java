@@ -8,7 +8,7 @@ import android.util.Log;
 import android.view.View;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -32,7 +32,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 
 	private ArrayList<Segment> segments = new ArrayList<>();
 
-	private Set<Listener> listeners = new HashSet<>(); // TODO Weak hash set ?
+	private Set<Listener> listeners = Collections.newSetFromMap(new WeakHashMap<Listener, Boolean>());
 
 	private boolean userChangingProgress;
 	@Nullable
@@ -45,7 +45,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 		public void onSegmentClick(Segment segment) {
 			String mediaIdentifier = playerController.getMediaIdentifier();
 			if (!TextUtils.isEmpty(mediaIdentifier) && mediaIdentifier.equals(segment.getMediaIdentifier())) {
-				postEvent(Event.Type.SEGMENT_SELECTED, segment);
+				postSegmentSelectedEvent(segment);
 				playerController.seekTo(segment.getMarkIn());
 				playerController.start();
 			} else {
@@ -146,12 +146,16 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 
 	}
 
-	public void postEvent(Event.Type type, Segment segment) {
+	private void postEvent(Event.Type type, Segment segment) {
 		playerController.broadcastEvent(new Event(playerController, type, segment));
 	}
 
-	public void postBlockedSegmentEvent(Segment segment, Event.Type type) {
+	private void postBlockedSegmentEvent(Segment segment, Event.Type type) {
 		playerController.broadcastEvent(new Event(playerController, type, segment, segment.getBlockingReason()));
+	}
+
+	public void postSegmentSelectedEvent(Segment segment) {
+		postEvent(Event.Type.SEGMENT_SELECTED, segment);
 	}
 
 	private void notifyPositionChange(String mediaIdentifier, long time, boolean seeking) {
@@ -171,6 +175,9 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 		userChangingProgress = false;
 	}
 
+	/**
+	 * Warning: listener is not retained (weak hash map).
+	 */
 	public void addListener(Listener listener) {
 		listeners.add(listener);
 	}

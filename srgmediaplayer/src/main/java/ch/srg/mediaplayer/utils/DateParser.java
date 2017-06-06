@@ -24,7 +24,7 @@ public class DateParser {
         this.format = format;
         switch (format) {
             case DATE_FORMAT_ISO_8601:
-                sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US);
+                sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZZZZ", Locale.US);
                 break;
 
             default:
@@ -48,7 +48,7 @@ public class DateParser {
 
         if (!TextUtils.isEmpty(s)) {
             if (format == DATE_FORMAT_ISO_8601) {
-                s = fixZForSimpleDateFormat(s);
+                s = fix8601ForSimpleDateFormat(s);
             }
             try {
                 date = sdf.parse(s);
@@ -60,10 +60,11 @@ public class DateParser {
     }
 
     @NonNull
-    public static String fixZForSimpleDateFormat(@NonNull String s) {
+    public static String fix8601ForSimpleDateFormat(@NonNull String s) {
         if (s.endsWith("Z")) {
             s = s.substring(0, s.length() - 1) + "+00:00";
         }
+        s = s.replaceAll("\\.\\d+", "");
         return s;
     }
 }

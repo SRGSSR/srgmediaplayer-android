@@ -3,6 +3,7 @@ package ch.srg.mediaplayer.service.cast;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -80,7 +81,6 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
     private final Object stoppingLock = new Object();
     private boolean applicationConnected;
     private int castDiscoveryCounter;
-    private boolean errorDialogShown;
 
     protected ChromeCastManager(Context context) {
         this.context = context.getApplicationContext();
@@ -771,18 +771,21 @@ public class ChromeCastManager implements GoogleApiClient.ConnectionCallbacks, G
         return deviceName;
     }
 
-    public boolean checkGooglePlayServices(Activity activity) {
+    public boolean checkGooglePlayServices(final Activity activity) {
         final int googlePlayServicesCheck = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(context);
         switch (googlePlayServicesCheck) {
             case ConnectionResult.SUCCESS:
                 return true;
             default:
-                if (!errorDialogShown) {
-                    try {
-                        errorDialogShown = GoogleApiAvailability.getInstance().showErrorDialogFragment(activity, googlePlayServicesCheck, 1000);
-                    } catch (IllegalStateException e) {
-                        Log.e(TAG, "Show error in check google play services", e);
-                    }
+                try {
+                    GoogleApiAvailability.getInstance().showErrorDialogFragment(activity, googlePlayServicesCheck, 1000, new DialogInterface.OnCancelListener() {
+                        @Override
+                        public void onCancel(DialogInterface dialog) {
+                            activity.invalidateOptionsMenu();
+                        }
+                    });
+                } catch (IllegalStateException e) {
+                    Log.e(TAG, "Show error in check google play services", e);
                 }
         }
         return false;
