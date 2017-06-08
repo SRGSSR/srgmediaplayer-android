@@ -43,6 +43,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     public static final String TAG = "SRGMediaPlayer";
     public static final String NAME = "SRGMediaPlayer";
     public static final String VERSION = "0.0.2";
+    public static final int DEFAULT_AUTO_HIDE_DELAY = OverlayController.DEFAULT_AUTO_HIDE_DELAY;
+
     private static final long[] EMPTY_TIME_RANGE = new long[2];
     private static final long UPDATE_PERIOD = 100;
 
