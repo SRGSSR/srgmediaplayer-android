@@ -2,7 +2,6 @@ package ch.srg.mediaplayer.providers;
 
 import android.net.Uri;
 
-import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.segment.data.SegmentDataProvider;
 
@@ -19,7 +18,7 @@ public class DirectMappingDataProvider implements SRGMediaPlayerDataProvider, Se
 	}
 
 	@Override
-	public void getUri(String mediaIdentifier, PlayerDelegate playerDelegate, GetUriCallback getUriCallback) {
+	public void getUri(String mediaIdentifier, int playerType, GetUriCallback getUriCallback) {
 		getUriCallback.onUriLoaded(mediaIdentifier, Uri.parse(mediaIdentifier), mediaIdentifier, null, mediaType, STREAM_HLS);
 	}
 
