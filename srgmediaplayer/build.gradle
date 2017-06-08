@@ -38,7 +38,7 @@ dependencies {
     compile "com.android.support:support-annotations:$rootProject.supportLibraryVersion"
     compile "com.android.support:mediarouter-v7:$rootProject.supportLibraryVersion"
     compile "com.android.support:support-media-compat:$rootProject.supportLibraryVersion"
-    compile "com.google.android.gms:play-services-cast:$rootProject.googlePlayServiceVersion"
+    compile "com.google.android.gms:play-services-cast-framework:$rootProject.googlePlayServiceVersion"
 
     compile 'com.github.bumptech.glide:glide:3.8.0'
 }
