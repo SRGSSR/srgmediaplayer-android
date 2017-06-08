@@ -30,7 +30,8 @@ import android.view.ViewGroup;
 
     private static final int MSG_HIDE_CONTROLS = 1;
 
-    private static int overlayAutoHideDelay = 3000;
+    static final int DEFAULT_AUTO_HIDE_DELAY = 3000;
+    private static int overlayAutoHideDelay = DEFAULT_AUTO_HIDE_DELAY;
 
     private SRGMediaPlayerView videoContainer;
     private SRGMediaPlayerController playerController;
