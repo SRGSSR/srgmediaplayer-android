@@ -6,7 +6,7 @@ buildscript {
 		jcenter()
 	}
 	dependencies {
-		classpath 'com.android.tools.build:gradle:2.3.0'
+		classpath 'com.android.tools.build:gradle:2.3.3'
 		classpath 'de.felixschulze.gradle:gradle-hockeyapp-plugin:3.2'
 	}
 }
@@ -27,13 +27,13 @@ ext {
 	buildToolsVersion = '25.0.1'
 
 	//libs
-	supportLibraryVersion = '25.2.0'
+	supportLibraryVersion = '25.3.1'
 	SRGLibraryVersion = '1.4.314@aar'
 	SRGSnapLibraryVersion = '1.4.246-SNAPSHOT@aar'
-	androidSupportTest = '0.5'
-	espressoVersion = '2.2.2'
-	butterknifeVersion = '8.4.0'
-	leakCanaryVersion = '1.4'
-	googlePlayServiceVersion = '10.2.0'
-	exoPlayerVersion = "2.2.0"
+    androidSupportTest = '0.5'
+    espressoVersion = '2.2.2'
+    butterknifeVersion = '8.4.0'
+    leakCanaryVersion = '1.5.1'
+    googlePlayServiceVersion = '11.0.0'
+    exoPlayerVersion = '2.4.1'
 }
