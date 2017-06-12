@@ -38,7 +38,7 @@ public class DummyDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
 	};
 
 	@Override
-	public void getUri(String mediaIdentifier, PlayerDelegate playerDelegate, GetUriCallback callback) {
+	public void getUri(String mediaIdentifier, @SRGPlayerType int playerType, GetUriCallback callback) {
 		String uriString = data.get(mediaIdentifier);
 		if (uriString == null) {
 			callback.onUriLoadFailed(mediaIdentifier, new SRGMediaPlayerException("no uri"));

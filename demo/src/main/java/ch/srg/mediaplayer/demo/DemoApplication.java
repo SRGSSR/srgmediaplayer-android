@@ -12,7 +12,6 @@ import ch.srg.mediaplayer.providers.DirectMappingDataProvider;
 import ch.srg.mediaplayer.providers.MultiDataProvider;
 import ch.srg.mediaplayer.service.MediaPlayerService;
 import ch.srg.mediaplayer.service.SRGMediaPlayerServiceMetaDataProvider;
-import ch.srg.mediaplayer.service.cast.ChromeCastManager;
 import ch.srg.mediaplayer.service.session.MediaSessionManager;
 
 /**
@@ -27,8 +26,6 @@ public class DemoApplication extends Application {
 	public static MultiDataProvider multiDataProvider;
 
 	private PlayerDelegateFactory playerDelegateFactory;
-
-	private ChromeCastManager chromeCastManager;
 
 	public DemoApplication() {
 	}
@@ -48,7 +45,6 @@ public class DemoApplication extends Application {
 		sContext = getApplicationContext();
 
 		MediaSessionManager.initialize(sContext);
-		chromeCastManager = ChromeCastManager.initialize(this);
 
 		dummyDataProvider = new DummyDataProvider();
 		multiDataProvider = new MultiDataProvider();
