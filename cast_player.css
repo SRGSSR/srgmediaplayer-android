@@ -1,20 +1,12 @@
-.background {
-  background-color: rgb(38, 34, 34);
-}
-
 .logo {
-  background-image: url(https://www.rts.ch/2017/04/11/16/17/7069749.image/16x9/scale/width/200);
+  background-image: url(https://srgssr.github.io/SRGMediaPlayer-Android/art/logo/play_rts.png);
 }
 
 .progressBar {
   background-color: rgb(255, 0, 0);
 }
 
-.splash {
-  background-image: url(https://www.rts.ch/2017/04/11/16/17/7069749.image/16x9/scale/width/200);
-}
-
 .watermark {
-  background-image: url(https://www.rts.ch/2017/04/11/16/17/7069749.image/16x9/scale/width/200);
+  background-image: url(https://srgssr.github.io/SRGMediaPlayer-Android/art/watermark/play_rts.png);
   background-size: 57px 57px;
 }
