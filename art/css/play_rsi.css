@@ -1,0 +1,12 @@
+.logo {
+  background-image: url(https://srgssr.github.io/SRGMediaPlayer-Android/art/logo/play_rsi.png);
+}
+
+.progressBar {
+  background-color: rgb(255, 0, 0);
+}
+
+.watermark {
+  background-image: url(https://srgssr.github.io/SRGMediaPlayer-Android/art/watermark/play_rsi.png);
+  background-size: 57px 57px;
+}

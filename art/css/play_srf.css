@@ -1,0 +1,12 @@
+.logo {
+  background-image: url(https://srgssr.github.io/SRGMediaPlayer-Android/art/logo/play_srf.png);
+}
+
+.progressBar {
+  background-color: rgb(255, 0, 0);
+}
+
+.watermark {
+  background-image: url(https://srgssr.github.io/SRGMediaPlayer-Android/art/watermark/play_srf.png);
+  background-size: 57px 57px;
+}
