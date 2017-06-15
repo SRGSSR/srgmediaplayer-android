@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.segment.data.SegmentDataProvider;
@@ -56,9 +55,9 @@ public class MultiDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
     }
 
     @Override
-    public void getUri(final String originalMediaIdentifier, PlayerDelegate playerDelegate, final GetUriCallback getUriCallback) {
+    public void getUri(final String originalMediaIdentifier, int playerType, final GetUriCallback getUriCallback) {
         final String originalPrefix = getPrefix(originalMediaIdentifier);
-        getProvider(originalMediaIdentifier).getUri(getIdentifier(originalMediaIdentifier), playerDelegate, new GetUriCallback() {
+        getProvider(originalMediaIdentifier).getUri(getIdentifier(originalMediaIdentifier), playerType, new GetUriCallback() {
             @Override
             public void onUriLoaded(String mediaIdentifier, Uri uri, String realMediaIdentifier, Long position, int mediaType, int streamType) {
                 getUriCallback.onUriLoaded(originalMediaIdentifier, uri, originalPrefix + ":" + realMediaIdentifier, position, mediaType, streamType);

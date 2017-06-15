@@ -25,7 +25,6 @@ import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerFactory;
 import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
-import ch.srg.mediaplayer.service.cast.ChromeCastManager;
 import ch.srg.mediaplayer.service.session.MediaSessionManager;
 
 /**
@@ -43,7 +42,7 @@ import ch.srg.mediaplayer.service.session.MediaSessionManager;
  * - <b>ACTION_BROADCAST_STATUS_BUNDLE:</b> with <i>KEY_STATE:</i> player status; <i>KEY_POSITION:</i> position within the stream in milliseconds;
  * <i>KEY_DURATION:</i> duration of the stream in milliseconds;
  */
-public class MediaPlayerService extends Service implements SRGMediaPlayerController.Listener, ChromeCastManager.Listener, MediaSessionManager.Listener, SRGMediaPlayerFactory {
+public class MediaPlayerService extends Service implements SRGMediaPlayerController.Listener, MediaSessionManager.Listener, SRGMediaPlayerFactory {
     public static final String TAG = "MediaPlayerService";
 
     private static final int MIN_DVR_MEDIA_DURATION = 600000;
@@ -104,8 +103,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     private static PlayerDelegateFactory playerDelegateFactory;
     private static boolean debugMode;
 
-    @Nullable
-    private ChromeCastManager chromeCastManager;
     private MediaSessionManager mediaSessionManager;
 
     ServiceNotificationBuilder currentServiceNotification;
@@ -123,26 +120,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 
     public SRGMediaPlayerController getMediaController() {
         return player;
-    }
-
-    @Override
-    public void onChromeCastApplicationConnected() {
-        Log.d(TAG, "onChromeCastApplicationConnected");
-        if (player != null) {
-            player.swapPlayerDelegate(null);
-        }
-    }
-
-    @Override
-    public void onChromeCastApplicationDisconnected() {
-        Log.d(TAG, "onChromeCastApplicationDisconnected");
-        if (player != null) {
-            player.swapPlayerDelegate(null);
-        }
-    }
-
-    @Override
-    public void onChromeCastPlayerStatusUpdated(int state, int idleReason) {
     }
 
     @Override
@@ -199,11 +176,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
 		 */
         MusicControl.pause(this); /* XXX: this is not the proper place for this, should be in the play part */
 
-        if (ChromeCastManager.isInstantiated()) {
-            chromeCastManager = ChromeCastManager.getInstance();
-            chromeCastManager.addListener(this);
-        }
-
         MediaSessionManager.initialize(this);
         mediaSessionManager = MediaSessionManager.getInstance();
         mediaSessionManager.addListener(this);
@@ -214,9 +186,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         Log.v(TAG, this.toString() + " onDestroy");
         isDestroyed = true;
 
-        if (chromeCastManager != null) {
-            chromeCastManager.removeListener(this);
-        }
         stopPlayer();
         NotificationManagerCompat.from(this).cancelAll();
     }

@@ -7,7 +7,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Created by Axel on 27/02/2015.
+ * Copyright (c) SRG SSR. All rights reserved.
+ *
+ * License information is available from the LICENSE file.
  */
 public interface SRGMediaPlayerDataProvider {
     @Retention(RetentionPolicy.SOURCE)
@@ -26,6 +28,13 @@ public interface SRGMediaPlayerDataProvider {
     int STREAM_HTTP_PROGRESSIVE = 2;
     int STREAM_DASH = 3;
     int STREAM_LOCAL_FILE = 4;
+
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({PLAYER_TYPE_CHROMECAST, PLAYER_TYPE_EXOPLAYER})
+    public @interface SRGPlayerType {
+    }
+    int PLAYER_TYPE_EXOPLAYER = 0;
+    int PLAYER_TYPE_CHROMECAST = 1;
 
     interface GetUriCallback {
         /**
@@ -49,9 +58,8 @@ public interface SRGMediaPlayerDataProvider {
      * Uri to play the media identifier. Must be constant for a single media identifier.
      *
      * @param mediaIdentifier media identifier
-     * @param playerDelegate  player delegate
+     * @param playerType  player delegate type ({@link #PLAYER_TYPE_CHROMECAST} or {@link #PLAYER_TYPE_EXOPLAYER}
      * @param getUriCallback  callback
-     * @throws SRGMediaPlayerException network or parsing error encapsulated in an SRGMediaPlayerExcpetion
      */
-    void getUri(String mediaIdentifier, PlayerDelegate playerDelegate, GetUriCallback getUriCallback);
+    void getUri(String mediaIdentifier, @SRGPlayerType int playerType, GetUriCallback getUriCallback);
 }

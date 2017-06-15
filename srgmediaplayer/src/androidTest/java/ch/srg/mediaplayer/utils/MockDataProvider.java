@@ -5,7 +5,6 @@ import android.net.Uri;
 import java.util.HashMap;
 import java.util.Map;
 
-import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 
@@ -34,7 +33,7 @@ public class MockDataProvider implements SRGMediaPlayerDataProvider {
     private int count;
 
     @Override
-    public void getUri(String mediaIdentifier, PlayerDelegate playerDelegate, GetUriCallback callback) {
+    public void getUri(String mediaIdentifier, int playerType, GetUriCallback callback) {
         count++;
         String uriString = data.get(mediaIdentifier);
         if (uriString == null) {

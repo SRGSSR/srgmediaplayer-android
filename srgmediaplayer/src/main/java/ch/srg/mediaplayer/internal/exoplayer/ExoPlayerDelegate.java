@@ -14,10 +14,12 @@ import android.view.View;
 
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.DefaultLoadControl;
+import com.google.android.exoplayer2.DefaultRenderersFactory;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.audio.AudioCapabilities;
@@ -34,7 +36,7 @@ import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.text.TextRenderer;
-import com.google.android.exoplayer2.trackselection.AdaptiveVideoTrackSelection;
+import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.FixedTrackSelection;
 import com.google.android.exoplayer2.trackselection.MappingTrackSelector;
@@ -69,6 +71,7 @@ public class ExoPlayerDelegate implements
     private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
     private final EventLogger eventLogger;
     private final DefaultTrackSelector trackSelector;
+    private final DefaultRenderersFactory renderersFactory;
     private long playlistReferenceTime;
     private Boolean playWhenReady;
     private Integer playbackState;
@@ -114,15 +117,15 @@ public class ExoPlayerDelegate implements
         mainHandler = new Handler();
 
         TrackSelection.Factory videoTrackSelectionFactory =
-                new AdaptiveVideoTrackSelection.Factory(BANDWIDTH_METER);
+                new AdaptiveTrackSelection.Factory(BANDWIDTH_METER);
 
         DrmSessionManager<FrameworkMediaCrypto> drmSessionManager = null;
 
         trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
         eventLogger = new EventLogger(trackSelector);
+        renderersFactory = new DefaultRenderersFactory(context, drmSessionManager, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
 
-        exoPlayer = ExoPlayerFactory.newSimpleInstance(context, trackSelector, new DefaultLoadControl(),
-                drmSessionManager, SimpleExoPlayer.EXTENSION_RENDERER_MODE_PREFER);
+        exoPlayer = ExoPlayerFactory.newSimpleInstance(renderersFactory, trackSelector, new DefaultLoadControl());
         exoPlayer.addListener(this);
         exoPlayer.setTextOutput(this);
         exoPlayer.setAudioDebugListener(eventLogger);
@@ -378,6 +381,11 @@ public class ExoPlayerDelegate implements
 
     @Override
     public void onPositionDiscontinuity() {
+
+    }
+
+    @Override
+    public void onPlaybackParametersChanged(PlaybackParameters playbackParameters) {
 
     }
 
