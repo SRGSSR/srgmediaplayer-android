@@ -12,7 +12,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Scanner;
 
-import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 
@@ -41,7 +40,7 @@ public class RawHttpDataProvider implements SRGMediaPlayerDataProvider {
                     String item = s.next();
                     Scanner s2 = new Scanner(item).useDelimiter("\"");
                     item = s2.next();
-                    callback.onUriLoaded(mediaIdentifier, Uri.parse(item), mediaIdentifier, null, mediaType, STREAM_HLS);
+                    callback.onUriLoaded(mediaIdentifier, Uri.parse(item), mediaIdentifier, null, STREAM_HLS);
                 }
                 else {
                     callback.onUriLoadFailed(mediaIdentifier, new SRGMediaPlayerException("no data"));

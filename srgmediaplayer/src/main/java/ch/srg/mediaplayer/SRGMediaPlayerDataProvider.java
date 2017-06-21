@@ -42,10 +42,9 @@ public interface SRGMediaPlayerDataProvider {
          * @param uri                 Uri for the media
          * @param realMediaIdentifier the real mediaIdentifier played, in case of asking to play a logical segment
          * @param position            position in the stream
-         * @param mediaType           {@link #MEDIA_TYPE_AUDIO} or {@link #MEDIA_TYPE_VIDEO}
          * @param streamType          {@link #STREAM_DASH}, {@link #STREAM_HLS}, {@link #STREAM_HTTP_PROGRESSIVE}, {@link #STREAM_LOCAL_FILE}
          */
-        void onUriLoaded(String mediaIdentifier, Uri uri, String realMediaIdentifier, Long position, @SRGMediaType int mediaType, @SRGStreamType int streamType);
+        void onUriLoaded(String mediaIdentifier, Uri uri, String realMediaIdentifier, Long position, @SRGStreamType int streamType);
 
         /**
          * @param mediaIdentifier requested media identifier

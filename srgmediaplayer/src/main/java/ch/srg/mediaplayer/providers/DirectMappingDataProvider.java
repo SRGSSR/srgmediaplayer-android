@@ -19,7 +19,7 @@ public class DirectMappingDataProvider implements SRGMediaPlayerDataProvider, Se
 
 	@Override
 	public void getUri(String mediaIdentifier, int playerType, GetUriCallback getUriCallback) {
-		getUriCallback.onUriLoaded(mediaIdentifier, Uri.parse(mediaIdentifier), mediaIdentifier, null, mediaType, STREAM_HLS);
+		getUriCallback.onUriLoaded(mediaIdentifier, Uri.parse(mediaIdentifier), mediaIdentifier, null, STREAM_HLS);
 	}
 
 	@Override

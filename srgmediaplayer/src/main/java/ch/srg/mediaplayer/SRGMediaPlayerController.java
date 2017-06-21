@@ -797,7 +797,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
         mediaPlayerDataProvider.getUri(mediaIdentifier, SRGMediaPlayerDataProvider.PLAYER_TYPE_EXOPLAYER, new SRGMediaPlayerDataProvider.GetUriCallback() {
             @Override
-            public void onUriLoaded(String mediaIdentifier, Uri uri, String realMediaIdentifier, Long position, int mediaType, int streamType) {
+            public void onUriLoaded(String mediaIdentifier, Uri uri, String realMediaIdentifier, Long position, int streamType) {
                 if (realMediaIdentifier == null) {
                     throw new IllegalArgumentException("realMediaIdentifier may not be null");
                 }
