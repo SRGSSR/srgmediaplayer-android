@@ -39,7 +39,7 @@ public class MockDataProvider implements SRGMediaPlayerDataProvider {
         if (uriString == null) {
             callback.onUriLoadFailed(mediaIdentifier, new SRGMediaPlayerException("no uri"));
         } else {
-            callback.onUriLoaded(mediaIdentifier, Uri.parse(uriString), mediaIdentifier, null, MEDIA_TYPE_VIDEO, STREAM_HLS);
+            callback.onUriLoaded(mediaIdentifier, Uri.parse(uriString), mediaIdentifier, null, STREAM_HLS);
         }
     }
 

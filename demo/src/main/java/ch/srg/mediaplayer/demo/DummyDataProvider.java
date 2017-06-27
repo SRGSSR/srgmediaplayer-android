@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.segment.data.SegmentDataProvider;
@@ -43,7 +42,7 @@ public class DummyDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
 		if (uriString == null) {
 			callback.onUriLoadFailed(mediaIdentifier, new SRGMediaPlayerException("no uri"));
 		} else {
-			callback.onUriLoaded(mediaIdentifier, Uri.parse(uriString), mediaIdentifier, null, MEDIA_TYPE_VIDEO, STREAM_HLS);
+			callback.onUriLoaded(mediaIdentifier, Uri.parse(uriString), mediaIdentifier, null, STREAM_HLS);
 		}
 	}
 
