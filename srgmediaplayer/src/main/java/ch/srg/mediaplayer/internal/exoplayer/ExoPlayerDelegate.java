@@ -464,7 +464,7 @@ public class ExoPlayerDelegate implements
     @Nullable
     private SubtitleTrack getSubtitleTrack(TrackGroup trackGroup, int i, int j) {
         Format format = trackGroup.getFormat(j);
-        if (format.id != null || format.language != null) {
+        if (format.id != null && format.language != null) {
             return new SubtitleTrack(new Pair<>(i, j), format.id, format.language);
         } else {
             return null;
