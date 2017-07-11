@@ -1614,6 +1614,20 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
     }
 
+    /**
+     * Get Total bandwidth of currently playing stream.
+     *
+     * @return current bandwidth in bits/seconds or null if not available
+     */
+    public Long getCurrentBandwidth() {
+        if (currentMediaPlayerDelegate != null) {
+            return currentMediaPlayerDelegate.getCurrentBandwidth();
+        } else {
+            return null;
+        }
+    }
+
+
     public boolean hasVideoTrack() {
         return currentMediaPlayerDelegate != null && currentMediaPlayerDelegate.hasVideoTrack();
     }
