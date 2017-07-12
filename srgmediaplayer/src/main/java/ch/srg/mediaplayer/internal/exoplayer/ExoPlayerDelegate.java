@@ -436,11 +436,11 @@ public class ExoPlayerDelegate implements
     }
 
     @Override
-    public long getCurrentBandwidth() {
+    public Long getCurrentBandwidth() {
         Format videoFormat = exoPlayer.getVideoFormat();
         Format audioFormat = exoPlayer.getAudioFormat();
-        return (videoFormat != null ? videoFormat.bitrate : 0)
-                + (audioFormat != null ? audioFormat.bitrate : 0);
+        return videoFormat != null || audioFormat != null ? (long) ((videoFormat != null ? videoFormat.bitrate : 0)
+                + (audioFormat != null ? audioFormat.bitrate : 0)) : null;
     }
 
     @Override
