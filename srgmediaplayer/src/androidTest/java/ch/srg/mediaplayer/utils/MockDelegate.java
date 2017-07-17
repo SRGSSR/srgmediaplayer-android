@@ -196,6 +196,11 @@ public class MockDelegate implements PlayerDelegate {
         return null;
     }
 
+    @Override
+    public Long getCurrentBandwidth() {
+        return null;
+    }
+
     public long getPlaylistReferenceTime() {
         return System.currentTimeMillis();
     }

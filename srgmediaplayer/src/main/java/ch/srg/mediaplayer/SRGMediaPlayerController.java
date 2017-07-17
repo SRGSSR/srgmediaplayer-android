@@ -42,7 +42,7 @@ import ch.srg.mediaplayer.service.AudioIntentReceiver;
 public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegateListener, Handler.Callback {
     public static final String TAG = "SRGMediaPlayer";
     public static final String NAME = "SRGMediaPlayer";
-    public static final String VERSION = "0.0.2";
+    public static final String VERSION = BuildConfig.VERSION_NAME;
     public static final int DEFAULT_AUTO_HIDE_DELAY = OverlayController.DEFAULT_AUTO_HIDE_DELAY;
 
     private static final long[] EMPTY_TIME_RANGE = new long[2];
@@ -1613,6 +1613,20 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             return null;
         }
     }
+
+    /**
+     * Get Total bandwidth of currently playing stream.
+     *
+     * @return current bandwidth in bits/seconds or null if not available
+     */
+    public Long getCurrentBandwidth() {
+        if (currentMediaPlayerDelegate != null) {
+            return currentMediaPlayerDelegate.getCurrentBandwidth();
+        } else {
+            return null;
+        }
+    }
+
 
     public boolean hasVideoTrack() {
         return currentMediaPlayerDelegate != null && currentMediaPlayerDelegate.hasVideoTrack();

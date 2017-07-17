@@ -93,6 +93,7 @@ public class ExoPlayerDelegate implements
     private AudioCapabilitiesReceiver audioCapabilitiesReceiver;
     private AudioCapabilities audioCapabilities;
 
+    @NonNull
     private SimpleExoPlayer exoPlayer;
 
     private String videoSourceUrl = null;
@@ -432,6 +433,14 @@ public class ExoPlayerDelegate implements
     @Override
     public void setQualityDefault(Long quality) {
 
+    }
+
+    @Override
+    public Long getCurrentBandwidth() {
+        Format videoFormat = exoPlayer.getVideoFormat();
+        Format audioFormat = exoPlayer.getAudioFormat();
+        return videoFormat != null || audioFormat != null ? (long) ((videoFormat != null ? videoFormat.bitrate : 0)
+                + (audioFormat != null ? audioFormat.bitrate : 0)) : null;
     }
 
     @Override

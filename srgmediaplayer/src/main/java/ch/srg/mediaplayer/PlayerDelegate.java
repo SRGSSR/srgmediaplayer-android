@@ -150,6 +150,13 @@ public interface PlayerDelegate {
      */
 	Long getBandwidthEstimate();
 
+	/**
+	 * Get Total bandwidth of currently playing stream.
+	 *
+	 * @return current bandwidth in bits/seconds or null if not available
+	 */
+	Long getCurrentBandwidth();
+
 	long getPlaylistReferenceTime();
 
 	@NonNull

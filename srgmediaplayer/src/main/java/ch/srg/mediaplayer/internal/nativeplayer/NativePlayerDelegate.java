@@ -385,6 +385,11 @@ public class NativePlayerDelegate implements
 		return null;
 	}
 
+	@Override
+	public Long getCurrentBandwidth() {
+		return null;
+	}
+
 	public void setSurfaceDisabled(boolean surfaceDisabled) {
 		this.surfaceDisabled = surfaceDisabled;
 	}
