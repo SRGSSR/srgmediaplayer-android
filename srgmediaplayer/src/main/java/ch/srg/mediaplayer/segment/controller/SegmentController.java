@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
+import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.segment.adapter.SegmentClickListener;
 import ch.srg.mediaplayer.segment.model.Segment;
 
@@ -195,9 +196,12 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
             seekTo(mediaIdentifier, blockedSegment.getMarkOut());
             return false;
         } else {
-            playerController.seekTo(mediaPosition);
-            playerController.start();
-            return true;
+            try {
+                playerController.play(mediaIdentifier, mediaPosition);
+                return true;
+            } catch (SRGMediaPlayerException ignored) {
+                return false;
+            }
         }
     }
 
