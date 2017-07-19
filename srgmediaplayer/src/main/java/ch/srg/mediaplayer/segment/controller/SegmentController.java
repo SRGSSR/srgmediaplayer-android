@@ -211,10 +211,6 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
         void onSegmentListChanged(List<Segment> segments);
     }
 
-    public interface SegmentClickDelegate {
-        void onSegmentClick(Segment segment);
-    }
-
     @Override
     public void run() {
         updateIfNotUserTracked();
