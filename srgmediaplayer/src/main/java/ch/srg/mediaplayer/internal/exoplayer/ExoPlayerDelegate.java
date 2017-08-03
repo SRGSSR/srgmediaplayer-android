@@ -439,8 +439,10 @@ public class ExoPlayerDelegate implements
     public Long getCurrentBandwidth() {
         Format videoFormat = exoPlayer.getVideoFormat();
         Format audioFormat = exoPlayer.getAudioFormat();
-        return videoFormat != null || audioFormat != null ? (long) ((videoFormat != null ? videoFormat.bitrate : 0)
-                + (audioFormat != null ? audioFormat.bitrate : 0)) : null;
+        int videoBandwidth = videoFormat != null && videoFormat.bitrate != Format.NO_VALUE ? videoFormat.bitrate : 0;
+        int audioBandwidth = audioFormat != null && audioFormat.bitrate != Format.NO_VALUE ? audioFormat.bitrate : 0;
+        long bandwidth = videoBandwidth + audioBandwidth;
+        return bandwidth > 0 ? bandwidth : null;
     }
 
     @Override

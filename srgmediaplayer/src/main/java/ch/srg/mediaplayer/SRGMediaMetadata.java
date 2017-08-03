@@ -17,6 +17,9 @@ public interface SRGMediaMetadata {
     String getDescription();
 
     @Nullable
+    String getLead();
+
+    @Nullable
     String getImageUrl();
 
     @Nullable
