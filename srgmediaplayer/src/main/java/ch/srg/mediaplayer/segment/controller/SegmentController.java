@@ -120,6 +120,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
             if (urn != null) {
                 postSegmentSelectedEvent(segment);
                 seekTo(urn, segment.getMarkIn());
+                playerController.start();
             }
 
             currentSegment = segment;
