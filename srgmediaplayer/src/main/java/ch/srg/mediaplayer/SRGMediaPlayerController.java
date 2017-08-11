@@ -1511,7 +1511,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     public String getMediaSessionId() {
-        return getMediaIdentifier() + "@" + getControllerId();
+        return getControllerId();
     }
 
     public void updateOverlayVisibilities() {
