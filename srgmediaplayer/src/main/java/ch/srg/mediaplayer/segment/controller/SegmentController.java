@@ -194,7 +194,10 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
         Segment blockedSegment = getBlockedSegment(mediaIdentifier, mediaPosition);
         if (blockedSegment != null) {
             postBlockedSegmentEvent(blockedSegment, Event.Type.SEGMENT_SKIPPED_BLOCKED);
-            seekTo(mediaIdentifier, blockedSegment.getMarkOut());
+            long markOut = blockedSegment.getMarkOut();
+            if (markOut > mediaPosition) {
+                seekTo(mediaIdentifier, markOut);
+            }
             return false;
         } else {
             try {
@@ -231,7 +234,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
             return;
         }
         long mediaPosition = playerController.getMediaPosition();
-        if (!playerController.isSeekPending()) {
+        if (!playerController.isSeekPending() && mediaPosition != -1) {
             String mediaIdentifier = playerController.getMediaIdentifier();
             Segment blockedSegment = getBlockedSegment(mediaIdentifier, mediaPosition);
             Segment newSegment = getSegment(mediaIdentifier, mediaPosition);
@@ -325,6 +328,21 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
 
     public Segment getCurrentSegment() {
         return currentSegment;
+    }
+
+    public void setCurrentSegment(Segment segment) {
+        currentSegment = segment;
+        postSegmentSelectedEvent(segment);
+    }
+
+    public boolean setCurrentSegment(String segmentUrn) {
+        for (Segment segment : segments) {
+            if (TextUtils.equals(segmentUrn, segment.getIdentifier())) {
+                setCurrentSegment(segment);
+                return true;
+            }
+        }
+        return false;
     }
 
     public ArrayList<Segment> getSegments() {
