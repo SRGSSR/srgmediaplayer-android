@@ -9,10 +9,10 @@ import android.support.annotation.NonNull;
  */
 public class Segment implements Comparable<Segment> {
 
-	/** Target mediaIdentifier of the media to be played. */
-	private String mediaIdentifier;
 	/** Unique identifier for this particular segment, not used for playing. */
 	private String identifier;
+	/** Target mediaIdentifier of the media to be played. */
+	private String mediaIdentifier;
 	private String title;
 	private String description;
 	private String imageUrl;

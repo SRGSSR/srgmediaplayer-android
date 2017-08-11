@@ -1,8 +1,8 @@
 package ch.srg.mediaplayer.demo;
 
+import android.app.Activity;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.v7.app.ActionBarActivity;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -10,7 +10,7 @@ import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerView;
 
-public class MultiDemoMediaPlayerActivity extends ActionBarActivity implements
+public class MultiDemoMediaPlayerActivity extends Activity implements
         SRGMediaPlayerController.Listener {
 
 	public static final String PLAYER_TAG = "main";

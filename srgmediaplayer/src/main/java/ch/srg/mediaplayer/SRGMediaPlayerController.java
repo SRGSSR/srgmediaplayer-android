@@ -1393,7 +1393,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             unmute();
         }
         if (pausedBecauseFocusLoss && ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_AUTO_RESTART) != 0 || pausedBecauseTransientFocusLoss)) {
-            start();
+            sendMessage(MSG_SET_PLAY_WHEN_READY, true);
         }
         if (mutedBecauseFocusLoss) {
             unmute();
@@ -1422,7 +1422,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         } else if ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_PAUSE) != 0) {
             pausedBecauseFocusLoss = playing;
             pausedBecauseTransientFocusLoss = playing && transientFocus;
-            pause();
+            sendMessage(MSG_SET_PLAY_WHEN_READY, false);
         } else if ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_MUTE) != 0) {
             mutedBecauseFocusLoss = playing;
             mute();
@@ -1511,7 +1511,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     public String getMediaSessionId() {
-        return getMediaIdentifier() + "@" + getControllerId();
+        return getControllerId();
     }
 
     public void updateOverlayVisibilities() {
