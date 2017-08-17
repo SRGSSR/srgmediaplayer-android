@@ -1416,16 +1416,20 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private void handleAudioFocusLoss(boolean transientFocus, boolean mayDuck) {
         boolean playing = isPlaying();
         if (mayDuck && (audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_DUCK) != 0) {
-            this.duckedBecauseTransientFocusLoss = playing;
-            // We could also actually duck. But this is fine for our usage afaics.
-            mute();
+            if (!muted) {
+                this.duckedBecauseTransientFocusLoss = playing;
+                // We could also actually duck. But this is fine for our usage afaics.
+                mute();
+            }
         } else if ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_PAUSE) != 0) {
             pausedBecauseFocusLoss = playing;
             pausedBecauseTransientFocusLoss = playing && transientFocus;
             sendMessage(MSG_SET_PLAY_WHEN_READY, false);
         } else if ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_MUTE) != 0) {
-            mutedBecauseFocusLoss = playing;
-            mute();
+            if (!muted) {
+                mutedBecauseFocusLoss = playing;
+                mute();
+            }
         }
     }
 
