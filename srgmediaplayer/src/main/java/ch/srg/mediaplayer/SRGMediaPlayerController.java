@@ -63,6 +63,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private Long qualityDefault;
     private Throwable fatalError;
     private AudioIntentReceiver becomingNoisyReceiver;
+    private long controllerId;
+    private static long controllerIdCounter;
 
     public static String getName() {
         return NAME;
@@ -350,6 +352,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         };
 
         audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+
+        controllerId = ++controllerIdCounter;
     }
 
     private synchronized void startBackgroundThreadIfNecessary() {
@@ -1511,7 +1515,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     public String getControllerId() {
-        return String.valueOf(hashCode());
+        return String.valueOf(controllerId);
     }
 
     public String getMediaSessionId() {
