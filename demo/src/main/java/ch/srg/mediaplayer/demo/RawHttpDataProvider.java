@@ -14,9 +14,12 @@ import java.util.Scanner;
 
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
+import ch.srg.srgmediaplayer.utils.Cancellable;
 
 /**
- * Created by seb on 22/07/15.
+ * Copyright (c) SRG SSR. All rights reserved.
+ *
+ * License information is available from the LICENSE file.
  */
 public class RawHttpDataProvider implements SRGMediaPlayerDataProvider {
     private static final String TAG = "rawHttp";
@@ -27,7 +30,7 @@ public class RawHttpDataProvider implements SRGMediaPlayerDataProvider {
     }
 
     @Override
-    public void getUri(final String mediaIdentifier, @SRGPlayerType int playerType, final GetUriCallback callback) {
+    public Cancellable getUri(final String mediaIdentifier, @SRGPlayerType int playerType, final GetUriCallback callback) {
         fetch(mediaIdentifier, new URLConnectionProcessor<Uri>() {
             @Override
             public void onSetupHttpURLConnection(HttpURLConnection urlConnection) throws IOException {
@@ -40,20 +43,21 @@ public class RawHttpDataProvider implements SRGMediaPlayerDataProvider {
                     String item = s.next();
                     Scanner s2 = new Scanner(item).useDelimiter("\"");
                     item = s2.next();
-                    callback.onUriLoaded(mediaIdentifier, Uri.parse(item), mediaIdentifier, null, STREAM_HLS);
+                    callback.onUriLoadedOrUpdated(mediaIdentifier, Uri.parse(item), mediaIdentifier, null, STREAM_HLS);
                 }
                 else {
-                    callback.onUriLoadFailed(mediaIdentifier, new SRGMediaPlayerException("no data"));
+                    callback.onUriNonPlayable(mediaIdentifier, new SRGMediaPlayerException("no data", true));
                 }
                 return null;
             }
 
             @Override
             public Uri onHttpURLConnectionError(int httpCode, Exception e) {
-                callback.onUriLoadFailed(mediaIdentifier, new SRGMediaPlayerException(e));
+                callback.onUriNonPlayable(mediaIdentifier, new SRGMediaPlayerException(e));
                 return null;
             }
         });
+        return Cancellable.NOT_CANCELLABLE;
     }
 
     public interface URLConnectionProcessor<T> {

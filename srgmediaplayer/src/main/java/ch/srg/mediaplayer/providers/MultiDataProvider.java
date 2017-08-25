@@ -10,9 +10,12 @@ import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.segment.data.SegmentDataProvider;
 import ch.srg.mediaplayer.segment.model.Segment;
+import ch.srg.srgmediaplayer.utils.Cancellable;
 
 /**
- * Created by seb on 27/05/15.
+ * Copyright (c) SRG SSR. All rights reserved.
+ *
+ * License information is available from the LICENSE file.
  */
 public class MultiDataProvider implements SRGMediaPlayerDataProvider, SegmentDataProvider {
     protected HashMap<String, SRGMediaPlayerDataProvider> dataProviders = new HashMap<>();
@@ -55,28 +58,33 @@ public class MultiDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
     }
 
     @Override
-    public void getUri(final String originalMediaIdentifier, int playerType, final GetUriCallback getUriCallback) {
+    public Cancellable getUri(final String originalMediaIdentifier, int playerType, final GetUriCallback getUriCallback) {
         final String originalPrefix = getPrefix(originalMediaIdentifier);
-        getProvider(originalMediaIdentifier).getUri(getIdentifier(originalMediaIdentifier), playerType, new GetUriCallback() {
+        return getProvider(originalMediaIdentifier).getUri(getIdentifier(originalMediaIdentifier), playerType, new GetUriCallback() {
             @Override
-            public void onUriLoaded(String mediaIdentifier, Uri uri, String realMediaIdentifier, Long position, int streamType) {
-                getUriCallback.onUriLoaded(originalMediaIdentifier, uri, originalPrefix + ":" + realMediaIdentifier, position, streamType);
+            public void onUriLoadedOrUpdated(String mediaIdentifier, Uri uri, String realMediaIdentifier, Long position, int streamType) {
+                getUriCallback.onUriLoadedOrUpdated(originalMediaIdentifier, uri, originalPrefix + ":" + realMediaIdentifier, position, streamType);
             }
 
             @Override
-            public void onUriLoadFailed(String mediaIdentifier, SRGMediaPlayerException exception) {
-                getUriCallback.onUriLoadFailed(originalMediaIdentifier, exception);
+            public void onMetadataLoadedOrUpdated(Object metadata) {
+                getUriCallback.onMetadataLoadedOrUpdated(metadata);
+            }
+
+            @Override
+            public void onUriNonPlayable(String mediaIdentifier, SRGMediaPlayerException exception) {
+                getUriCallback.onUriNonPlayable(originalMediaIdentifier, exception);
             }
         });
     }
 
     @Override
-    public void getSegmentList(String mediaIdentifier, final GetSegmentListCallback callback) {
+    public Cancellable getSegmentList(String mediaIdentifier, final GetSegmentListCallback callback) {
         SRGMediaPlayerDataProvider provider = getProvider(mediaIdentifier);
         if (provider instanceof SegmentDataProvider) {
             final String prefix = getPrefix(mediaIdentifier);
             String identifier = getIdentifier(mediaIdentifier);
-            ((SegmentDataProvider) provider).getSegmentList(identifier, new GetSegmentListCallback() {
+            return ((SegmentDataProvider) provider).getSegmentList(identifier, new GetSegmentListCallback() {
                 @Override
                 public void onSegmentListLoaded(List<Segment> baseList) {
                     ArrayList<Segment> prefixedSegments = new ArrayList<>(baseList.size());
@@ -92,6 +100,9 @@ public class MultiDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
                     callback.onDataNotAvailable();
                 }
             });
+        } else {
+            callback.onDataNotAvailable();
+            return Cancellable.NOT_CANCELLABLE;
         }
     }
 

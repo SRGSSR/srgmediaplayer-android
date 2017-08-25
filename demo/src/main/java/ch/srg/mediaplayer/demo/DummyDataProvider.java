@@ -11,10 +11,13 @@ import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.segment.data.SegmentDataProvider;
 import ch.srg.mediaplayer.segment.model.Segment;
+import ch.srg.srgmediaplayer.utils.Cancellable;
 
 
 /**
- * Created by Axel on 02/03/2015.
+ * Copyright (c) SRG SSR. All rights reserved.
+ *
+ * License information is available from the LICENSE file.
  */
 public class DummyDataProvider implements SRGMediaPlayerDataProvider, SegmentDataProvider {
 
@@ -37,13 +40,14 @@ public class DummyDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
 	};
 
 	@Override
-	public void getUri(String mediaIdentifier, @SRGPlayerType int playerType, GetUriCallback callback) {
+	public Cancellable getUri(String mediaIdentifier, @SRGPlayerType int playerType, GetUriCallback callback) {
 		String uriString = data.get(mediaIdentifier);
 		if (uriString == null) {
-			callback.onUriLoadFailed(mediaIdentifier, new SRGMediaPlayerException("no uri"));
+			callback.onUriNonPlayable(mediaIdentifier, new SRGMediaPlayerException("no uri", true));
 		} else {
-			callback.onUriLoaded(mediaIdentifier, Uri.parse(uriString), mediaIdentifier, null, STREAM_HLS);
+			callback.onUriLoadedOrUpdated(mediaIdentifier, Uri.parse(uriString), mediaIdentifier, null, STREAM_HLS);
 		}
+		return Cancellable.NOT_CANCELLABLE;
 	}
 
 	public List<Segment> getSegments(String mediaIdentifier) {
@@ -63,7 +67,8 @@ public class DummyDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
 	}
 
 	@Override
-	public void getSegmentList(String mediaIdentifier, GetSegmentListCallback callback) {
+	public Cancellable getSegmentList(String mediaIdentifier, GetSegmentListCallback callback) {
 		callback.onSegmentListLoaded(getSegments(mediaIdentifier));
+		return Cancellable.NOT_CANCELLABLE;
 	}
 }

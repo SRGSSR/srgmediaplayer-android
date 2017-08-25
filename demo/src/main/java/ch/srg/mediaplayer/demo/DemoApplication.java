@@ -13,6 +13,7 @@ import ch.srg.mediaplayer.providers.MultiDataProvider;
 import ch.srg.mediaplayer.service.MediaPlayerService;
 import ch.srg.mediaplayer.service.SRGMediaPlayerServiceMetaDataProvider;
 import ch.srg.mediaplayer.service.session.MediaSessionManager;
+import ch.srg.srgmediaplayer.utils.Cancellable;
 
 /**
  * Created by seb on 07/04/15.
@@ -80,8 +81,9 @@ public class DemoApplication extends Application {
 			}
 
 			@Override
-			public void getMediaMetadata(String mediaIdentifier, GetMediaMetadataCallback callback) {
+			public Cancellable getMediaMetadata(String mediaIdentifier, GetMediaMetadataCallback callback) {
 				callback.onDataNotAvailable();
+				return Cancellable.NOT_CANCELLABLE;
 			}
 		});
 	}

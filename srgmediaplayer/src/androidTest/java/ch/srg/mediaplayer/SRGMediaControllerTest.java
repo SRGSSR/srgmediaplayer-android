@@ -149,7 +149,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         waitForState(SRGMediaPlayerController.State.PREPARING);
         waitForState(SRGMediaPlayerController.State.READY);
         String message = "error test (expected!)";
-        delegate.notifyError(new SRGMediaPlayerException(message));
+        delegate.notifyError(new SRGMediaPlayerException(message, true));
         waitForError(message);
     }
 

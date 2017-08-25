@@ -1,10 +1,14 @@
 package ch.srg.mediaplayer;
 
+import ch.srg.srgmediaplayer.utils.Cancellable;
+
 /**
- * Created by Axel on 27/02/2015.
+ * Copyright (c) SRG SSR. All rights reserved.
+ *
+ * License information is available from the LICENSE file.
  */
 public interface SRGMediaPlayerMetaDataProvider {
-	void getMediaMetadata(String mediaIdentifier, GetMediaMetadataCallback callback);
+	Cancellable getMediaMetadata(String mediaIdentifier, GetMediaMetadataCallback callback);
 
 	interface GetMediaMetadataCallback {
 		void onMediaMetadataLoaded(SRGMediaMetadata srgMediaMetadata);
