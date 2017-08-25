@@ -33,7 +33,6 @@ import java.util.WeakHashMap;
 import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
 import ch.srg.mediaplayer.internal.exoplayer.ExoPlayerDelegate;
 import ch.srg.mediaplayer.service.AudioIntentReceiver;
-import ch.srg.srgmediaplayer.utils.Cancellable;
 
 /**
  * Handle the playback of media.
@@ -67,7 +66,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private long controllerId;
     private static long controllerIdCounter;
     private Object metadata;
-    private Cancellable dataProvider;
+    private SRGMediaPlayerDataProvider.MetadataMonitor metadataMonitor;
 
     public static String getName() {
         return NAME;
@@ -825,10 +824,10 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         currentMediaIdentifier = mediaIdentifier;
         currentMediaUrl = null;
 
-        if (dataProvider != null) {
-            dataProvider.cancel();
+        if (metadataMonitor != null) {
+            metadataMonitor.stop();
         }
-        dataProvider = mediaPlayerDataProvider.getUri(mediaIdentifier, SRGMediaPlayerDataProvider.PLAYER_TYPE_EXOPLAYER, new SRGMediaPlayerDataProvider.GetUriCallback() {
+        metadataMonitor = mediaPlayerDataProvider.startUriMonitor(mediaIdentifier, SRGMediaPlayerDataProvider.PLAYER_TYPE_EXOPLAYER, new SRGMediaPlayerDataProvider.GetUriCallback() {
             @Override
             public void onUriLoadedOrUpdated(String mediaIdentifier, Uri uri, String realMediaIdentifier, Long position, int streamType) {
                 if (realMediaIdentifier == null) {
@@ -1003,8 +1002,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     private void releaseInternal() {
-        if (dataProvider != null) {
-            dataProvider.cancel();
+        if (metadataMonitor != null) {
+            metadataMonitor.stop();
         }
         currentSeekTarget = null;
         setStateInternal(State.RELEASED);

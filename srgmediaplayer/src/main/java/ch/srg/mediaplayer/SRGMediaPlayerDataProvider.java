@@ -6,13 +6,12 @@ import android.support.annotation.IntDef;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
-import ch.srg.srgmediaplayer.utils.Cancellable;
-
 /**
  * Copyright (c) SRG SSR. All rights reserved.
  * <p>
  * License information is available from the LICENSE file.
  */
+@SuppressWarnings("UnnecessaryInterfaceModifier")
 public interface SRGMediaPlayerDataProvider {
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({MEDIA_TYPE_UNKNOWN, MEDIA_TYPE_AUDIO, MEDIA_TYPE_VIDEO})
@@ -59,9 +58,25 @@ public interface SRGMediaPlayerDataProvider {
         void onUriNonPlayable(String mediaIdentifier, SRGMediaPlayerException exception);
 
         /**
-         * @param metadata        Any metadata will be stored in controller and passed in events
+         * @param metadata Any metadata will be stored in controller and passed in events
          */
         void onMetadataLoadedOrUpdated(Object metadata);
+    }
+
+    interface MetadataMonitor {
+        void start();
+
+        void stop();
+
+        MetadataMonitor NO_UPDATE = new MetadataMonitor() {
+            @Override
+            public void start() {
+            }
+
+            @Override
+            public void stop() {
+            }
+        };
     }
 
     /**
@@ -71,5 +86,5 @@ public interface SRGMediaPlayerDataProvider {
      * @param playerType      player delegate type ({@link #PLAYER_TYPE_CHROMECAST} or {@link #PLAYER_TYPE_EXOPLAYER}
      * @param getUriCallback  callback
      */
-    Cancellable getUri(String mediaIdentifier, @SRGPlayerType int playerType, GetUriCallback getUriCallback);
+    MetadataMonitor startUriMonitor(String mediaIdentifier, @SRGPlayerType int playerType, GetUriCallback getUriCallback);
 }

@@ -21,9 +21,9 @@ public class DirectMappingDataProvider implements SRGMediaPlayerDataProvider, Se
 	}
 
 	@Override
-	public Cancellable getUri(String mediaIdentifier, int playerType, GetUriCallback getUriCallback) {
+	public MetadataMonitor startUriMonitor(String mediaIdentifier, int playerType, GetUriCallback getUriCallback) {
 		getUriCallback.onUriLoadedOrUpdated(mediaIdentifier, Uri.parse(mediaIdentifier), mediaIdentifier, null, STREAM_HLS);
-		return Cancellable.NOT_CANCELLABLE;
+		return MetadataMonitor.NO_UPDATE;
 	}
 
 	@Override

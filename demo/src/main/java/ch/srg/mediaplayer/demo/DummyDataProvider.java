@@ -40,14 +40,14 @@ public class DummyDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
 	};
 
 	@Override
-	public Cancellable getUri(String mediaIdentifier, @SRGPlayerType int playerType, GetUriCallback callback) {
+	public MetadataMonitor startUriMonitor(String mediaIdentifier, @SRGPlayerType int playerType, GetUriCallback callback) {
 		String uriString = data.get(mediaIdentifier);
 		if (uriString == null) {
 			callback.onUriNonPlayable(mediaIdentifier, new SRGMediaPlayerException("no uri", true));
 		} else {
 			callback.onUriLoadedOrUpdated(mediaIdentifier, Uri.parse(uriString), mediaIdentifier, null, STREAM_HLS);
 		}
-		return Cancellable.NOT_CANCELLABLE;
+		return MetadataMonitor.NO_UPDATE;
 	}
 
 	public List<Segment> getSegments(String mediaIdentifier) {

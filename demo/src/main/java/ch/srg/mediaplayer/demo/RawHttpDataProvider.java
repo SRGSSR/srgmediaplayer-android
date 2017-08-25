@@ -30,7 +30,7 @@ public class RawHttpDataProvider implements SRGMediaPlayerDataProvider {
     }
 
     @Override
-    public Cancellable getUri(final String mediaIdentifier, @SRGPlayerType int playerType, final GetUriCallback callback) {
+    public MetadataMonitor startUriMonitor(final String mediaIdentifier, @SRGPlayerType int playerType, final GetUriCallback callback) {
         fetch(mediaIdentifier, new URLConnectionProcessor<Uri>() {
             @Override
             public void onSetupHttpURLConnection(HttpURLConnection urlConnection) throws IOException {
@@ -57,7 +57,7 @@ public class RawHttpDataProvider implements SRGMediaPlayerDataProvider {
                 return null;
             }
         });
-        return Cancellable.NOT_CANCELLABLE;
+        return MetadataMonitor.NO_UPDATE;
     }
 
     public interface URLConnectionProcessor<T> {

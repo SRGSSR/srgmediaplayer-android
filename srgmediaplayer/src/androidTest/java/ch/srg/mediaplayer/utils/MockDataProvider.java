@@ -36,7 +36,7 @@ public class MockDataProvider implements SRGMediaPlayerDataProvider {
     private int count;
 
     @Override
-    public Cancellable getUri(String mediaIdentifier, int playerType, GetUriCallback callback) {
+    public MetadataMonitor startUriMonitor(String mediaIdentifier, int playerType, GetUriCallback callback) {
         count++;
         String uriString = data.get(mediaIdentifier);
         if (uriString == null) {
@@ -44,7 +44,7 @@ public class MockDataProvider implements SRGMediaPlayerDataProvider {
         } else {
             callback.onUriLoadedOrUpdated(mediaIdentifier, Uri.parse(uriString), mediaIdentifier, null, STREAM_HLS);
         }
-        return Cancellable.NOT_CANCELLABLE;
+        return MetadataMonitor.NO_UPDATE;
     }
 
     public int getCount() {

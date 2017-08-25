@@ -58,9 +58,9 @@ public class MultiDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
     }
 
     @Override
-    public Cancellable getUri(final String originalMediaIdentifier, int playerType, final GetUriCallback getUriCallback) {
+    public MetadataMonitor startUriMonitor(final String originalMediaIdentifier, int playerType, final GetUriCallback getUriCallback) {
         final String originalPrefix = getPrefix(originalMediaIdentifier);
-        return getProvider(originalMediaIdentifier).getUri(getIdentifier(originalMediaIdentifier), playerType, new GetUriCallback() {
+        return getProvider(originalMediaIdentifier).startUriMonitor(getIdentifier(originalMediaIdentifier), playerType, new GetUriCallback() {
             @Override
             public void onUriLoadedOrUpdated(String mediaIdentifier, Uri uri, String realMediaIdentifier, Long position, int streamType) {
                 getUriCallback.onUriLoadedOrUpdated(originalMediaIdentifier, uri, originalPrefix + ":" + realMediaIdentifier, position, streamType);
