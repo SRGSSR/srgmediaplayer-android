@@ -3,12 +3,15 @@ package ch.srg.mediaplayer.segment.data;
 import java.util.List;
 
 import ch.srg.mediaplayer.segment.model.Segment;
+import ch.srg.srgmediaplayer.utils.Cancellable;
 
 /**
- * Created by npietri on 21.05.15.
+ * Copyright (c) SRG SSR. All rights reserved.
+ *
+ * License information is available from the LICENSE file.
  */
 public interface SegmentDataProvider {
-    void getSegmentList(String mediaIdentifier, GetSegmentListCallback callback);
+    Cancellable getSegmentList(String mediaIdentifier, GetSegmentListCallback callback);
 
 
     interface GetSegmentListCallback {

@@ -207,7 +207,7 @@ public class NativePlayerDelegate implements
 	@Override
 	public void bindRenderingViewInUiThread(SRGMediaPlayerView mediaPlayerView) throws SRGMediaPlayerException {
 		if (mediaPlayerView == null || !canRenderInView(mediaPlayerView.getVideoRenderingView())) {
-			throw new SRGMediaPlayerException("NativePlayerDelegate can render video in a " + mediaPlayerView);
+			throw new SRGMediaPlayerException("NativePlayerDelegate can render video in a " + mediaPlayerView, true);
 		}
 		SurfaceView surfaceView = (SurfaceView) mediaPlayerView.getVideoRenderingView();
 		if (surfaceView != null && surfaceView.getHolder() != null) {
@@ -342,7 +342,7 @@ public class NativePlayerDelegate implements
 		private final int extra;
 
 		public NativePlayerDelegateException(int what, int extra) {
-			super(toMessage(what, extra));
+			super(toMessage(what, extra), true);
 			this.what = what;
 			this.extra = extra;
 		}

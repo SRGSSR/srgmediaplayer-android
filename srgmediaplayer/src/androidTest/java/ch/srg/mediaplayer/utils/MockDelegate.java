@@ -71,7 +71,7 @@ public class MockDelegate implements PlayerDelegate {
             }
             if (TextUtils.isEmpty(videoSourceUrl)) {
                 state = State.ERROR;
-                throw new SRGMediaPlayerException("VideoSource is empty");
+                throw new SRGMediaPlayerException("VideoSource is empty", true);
             }
             state = State.PREPARING;
             controller.onPlayerDelegatePreparing(this);

@@ -297,7 +297,7 @@ public class ExoPlayerDelegate implements
     @Override
     public void bindRenderingViewInUiThread(SRGMediaPlayerView mpv) throws SRGMediaPlayerException {
         if (mpv == null || !canRenderInView(mpv.getVideoRenderingView())) {
-            throw new SRGMediaPlayerException("ExoPlayerDelegate cannot render video in a " + mpv);
+            throw new SRGMediaPlayerException("ExoPlayerDelegate cannot render video in a " + mpv, true);
         }
         renderingView = mpv.getVideoRenderingView();
         pushSurface(false);

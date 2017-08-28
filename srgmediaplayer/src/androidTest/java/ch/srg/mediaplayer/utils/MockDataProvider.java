@@ -7,9 +7,12 @@ import java.util.Map;
 
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
+import ch.srg.srgmediaplayer.utils.Cancellable;
 
 /**
- * Created by npietri on 12.06.15.
+ * Copyright (c) SRG SSR. All rights reserved.
+ *
+ * License information is available from the LICENSE file.
  */
 public class MockDataProvider implements SRGMediaPlayerDataProvider {
 
@@ -33,14 +36,15 @@ public class MockDataProvider implements SRGMediaPlayerDataProvider {
     private int count;
 
     @Override
-    public void getUri(String mediaIdentifier, int playerType, GetUriCallback callback) {
+    public MetadataMonitor startUriMonitor(String mediaIdentifier, int playerType, GetUriCallback callback) {
         count++;
         String uriString = data.get(mediaIdentifier);
         if (uriString == null) {
-            callback.onUriLoadFailed(mediaIdentifier, new SRGMediaPlayerException("no uri"));
+            callback.onUriNonPlayable(mediaIdentifier, new SRGMediaPlayerException("no uri", true));
         } else {
-            callback.onUriLoaded(mediaIdentifier, Uri.parse(uriString), mediaIdentifier, null, STREAM_HLS);
+            callback.onUriLoadedOrUpdated(mediaIdentifier, Uri.parse(uriString), mediaIdentifier, null, STREAM_HLS);
         }
+        return MetadataMonitor.NO_UPDATE;
     }
 
     public int getCount() {

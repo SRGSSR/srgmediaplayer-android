@@ -65,6 +65,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private AudioIntentReceiver becomingNoisyReceiver;
     private long controllerId;
     private static long controllerIdCounter;
+    private Object metadata;
+    private SRGMediaPlayerDataProvider.MetadataMonitor metadataMonitor;
 
     public static String getName() {
         return NAME;
@@ -109,6 +111,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private static final int MSG_REGISTER_EVENT_LISTENER = 13;
     private static final int MSG_UNREGISTER_EVENT_LISTENER = 14;
     private static final int MSG_SWAP_PLAYER_DELEGATE = 15;
+    private static final int MSG_CHECK_METADATA_CHANGE = 16;
+
     private static final int MSG_PLAYER_DELEGATE_PREPARING = 101;
     private static final int MSG_PLAYER_DELEGATE_READY = 102;
     private static final int MSG_PLAYER_DELEGATE_BUFFERING = 103;
@@ -158,6 +162,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             FATAL_ERROR,
             TRANSIENT_ERROR, /* To be removed ? */
 
+            MEDIA_METADATA_CHANGED,
+
             MEDIA_READY_TO_PLAY,
             MEDIA_COMPLETED,
             MEDIA_STOPPED,
@@ -191,6 +197,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         public final long mediaPlaylistStartTime;
         public final boolean mediaLive;
         public final ScreenType screenType;
+
+        public final Object metadata;
 
         public final State state;
         public final SRGMediaPlayerException exception;
@@ -227,6 +235,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             mediaPlaylistStartTime = controller.getPlaylistStartTime();
             videoViewDimension = controller.mediaPlayerView != null ? controller.mediaPlayerView.getVideoRenderingViewSizeString() : SRGMediaPlayerView.UNKNOWN_DIMENSION;
             screenType = controller.getScreenType();
+            metadata = controller.getMetadata();
         }
 
         protected Event(SRGMediaPlayerController controller, SRGMediaPlayerException eventException) {
@@ -253,6 +262,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     ", mediaPlaylistStartTime=" + mediaPlaylistStartTime +
                     ", mediaLive=" + mediaLive +
                     ", screenType=" + screenType +
+                    ", metadata=" + metadata +
                     ", state=" + state +
                     ", exception=" + exception +
                     '}';
@@ -448,13 +458,15 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         Long position;
         String mediaIdentifier;
         int streamType;
+        Object metadata;
 
-        public PrepareUriData(Uri uri, PlayerDelegate playerDelegate, String mediaIdentifier, Long position, int streamType) {
+        public PrepareUriData(Uri uri, PlayerDelegate playerDelegate, Long position, String mediaIdentifier, int streamType, Object metadata) {
             this.uri = uri;
             this.playerDelegate = playerDelegate;
-            this.mediaIdentifier = mediaIdentifier;
             this.position = position;
+            this.mediaIdentifier = mediaIdentifier;
             this.streamType = streamType;
+            this.metadata = metadata;
         }
 
         @Override
@@ -550,7 +562,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             case MSG_PREPARE_FOR_MEDIA_IDENTIFIER: {
                 String mediaIdentifier = (String) msg.obj;
                 releaseDelegateInternal();
-                prepareForIdentifierInternal(mediaIdentifier, playerDelegateFactory.getDelegateForMediaIdentifier(this, mediaIdentifier));
+                prepareForIdentifierInternal(mediaIdentifier, null);
                 seekToWhenReady = null;
                 return true;
             }
@@ -568,34 +580,39 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     seekToWhenReady = data.position;
                 }
 
-                currentMediaUrl = String.valueOf(uri);
                 currentMediaIdentifier = data.mediaIdentifier;
-                postEventInternal(Event.Type.MEDIA_READY_TO_PLAY);
-                try {
-                    if (playerDelegate == null) {
-                        createPlayerDelegateInternal(currentMediaIdentifier);
-                    } else {
-                        currentMediaPlayerDelegate = playerDelegate;
-                    }
-                    if (currentMediaPlayerDelegate != null) {
-                        if (mediaPlayerView != null) {
-                            internalUpdateMediaPlayerViewBound();
+                this.metadata = data.metadata;
+                if (uri != null) {
+                    currentMediaUrl = String.valueOf(uri);
+                    postEventInternal(Event.Type.MEDIA_READY_TO_PLAY);
+                    try {
+                        if (playerDelegate == null) {
+                            createPlayerDelegateInternal(currentMediaIdentifier);
+                        } else {
+                            currentMediaPlayerDelegate = playerDelegate;
                         }
-                        currentMediaPlayerDelegate.playIfReady(playWhenReady);
-                        if (seekToWhenReady != null) {
-                            try {
-                                currentMediaPlayerDelegate.seekTo(seekToWhenReady);
-                                seekToWhenReady = null;
-                            } catch (IllegalStateException ignored) {
+                        if (currentMediaPlayerDelegate != null) {
+                            if (mediaPlayerView != null) {
+                                internalUpdateMediaPlayerViewBound();
                             }
+                            currentMediaPlayerDelegate.playIfReady(playWhenReady);
+                            if (seekToWhenReady != null) {
+                                try {
+                                    currentMediaPlayerDelegate.seekTo(seekToWhenReady);
+                                    seekToWhenReady = null;
+                                } catch (IllegalStateException ignored) {
+                                }
+                            }
+                            currentMediaPlayerDelegate.prepare(uri, data.streamType);
+                        } else {
+                            handleExceptionInternal(new SRGMediaPlayerException("No delegate for this media identifier", true));
                         }
-                        currentMediaPlayerDelegate.prepare(uri, data.streamType);
-                    } else {
-                        handleFatalExceptionInternal(new SRGMediaPlayerException("No delegate for this media identifier"));
+                    } catch (SRGMediaPlayerException e) {
+                        logE("onUriLoadedOrUpdated", e);
+                        handleExceptionInternal(e);
                     }
-                } catch (SRGMediaPlayerException e) {
-                    logE("onUriLoaded", e);
-                    handleFatalExceptionInternal(e);
+                } else {
+                    currentMediaUrl = null;
                 }
                 return true;
             }
@@ -644,9 +661,14 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 releaseInternal();
                 return true;
             }
+            case MSG_DATA_PROVIDER_EXCEPTION:
+                releaseDelegateInternal();
+                // Go through
             case MSG_DELEGATE_EXCEPTION:
-            case MSG_DATA_PROVIDER_EXCEPTION: {
-                handleFatalExceptionInternal((SRGMediaPlayerException) msg.obj);
+                {
+                SRGMediaPlayerException exception = (SRGMediaPlayerException) msg.obj;
+                handleExceptionInternal(exception);
+
                 return true;
             }
             case MSG_REGISTER_EVENT_LISTENER: {
@@ -678,6 +700,13 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                         Log.e(TAG, "Illegal state exception when releasing delegate");
                     }
                     prepareForIdentifierInternal(currentMediaIdentifier, newDelegate);
+                }
+                return true;
+            }
+            case MSG_CHECK_METADATA_CHANGE: {
+                if (metadata == null || !metadata.equals(msg.obj)) {
+                    metadata = msg.obj;
+                    broadcastEvent(Event.Type.MEDIA_METADATA_CHANGED);
                 }
                 return true;
             }
@@ -791,7 +820,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
     }
 
-    private void prepareForIdentifierInternal(String mediaIdentifier, final PlayerDelegate playerDelegate) {
+    private void prepareForIdentifierInternal(String mediaIdentifier, @Nullable final PlayerDelegate playerDelegate) {
         setStateInternal(State.PREPARING);
         if (mediaIdentifier == null) {
             throw new IllegalArgumentException("Media identifier is null in prepare for identifier");
@@ -799,17 +828,31 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         currentMediaIdentifier = mediaIdentifier;
         currentMediaUrl = null;
 
-        mediaPlayerDataProvider.getUri(mediaIdentifier, SRGMediaPlayerDataProvider.PLAYER_TYPE_EXOPLAYER, new SRGMediaPlayerDataProvider.GetUriCallback() {
+        if (metadataMonitor != null) {
+            metadataMonitor.stop();
+        }
+        metadataMonitor = mediaPlayerDataProvider.startUriMonitor(mediaIdentifier, SRGMediaPlayerDataProvider.PLAYER_TYPE_EXOPLAYER, new SRGMediaPlayerDataProvider.GetUriCallback() {
             @Override
-            public void onUriLoaded(String mediaIdentifier, Uri uri, String realMediaIdentifier, Long position, int streamType) {
+            public void onUriLoadedOrUpdated(String mediaIdentifier, Uri uri, String realMediaIdentifier, Long position, int streamType) {
                 if (realMediaIdentifier == null) {
                     throw new IllegalArgumentException("realMediaIdentifier may not be null");
                 }
-                sendMessage(MSG_PREPARE_FOR_URI, new PrepareUriData(uri, playerDelegate, realMediaIdentifier, position, streamType));
+                if (!TextUtils.equals(String.valueOf(uri), currentMediaUrl)) {
+                    PlayerDelegate delegate =
+                            playerDelegate != null ?
+                                    playerDelegate :
+                                    playerDelegateFactory.getDelegateForMediaIdentifier(SRGMediaPlayerController.this, mediaIdentifier);
+                    sendMessage(MSG_PREPARE_FOR_URI, new PrepareUriData(uri, delegate, position, realMediaIdentifier, streamType, metadata));
+                }
             }
 
             @Override
-            public void onUriLoadFailed(String mediaIdentifier, SRGMediaPlayerException exception) {
+            public void onMetadataLoadedOrUpdated(Object metadata) {
+                sendMessage(MSG_CHECK_METADATA_CHANGE, metadata);
+            }
+
+            @Override
+            public void onUriNonPlayable(String mediaIdentifier, SRGMediaPlayerException exception) {
                 sendMessage(MSG_DATA_PROVIDER_EXCEPTION, exception);
             }
         });
@@ -871,10 +914,14 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         return state;
     }
 
-    /*package*/ void handleFatalExceptionInternal(SRGMediaPlayerException e) {
+    /*package*/ void handleExceptionInternal(SRGMediaPlayerException e) {
         logE("exception occurred", e);
-        postErrorEventInternal(true, e);
-        releaseInternal();
+        if (e.isFatal()) {
+            postErrorEventInternal(true, e);
+            releaseInternal();
+        } else {
+            postErrorEventInternal(false, e);
+        }
     }
 
     @Override
@@ -963,6 +1010,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     private void releaseInternal() {
+        if (metadataMonitor != null) {
+            metadataMonitor.stop();
+        }
         currentSeekTarget = null;
         setStateInternal(State.RELEASED);
         abandonAudioFocus();
@@ -1685,5 +1735,13 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         return getState() == SRGMediaPlayerController.State.PREPARING
                 || getState() == SRGMediaPlayerController.State.BUFFERING
                 || isSeekPending();
+    }
+
+    public Object getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(Object metadata) {
+        this.metadata = metadata;
     }
 }
