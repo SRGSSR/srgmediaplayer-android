@@ -838,11 +838,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     throw new IllegalArgumentException("realMediaIdentifier may not be null");
                 }
                 if (!TextUtils.equals(String.valueOf(uri), currentMediaUrl)) {
-                    PlayerDelegate delegate =
-                            playerDelegate != null ?
-                                    playerDelegate :
-                                    playerDelegateFactory.getDelegateForMediaIdentifier(SRGMediaPlayerController.this, mediaIdentifier);
-                    sendMessage(MSG_PREPARE_FOR_URI, new PrepareUriData(uri, delegate, position, realMediaIdentifier, streamType, metadata));
+                    sendMessage(MSG_PREPARE_FOR_URI, new PrepareUriData(uri, playerDelegate, position, realMediaIdentifier, streamType, metadata));
                 }
             }
 
@@ -1012,6 +1008,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private void releaseInternal() {
         if (metadataMonitor != null) {
             metadataMonitor.stop();
+            metadataMonitor = null;
         }
         currentSeekTarget = null;
         setStateInternal(State.RELEASED);
