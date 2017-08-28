@@ -5,7 +5,9 @@ import android.net.Uri;
 import ch.srg.mediaplayer.PlayerDelegate;
 
 /**
- * Created by npietri on 05.06.15.
+ * Copyright (c) SRG SSR. All rights reserved.
+ *
+ * License information is available from the LICENSE file.
  */
 public interface PlayerDelegateFactory {
     PlayerDelegate getDelegateForMediaIdentifier(PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, String mediaIdentifier);

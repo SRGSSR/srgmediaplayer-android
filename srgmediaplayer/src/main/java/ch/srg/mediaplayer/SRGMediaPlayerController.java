@@ -562,7 +562,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             case MSG_PREPARE_FOR_MEDIA_IDENTIFIER: {
                 String mediaIdentifier = (String) msg.obj;
                 releaseDelegateInternal();
-                prepareForIdentifierInternal(mediaIdentifier, playerDelegateFactory.getDelegateForMediaIdentifier(this, mediaIdentifier));
+                prepareForIdentifierInternal(mediaIdentifier, null);
                 seekToWhenReady = null;
                 return true;
             }
@@ -661,10 +661,14 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 releaseInternal();
                 return true;
             }
+            case MSG_DATA_PROVIDER_EXCEPTION:
+                releaseDelegateInternal();
+                // Go through
             case MSG_DELEGATE_EXCEPTION:
-            case MSG_DATA_PROVIDER_EXCEPTION: {
+                {
                 SRGMediaPlayerException exception = (SRGMediaPlayerException) msg.obj;
                 handleExceptionInternal(exception);
+
                 return true;
             }
             case MSG_REGISTER_EVENT_LISTENER: {
@@ -816,7 +820,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
     }
 
-    private void prepareForIdentifierInternal(String mediaIdentifier, final PlayerDelegate playerDelegate) {
+    private void prepareForIdentifierInternal(String mediaIdentifier, @Nullable final PlayerDelegate playerDelegate) {
         setStateInternal(State.PREPARING);
         if (mediaIdentifier == null) {
             throw new IllegalArgumentException("Media identifier is null in prepare for identifier");
@@ -834,7 +838,11 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     throw new IllegalArgumentException("realMediaIdentifier may not be null");
                 }
                 if (!TextUtils.equals(String.valueOf(uri), currentMediaUrl)) {
-                    sendMessage(MSG_PREPARE_FOR_URI, new PrepareUriData(uri, playerDelegate, position, realMediaIdentifier, streamType, metadata));
+                    PlayerDelegate delegate =
+                            playerDelegate != null ?
+                                    playerDelegate :
+                                    playerDelegateFactory.getDelegateForMediaIdentifier(SRGMediaPlayerController.this, mediaIdentifier);
+                    sendMessage(MSG_PREPARE_FOR_URI, new PrepareUriData(uri, delegate, position, realMediaIdentifier, streamType, metadata));
                 }
             }
 
