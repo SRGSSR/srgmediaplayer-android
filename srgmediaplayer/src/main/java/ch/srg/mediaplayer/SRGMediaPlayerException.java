@@ -9,7 +9,7 @@ public class SRGMediaPlayerException extends Exception {
 	private boolean fatal;
 
 	public SRGMediaPlayerException(String detailMessage, boolean fatal) {
-		this(detailMessage, null, false);
+		this(detailMessage, null, fatal);
 	}
 
 	public SRGMediaPlayerException(String detailMessage, Throwable throwable, boolean fatal) {
