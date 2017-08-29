@@ -34,6 +34,8 @@ import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
 import ch.srg.mediaplayer.internal.exoplayer.ExoPlayerDelegate;
 import ch.srg.mediaplayer.service.AudioIntentReceiver;
 
+import static ch.srg.mediaplayer.SRGMediaPlayerDataProvider.STREAM_NOT_PLAYABLE;
+
 /**
  * Handle the playback of media.
  * if used in conjonction with a SRGMediaPlayerView can handle Video playback base on delegation on
@@ -67,6 +69,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private static long controllerIdCounter;
     private Object metadata;
     private SRGMediaPlayerDataProvider.MetadataMonitor metadataMonitor;
+    private SRGMediaPlayerException dataProviderException;
 
     public static String getName() {
         return NAME;
@@ -840,6 +843,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 if (!TextUtils.equals(String.valueOf(uri), currentMediaUrl)) {
                     sendMessage(MSG_PREPARE_FOR_URI, new PrepareUriData(uri, playerDelegate, position, realMediaIdentifier, streamType, metadata));
                 }
+                dataProviderException = null;
             }
 
             @Override
@@ -850,6 +854,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             @Override
             public void onUriNonPlayable(String mediaIdentifier, SRGMediaPlayerException exception) {
                 sendMessage(MSG_DATA_PROVIDER_EXCEPTION, exception);
+                sendMessage(MSG_PREPARE_FOR_URI, new PrepareUriData(null, playerDelegate, null, mediaIdentifier, STREAM_NOT_PLAYABLE, metadata));
+                dataProviderException = exception;
             }
         });
     }
@@ -1740,5 +1746,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     public void setMetadata(Object metadata) {
         this.metadata = metadata;
+    }
+
+    public SRGMediaPlayerException getDataProviderException() {
+        return dataProviderException;
     }
 }
