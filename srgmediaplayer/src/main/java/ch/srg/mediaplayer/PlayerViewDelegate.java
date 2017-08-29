@@ -1,9 +1,12 @@
 package ch.srg.mediaplayer;
 
-/**
- * Created by npietri on 24.05.16.
- */
+import android.support.annotation.Nullable;
 
+/**
+ * Copyright (c) SRG SSR. All rights reserved.
+ *
+ * License information is available from the LICENSE file.
+ */
 public interface PlayerViewDelegate {
 
     void attachToController(SRGMediaPlayerController playerController);
