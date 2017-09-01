@@ -99,6 +99,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     @Test
     public void testIdleState() throws Exception {
         assertEquals(SRGMediaPlayerController.State.IDLE, controller.getState());
+        assertFalse(controller.isReleased());
     }
 
     @Test
@@ -120,6 +121,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         controller.play("NULL");
         waitForState(SRGMediaPlayerController.State.PREPARING);
         waitForState(SRGMediaPlayerController.State.RELEASED);
+        Assert.assertTrue(controller.isReleased());
         Assert.assertNotNull(lastError);
     }
 
@@ -141,6 +143,21 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         controller.pause();
         Thread.sleep(100);
         assertFalse(delegate.isPlaying());
+    }
+
+    @Test
+    public void testRelease() throws Exception {
+        controller.play(MEDIA_IDENTIFIER);
+        waitForState(SRGMediaPlayerController.State.PREPARING);
+        waitForState(SRGMediaPlayerController.State.READY);
+        assertFalse(controller.isReleased());
+
+        // Trigger a release. The controller is not immediately reaching the released state.
+        controller.release();
+        assertFalse(controller.isReleased());
+
+        waitForState(SRGMediaPlayerController.State.RELEASED);
+        assertTrue(controller.isReleased());
     }
 
     @Test
@@ -240,7 +257,6 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
             } catch (InterruptedException e) {
                 Assert.fail();
             }
-
         }
 
         private void setup() {
