@@ -27,8 +27,8 @@ repositories {
 
 dependencies {
     // Testing-only dependencies
-    androidTestImplementation 'com.android.support.test:runner:0.5'
-    androidTestImplementation 'com.android.support.test:rules:0.5'
+    androidTestImplementation "com.android.support.test:runner:$rootProject.androidSupportTest"
+    androidTestImplementation "com.android.support.test:rules:$rootProject.androidSupportTest"
 
     api "com.google.android.exoplayer:exoplayer-core:r$rootProject.exoPlayerVersion"
     implementation "com.google.android.exoplayer:exoplayer-hls:r$rootProject.exoPlayerVersion"
