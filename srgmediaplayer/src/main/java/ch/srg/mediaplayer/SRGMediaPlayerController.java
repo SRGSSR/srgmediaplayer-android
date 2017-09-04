@@ -944,6 +944,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     /**
      * Release the current player. Once the player is released you have to create a new player
      * if you want to play a new video.
+     * <p>
+     * Remark: The player does not immediately reach the released state.
      */
     public void release() {
         if (mediaPlayerView != null) {
