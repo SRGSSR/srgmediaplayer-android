@@ -22,12 +22,14 @@ public class MockDataProvider implements SRGMediaPlayerDataProvider {
             put("MULTI2", "https://srgssruni10ch-lh.akamaihd.net/i/enc10uni_ch@191367/master.m3u8");
             put("MULTI3", "https://srgssruni7ch-lh.akamaihd.net/i/enc7uni_ch@191283/master.m3u8");
             put("MULTI4", "https://srgssruni11ch-lh.akamaihd.net/i/enc11uni_ch@191455/master.m3u8");
+            put("NDR", "http://ndr_fs-lh.akamaihd.net/i/ndrfs_nds@119224/master.m3u8?dw=0");
+            put("NDR-DVR", "http://ndr_fs-lh.akamaihd.net/i/ndrfs_nds@119224/master.m3u8");
+            put("BIG-BUCK-NON-STREAMED", "http://www.sample-videos.com/video/mp4/720/big_buck_bunny_720p_1mb.mp4");
+            put("C-EST-PAS-TROP-TOT", "https://rtsww-a-d.rts.ch/la-1ere/programmes/c-est-pas-trop-tot/2017/c-est-pas-trop-tot_20170628_full_c-est-pas-trop-tot_007d77e7-61fb-4aef-9491-5e6b07f7f931-128k.mp3");
 
             put("INVALID", "http://invalid.stream/");
             put("NULL", null);
         }
-
-        ;
     };
 
     private int count;
