@@ -33,7 +33,12 @@ import ch.srg.mediaplayer.utils.SRGMediaPlayerControllerQueueListener;
 public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     public static final int TIMEOUT_STATE_CHANGE = 10000;
-    public static final String MEDIA_IDENTIFIER = "SPECIMEN";
+    public static final String VIDEO_ON_DEMAND_IDENTIFIER = "SPECIMEN";
+    public static final String NON_STREAMED_VIDEO_IDENTIFIER = "BIG-BUCK-NON-STREAMED";
+    public static final String VIDEO_LIVESTREAM_IDENTIFIER = "NDR";
+    public static final String VIDEO_DVR_LIVESTREAM_IDENTIFIER = "NDR-DVR";
+    public static final String AUDIO_ON_DEMAND_IDENTIFIER = "C-EST-PAS-TROP-TOT";
+
     private SRGMediaPlayerController controller;
 
     private SRGMediaPlayerControllerQueueListener queue;
@@ -104,13 +109,13 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     @Test
     public void testPreparingState() throws Exception {
-        controller.play(MEDIA_IDENTIFIER);
+        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
         waitForState(SRGMediaPlayerController.State.PREPARING);
     }
 
     @Test
     public void testPlayReady() throws Exception {
-        controller.play(MEDIA_IDENTIFIER);
+        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
         waitForState(SRGMediaPlayerController.State.PREPARING);
         waitForState(SRGMediaPlayerController.State.READY);
     }
@@ -147,7 +152,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     @Test
     public void testPlay() throws Exception {
-        controller.play(MEDIA_IDENTIFIER);
+        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
         waitForState(SRGMediaPlayerController.State.PREPARING);
         waitForState(SRGMediaPlayerController.State.READY);
         Thread.sleep(100);
@@ -207,7 +212,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     @Test
     public void testPause() throws Exception {
-        controller.play(MEDIA_IDENTIFIER);
+        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
         waitForState(SRGMediaPlayerController.State.PREPARING);
         waitForState(SRGMediaPlayerController.State.READY);
         controller.pause();
@@ -247,7 +252,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     @Test
     public void testRelease() throws Exception {
-        controller.play(MEDIA_IDENTIFIER);
+        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
         waitForState(SRGMediaPlayerController.State.PREPARING);
         waitForState(SRGMediaPlayerController.State.READY);
         assertFalse(controller.isReleased());
@@ -267,7 +272,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     @Test
     public void delegateErrorPropagation() throws Exception {
-        controller.play(MEDIA_IDENTIFIER);
+        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
         waitForState(SRGMediaPlayerController.State.PREPARING);
         waitForState(SRGMediaPlayerController.State.READY);
         String message = "error test (expected!)";
@@ -377,7 +382,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         }
 
         private void test() throws SRGMediaPlayerException, InterruptedException {
-            controller.play(MEDIA_IDENTIFIER);
+            controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
             potentialSleep();
             controller.release();
             potentialSleep();
