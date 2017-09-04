@@ -116,6 +116,26 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     }
 
     @Test
+    public void testPlayTwice() throws Exception {
+
+    }
+
+    @Test
+    public void testPlayAudioOverHTTP() throws Exception {
+
+    }
+
+    @Test
+    public void testHTTP404() throws Exception {
+
+    }
+
+    @Test
+    public void TestHTTP403() throws Exception {
+
+    }
+
+    @Test
     public void testNullUriError() throws Exception {
         delegate.setVideoSourceUrl("this is not null");
         controller.play("NULL");
@@ -136,6 +156,56 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     }
 
     @Test
+    public void testVideoPlayback() throws Exception {
+
+    }
+
+    @Test
+    public void testAudioPlayback() throws Exception {
+
+    }
+
+    @Test
+    public void testOnDemandPlayback() throws Exception {
+
+    }
+
+    @Test
+    public void testLivestreamPlayback() throws Exception {
+
+    }
+
+    @Test
+    public void testDVRLivestreamPlayback() throws Exception {
+
+    }
+
+    @Test
+    public void testOnDemandMediaPlaythrough() throws Exception {
+
+    }
+
+    @Test
+    public void testNonStreamedMediaPlaythrough() throws Exception {
+
+    }
+
+    @Test
+    public void testPlayAtPosition() throws Exception {
+
+    }
+
+    @Test
+    public void testPlayAtStreamEnd() throws Exception {
+
+    }
+
+    @Test
+    public void testPlayAfterStreamEnd() throws Exception {
+
+    }
+
+    @Test
     public void testPause() throws Exception {
         controller.play(MEDIA_IDENTIFIER);
         waitForState(SRGMediaPlayerController.State.PREPARING);
@@ -143,6 +213,36 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         controller.pause();
         Thread.sleep(100);
         assertFalse(delegate.isPlaying());
+    }
+
+    @Test
+    public void testSeek() throws Exception {
+
+    }
+
+    @Test
+    public void testMultipleSeeks() throws Exception {
+
+    }
+
+    @Test
+    public void testSeekWhileNotPlaying() throws Exception {
+
+    }
+
+    @Test
+    public void testSeekWhilePaused() throws Exception {
+
+    }
+
+    @Test
+    public void testSeekWhileReleasing() throws Exception {
+
+    }
+
+    @Test
+    public void testSeekWhileReleased() throws Exception {
+
     }
 
     @Test
@@ -158,6 +258,11 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
         waitForState(SRGMediaPlayerController.State.RELEASED);
         assertTrue(controller.isReleased());
+    }
+
+    @Test
+    public void testMute() throws Exception {
+
     }
 
     @Test
