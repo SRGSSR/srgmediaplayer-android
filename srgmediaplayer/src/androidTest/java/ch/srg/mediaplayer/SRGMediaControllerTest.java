@@ -104,15 +104,21 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     @Test
     public void testIdleState() throws Exception {
         assertEquals(SRGMediaPlayerController.State.IDLE, controller.getState());
-        assertFalse(controller.isReleased());
         assertNull(controller.getMediaIdentifier());
+        assertFalse(controller.isReleased());
+        assertFalse(controller.isPlaying());
+        assertFalse(controller.isLoading());
+        assertFalse(controller.isLive());
+        assertEquals(SRGMediaPlayerController.UNKNOWN_TIME, controller.getLiveTime());
+        assertEquals(SRGMediaPlayerController.UNKNOWN_TIME, controller.getMediaDuration());
+        assertFalse(controller.hasVideoTrack());
     }
 
     @Test
     public void testPreparingState() throws Exception {
         // TODO: This test intentionally fails. The media identifier should probably be available right from the start. Currently it is only available after the preparing state has been reached
         controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
-        assertEquals(controller.getMediaIdentifier(), VIDEO_ON_DEMAND_IDENTIFIER);
+        assertEquals(VIDEO_ON_DEMAND_IDENTIFIER, controller.getMediaIdentifier());
         waitForState(SRGMediaPlayerController.State.PREPARING);
     }
 
