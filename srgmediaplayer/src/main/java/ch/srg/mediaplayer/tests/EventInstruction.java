@@ -7,9 +7,10 @@ import ch.srg.mediaplayer.SRGMediaPlayerController;
  * <p>
  * License information is available from the LICENSE file.
  */
-public class EventInstruction extends Instruction implements SRGMediaPlayerController.Listener {
+public abstract class EventInstruction extends Instruction implements SRGMediaPlayerController.Listener {
 
-    private boolean received;
+    private SRGMediaPlayerController.Event lastEvent;
+    private boolean fulfilled;
 
     public EventInstruction() {
         SRGMediaPlayerController.registerGlobalEventListener(this);
@@ -17,18 +18,22 @@ public class EventInstruction extends Instruction implements SRGMediaPlayerContr
 
     @Override
     public String getDescription() {
-        return "Event Instruction for: " + event;
+        return fulfilled ? "Fulfilled with event: " + lastEvent : "Not fulfilled";
     }
 
     @Override
-    public boolean checkCondition() {
-        return false;
+    public final boolean checkCondition() {
+        return fulfilled;
     }
+
+    public abstract boolean checkCondition(SRGMediaPlayerController.Event event);
 
     @Override
     public void onMediaPlayerEvent(SRGMediaPlayerController mp, SRGMediaPlayerController.Event event) {
-        received = checkCondition();
-        if (received) {
+        lastEvent = event;
+
+        fulfilled = checkCondition(event);
+        if (fulfilled) {
             SRGMediaPlayerController.unregisterGlobalEventListener(this);
         }
     }
