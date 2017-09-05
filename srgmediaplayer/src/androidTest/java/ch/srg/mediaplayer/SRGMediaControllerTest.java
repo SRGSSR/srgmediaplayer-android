@@ -17,15 +17,18 @@ import org.junit.runner.RunWith;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
 
 import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
+import ch.srg.mediaplayer.tests.ConditionWatcher;
+import ch.srg.mediaplayer.tests.EventInstruction;
 import ch.srg.mediaplayer.utils.MockDataProvider;
 import ch.srg.mediaplayer.utils.MockDelegate;
 import ch.srg.mediaplayer.utils.SRGMediaPlayerControllerQueueListener;
 
 /**
  * Created by npietri on 12.06.15.
- *
+ * <p>
  * These tests work with a mock delegate and data provider, they do not do any playing or url decoding.
  * The goal is to test the player controller, its contract and robustness.
  */
@@ -348,6 +351,34 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
             }
         }
         return false;
+    }
+
+    private boolean waitUntilEvent(final SRGMediaPlayerController.Event.Type eventType) {
+        try {
+            ConditionWatcher.getInstance().waitForCondition(new EventInstruction() {
+                @Override
+                public boolean checkCondition(SRGMediaPlayerController.Event event) {
+                    return event.type == eventType;
+                }
+            });
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean waitUntilState(final SRGMediaPlayerController.State state) {
+        try {
+            ConditionWatcher.getInstance().waitForCondition(new EventInstruction() {
+                @Override
+                public boolean checkCondition(SRGMediaPlayerController.Event event) {
+                    return event.state == state;
+                }
+            });
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private interface EventCondition {
