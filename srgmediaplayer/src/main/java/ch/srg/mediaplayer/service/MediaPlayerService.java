@@ -24,7 +24,6 @@ import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerFactory;
-import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
 import ch.srg.mediaplayer.service.session.MediaSessionManager;
 
 /**
@@ -100,7 +99,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     public boolean isDestroyed;
 
     private Runnable statusUpdater;
-    private static PlayerDelegateFactory playerDelegateFactory;
     private static boolean debugMode;
 
     private MediaSessionManager mediaSessionManager;
@@ -362,9 +360,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
         }
         player = new SRGMediaPlayerController(getApplicationContext(), dataProvider, TAG);
         player.setDebugMode(debugMode);
-        if (MediaPlayerService.playerDelegateFactory != null) {
-            player.setPlayerDelegateFactory(MediaPlayerService.playerDelegateFactory);
-        }
         player.registerEventListener(this);
         if (srgMediaPlayerListener != null) {
             srgMediaPlayerListener.onServiceMediaPlayerChange(player);
@@ -607,11 +602,6 @@ public class MediaPlayerService extends Service implements SRGMediaPlayerControl
     public static void setDataProvider(SRGMediaPlayerDataProvider dataProvider) {
         Log.d(TAG, "setDataProvider: " + dataProvider);
         MediaPlayerService.dataProvider = dataProvider;
-    }
-
-    public static void setPlayerDelegateFactory(PlayerDelegateFactory playerDelegateFactory) {
-        Log.d(TAG, "setPlayerDelegateFactory: " + playerDelegateFactory);
-        MediaPlayerService.playerDelegateFactory = playerDelegateFactory;
     }
 
     public static void setDebugMode(boolean debugMode) {

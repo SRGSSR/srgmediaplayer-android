@@ -86,7 +86,6 @@ public class SimplePlayerActivity extends AppCompatActivity implements
     private void createPlayerController() {
         srgMediaPlayer = new SRGMediaPlayerController(this, dataProvider, PLAYER_TAG);
         srgMediaPlayer.setDebugMode(true);
-        srgMediaPlayer.setPlayerDelegateFactory(((DemoApplication) getApplication()).getPlayerDelegateFactory());
     }
 
     public void playTestIdentifier(String identifier) {

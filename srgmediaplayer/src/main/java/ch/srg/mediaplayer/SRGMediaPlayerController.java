@@ -74,7 +74,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         return VERSION;
     }
 
-    public static final long UNKNOWN_TIME = PlayerDelegate.UNKNOWN_TIME;
+    public static final long UNKNOWN_TIME = -1;
 
     /**
      * Disable audio focus handling. Always play audio.
@@ -1357,20 +1357,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
     }
 
-    /**
-     * Specify a custom PlayerDelegateFactory, you should use this if you need to use a different
-     * delegate or if you want to use our ExoPlayerDelegate for AAC audio playing.
-     *
-     * @param playerDelegateFactory
-     */
-    public void setPlayerDelegateFactory(PlayerDelegateFactory playerDelegateFactory) {
-        this.playerDelegateFactory = playerDelegateFactory;
-    }
-
-    public PlayerDelegateFactory getPlayerDelegateFactory() {
-        return playerDelegateFactory;
-    }
-
     public Context getContext() {
         return context;
     }
@@ -1550,25 +1536,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             this.mainPlayer = mainPlayer;
             forceBroadcastStateChange();
         }
-    }
-
-    /**
-     * Change the player delegate for another one. The currently playing stream will be stopped on the old
-     * player delegate and resumed with the new one.
-     * <p/>
-     * Warning this only impacts the current stream.
-     *
-     * @param playerDelegate player delegate or null to use the default one (using current delegate factory)
-     */
-    public void swapPlayerDelegate(PlayerDelegate playerDelegate) {
-        if (playerDelegate == null && currentMediaIdentifier != null) {
-            playerDelegate = playerDelegateFactory.getDelegateForMediaIdentifier(this, currentMediaIdentifier);
-        }
-        sendMessage(MSG_SWAP_PLAYER_DELEGATE, playerDelegate);
-    }
-
-    public PlayerDelegate getPlayerDelegate() {
-        return currentMediaPlayerDelegate;
     }
 
     public boolean isRemote() {

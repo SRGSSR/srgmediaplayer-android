@@ -76,7 +76,6 @@ public class MultiDemoMediaPlayerActivity extends Activity implements
 	private SRGMediaPlayerController createPlayerController() {
 		SRGMediaPlayerController mp = new SRGMediaPlayerController(this, DemoApplication.multiDataProvider, PLAYER_TAG);
 		mp.setDebugMode(true);
-		mp.setPlayerDelegateFactory(((DemoApplication) getApplication()).getPlayerDelegateFactory());
 		mp.setAudioFocusBehaviorFlag(SRGMediaPlayerController.AUDIO_FOCUS_FLAG_DISABLED);
 
 		return mp;

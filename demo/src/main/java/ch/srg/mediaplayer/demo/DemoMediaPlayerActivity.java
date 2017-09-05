@@ -29,21 +29,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import ch.srg.mediaplayer.PlayerDelegate;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerView;
 import ch.srg.mediaplayer.SubtitleTrack;
+import ch.srg.mediaplayer.demo.view.LivePlayerControlView;
 import ch.srg.mediaplayer.helper.SystemUiHelper;
-import ch.srg.mediaplayer.internal.exoplayer.ExoPlayerDelegate;
-import ch.srg.mediaplayer.internal.nativeplayer.NativePlayerDelegate;
 import ch.srg.mediaplayer.providers.MultiDataProvider;
 import ch.srg.mediaplayer.segment.controller.SegmentController;
 import ch.srg.mediaplayer.segment.data.SegmentDataProvider;
 import ch.srg.mediaplayer.segment.model.Segment;
 import ch.srg.mediaplayer.segment.view.PlayerControlView;
 import ch.srg.mediaplayer.segment.view.SegmentView;
-import ch.srg.mediaplayer.demo.view.LivePlayerControlView;
 
 public class DemoMediaPlayerActivity extends AppCompatActivity implements
         SRGMediaPlayerController.Listener, View.OnClickListener {
@@ -217,7 +214,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
 
     private SRGMediaPlayerController createPlayer() {
         srgMediaPlayer = new SRGMediaPlayerController(this, dataProvider, PLAYER_TAG);
-        srgMediaPlayer.setPlayerDelegateFactory(((DemoApplication) getApplication()).getPlayerDelegateFactory());
         srgMediaPlayer.setDebugMode(true);
         return srgMediaPlayer;
     }
@@ -323,9 +319,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
             case R.id.button_seek_live:
                 srgMediaPlayer.seekTo(0);
                 break;
-            case R.id.button_swap_player:
-                swapPlayer();
-                break;
             case R.id.button_quality_adptative:
                 srgMediaPlayer.setQualityOverride(null);
                 break;
@@ -335,23 +328,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
             case R.id.button_quality_sd:
                 srgMediaPlayer.setQualityOverride(0L);
                 break;
-        }
-    }
-
-    private void swapPlayer() {
-        PlayerDelegate playerDelegate = srgMediaPlayer.getPlayerDelegate();
-        PlayerDelegate newPlayerDelegate;
-        String buttonText;
-        if (playerDelegate instanceof ExoPlayerDelegate) {
-            newPlayerDelegate = new NativePlayerDelegate(srgMediaPlayer);
-            buttonText = "ExoPlayer";
-        } else {
-            newPlayerDelegate = DemoApplication.createExoPlayerDelegate(this, srgMediaPlayer);
-            buttonText = "NativePlayer";
-        }
-        srgMediaPlayer.swapPlayerDelegate(newPlayerDelegate);
-        if (swapPlayerButton != null) {
-            swapPlayerButton.setText(buttonText);
         }
     }
 
@@ -436,7 +412,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
                         if (segments != null && !segments.isEmpty() && segmentView != null) {
                             segmentController.setSegmentList(segments);
                             segmentView.setVisibility(View.VISIBLE);
-                        } else if(segments != null && segmentView != null && segments.isEmpty()){
+                        } else if (segments != null && segmentView != null && segments.isEmpty()) {
                             segmentView.setVisibility(View.GONE);
                         }
                     }

@@ -58,7 +58,6 @@ public class LayoutFragment extends android.support.v4.app.Fragment implements
 
     private SRGMediaPlayerController createPlayer(Context context) {
         SRGMediaPlayerController mp = new SRGMediaPlayerController(context, DemoApplication.multiDataProvider, PLAYER_TAG);
-        mp.setPlayerDelegateFactory(((DemoApplication) context.getApplicationContext()).getPlayerDelegateFactory());
         mp.setDebugMode(true);
         return mp;
     }
