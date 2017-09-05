@@ -9,12 +9,9 @@ import ch.srg.mediaplayer.SRGMediaPlayerController;
  */
 public class EventInstruction extends Instruction implements SRGMediaPlayerController.Listener {
 
-    private SRGMediaPlayerController.Event event;
+    private boolean received;
 
-    private boolean eventReceived;
-
-    public EventInstruction(SRGMediaPlayerController.Event event) {
-        this.event = event;
+    public EventInstruction() {
         SRGMediaPlayerController.registerGlobalEventListener(this);
     }
 
@@ -25,16 +22,14 @@ public class EventInstruction extends Instruction implements SRGMediaPlayerContr
 
     @Override
     public boolean checkCondition() {
-        if (eventReceived) {
-            SRGMediaPlayerController.unregisterGlobalEventListener(this);
-        }
-        return eventReceived;
+        return false;
     }
 
     @Override
     public void onMediaPlayerEvent(SRGMediaPlayerController mp, SRGMediaPlayerController.Event event) {
-        if (!eventReceived) {
-            eventReceived = this.event.equals(event);
+        received = checkCondition();
+        if (received) {
+            SRGMediaPlayerController.unregisterGlobalEventListener(this);
         }
     }
 }
