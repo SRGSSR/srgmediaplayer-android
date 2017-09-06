@@ -181,12 +181,16 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     @Test
     public void testVideoPlayback() throws Exception {
-
+        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        assertTrue(controller.hasVideoTrack());
     }
 
     @Test
     public void testAudioPlayback() throws Exception {
-
+        controller.play(AUDIO_ON_DEMAND_IDENTIFIER);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        assertFalse(controller.hasVideoTrack());
     }
 
     @Test
