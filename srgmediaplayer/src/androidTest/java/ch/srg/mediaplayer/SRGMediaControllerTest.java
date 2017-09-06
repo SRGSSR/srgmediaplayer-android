@@ -206,7 +206,10 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     @Test
     public void testOnDemandVideoPlaythrough() throws Exception {
-
+        // Start near the end of the stream
+        controller.play(VIDEO_ON_DEMAND_IDENTIFIER, (long) 3566768);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        waitUntilEvent(SRGMediaPlayerController.Event.Type.MEDIA_COMPLETED);
     }
 
     @Test
