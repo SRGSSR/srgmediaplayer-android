@@ -303,11 +303,6 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     }
 
     @Test
-    public void testMute() throws Exception {
-
-    }
-
-    @Test
     public void delegateErrorPropagation() throws Exception {
         controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
         waitForState(SRGMediaPlayerController.State.PREPARING);
