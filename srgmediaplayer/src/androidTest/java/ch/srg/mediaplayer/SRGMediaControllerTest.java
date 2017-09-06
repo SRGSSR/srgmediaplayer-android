@@ -69,13 +69,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
             }
         });
         controller.setDebugMode(true);
-        delegate = new MockDelegate(controller);
-        controller.setPlayerDelegateFactory(new PlayerDelegateFactory() {
-            @Override
-            public PlayerDelegate getDelegateForMediaIdentifier(PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, String mediaIdentifier) {
-                return delegate;
-            }
-        });
+
         lastError = null;
         mediaCompletedReceived = false;
         controller.registerEventListener(new SRGMediaPlayerController.Listener() {
@@ -413,13 +407,6 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         private void setup() {
             controller = new SRGMediaPlayerController(context, provider, "test");
             controller.setDebugMode(true);
-            delegate = new MockDelegate(controller);
-            controller.setPlayerDelegateFactory(new PlayerDelegateFactory() {
-                @Override
-                public PlayerDelegate getDelegateForMediaIdentifier(PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, String mediaIdentifier) {
-                    return delegate;
-                }
-            });
         }
 
         private void test() throws SRGMediaPlayerException, InterruptedException {
