@@ -175,42 +175,60 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     }
 
     @Test
-    public void testVideoPlayback() throws Exception {
+    public void testOnDemandVideoPlayback() throws Exception {
         controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
         waitUntilState(SRGMediaPlayerController.State.READY);
         assertTrue(controller.hasVideoTrack());
+        assertFalse(controller.isLive());
+        assertTrue(SRGMediaPlayerController.UNKNOWN_TIME != controller.getMediaDuration());
+        assertTrue(SRGMediaPlayerController.UNKNOWN_TIME != controller.getLiveTime());
+    }
+
+    @Test
+    public void testVideoLivestreamPlayback() throws Exception {
+        controller.play(VIDEO_LIVESTREAM_IDENTIFIER);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        assertTrue(controller.hasVideoTrack());
+        assertTrue(controller.isLive());
+        assertTrue(SRGMediaPlayerController.UNKNOWN_TIME != controller.getMediaDuration());
+        assertTrue(SRGMediaPlayerController.UNKNOWN_TIME != controller.getLiveTime());
+    }
+
+    @Test
+    public void testDVRVideoLivestreamPlayback() throws Exception {
+        controller.play(VIDEO_DVR_LIVESTREAM_IDENTIFIER);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        assertTrue(controller.hasVideoTrack());
+        assertTrue(controller.isLive());
+        assertTrue(SRGMediaPlayerController.UNKNOWN_TIME != controller.getMediaDuration());
+        assertTrue(SRGMediaPlayerController.UNKNOWN_TIME != controller.getLiveTime());
+    }
+
+    @Test
+    public void testOnDemandVideoPlaythrough() throws Exception {
+
+    }
+
+    @Test
+    public void testNonStreamedMediaPlaythrough() throws Exception {
+        
     }
 
     // TODO: Fix
     @Test
-    public void testAudioPlayback() throws Exception {
+    public void testOnDemandAudioPlayback() throws Exception {
         controller.play(AUDIO_ON_DEMAND_IDENTIFIER);
         waitUntilState(SRGMediaPlayerController.State.READY);
         assertFalse(controller.hasVideoTrack());
     }
 
     @Test
-    public void testOnDemandPlayback() throws Exception {
+    public void testDVRAudioLivestreamPlayback() throws Exception {
 
     }
 
     @Test
-    public void testLivestreamPlayback() throws Exception {
-
-    }
-
-    @Test
-    public void testDVRLivestreamPlayback() throws Exception {
-
-    }
-
-    @Test
-    public void testOnDemandMediaPlaythrough() throws Exception {
-
-    }
-
-    @Test
-    public void testNonStreamedMediaPlaythrough() throws Exception {
+    public void testOnDemandAudioPlaythrough() throws Exception {
 
     }
 
