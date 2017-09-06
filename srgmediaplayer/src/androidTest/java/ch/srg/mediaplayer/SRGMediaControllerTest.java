@@ -211,7 +211,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     @Test
     public void testNonStreamedMediaPlaythrough() throws Exception {
-        
+
     }
 
     // TODO: Fix
@@ -290,15 +290,14 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     @Test
     public void testRelease() throws Exception {
         controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
-        waitForState(SRGMediaPlayerController.State.PREPARING);
-        waitForState(SRGMediaPlayerController.State.READY);
+        waitUntilState(SRGMediaPlayerController.State.READY);
         assertFalse(controller.isReleased());
 
         // Trigger a release. The controller is not immediately reaching the released state.
         controller.release();
         assertFalse(controller.isReleased());
 
-        waitForState(SRGMediaPlayerController.State.RELEASED);
+        waitUntilState(SRGMediaPlayerController.State.RELEASED);
         assertTrue(controller.isReleased());
         assertNull(controller.getMediaIdentifier());
     }
