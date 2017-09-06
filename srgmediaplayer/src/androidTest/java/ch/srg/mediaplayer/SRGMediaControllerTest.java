@@ -329,6 +329,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         }
     }
 
+    // Wait for an error, expecting it to occur right afterwards. Will fail if this is not the case.
     private void waitForError(final String message) {
         Log.i(getClass().getName(), "Wait for error");
         Assert.assertTrue("Timeout waiting for error: " + message,
@@ -341,6 +342,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
                 }));
     }
 
+    // Wait for the specified state, expecting it to occur right afterwards. Will fail if this is not the case.
     private void waitForState(final SRGMediaPlayerController.State state) {
         Log.i(getClass().getName(), "Wait for state: " + state);
         Assert.assertTrue("Timeout waiting for player state: " + state,
@@ -358,6 +360,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
                 }));
     }
 
+    // Wait for the specified condition, expecting it to occur right afterwards. Will fail if this is not the case.
     private boolean waitForCondition(long timeout, EventCondition condition) {
         SRGMediaPlayerController.Event event = null;
         long startTime = System.nanoTime();
@@ -378,6 +381,8 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         return false;
     }
 
+    // Wait until an event of the specified type is received. Fails if no event is received for a given
+    // timeout period.
     private void waitUntilEvent(final SRGMediaPlayerController.Event.Type eventType) throws Exception {
         ConditionWatcher.getInstance().waitForCondition(new EventInstruction() {
             @Override
@@ -387,6 +392,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         });
     }
 
+    // Wait until a given state is reached. Fails if the state is not reached within a given timeout period.
     private void waitUntilState(final SRGMediaPlayerController.State state) throws Exception {
         ConditionWatcher.getInstance().waitForCondition(new EventInstruction() {
             @Override
