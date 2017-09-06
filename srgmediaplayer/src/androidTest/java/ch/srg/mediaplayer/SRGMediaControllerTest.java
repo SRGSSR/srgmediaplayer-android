@@ -364,32 +364,22 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         return false;
     }
 
-    private boolean waitUntilEvent(final SRGMediaPlayerController.Event.Type eventType) {
-        try {
-            ConditionWatcher.getInstance().waitForCondition(new EventInstruction() {
-                @Override
-                public boolean checkCondition(SRGMediaPlayerController.Event event) {
-                    return event.type == eventType;
-                }
-            });
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+    private void waitUntilEvent(final SRGMediaPlayerController.Event.Type eventType) throws Exception {
+        ConditionWatcher.getInstance().waitForCondition(new EventInstruction() {
+            @Override
+            public boolean checkCondition(SRGMediaPlayerController.Event event) {
+                return event.type == eventType;
+            }
+        });
     }
 
-    private boolean waitUntilState(final SRGMediaPlayerController.State state) {
-        try {
-            ConditionWatcher.getInstance().waitForCondition(new EventInstruction() {
-                @Override
-                public boolean checkCondition(SRGMediaPlayerController.Event event) {
-                    return event.state == state;
-                }
-            });
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+    private void waitUntilState(final SRGMediaPlayerController.State state) throws Exception {
+        ConditionWatcher.getInstance().waitForCondition(new EventInstruction() {
+            @Override
+            public boolean checkCondition(SRGMediaPlayerController.Event event) {
+                return event.state == state;
+            }
+        });
     }
 
     private interface EventCondition {
