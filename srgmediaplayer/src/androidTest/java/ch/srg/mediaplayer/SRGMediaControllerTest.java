@@ -113,33 +113,37 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         assertFalse(controller.hasVideoTrack());
     }
 
+    // TODO: Fix
     @Test
-    public void testPreparingState() throws Exception {
-        // TODO: This test intentionally fails. The media identifier should probably be available right from the start. Currently it is only available after the preparing state has been reached
+    public void testMediaIdentifier() throws Exception {
         controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
         assertEquals(VIDEO_ON_DEMAND_IDENTIFIER, controller.getMediaIdentifier());
-        waitForState(SRGMediaPlayerController.State.PREPARING);
     }
 
     @Test
-    public void testPlayReady() throws Exception {
+    public void testPreparingState() throws Exception {
         controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
-        waitForState(SRGMediaPlayerController.State.PREPARING);
-        waitForState(SRGMediaPlayerController.State.READY);
+        waitUntilState(SRGMediaPlayerController.State.PREPARING);
+        assertFalse(controller.isPlaying());
+    }
+
+    @Test
+    public void testReadyState() throws Exception {
+        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        assertTrue(controller.isPlaying());
     }
 
     @Test
     public void testPlayAudioOverHTTP() throws Exception {
         controller.play(NON_STREAMED_VIDEO_IDENTIFIER);
-        waitForState(SRGMediaPlayerController.State.PREPARING);
-        waitForState(SRGMediaPlayerController.State.READY);
+        waitUntilState(SRGMediaPlayerController.State.READY);
     }
 
     @Test
     public void testHTTP403() throws Exception {
         controller.play(HTTP_403_IDENTIFIER);
-        waitForState(SRGMediaPlayerController.State.PREPARING);
-        waitForState(SRGMediaPlayerController.State.RELEASED);
+        waitUntilState(SRGMediaPlayerController.State.RELEASED);
         Assert.assertTrue(controller.isReleased());
         Assert.assertNotNull(lastError);
     }
@@ -147,8 +151,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     @Test
     public void TestHTTP404() throws Exception {
         controller.play(HTTP_404_IDENTIFIER);
-        waitForState(SRGMediaPlayerController.State.PREPARING);
-        waitForState(SRGMediaPlayerController.State.RELEASED);
+        waitUntilState(SRGMediaPlayerController.State.RELEASED);
         Assert.assertTrue(controller.isReleased());
         Assert.assertNotNull(lastError);
     }
@@ -164,13 +167,11 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     }
 
     @Test
-    public void testPlay() throws Exception {
+    public void testPlaybackStateInitialSequence() throws Exception {
         controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
         waitForState(SRGMediaPlayerController.State.PREPARING);
+        waitForState(SRGMediaPlayerController.State.BUFFERING);
         waitForState(SRGMediaPlayerController.State.READY);
-        Thread.sleep(100);
-        Log.v("test", "isPlaying: " + delegate.isPlaying());
-        assertTrue("delegate.isPlaying()", delegate.isPlaying());
     }
 
     @Test
@@ -180,6 +181,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         assertTrue(controller.hasVideoTrack());
     }
 
+    // TODO: Fix
     @Test
     public void testAudioPlayback() throws Exception {
         controller.play(AUDIO_ON_DEMAND_IDENTIFIER);
@@ -280,6 +282,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
         waitForState(SRGMediaPlayerController.State.RELEASED);
         assertTrue(controller.isReleased());
+        assertNull(controller.getMediaIdentifier());
     }
 
     @Test
