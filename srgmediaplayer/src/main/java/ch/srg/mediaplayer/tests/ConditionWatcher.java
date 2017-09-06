@@ -11,7 +11,7 @@ public class ConditionWatcher {
     public static final int CONDITION_MET = 1;
     public static final int TIMEOUT = 2;
 
-    public static final int DEFAULT_TIMEOUT_LIMIT = 1000 * 10;
+    public static final int DEFAULT_TIMEOUT_LIMIT = 1000 * 20;
     public static final int DEFAULT_INTERVAL = 250;
 
     private int timeoutLimit = DEFAULT_TIMEOUT_LIMIT;
