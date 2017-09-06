@@ -28,6 +28,8 @@ public class MockDataProvider implements SRGMediaPlayerDataProvider {
             put("C-EST-PAS-TROP-TOT", "https://rtsww-a-d.rts.ch/la-1ere/programmes/c-est-pas-trop-tot/2017/c-est-pas-trop-tot_20170628_full_c-est-pas-trop-tot_007d77e7-61fb-4aef-9491-5e6b07f7f931-128k.mp3");
 
             put("INVALID", "http://invalid.stream/");
+            put("HTTP_403", "http://httpbin.org/status/403");
+            put("HTTP_404", "http://httpbin.org/status/404");
             put("NULL", null);
         }
     };

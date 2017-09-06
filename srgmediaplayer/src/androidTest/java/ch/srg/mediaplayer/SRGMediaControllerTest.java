@@ -41,6 +41,8 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     public static final String VIDEO_LIVESTREAM_IDENTIFIER = "NDR";
     public static final String VIDEO_DVR_LIVESTREAM_IDENTIFIER = "NDR-DVR";
     public static final String AUDIO_ON_DEMAND_IDENTIFIER = "C-EST-PAS-TROP-TOT";
+    public static final String HTTP_403_IDENTIFIER = "HTTP_403";
+    public static final String HTTP_404_IDENTIFIER = "HTTP_404";
 
     private SRGMediaPlayerController controller;
 
@@ -140,13 +142,21 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     }
 
     @Test
-    public void testHTTP404() throws Exception {
-
+    public void testHTTP403() throws Exception {
+        controller.play(HTTP_403_IDENTIFIER);
+        waitForState(SRGMediaPlayerController.State.PREPARING);
+        waitForState(SRGMediaPlayerController.State.RELEASED);
+        Assert.assertTrue(controller.isReleased());
+        Assert.assertNotNull(lastError);
     }
 
     @Test
-    public void TestHTTP403() throws Exception {
-
+    public void TestHTTP404() throws Exception {
+        controller.play(HTTP_404_IDENTIFIER);
+        waitForState(SRGMediaPlayerController.State.PREPARING);
+        waitForState(SRGMediaPlayerController.State.RELEASED);
+        Assert.assertTrue(controller.isReleased());
+        Assert.assertNotNull(lastError);
     }
 
     @Test
