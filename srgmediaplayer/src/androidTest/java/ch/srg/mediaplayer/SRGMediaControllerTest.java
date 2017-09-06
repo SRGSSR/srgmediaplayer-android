@@ -381,8 +381,10 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     // Wait until an event of the specified type is received. Fails if no event is received for a given
     // timeout period.
-    private void waitUntilEvent(final SRGMediaPlayerController.Event.Type eventType) throws Exception {
-        ConditionWatcher.getInstance().waitForCondition(new EventInstruction() {
+    private void waitUntilEvent(final SRGMediaPlayerController.Event.Type eventType, final int timeoutSeconds) throws Exception {
+        ConditionWatcher watcher = ConditionWatcher.getInstance();
+        watcher.setTimeoutLimit(timeoutSeconds * 1000);
+        watcher.waitForCondition(new EventInstruction() {
             @Override
             public boolean checkCondition(SRGMediaPlayerController.Event event) {
                 return event.type == eventType;
@@ -390,14 +392,24 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         });
     }
 
+    private void waitUntilEvent(final SRGMediaPlayerController.Event.Type eventType) throws Exception {
+        waitUntilEvent(eventType, 20);
+    }
+
     // Wait until a given state is reached. Fails if the state is not reached within a given timeout period.
-    private void waitUntilState(final SRGMediaPlayerController.State state) throws Exception {
-        ConditionWatcher.getInstance().waitForCondition(new EventInstruction() {
+    private void waitUntilState(final SRGMediaPlayerController.State state, final int timeoutSeconds) throws Exception {
+        ConditionWatcher watcher = ConditionWatcher.getInstance();
+        watcher.setTimeoutLimit(timeoutSeconds * 1000);
+        watcher.waitForCondition(new EventInstruction() {
             @Override
             public boolean checkCondition(SRGMediaPlayerController.Event event) {
                 return event.state == state;
             }
         });
+    }
+
+    private void waitUntilState(final SRGMediaPlayerController.State state) throws Exception {
+        waitUntilState(state, 20);
     }
 
     private interface EventCondition {
