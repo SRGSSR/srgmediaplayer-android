@@ -133,13 +133,10 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     }
 
     @Test
-    public void testPlayTwice() throws Exception {
-
-    }
-
-    @Test
     public void testPlayAudioOverHTTP() throws Exception {
-
+        controller.play(NON_STREAMED_VIDEO_IDENTIFIER);
+        waitForState(SRGMediaPlayerController.State.PREPARING);
+        waitForState(SRGMediaPlayerController.State.READY);
     }
 
     @Test
