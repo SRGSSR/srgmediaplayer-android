@@ -101,6 +101,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     public void testPlayReady() throws Exception {
         controller.play(MEDIA_IDENTIFIER);
         waitForState(SRGMediaPlayerController.State.PREPARING);
+        waitForState(SRGMediaPlayerController.State.BUFFERING);
         waitForState(SRGMediaPlayerController.State.READY);
     }
 
@@ -116,6 +117,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     public void testPlay() throws Exception {
         controller.play(MEDIA_IDENTIFIER);
         waitForState(SRGMediaPlayerController.State.PREPARING);
+        waitForState(SRGMediaPlayerController.State.BUFFERING);
         waitForState(SRGMediaPlayerController.State.READY);
         Thread.sleep(100);
         Log.v("test", "isPlaying: " + controller.isPlaying());
@@ -126,6 +128,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     public void testPause() throws Exception {
         controller.play(MEDIA_IDENTIFIER);
         waitForState(SRGMediaPlayerController.State.PREPARING);
+        waitForState(SRGMediaPlayerController.State.BUFFERING);
         waitForState(SRGMediaPlayerController.State.READY);
         controller.pause();
         Thread.sleep(100);
