@@ -15,15 +15,18 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.Pair;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
 
+import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.DefaultRenderersFactory;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
@@ -35,6 +38,7 @@ import com.google.android.exoplayer2.drm.FrameworkMediaCrypto;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.dash.DashMediaSource;
 import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource;
@@ -43,6 +47,8 @@ import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.text.TextRenderer;
 import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.trackselection.FixedTrackSelection;
+import com.google.android.exoplayer2.trackselection.MappingTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
@@ -51,6 +57,7 @@ import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -77,6 +84,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private static final long[] EMPTY_TIME_RANGE = new long[2];
     private static final long UPDATE_PERIOD = 100;
+
+    public enum ViewType {
+        TYPE_SURFACEVIEW,
+        TYPE_TEXTUREVIEW
+    }
 
     /**
      * True when audio focus has been requested, does not reflect current focus (LOSS / DUCKED).
@@ -337,6 +349,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private EventLogger eventLogger;
     private DefaultRenderersFactory renderersFactory;
     private String videoSourceUrl;
+    private ViewType viewType;
+    private View renderingView;
 
     @Nullable
     private SRGMediaPlayerView mediaPlayerView;
@@ -1123,7 +1137,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      */
     public long getLiveTime() {
         if (exoPlayer != null) {
-            return exoPlayer.getPlaylistReferenceTime();
+            return getPlaylistStartTime();
         } else {
             return UNKNOWN_TIME;
         }
@@ -1131,7 +1145,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     public long getBufferPosition() {
         if (exoPlayer != null) {
-            return exoPlayer.getBufferPosition();
+            return exoPlayer.getBufferedPosition();
         } else {
             return UNKNOWN_TIME;
         }
@@ -1139,7 +1153,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     public int getBufferPercentage() {
         if (exoPlayer != null) {
-            return exoPlayer.getBufferPercentage();
+            return exoPlayer.getBufferedPercentage();
         } else {
             return 0;
         }
@@ -1192,7 +1206,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         manageKeepScreenOnInternal();
     }
 
-    @Override
+    @Nullable
     public SRGMediaPlayerView getMediaPlayerView() {
         return mediaPlayerView;
     }
@@ -1202,9 +1216,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
         //Both not null
         if (mediaPlayerView != null && exoPlayer != null) {
 
-            if (!exoPlayer.canRenderInView(mediaPlayerView.getVideoRenderingView())) {
+            if (!canRenderInView(mediaPlayerView.getVideoRenderingView())) {
                 // We need to create a new rendering view.
-                final View renderingView = exoPlayer.createRenderingView(mediaPlayerView.getContext());
+                final View renderingView = createRenderingView(mediaPlayerView.getContext());
                 Log.v(TAG, renderingView + "binding, creating rendering view" + mediaPlayerView);
 
                 if (renderingView instanceof SurfaceView) {
@@ -1214,7 +1228,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                             Log.v(TAG, renderingView + "binding, surfaceCreated" + mediaPlayerView);
                             try {
                                 if (exoPlayer != null && ((SurfaceView) renderingView).getHolder() == holder) {
-                                    bindDelegateToRenderingViewInUiThread();
+                                    bindRenderingViewInUiThread();
                                 } else {
                                     Log.d(TAG, "Surface created, but media player delegate retired");
                                 }
@@ -1248,7 +1262,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                             Log.v(TAG, renderingView + "binding, surfaceTextureAvailable" + mediaPlayerView);
                             if (exoPlayer != null && isCurrent(surfaceTexture)) {
                                 try {
-                                    bindDelegateToRenderingViewInUiThread();
+                                    bindRenderingViewInUiThread();
                                 } catch (SRGMediaPlayerException e) {
                                     Log.d(TAG, "Error binding view", e);
                                 }
@@ -1301,7 +1315,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     public void run() {
                         try {
                             Log.v(TAG, "binding, bindRenderingViewInUiThread " + mediaPlayerView);
-                            bindDelegateToRenderingViewInUiThread();
+                            bindRenderingViewInUiThread();
                         } catch (SRGMediaPlayerException e) {
                             Log.d(TAG, "Error binding view", e);
                         }
@@ -1312,20 +1326,32 @@ public class SRGMediaPlayerController implements Handler.Callback,
         } else
             // mediaPlayerView null, just unbind delegate
             if (mediaPlayerView == null) {
-                if (exoPlayer != null) {
-                    exoPlayer.unbindRenderingView();
-                }
+                unbindRenderingView();
             }
         //Other cases are :
         // - both mediaPlayerView and delegate null, do nothing
         // - delegate null only, mediaPlayerView already stored as class attributes and will be set when needed
     }
 
-    private void bindDelegateToRenderingViewInUiThread() throws SRGMediaPlayerException {
-        if (exoPlayer != null) {
-            exoPlayer.bindRenderingViewInUiThread(mediaPlayerView);
+    private void bindRenderingViewInUiThread() throws SRGMediaPlayerException {
+        if (mediaPlayerView == null ||
+                !canRenderInView(mediaPlayerView.getVideoRenderingView())) {
+            throw new SRGMediaPlayerException("ExoPlayerDelegate cannot render video in a "
+                    + mediaPlayerView);
         }
+        renderingView = mediaPlayerView.getVideoRenderingView();
+        pushSurface(false);
         broadcastEvent(Event.Type.DID_BIND_TO_PLAYER_VIEW);
+    }
+
+    private void pushSurface(boolean blockForSurfacePush) {
+        if (exoPlayer != null) {
+            if (renderingView instanceof SurfaceView) {
+                exoPlayer.setVideoSurfaceView((SurfaceView) renderingView);
+            } else if (renderingView instanceof TextureView) {
+                exoPlayer.setVideoTextureView((TextureView) renderingView);
+            }
+        }
     }
 
     /**
@@ -1336,12 +1362,33 @@ public class SRGMediaPlayerController implements Handler.Callback,
     public void unbindFromMediaPlayerView(SRGMediaPlayerView playerView) {
         if (mediaPlayerView == playerView) {
             overlayController.bindToVideoContainer(null);
-            if (exoPlayer != null) {
-                exoPlayer.unbindRenderingView();
-            }
+            unbindRenderingView();
             mediaPlayerView = null;
             broadcastEvent(Event.Type.DID_UNBIND_FROM_PLAYER_VIEW);
         }
+    }
+
+    private boolean canRenderInView(View view) {
+        return view instanceof SurfaceView || view instanceof TextureView;
+    }
+
+    private View createRenderingView(Context parentContext) {
+        if (viewType == ViewType.TYPE_SURFACEVIEW) {
+            return new SurfaceView(parentContext);
+        } else {
+            return new TextureView(parentContext);
+        }
+    }
+
+    public void setViewType(ViewType viewType) {
+        this.viewType = viewType;
+    }
+
+    private void unbindRenderingView() {
+        if (exoPlayer != null) {
+            exoPlayer.clearVideoSurface();
+        }
+        renderingView = null;
     }
 
     private void setStateInternal(State state) {
@@ -1596,7 +1643,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private long getPlaylistStartTime() {
-        return exoPlayer != null ? exoPlayer.getPlaylistStartTime() : 0;
+        long res = 0;
+        if (exoPlayer != null && isLive()) {
+            res = System.currentTimeMillis();
+        }
+        return res;
     }
 
     public boolean isLive() {
@@ -1662,32 +1713,36 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     /**
-     * @return bandwidth estimate in bits/sec if available, null otherwise
-     */
-    public Long getBandwidthEstimate() {
-        if (exoPlayer != null) {
-            return exoPlayer.getBandwidthEstimate();
-        } else {
-            return null;
-        }
-    }
-
-    /**
      * Get Total bandwidth of currently playing stream.
      *
      * @return current bandwidth in bits/seconds or null if not available
      */
     public Long getCurrentBandwidth() {
         if (exoPlayer != null) {
-            return exoPlayer.getCurrentBandwidth();
+            Format videoFormat = exoPlayer.getVideoFormat();
+            Format audioFormat = exoPlayer.getAudioFormat();
+            int videoBandwidth = videoFormat != null && videoFormat.bitrate != Format.NO_VALUE ? videoFormat.bitrate : 0;
+            int audioBandwidth = audioFormat != null && audioFormat.bitrate != Format.NO_VALUE ? audioFormat.bitrate : 0;
+            long bandwidth = videoBandwidth + audioBandwidth;
+            return bandwidth > 0 ? bandwidth : null;
         } else {
             return null;
         }
     }
 
-
     public boolean hasVideoTrack() {
-        return exoPlayer != null && exoPlayer.hasVideoTrack();
+        if (exoPlayer != null) {
+            TrackSelectionArray currentTrackSelections = exoPlayer.getCurrentTrackSelections();
+            for (int i = 0; i < currentTrackSelections.length; i++) {
+                if (exoPlayer.getRendererType(i) == C.TRACK_TYPE_VIDEO) {
+                    if (currentTrackSelections.get(i) != null) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        return false;
     }
 
     public Throwable getFatalError() {
@@ -1696,13 +1751,26 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @NonNull
     public List<SubtitleTrack> getSubtitleTrackList() {
-        List<SubtitleTrack> result;
+        List<SubtitleTrack> result = new ArrayList<>();
         if (exoPlayer != null) {
-            result = exoPlayer.getSubtitleTrackList();
+            MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+            int subtitleRendererId = getSubtitleRendererId();
+            if (mappedTrackInfo != null && subtitleRendererId != -1) {
+                TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(subtitleRendererId);
+                for (int i = 0; i < trackGroups.length; i++) {
+                    TrackGroup trackGroup = trackGroups.get(i);
+                    for (int j = 0; j < trackGroup.length; j++) {
+                        SubtitleTrack subtitleTrack = getSubtitleTrack(trackGroup, i, j);
+                        if (subtitleTrack != null) {
+                            result.add(subtitleTrack);
+                        }
+                    }
+                }
+            }
         } else {
             result = Collections.emptyList();
         }
-        if (debugMode && (result == null || result.size() == 0)) {
+        if (debugMode && (result.isEmpty())) {
             return Arrays.asList(
                     new SubtitleTrack(0, "English", null),
                     new SubtitleTrack(0, "French", null),
@@ -1715,7 +1783,22 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     public void setSubtitleTrack(@Nullable SubtitleTrack track) {
         if (exoPlayer != null) {
-            exoPlayer.setSubtitleTrack(track);
+            int rendererIndex = getSubtitleRendererId();
+            MappingTrackSelector.MappedTrackInfo trackInfo = trackSelector.getCurrentMappedTrackInfo();
+            if (rendererIndex != -1 && trackInfo != null) {
+                TrackGroupArray trackGroups = trackInfo.getTrackGroups(rendererIndex);
+                trackSelector.setRendererDisabled(rendererIndex, track == null);
+                if (track != null) {
+                    TrackSelection.Factory factory = new FixedTrackSelection.Factory();
+                    Pair<Integer, Integer> integerPair = (Pair<Integer, Integer>) track.tag;
+                    int groupIndex = integerPair.first;
+                    int trackIndex = integerPair.second;
+                    MappingTrackSelector.SelectionOverride override = new MappingTrackSelector.SelectionOverride(factory, groupIndex, trackIndex);
+                    trackSelector.setSelectionOverride(rendererIndex, trackGroups, override);
+                } else {
+                    trackSelector.clearSelectionOverride(rendererIndex, trackGroups);
+                }
+            }
             broadcastEvent(Event.Type.SUBTITLE_DID_CHANGE);
         }
     }
@@ -1723,9 +1806,54 @@ public class SRGMediaPlayerController implements Handler.Callback,
     @Nullable
     public SubtitleTrack getSubtitleTrack() {
         if (exoPlayer != null) {
-            return exoPlayer.getSubtitleTrack();
+            int rendererIndex = getSubtitleRendererId();
+
+            MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+            if (mappedTrackInfo != null && rendererIndex != -1) {
+                TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(rendererIndex);
+
+                MappingTrackSelector.SelectionOverride override = trackSelector.getSelectionOverride(rendererIndex, trackGroups);
+                if (override != null) {
+                    int[] tracks = override.tracks;
+                    if (tracks.length != 0) {
+                        return getSubtitleTrackByTrackId(override.groupIndex, tracks[0]);
+                    }
+                }
+            }
+            return null;
         }
         return null;
+    }
+
+    private SubtitleTrack getSubtitleTrack(TrackGroup trackGroup, int i, int j) {
+        Format format = trackGroup.getFormat(j);
+        if (format.id != null && format.language != null) {
+            return new SubtitleTrack(new Pair<>(i, j), format.id, format.language);
+        } else {
+            return null;
+        }
+    }
+
+    private SubtitleTrack getSubtitleTrackByTrackId(int i, int j) {
+        MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+        TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(getSubtitleRendererId());
+        TrackGroup trackGroup = trackGroups.get(i);
+        return getSubtitleTrack(trackGroup, i, j);
+    }
+
+    private int getSubtitleRendererId() {
+        MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+
+        if (mappedTrackInfo != null) {
+            for (int i = 0; i < mappedTrackInfo.length; i++) {
+                if (exoPlayer != null
+                        && mappedTrackInfo.getTrackGroups(i).length > 0
+                        && exoPlayer.getRendererType(i) == C.TRACK_TYPE_TEXT) {
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
 
     /**
