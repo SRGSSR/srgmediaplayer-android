@@ -253,11 +253,11 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     @Test
     public void testPause() throws Exception {
         controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
-        waitForState(SRGMediaPlayerController.State.PREPARING);
-        waitForState(SRGMediaPlayerController.State.READY);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        assertTrue(controller.isPlaying());
         controller.pause();
-        Thread.sleep(100);
-        assertFalse(delegate.isPlaying());
+        Thread.sleep(100); // Need to wait
+        assertFalse(controller.isPlaying());
     }
 
     @Test
