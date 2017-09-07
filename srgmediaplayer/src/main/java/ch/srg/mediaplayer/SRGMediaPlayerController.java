@@ -349,7 +349,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private AudioCapabilities audioCapabilities;
     private EventLogger eventLogger;
     private DefaultRenderersFactory renderersFactory;
-    private String videoSourceUrl;
     private ViewType viewType;
     private View renderingView;
     private Integer playbackState;
@@ -628,7 +627,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     seekToWhenReady = data.position;
                 }
 
-                currentMediaUrl = String.valueOf(uri);
                 currentMediaIdentifier = data.mediaIdentifier;
                 postEventInternal(Event.Type.MEDIA_READY_TO_PLAY);
                 try {
@@ -785,11 +783,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
         Log.v(TAG, "Preparing " + videoUri + " (" + streamType + ")");
         try {
             String videoSourceUrl = videoUri.toString();
-            if (this.videoSourceUrl != null && this.videoSourceUrl.equalsIgnoreCase(videoSourceUrl)) {
+            if (this.currentMediaUrl != null && this.currentMediaUrl.equalsIgnoreCase(videoSourceUrl)) {
                 return;
             }
             sendMessage(MSG_PLAYER_DELEGATE_PREPARING);
-            this.videoSourceUrl = videoSourceUrl;
+            this.currentMediaUrl = videoSourceUrl;
 
             String userAgent = "curl/Letterbox_2.0"; // temporarily using curl/ user agent to force subtitles with Akamai beta
 
