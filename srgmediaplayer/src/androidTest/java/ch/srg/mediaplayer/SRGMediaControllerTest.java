@@ -262,7 +262,16 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     @Test
     public void testSeek() throws Exception {
+        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        assertTrue(controller.isPlaying());
+        assertEquals(controller.getMediaPosition() / 1000, 0);
 
+        controller.seekTo(60 * 1000);
+        waitUntilState(SRGMediaPlayerController.State.BUFFERING);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        assertEquals(controller.getMediaPosition() / 1000, 60);
+        assertTrue(controller.isPlaying());
     }
 
     @Test
@@ -277,7 +286,19 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     @Test
     public void testSeekWhilePaused() throws Exception {
+        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        assertTrue(controller.isPlaying());
+        controller.pause();
+        Thread.sleep(100); // Need to wait
+        assertFalse(controller.isPlaying());
+        assertEquals(controller.getMediaPosition() / 1000, 0);
 
+        controller.seekTo(60 * 1000);
+        // TODO: No BUFFERING?
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        assertEquals(controller.getMediaPosition() / 1000, 60);
+        assertFalse(controller.isPlaying());
     }
 
     @Test
