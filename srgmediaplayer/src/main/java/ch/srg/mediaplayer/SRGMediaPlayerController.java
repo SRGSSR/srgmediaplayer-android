@@ -322,16 +322,16 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private Context context;
 
     private Handler mainHandler;
+    private Handler commandHandler;
     private HandlerThread commandHandlerThread;
 
-    private Handler commandHandler;
     private final AudioManager audioManager;
 
     private SRGMediaPlayerDataProvider mediaPlayerDataProvider;
 
     private State state = State.IDLE;
 
-    private boolean playWhenReady = true;
+    private Boolean playWhenReady = true;
 
     private Long seekToWhenReady = null;
 
@@ -346,11 +346,13 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private DefaultTrackSelector trackSelector;
     private AudioCapabilitiesReceiver audioCapabilitiesReceiver;
     private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
+    private AudioCapabilities audioCapabilities;
     private EventLogger eventLogger;
     private DefaultRenderersFactory renderersFactory;
     private String videoSourceUrl;
     private ViewType viewType;
     private View renderingView;
+    private Integer playbackState;
 
     @Nullable
     private SRGMediaPlayerView mediaPlayerView;
@@ -391,8 +393,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         overlayController = new OverlayController(this);
         registerEventListener(overlayController);
 
-        createPlayerDelegateInternal();
-
         audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
 
         controllerId = ++controllerIdCounter;
@@ -400,8 +400,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private void createNewExoPlayerInstance() {
         audioCapabilitiesReceiver = new AudioCapabilitiesReceiver(context, this);
-
-        mainHandler = new Handler();
 
         TrackSelection.Factory videoTrackSelectionFactory =
                 new AdaptiveTrackSelection.Factory(BANDWIDTH_METER);
@@ -617,6 +615,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 return true;
 
             case MSG_PREPARE_FOR_URI:
+                createPlayerInternal();
                 PrepareUriData data = (PrepareUriData) msg.obj;
                 Uri uri = data.uri;
                 if (seekToWhenReady == null) {
@@ -633,22 +632,18 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 currentMediaIdentifier = data.mediaIdentifier;
                 postEventInternal(Event.Type.MEDIA_READY_TO_PLAY);
                 try {
-                    if (exoPlayer != null) {
-                        if (mediaPlayerView != null) {
-                            internalUpdateMediaPlayerViewBound();
-                        }
-                        exoPlayer.setPlayWhenReady(playWhenReady);
-                        if (seekToWhenReady != null) {
-                            try {
-                                exoPlayer.seekTo(seekToWhenReady);
-                                seekToWhenReady = null;
-                            } catch (IllegalStateException ignored) {
-                            }
-                        }
-                        prepareInternal(uri, data.streamType);
-                    } else {
-                        handleFatalExceptionInternal(new SRGMediaPlayerException("No delegate for this media identifier"));
+                    if (mediaPlayerView != null) {
+                        internalUpdateMediaPlayerViewBound();
                     }
+                    exoPlayer.setPlayWhenReady(playWhenReady);
+                    if (seekToWhenReady != null) {
+                        try {
+                            exoPlayer.seekTo(seekToWhenReady);
+                            seekToWhenReady = null;
+                        } catch (IllegalStateException ignored) {
+                        }
+                    }
+                    prepareInternal(uri, data.streamType);
                 } catch (SRGMediaPlayerException e) {
                     logE("onUriLoaded", e);
                     handleFatalExceptionInternal(e);
@@ -790,7 +785,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         Log.v(TAG, "Preparing " + videoUri + " (" + streamType + ")");
         try {
             String videoSourceUrl = videoUri.toString();
-            if (videoSourceUrl.equalsIgnoreCase(videoSourceUrl)) {
+            if (this.videoSourceUrl != null && this.videoSourceUrl.equalsIgnoreCase(videoSourceUrl)) {
                 return;
             }
             sendMessage(MSG_PLAYER_DELEGATE_PREPARING);
@@ -912,7 +907,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         });
     }
 
-    private void createPlayerDelegateInternal() {
+    private void createPlayerInternal() {
         releaseDelegateInternal();
         createNewExoPlayerInstance();
     }
@@ -974,70 +969,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         postErrorEventInternal(true, e);
         releaseInternal();
     }
-
-    /*@Override
-    public void onPlayerDelegatePreparing(PlayerDelegate delegate) {
-        if (delegate == exoPlayer) {
-            sendMessage(MSG_PLAYER_DELEGATE_PREPARING);
-        }
-    }
-
-    @Override
-    public void onPlayerDelegateReady(PlayerDelegate delegate) {
-        manageKeepScreenOnInternal();
-        if (delegate == exoPlayer) {
-            sendMessage(MSG_PLAYER_DELEGATE_READY);
-        }
-    }
-
-    @Override
-    public void onPlayerDelegatePlayWhenReadyCommited(PlayerDelegate delegate) {
-        manageKeepScreenOnInternal();
-        if (delegate == exoPlayer) {
-            sendMessage(MSG_PLAYER_DELEGATE_PLAY_WHEN_READY_COMMITED);
-        }
-    }
-
-    @Override
-    public void onPlayerDelegateBuffering(PlayerDelegate delegate) {
-        if (delegate == exoPlayer) {
-            sendMessage(MSG_PLAYER_DELEGATE_BUFFERING);
-        }
-    }
-
-    @Override
-    public void onPlayerDelegateCompleted(PlayerDelegate delegate) {
-        manageKeepScreenOnInternal();
-        if (delegate == exoPlayer) {
-            sendMessage(MSG_PLAYER_DELEGATE_COMPLETED);
-        }
-    }
-
-    @Override
-    public void onPlayerDelegateError(PlayerDelegate delegate, SRGMediaPlayerException e) {
-        manageKeepScreenOnInternal();
-        if (delegate == exoPlayer) {
-            sendMessage(MSG_DELEGATE_EXCEPTION, e);
-        }
-    }
-
-    @Override
-    public void onPlayerDelegateSubtitleCues(PlayerDelegate delegate, List<Cue> cues) {
-        if (delegate == exoPlayer) {
-            sendMessage(MSG_PLAYER_DELEGATE_SUBTITLE_CUES, cues);
-        }
-    }
-
-    @Override
-    public void onPlayerDelegateVideoSizeChanged(PlayerDelegate delegate, int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
-        if (delegate == exoPlayer) {
-            float aspectRatio = ((float) width / (float) height) * pixelWidthHeightRatio;
-            if ((aspectRatio / 90) % 2 == 1) {
-                aspectRatio = 1 / aspectRatio;
-            }
-            sendMessage(MSG_PLAYER_DELEGATE_VIDEO_ASPECT_RATIO, aspectRatio);
-        }
-    }*/
 
     /**
      * Release the current player. Once the player is released you have to create a new player
@@ -1212,15 +1143,88 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void internalUpdateMediaPlayerViewBound() {
-
         //Both not null
         if (mediaPlayerView != null && exoPlayer != null) {
 
             if (!canRenderInView(mediaPlayerView.getVideoRenderingView())) {
                 // We need to create a new rendering view.
-                final View renderingView = createRenderingView(mediaPlayerView.getContext());
+                createRenderingViewInMainThread(mediaPlayerView.getContext());
                 Log.v(TAG, renderingView + "binding, creating rendering view" + mediaPlayerView);
+            } else {
+                mainHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Log.v(TAG, "binding, bindRenderingViewInUiThread " + mediaPlayerView);
+                            bindRenderingViewInUiThread();
+                        } catch (SRGMediaPlayerException e) {
+                            Log.d(TAG, "Error binding view", e);
+                        }
+                    }
+                });
+            }
 
+        } else
+            // mediaPlayerView null, just unbind delegate
+            if (mediaPlayerView == null) {
+                unbindRenderingView();
+            }
+        //Other cases are :
+        // - both mediaPlayerView and delegate null, do nothing
+        // - delegate null only, mediaPlayerView already stored as class attributes and will be set when needed
+    }
+
+    private void bindRenderingViewInUiThread() throws SRGMediaPlayerException {
+        if (mediaPlayerView == null ||
+                !canRenderInView(mediaPlayerView.getVideoRenderingView())) {
+            throw new SRGMediaPlayerException("ExoPlayerDelegate cannot render video in a "
+                    + mediaPlayerView);
+        }
+        pushSurface(false);
+        broadcastEvent(Event.Type.DID_BIND_TO_PLAYER_VIEW);
+    }
+
+    private void pushSurface(boolean blockForSurfacePush) {
+        if (exoPlayer != null) {
+            if (renderingView instanceof SurfaceView) {
+                exoPlayer.setVideoSurfaceView((SurfaceView) renderingView);
+            } else if (renderingView instanceof TextureView) {
+                exoPlayer.setVideoTextureView((TextureView) renderingView);
+            }
+        }
+    }
+
+    /**
+     * Clear the current mediaPlayer, unbind the delegate and the overlayController
+     *
+     * @param playerView video container to unbind from.
+     */
+    public void unbindFromMediaPlayerView(SRGMediaPlayerView playerView) {
+        if (mediaPlayerView == playerView) {
+            overlayController.bindToVideoContainer(null);
+            unbindRenderingView();
+            mediaPlayerView = null;
+            broadcastEvent(Event.Type.DID_UNBIND_FROM_PLAYER_VIEW);
+        }
+    }
+
+    private boolean canRenderInView(View view) {
+        return view instanceof SurfaceView || view instanceof TextureView;
+    }
+
+    private void createRenderingViewInMainThread(final Context parentContext) {
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (viewType == ViewType.TYPE_SURFACEVIEW) {
+                    renderingView = new SurfaceView(parentContext);
+                } else {
+                    renderingView = new TextureView(parentContext);
+                }
+                if (mediaPlayerView != null) {
+                    Log.v(TAG, "binding, setVideoRenderingView " + mediaPlayerView);
+                    mediaPlayerView.setVideoRenderingView(renderingView);
+                }
                 if (renderingView instanceof SurfaceView) {
                     ((SurfaceView) renderingView).getHolder().addCallback(new SurfaceHolder.Callback() {
                         @Override
@@ -1284,100 +1288,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
                         }
                     });
-
-                } else {
-                    Log.v(TAG, renderingView + "binding, attaching rendering view" + mediaPlayerView);
-
-                    renderingView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
-                        @Override
-                        public void onViewAttachedToWindow(View v) {
-                            Log.v(TAG, renderingView + "binding, attached rendering view" + mediaPlayerView);
-                        }
-
-                        @Override
-                        public void onViewDetachedFromWindow(View v) {
-                            //TODO if a delegate is bound to this surface, we need tu unbind it
-                        }
-                    });
                 }
-                mainHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (mediaPlayerView != null) {
-                            Log.v(TAG, "binding, setVideoRenderingView " + mediaPlayerView);
-                            mediaPlayerView.setVideoRenderingView(renderingView);
-                        }
-                    }
-                });
-            } else {
-                mainHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            Log.v(TAG, "binding, bindRenderingViewInUiThread " + mediaPlayerView);
-                            bindRenderingViewInUiThread();
-                        } catch (SRGMediaPlayerException e) {
-                            Log.d(TAG, "Error binding view", e);
-                        }
-                    }
-                });
             }
-
-        } else
-            // mediaPlayerView null, just unbind delegate
-            if (mediaPlayerView == null) {
-                unbindRenderingView();
-            }
-        //Other cases are :
-        // - both mediaPlayerView and delegate null, do nothing
-        // - delegate null only, mediaPlayerView already stored as class attributes and will be set when needed
-    }
-
-    private void bindRenderingViewInUiThread() throws SRGMediaPlayerException {
-        if (mediaPlayerView == null ||
-                !canRenderInView(mediaPlayerView.getVideoRenderingView())) {
-            throw new SRGMediaPlayerException("ExoPlayerDelegate cannot render video in a "
-                    + mediaPlayerView);
-        }
-        renderingView = mediaPlayerView.getVideoRenderingView();
-        pushSurface(false);
-        broadcastEvent(Event.Type.DID_BIND_TO_PLAYER_VIEW);
-    }
-
-    private void pushSurface(boolean blockForSurfacePush) {
-        if (exoPlayer != null) {
-            if (renderingView instanceof SurfaceView) {
-                exoPlayer.setVideoSurfaceView((SurfaceView) renderingView);
-            } else if (renderingView instanceof TextureView) {
-                exoPlayer.setVideoTextureView((TextureView) renderingView);
-            }
-        }
-    }
-
-    /**
-     * Clear the current mediaPlayer, unbind the delegate and the overlayController
-     *
-     * @param playerView video container to unbind from.
-     */
-    public void unbindFromMediaPlayerView(SRGMediaPlayerView playerView) {
-        if (mediaPlayerView == playerView) {
-            overlayController.bindToVideoContainer(null);
-            unbindRenderingView();
-            mediaPlayerView = null;
-            broadcastEvent(Event.Type.DID_UNBIND_FROM_PLAYER_VIEW);
-        }
-    }
-
-    private boolean canRenderInView(View view) {
-        return view instanceof SurfaceView || view instanceof TextureView;
-    }
-
-    private View createRenderingView(Context parentContext) {
-        if (viewType == ViewType.TYPE_SURFACEVIEW) {
-            return new SurfaceView(parentContext);
-        } else {
-            return new TextureView(parentContext);
-        }
+        });
     }
 
     public void setViewType(ViewType viewType) {
@@ -1868,61 +1781,98 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Override
     public void onAudioCapabilitiesChanged(AudioCapabilities audioCapabilities) {
-
+        boolean audioCapabilitiesChanged = !audioCapabilities.equals(this.audioCapabilities);
+        if (audioCapabilitiesChanged) {
+            this.audioCapabilities = audioCapabilities;
+        }
     }
 
     @Override
     public void onTimelineChanged(Timeline timeline, Object manifest) {
-
+        // Ignore
     }
 
     @Override
     public void onTracksChanged(TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {
-
+        // Ignore
     }
 
     @Override
     public void onLoadingChanged(boolean isLoading) {
-
+        // TODO Should we really ignore this ?
+        // Ignore
     }
 
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
-
+        Log.v(TAG, toString() + " exo state change: " + playWhenReady + " " + playbackState);
+        if (this.playbackState == null || this.playbackState != playbackState) {
+            switch (playbackState) {
+                case Player.STATE_IDLE:
+                    // TODO Why ?
+                    //controller.onPlayerDelegateStateChanged(this, SRGMediaPlayerController.State.IDLE);
+                    break;
+                case Player.STATE_BUFFERING:
+                    sendMessage(MSG_PLAYER_DELEGATE_BUFFERING);
+                    break;
+                case Player.STATE_READY:
+                    manageKeepScreenOnInternal();
+                    sendMessage(MSG_PLAYER_DELEGATE_READY);
+                    break;
+                case Player.STATE_ENDED:
+                    manageKeepScreenOnInternal();
+                    sendMessage(MSG_PLAYER_DELEGATE_COMPLETED);
+                    break;
+            }
+            this.playbackState = playbackState;
+        }
+        if (this.playWhenReady == null || this.playWhenReady != playWhenReady) {
+            manageKeepScreenOnInternal();
+            sendMessage(MSG_PLAYER_DELEGATE_PLAY_WHEN_READY_COMMITED);
+            this.playWhenReady = playWhenReady;
+        }
     }
 
     @Override
     public void onRepeatModeChanged(int repeatMode) {
-
+        // Ignore
     }
 
     @Override
     public void onPlayerError(ExoPlaybackException error) {
-
+        manageKeepScreenOnInternal();
+        sendMessage(MSG_DELEGATE_EXCEPTION, error);
     }
 
     @Override
     public void onPositionDiscontinuity() {
-
+        // Ignore
     }
 
     @Override
     public void onPlaybackParametersChanged(PlaybackParameters playbackParameters) {
-
+        // Ignore
     }
 
     @Override
     public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
-
+        if (exoPlayer != null) {
+            float aspectRatio = ((float) width / (float) height) * pixelWidthHeightRatio;
+            if ((aspectRatio / 90) % 2 == 1) {
+                aspectRatio = 1 / aspectRatio;
+            }
+            sendMessage(MSG_PLAYER_DELEGATE_VIDEO_ASPECT_RATIO, aspectRatio);
+        }
     }
 
     @Override
     public void onRenderedFirstFrame() {
-
+        // TODO Should we ignore this ?
+        // Ignore
     }
 
     @Override
     public void onCues(List<Cue> cues) {
-
+        sendMessage(MSG_PLAYER_DELEGATE_SUBTITLE_CUES, cues);
     }
 }
