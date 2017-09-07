@@ -1127,7 +1127,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (mediaPlayerView != null) {
             unbindFromMediaPlayerView(mediaPlayerView);
         }
-
         mediaPlayerView = newView;
         newView.setCues(Collections.<Cue>emptyList());
         internalUpdateMediaPlayerViewBound();
@@ -1149,6 +1148,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 createRenderingViewInMainThread(mediaPlayerView.getContext());
                 Log.v(TAG, renderingView + "binding, creating rendering view" + mediaPlayerView);
             } else {
+                renderingView = mediaPlayerView.getVideoRenderingView();
                 mainHandler.post(new Runnable() {
                     @Override
                     public void run() {
