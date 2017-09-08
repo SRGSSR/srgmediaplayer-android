@@ -23,7 +23,6 @@ import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
 import ch.srg.mediaplayer.tests.ConditionWatcher;
 import ch.srg.mediaplayer.tests.EventInstruction;
 import ch.srg.mediaplayer.utils.MockDataProvider;
-import ch.srg.mediaplayer.utils.MockDelegate;
 import ch.srg.mediaplayer.utils.SRGMediaPlayerControllerQueueListener;
 
 /**
@@ -48,7 +47,6 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     private SRGMediaPlayerControllerQueueListener queue;
 
-    private MockDelegate delegate;
     private SRGMediaPlayerException lastError;
     private boolean mediaCompletedReceived;
     private MockDataProvider provider;
@@ -158,7 +156,6 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     @Test
     public void testNullUriError() throws Exception {
-        delegate.setVideoSourceUrl("this is not null");
         controller.play("NULL");
         waitForState(SRGMediaPlayerController.State.PREPARING);
         waitForState(SRGMediaPlayerController.State.RELEASED);
@@ -327,16 +324,6 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     }
 
     @Test
-    public void delegateErrorPropagation() throws Exception {
-        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
-        waitForState(SRGMediaPlayerController.State.PREPARING);
-        waitForState(SRGMediaPlayerController.State.READY);
-        String message = "error test (expected!)";
-        delegate.notifyError(new SRGMediaPlayerException(message));
-        waitForError(message);
-    }
-
-    @Test
     public void playReleaseRobustness() {
         final Context context = getInstrumentation().getContext();
         int testCount = 100;
@@ -439,7 +426,6 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     private static class CreatePlayRelease implements Runnable {
         SRGMediaPlayerController controller;
-        MockDelegate delegate;
         private Context context;
         private SRGMediaPlayerDataProvider provider;
         private Random r = new Random();
