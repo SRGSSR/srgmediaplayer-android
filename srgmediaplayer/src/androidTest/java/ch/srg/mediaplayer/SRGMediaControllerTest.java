@@ -273,7 +273,17 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     @Test
     public void testMultipleSeeks() throws Exception {
+        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        assertTrue(controller.isPlaying());
+        assertEquals(controller.getMediaPosition() / 1000, 0);
 
+        controller.seekTo(60 * 1000);
+        controller.seekTo(70 * 1000);
+        waitUntilState(SRGMediaPlayerController.State.BUFFERING);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        assertEquals(controller.getMediaPosition() / 1000, 70);
+        assertTrue(controller.isPlaying());
     }
 
     @Test
