@@ -1175,14 +1175,14 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private void bindRenderingViewInUiThread() throws SRGMediaPlayerException {
         if (mediaPlayerView == null ||
                 !canRenderInView(mediaPlayerView.getVideoRenderingView())) {
-            throw new SRGMediaPlayerException("ExoPlayerDelegate cannot render video in a "
+            throw new SRGMediaPlayerException("ExoPlayer cannot render video in a "
                     + mediaPlayerView);
         }
-        pushSurface(false);
+        pushSurface();
         broadcastEvent(Event.Type.DID_BIND_TO_PLAYER_VIEW);
     }
 
-    private void pushSurface(boolean blockForSurfacePush) {
+    private void pushSurface() {
         if (exoPlayer != null) {
             if (renderingView instanceof SurfaceView) {
                 exoPlayer.setVideoSurfaceView((SurfaceView) renderingView);
