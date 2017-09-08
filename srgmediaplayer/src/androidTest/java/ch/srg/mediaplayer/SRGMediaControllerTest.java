@@ -288,7 +288,14 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     @Test
     public void testSeekWhileNotPlaying() throws Exception {
+        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        waitUntilState(SRGMediaPlayerController.State.PREPARING);
+        assertFalse(controller.isPlaying());
 
+        controller.seekTo(60 * 1000);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        assertEquals(controller.getMediaPosition() / 1000, 60);
+        assertTrue(controller.isPlaying());
     }
 
     @Test
