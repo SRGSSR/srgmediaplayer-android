@@ -13,7 +13,6 @@ import android.os.Message;
 import android.os.Process;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 import android.view.SurfaceHolder;
@@ -138,25 +137,22 @@ public class SRGMediaPlayerController implements Handler.Callback,
      */
     public static final int AUDIO_FOCUS_FLAG_AUTO_RESTART = 8;
 
-    private static final int MSG_PREPARE_FOR_MEDIA_IDENTIFIER = 3;
-
     private static final int MSG_PREPARE_FOR_URI = 4;
     private static final int MSG_SET_PLAY_WHEN_READY = 5;
     private static final int MSG_SEEK_TO = 6;
     private static final int MSG_SET_MUTE = 7;
     private static final int MSG_APPLY_STATE = 8;
     private static final int MSG_RELEASE = 9;
-    /*package*/ static final int MSG_DELEGATE_EXCEPTION = 12;
+    /*package*/ static final int MSG_EXCEPTION = 12;
     private static final int MSG_REGISTER_EVENT_LISTENER = 13;
     private static final int MSG_UNREGISTER_EVENT_LISTENER = 14;
-    private static final int MSG_PLAYER_DELEGATE_PREPARING = 101;
-    private static final int MSG_PLAYER_DELEGATE_READY = 102;
-    private static final int MSG_PLAYER_DELEGATE_BUFFERING = 103;
-    private static final int MSG_PLAYER_DELEGATE_COMPLETED = 104;
-    private static final int MSG_PLAYER_DELEGATE_PLAY_WHEN_READY_COMMITED = 105;
-    private static final int MSG_PLAYER_DELEGATE_SUBTITLE_CUES = 106;
-    private static final int MSG_PLAYER_DELEGATE_VIDEO_ASPECT_RATIO = 107;
-    private static final int MSG_DATA_PROVIDER_EXCEPTION = 200;
+    private static final int MSG_PLAYER_PREPARING = 101;
+    private static final int MSG_PLAYER_READY = 102;
+    private static final int MSG_PLAYER_BUFFERING = 103;
+    private static final int MSG_PLAYER_COMPLETED = 104;
+    private static final int MSG_PLAYER_PLAY_WHEN_READY_COMMITED = 105;
+    private static final int MSG_PLAYER_SUBTITLE_CUES = 106;
+    private static final int MSG_PLAYER_VIDEO_ASPECT_RATIO = 107;
     private static final int MSG_PERIODIC_UPDATE = 300;
     private static final int MSG_FIRE_EVENT = 400;
 
@@ -218,9 +214,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         public final Type type;
 
-        public final String mediaIdentifier;
-
-        public final String mediaUrl;
+        public final Uri mediaUri;
         public final String mediaSessionId;
         public final long mediaPosition;
         public final long mediaDuration;
@@ -256,9 +250,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
             tag = controller.tag;
             state = controller.state;
             exception = eventException;
-            mediaIdentifier = controller.currentMediaIdentifier;
             mediaSessionId = controller.getMediaSessionId();
-            mediaUrl = controller.currentMediaUrl;
+            mediaUri = controller.currentMediaUri;
             mediaPosition = controller.getMediaPosition();
             mediaDuration = controller.getMediaDuration();
             mediaPlaying = controller.isPlaying();
@@ -281,8 +274,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         public String toString() {
             return "Event{" +
                     "type=" + type +
-                    ", mediaIdentifier='" + mediaIdentifier + '\'' +
-                    ", mediaUrl='" + mediaUrl + '\'' +
+                    ", mediaUrl='" + mediaUri + '\'' +
                     ", mediaSessionId='" + mediaSessionId + '\'' +
                     ", mediaPosition=" + mediaPosition +
                     ", mediaDuration=" + mediaDuration +
@@ -327,8 +319,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private final AudioManager audioManager;
 
-    private SRGMediaPlayerDataProvider mediaPlayerDataProvider;
-
     private State state = State.IDLE;
 
     private Boolean playWhenReady = true;
@@ -358,9 +348,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private OverlayController overlayController;
 
-    private String currentMediaIdentifier = null;
-
-    private String currentMediaUrl = null;
+    private Uri currentMediaUri = null;
     private String tag;
 
     //Main player property to handle multiple player view
@@ -380,12 +368,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * if you need to retrieve a controller
      *
      * @param context
-     * @param mediaPlayerDataProvider
      * @param tag
      */
-    public SRGMediaPlayerController(Context context, SRGMediaPlayerDataProvider mediaPlayerDataProvider, String tag) {
+    public SRGMediaPlayerController(Context context, String tag) {
         this.context = context;
-        this.mediaPlayerDataProvider = mediaPlayerDataProvider;
         this.mainHandler = new Handler(Looper.getMainLooper(), this);
         this.tag = tag;
 
@@ -458,34 +444,41 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return mainHandler;
     }
 
-    /**
-     * Start a video from beginning
-     *
-     * @see #play(String, Long)
-     */
-    public boolean play(String mediaIdentifier) throws SRGMediaPlayerException {
-        return play(mediaIdentifier, null);
-    }
 
     /**
-     * Try to play a video with a mediaIdentifier, you can't replay the current playing video.
+     * Try to play a video with a url, you can't replay the current playing video.
      * will throw an exception if you haven't setup a data provider or if the media is not present
      * in the provider.
      * <p/>
      * The corresponding events are triggered when the video loading start and is ready.
      *
-     * @param mediaIdentifier identifier
-     * @param startPositionMs start position in milliseconds or null to prevent seek
+     * @param uri        uri of the media
+     * @param streamType {@link SRGMediaPlayerDataProvider#STREAM_DASH}, {@link SRGMediaPlayerDataProvider#STREAM_HLS}, {@link SRGMediaPlayerDataProvider#STREAM_HTTP_PROGRESSIVE} or {@link SRGMediaPlayerDataProvider#STREAM_LOCAL_FILE}
      * @return true when media is preparing and in the process of being started
      * @throws SRGMediaPlayerException
      */
-    public boolean play(String mediaIdentifier, Long startPositionMs) throws SRGMediaPlayerException {
-        if (mediaPlayerDataProvider == null) {
-            throw new IllegalStateException("No data provider set before play");
-        }
+    public boolean play(Uri uri, int streamType) throws SRGMediaPlayerException {
+        return play(uri, null, streamType);
+    }
+
+    /**
+     * Try to play a video with a url, you can't replay the current playing video.
+     * will throw an exception if you haven't setup a data provider or if the media is not present
+     * in the provider.
+     * <p/>
+     * The corresponding events are triggered when the video loading start and is ready.
+     *
+     * @param uri             uri of the media
+     * @param startPositionMs start position in milliseconds or null to prevent seek
+     * @param streamType      {@link SRGMediaPlayerDataProvider#STREAM_DASH}, {@link SRGMediaPlayerDataProvider#STREAM_HLS}, {@link SRGMediaPlayerDataProvider#STREAM_HTTP_PROGRESSIVE} or {@link SRGMediaPlayerDataProvider#STREAM_LOCAL_FILE}
+     * @return true when media is preparing and in the process of being started
+     * @throws SRGMediaPlayerException
+     */
+    public boolean play(Uri uri, Long startPositionMs, @SRGMediaPlayerDataProvider.SRGStreamType int streamType) throws SRGMediaPlayerException {
         if (requestAudioFocus()) {
-            if (!TextUtils.equals(currentMediaIdentifier, mediaIdentifier)) {
-                sendMessage(MSG_PREPARE_FOR_MEDIA_IDENTIFIER, mediaIdentifier);
+            if (!currentMediaUri.equals(uri)) {
+                PrepareUriData data = new PrepareUriData(uri, startPositionMs, streamType);
+                sendMessage(MSG_PREPARE_FOR_URI, data);
                 start();
             }
             if (startPositionMs != null) {
@@ -506,12 +499,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
     class PrepareUriData {
         Uri uri;
         Long position;
-        String mediaIdentifier;
         int streamType;
 
-        public PrepareUriData(Uri uri, String mediaIdentifier, Long position, int streamType) {
+        public PrepareUriData(Uri uri, Long position, int streamType) {
             this.uri = uri;
-            this.mediaIdentifier = mediaIdentifier;
             this.position = position;
             this.streamType = streamType;
         }
@@ -606,14 +597,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
             logV("handleMessage: " + msg);
         }
         switch (msg.what) {
-            case MSG_PREPARE_FOR_MEDIA_IDENTIFIER:
-                String mediaIdentifier = (String) msg.obj;
-                releaseDelegateInternal();
-                prepareForIdentifierInternal(mediaIdentifier);
-                seekToWhenReady = null;
-                return true;
-
             case MSG_PREPARE_FOR_URI:
+                releaseDelegateInternal();
+                setStateInternal(State.PREPARING);
                 createPlayerInternal();
                 PrepareUriData data = (PrepareUriData) msg.obj;
                 Uri uri = data.uri;
@@ -627,7 +613,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     seekToWhenReady = data.position;
                 }
 
-                currentMediaIdentifier = data.mediaIdentifier;
                 postEventInternal(Event.Type.MEDIA_READY_TO_PLAY);
                 try {
                     if (mediaPlayerView != null) {
@@ -691,8 +676,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 releaseInternal();
                 return true;
 
-            case MSG_DELEGATE_EXCEPTION:
-            case MSG_DATA_PROVIDER_EXCEPTION:
+            case MSG_EXCEPTION:
                 handleFatalExceptionInternal((SRGMediaPlayerException) msg.obj);
                 return true;
 
@@ -710,31 +694,31 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 }
                 return true;
 
-            case MSG_PLAYER_DELEGATE_PREPARING:
+            case MSG_PLAYER_PREPARING:
                 setStateInternal(State.PREPARING);
                 return true;
 
-            case MSG_PLAYER_DELEGATE_READY:
+            case MSG_PLAYER_READY:
                 startBecomingNoisyReceiver();
                 setStateInternal(State.READY);
                 applyStateInternal();
                 return true;
 
-            case MSG_PLAYER_DELEGATE_BUFFERING:
+            case MSG_PLAYER_BUFFERING:
                 setStateInternal(State.BUFFERING);
                 return true;
 
-            case MSG_PLAYER_DELEGATE_COMPLETED:
+            case MSG_PLAYER_COMPLETED:
                 setStateInternal(State.READY);
                 postEventInternal(Event.Type.MEDIA_COMPLETED);
                 releaseInternal();
                 return true;
 
-            case MSG_PLAYER_DELEGATE_PLAY_WHEN_READY_COMMITED:
+            case MSG_PLAYER_PLAY_WHEN_READY_COMMITED:
                 postEventInternal(Event.Type.PLAYING_STATE_CHANGE);
                 return true;
 
-            case MSG_PLAYER_DELEGATE_SUBTITLE_CUES:
+            case MSG_PLAYER_SUBTITLE_CUES:
                 final List<Cue> cueList = (List<Cue>) msg.obj;
                 mainHandler.post(new Runnable() {
                     @Override
@@ -746,7 +730,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 });
                 return true;
 
-            case MSG_PLAYER_DELEGATE_VIDEO_ASPECT_RATIO:
+            case MSG_PLAYER_VIDEO_ASPECT_RATIO:
                 final float aspectRatio = (Float) msg.obj;
                 mainHandler.post(new Runnable() {
                     @Override
@@ -782,12 +766,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private void prepareInternal(Uri videoUri, int streamType) throws SRGMediaPlayerException {
         Log.v(TAG, "Preparing " + videoUri + " (" + streamType + ")");
         try {
-            String videoSourceUrl = videoUri.toString();
-            if (this.currentMediaUrl != null && this.currentMediaUrl.equalsIgnoreCase(videoSourceUrl)) {
+            if (this.currentMediaUri != null && this.currentMediaUri.equals(videoUri)) {
                 return;
             }
-            sendMessage(MSG_PLAYER_DELEGATE_PREPARING);
-            this.currentMediaUrl = videoSourceUrl;
+            sendMessage(MSG_PLAYER_PREPARING);
+            this.currentMediaUri = videoUri;
 
             String userAgent = "curl/Letterbox_2.0"; // temporarily using curl/ user agent to force subtitles with Akamai beta
 
@@ -881,30 +864,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
     }
 
-    private void prepareForIdentifierInternal(String mediaIdentifier) {
-        setStateInternal(State.PREPARING);
-        if (mediaIdentifier == null) {
-            throw new IllegalArgumentException("Media identifier is null in prepare for identifier");
-        }
-        currentMediaIdentifier = mediaIdentifier;
-        currentMediaUrl = null;
-
-        mediaPlayerDataProvider.getUri(mediaIdentifier, SRGMediaPlayerDataProvider.PLAYER_TYPE_EXOPLAYER, new SRGMediaPlayerDataProvider.GetUriCallback() {
-            @Override
-            public void onUriLoaded(String mediaIdentifier, Uri uri, String realMediaIdentifier, Long position, int streamType) {
-                if (realMediaIdentifier == null) {
-                    throw new IllegalArgumentException("realMediaIdentifier may not be null");
-                }
-                sendMessage(MSG_PREPARE_FOR_URI, new PrepareUriData(uri, realMediaIdentifier, position, streamType));
-            }
-
-            @Override
-            public void onUriLoadFailed(String mediaIdentifier, SRGMediaPlayerException exception) {
-                sendMessage(MSG_DATA_PROVIDER_EXCEPTION, exception);
-            }
-        });
-    }
-
     private void createPlayerInternal() {
         releaseDelegateInternal();
         createNewExoPlayerInstance();
@@ -952,8 +911,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             exoPlayer.stop();
             exoPlayer.release();
             exoPlayer = null;
-            currentMediaIdentifier = null;
-            currentMediaUrl = null;
+            currentMediaUri = null;
             seekToWhenReady = null;
         }
     }
@@ -1003,11 +961,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     /**
-     * Return the current mediaIdentifier played.
+     * Return the current Url played.
      */
     @Nullable
-    public String getMediaIdentifier() {
-        return currentMediaIdentifier;
+    public Uri getMediaUri() {
+        return currentMediaUri;
     }
 
     /**
@@ -1811,22 +1769,22 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     //controller.onPlayerDelegateStateChanged(this, SRGMediaPlayerController.State.IDLE);
                     break;
                 case Player.STATE_BUFFERING:
-                    sendMessage(MSG_PLAYER_DELEGATE_BUFFERING);
+                    sendMessage(MSG_PLAYER_BUFFERING);
                     break;
                 case Player.STATE_READY:
                     manageKeepScreenOnInternal();
-                    sendMessage(MSG_PLAYER_DELEGATE_READY);
+                    sendMessage(MSG_PLAYER_READY);
                     break;
                 case Player.STATE_ENDED:
                     manageKeepScreenOnInternal();
-                    sendMessage(MSG_PLAYER_DELEGATE_COMPLETED);
+                    sendMessage(MSG_PLAYER_COMPLETED);
                     break;
             }
             this.playbackState = playbackState;
         }
         if (this.playWhenReady == null || this.playWhenReady != playWhenReady) {
             manageKeepScreenOnInternal();
-            sendMessage(MSG_PLAYER_DELEGATE_PLAY_WHEN_READY_COMMITED);
+            sendMessage(MSG_PLAYER_PLAY_WHEN_READY_COMMITED);
             this.playWhenReady = playWhenReady;
         }
     }
@@ -1839,7 +1797,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     @Override
     public void onPlayerError(ExoPlaybackException error) {
         manageKeepScreenOnInternal();
-        sendMessage(MSG_DELEGATE_EXCEPTION, error);
+        sendMessage(MSG_EXCEPTION, error);
     }
 
     @Override
@@ -1859,7 +1817,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             if ((aspectRatio / 90) % 2 == 1) {
                 aspectRatio = 1 / aspectRatio;
             }
-            sendMessage(MSG_PLAYER_DELEGATE_VIDEO_ASPECT_RATIO, aspectRatio);
+            sendMessage(MSG_PLAYER_VIDEO_ASPECT_RATIO, aspectRatio);
         }
     }
 
@@ -1871,6 +1829,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Override
     public void onCues(List<Cue> cues) {
-        sendMessage(MSG_PLAYER_DELEGATE_SUBTITLE_CUES, cues);
+        sendMessage(MSG_PLAYER_SUBTITLE_CUES, cues);
     }
 }
