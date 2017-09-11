@@ -5,6 +5,7 @@ import android.net.Uri;
 import java.util.HashMap;
 import java.util.Map;
 
+import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 
@@ -39,7 +40,7 @@ public class MockDataProvider implements SRGMediaPlayerDataProvider {
         if (uriString == null) {
             callback.onUriLoadFailed(mediaIdentifier, new SRGMediaPlayerException("no uri"));
         } else {
-            callback.onUriLoaded(mediaIdentifier, Uri.parse(uriString), mediaIdentifier, null, STREAM_HLS);
+            callback.onUriLoaded(mediaIdentifier, Uri.parse(uriString), mediaIdentifier, null, SRGMediaPlayerController.STREAM_HLS);
         }
     }
 

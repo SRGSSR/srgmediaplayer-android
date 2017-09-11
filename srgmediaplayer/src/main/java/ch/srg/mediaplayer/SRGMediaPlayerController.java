@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.IntentFilter;
 import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
+import android.media.session.MediaSession;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
@@ -11,8 +12,10 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Process;
+import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.media.session.MediaSessionCompat;
 import android.util.Log;
 import android.util.Pair;
 import android.view.SurfaceHolder;
@@ -34,6 +37,7 @@ import com.google.android.exoplayer2.audio.AudioCapabilities;
 import com.google.android.exoplayer2.audio.AudioCapabilitiesReceiver;
 import com.google.android.exoplayer2.drm.DrmSessionManager;
 import com.google.android.exoplayer2.drm.FrameworkMediaCrypto;
+import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
@@ -55,6 +59,8 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,8 +69,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.WeakHashMap;
-
-import ch.srg.mediaplayer.service.AudioIntentReceiver;
 
 /**
  * Handle the playback of media.
@@ -178,6 +182,15 @@ public class SRGMediaPlayerController implements Handler.Callback,
          */
         RELEASED,
     }
+
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({SRGMediaPlayerController.STREAM_HLS, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE, SRGMediaPlayerController.STREAM_DASH, SRGMediaPlayerController.STREAM_LOCAL_FILE})
+    public static @interface SRGStreamType {
+    }
+    public static final int STREAM_HLS = 1;
+    public static final int STREAM_HTTP_PROGRESSIVE = 2;
+    public static final int STREAM_DASH = 3;
+    public static final int STREAM_LOCAL_FILE = 4;
 
     /**
      * Interface definition for a callback to be invoked when the status changes or is periodically emitted.
@@ -332,7 +345,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Nullable
     private SimpleExoPlayer exoPlayer;
-    private AudioIntentReceiver becomingNoisyReceiver;
     private DefaultTrackSelector trackSelector;
     private AudioCapabilitiesReceiver audioCapabilitiesReceiver;
     private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
@@ -342,6 +354,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private ViewType viewType;
     private View renderingView;
     private Integer playbackState;
+    private MediaSessionCompat mediaSession;
 
     @Nullable
     private SRGMediaPlayerView mediaPlayerView;
@@ -402,6 +415,12 @@ public class SRGMediaPlayerController implements Handler.Callback,
         exoPlayer.setAudioDebugListener(eventLogger);
         exoPlayer.setVideoDebugListener(eventLogger);
         exoPlayer.setMetadataOutput(eventLogger);
+
+        mediaSession = new MediaSessionCompat(context, "SRGMediaPlayerController");
+
+        MediaSessionConnector mediaSessionConnector =
+                new MediaSessionConnector(mediaSession);
+        mediaSessionConnector.setPlayer(exoPlayer, null, null);
     }
 
     private synchronized void startBackgroundThreadIfNecessary() {
@@ -453,7 +472,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * The corresponding events are triggered when the video loading start and is ready.
      *
      * @param uri        uri of the media
-     * @param streamType {@link SRGMediaPlayerDataProvider#STREAM_DASH}, {@link SRGMediaPlayerDataProvider#STREAM_HLS}, {@link SRGMediaPlayerDataProvider#STREAM_HTTP_PROGRESSIVE} or {@link SRGMediaPlayerDataProvider#STREAM_LOCAL_FILE}
+     * @param streamType {@link SRGMediaPlayerController#STREAM_DASH}, {@link SRGMediaPlayerController#STREAM_HLS}, {@link SRGMediaPlayerController#STREAM_HTTP_PROGRESSIVE} or {@link SRGMediaPlayerController#STREAM_LOCAL_FILE}
      * @return true when media is preparing and in the process of being started
      * @throws SRGMediaPlayerException
      */
@@ -470,13 +489,13 @@ public class SRGMediaPlayerController implements Handler.Callback,
      *
      * @param uri             uri of the media
      * @param startPositionMs start position in milliseconds or null to prevent seek
-     * @param streamType      {@link SRGMediaPlayerDataProvider#STREAM_DASH}, {@link SRGMediaPlayerDataProvider#STREAM_HLS}, {@link SRGMediaPlayerDataProvider#STREAM_HTTP_PROGRESSIVE} or {@link SRGMediaPlayerDataProvider#STREAM_LOCAL_FILE}
+     * @param streamType      {@link SRGMediaPlayerController#STREAM_DASH}, {@link SRGMediaPlayerController#STREAM_HLS}, {@link SRGMediaPlayerController#STREAM_HTTP_PROGRESSIVE} or {@link SRGMediaPlayerController#STREAM_LOCAL_FILE}
      * @return true when media is preparing and in the process of being started
      * @throws SRGMediaPlayerException
      */
-    public boolean play(Uri uri, Long startPositionMs, @SRGMediaPlayerDataProvider.SRGStreamType int streamType) throws SRGMediaPlayerException {
+    public boolean play(Uri uri, Long startPositionMs, @SRGStreamType int streamType) throws SRGMediaPlayerException {
         if (requestAudioFocus()) {
-            if (!currentMediaUri.equals(uri)) {
+            if (!currentMediaUri.equals(uri)) { // TODO This will be always false, we have a tokenized Uri here, we should compare without params
                 PrepareUriData data = new PrepareUriData(uri, startPositionMs, streamType);
                 sendMessage(MSG_PREPARE_FOR_URI, data);
                 start();
@@ -604,12 +623,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 PrepareUriData data = (PrepareUriData) msg.obj;
                 Uri uri = data.uri;
                 if (seekToWhenReady == null) {
-                    // TODO
-                    // Here we have an issue: we handle restore to position only when the dataprovider
-                    // does not give us a position to seek to (segment mark in in IL case).
-                    // When the dataprovider does give a position to seek to, we don't know which
-                    // position to take as the seekto could have occurred before or
-                    // after the seek. And we don't know the segment range either...
                     seekToWhenReady = data.position;
                 }
 
@@ -699,7 +712,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 return true;
 
             case MSG_PLAYER_READY:
-                startBecomingNoisyReceiver();
                 setStateInternal(State.READY);
                 applyStateInternal();
                 return true;
@@ -780,18 +792,18 @@ public class SRGMediaPlayerController implements Handler.Callback,
             MediaSource mediaSource;
 
             switch (streamType) {
-                case SRGMediaPlayerDataProvider.STREAM_DASH:
+                case STREAM_DASH:
                     mediaSource = new DashMediaSource(videoUri, dataSourceFactory,
                             new DefaultDashChunkSource.Factory(dataSourceFactory), mainHandler, eventLogger);
                     break;
-                case SRGMediaPlayerDataProvider.STREAM_HLS:
+                case STREAM_HLS:
                     mediaSource = new HlsMediaSource(videoUri, dataSourceFactory, mainHandler, eventLogger);
                     break;
-                case SRGMediaPlayerDataProvider.STREAM_HTTP_PROGRESSIVE:
+                case STREAM_HTTP_PROGRESSIVE:
                     mediaSource = new ExtractorMediaSource(videoUri, dataSourceFactory, new DefaultExtractorsFactory(),
                             mainHandler, eventLogger);
                     break;
-                case SRGMediaPlayerDataProvider.STREAM_LOCAL_FILE:
+                case STREAM_LOCAL_FILE:
                     FileDataSourceFactory fileDataSourceFactory = new FileDataSourceFactory();
                     mediaSource = new ExtractorMediaSource(videoUri, fileDataSourceFactory, new DefaultExtractorsFactory(),
                             mainHandler, eventLogger);
@@ -814,11 +826,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (exoPlayer != null) {
             exoPlayer.setVolume(muted ? 0f : 1f);
         }
-    }
-
-    private void startBecomingNoisyReceiver() {
-        becomingNoisyReceiver = new AudioIntentReceiver(this);
-        context.registerReceiver(becomingNoisyReceiver, new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY));
     }
 
     private void periodicUpdateInteral() {
@@ -934,15 +941,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (mediaPlayerView != null) {
             showControlOverlays();
             unbindFromMediaPlayerView(mediaPlayerView);
-        }
-        if (becomingNoisyReceiver != null) {
-            try {
-                context.unregisterReceiver(becomingNoisyReceiver);
-            } catch (IllegalArgumentException ignored) {
-                // Prevent crash if race condition during receiver unregistering
-                Log.e(TAG, "Becoming noisy receiver was not registered");
-            }
-            becomingNoisyReceiver = null;
         }
         sendMessage(MSG_RELEASE);
     }

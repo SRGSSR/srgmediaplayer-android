@@ -20,7 +20,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import ch.srg.mediaplayer.R;
-import ch.srg.mediaplayer.service.AudioIntentReceiver;
 import ch.srg.mediaplayer.service.NotificationData;
 import ch.srg.mediaplayer.service.utils.AppUtils;
 
@@ -67,15 +66,10 @@ public class MediaSessionManager {
     }
 
     private void createMediaSessionCompat() {
-        ComponentName componentName = new ComponentName(context, AudioIntentReceiver.class);
-        Intent intent = new Intent(Intent.ACTION_MEDIA_BUTTON);
-        intent.setComponent(componentName);
-
-        mediaSessionCompat = new MediaSessionCompat(context, "MediaPlayerService", componentName, PendingIntent.getBroadcast(context, 0, intent, 0));
+        mediaSessionCompat = new MediaSessionCompat(context, "MediaPlayerService");
         mediaSessionCompat.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
         mediaSessionCompat.setActive(true);
         mediaSessionCompat.setCallback(new SRGMediaSessionCallback());
-
     }
 
     public MediaSessionCompat requestMediaSession(@NonNull NotificationData notificationData) {

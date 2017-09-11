@@ -1,5 +1,6 @@
 package ch.srg.mediaplayer.segment.controller;
 
+import android.net.Uri;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -156,7 +157,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
         // TODO handle if progress time is valid with segment
         userChangingProgress = true;
 
-        notifyPositionChange(playerController.getMediaIdentifier(), time, true);
+        notifyPositionChange("", time, true);
     }
 
     public void stopUserTrackingProgress() {
@@ -200,12 +201,13 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
             }
             return false;
         } else {
-            try {
-                playerController.play(mediaIdentifier, mediaPosition);
+            return false;
+            /*try {
+                playerController.play(new Uri.parse(""), mediaPosition);
                 return true;
             } catch (SRGMediaPlayerException ignored) {
                 return false;
-            }
+            }*/
         }
     }
 
@@ -235,7 +237,8 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
         }
         long mediaPosition = playerController.getMediaPosition();
         if (!playerController.isSeekPending() && mediaPosition != -1) {
-            String mediaIdentifier = playerController.getMediaIdentifier();
+            // TODO FIX ME
+            String mediaIdentifier = playerController.getMediaUri().toString();
             Segment blockedSegment = getBlockedSegment(mediaIdentifier, mediaPosition);
             Segment newSegment = getSegment(mediaIdentifier, mediaPosition);
 
@@ -260,7 +263,8 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
                 }
             }
         }
-        notifyPositionChange(playerController.getMediaIdentifier(), mediaPosition, false);
+        // TODO FIX ME
+        notifyPositionChange(playerController.getMediaUri().toString(), mediaPosition, false);
     }
 
     @Nullable
@@ -301,7 +305,7 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
             if (event.type == SRGMediaPlayerController.Event.Type.STATE_CHANGE
                     && event.state == SRGMediaPlayerController.State.RELEASED) {
                 // Update one last time UI to reflect released state
-                notifyPositionChange(mp.getMediaIdentifier(), 0, false);
+                notifyPositionChange("", 0, false);
             } else {
                 updateIfNotUserTracked();
             }

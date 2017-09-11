@@ -170,7 +170,8 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
         if (segmentController != null) {
             segmentController.stopUserTrackingProgress();
             if (seekBarSeekToMs >= 0 && playerController != null) {
-                segmentController.seekTo(playerController.getMediaIdentifier(), seekBarSeekToMs);
+                // TODO FIX ME
+                segmentController.seekTo(playerController.getMediaUri().toString(), seekBarSeekToMs);
                 seekBarSeekToMs = -1;
             }
         }
