@@ -245,17 +245,17 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     @Test
     public void testPlayAtPosition() throws Exception {
-
-    }
-
-    @Test
-    public void testPlayAtStreamEnd() throws Exception {
-
+        controller.play(AUDIO_ON_DEMAND_IDENTIFIER, (long) 30000);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        assertTrue(controller.isPlaying());
+        assertEquals(controller.getMediaPosition() / 1000, 30);
     }
 
     @Test
     public void testPlayAfterStreamEnd() throws Exception {
-
+        controller.play(AUDIO_ON_DEMAND_IDENTIFIER, (long) 9900000);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        waitForState(SRGMediaPlayerController.State.RELEASED);
     }
 
     @Test
