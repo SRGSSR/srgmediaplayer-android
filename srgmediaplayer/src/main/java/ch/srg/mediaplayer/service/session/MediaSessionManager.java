@@ -23,7 +23,6 @@ import ch.srg.mediaplayer.R;
 import ch.srg.mediaplayer.service.AudioIntentReceiver;
 import ch.srg.mediaplayer.service.NotificationData;
 import ch.srg.mediaplayer.service.utils.AppUtils;
-import ch.srg.mediaplayer.service.utils.FetchBitmapTask;
 
 /**
  * Created by npietri on 09.11.15.
@@ -36,7 +35,6 @@ public class MediaSessionManager {
     private static MediaSessionManager instance;
     private MediaSessionCompat mediaSessionCompat;
 
-    private FetchBitmapTask bitmapDecoderTask;
     private static int dimensionInPixels;
     private Bitmap mediaArtBitmap;
 
@@ -95,7 +93,7 @@ public class MediaSessionManager {
         String mediaThumbnailUri = "";
 
         MediaMetadataCompat.Builder meta = new MediaMetadataCompat.Builder();
-            meta.putString(MediaMetadataCompat.METADATA_KEY_TITLE, notificationData.title);
+        meta.putString(MediaMetadataCompat.METADATA_KEY_TITLE, notificationData.title);
         if (!live) {
             meta.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, notificationData.duration);
         }
@@ -144,40 +142,6 @@ public class MediaSessionManager {
 
         return mediaSessionCompat;
     }
-
-//    private void fetchMediaImage(String mediaThumbnail) {
-//        Log.d(TAG, "Fetching MediaImage: " + mediaThumbnail);
-//        if (TextUtils.isEmpty(mediaThumbnail)) {
-//            return;
-//        }
-//        if (bitmapDecoderTask != null) {
-//            bitmapDecoderTask.cancel(false);
-//        }
-//        Uri imgUri = Uri.parse(mediaThumbnail);
-//
-//        bitmapDecoderTask = new FetchBitmapTask() {
-//            @Override
-//            protected void onPostExecute(Bitmap bitmap) {
-//                mediaArtBitmap = AppUtils.scaleAndFitBitmap(bitmap, dimensionInPixels,
-//                        dimensionInPixels);
-//                updateLockScreenImage(bitmap);
-//
-//                if (listeners.isEmpty()) {
-//                    Log.d(TAG, "No listener found for bitmap Update");
-//                } else {
-//                    Log.d(TAG, listeners.size() + " listener(s) found for bitmap Update");
-//                }
-//                for (Listener listener : listeners) {
-//                    listener.onBitmapUpdate(mediaArtBitmap);
-//                }
-//
-//                if (this == bitmapDecoderTask) {
-//                    bitmapDecoderTask = null;
-//                }
-//            }
-//        };
-//        bitmapDecoderTask.execute(imgUri);
-//    }
 
     public void updateMediaSession(boolean playing) {
         if (mediaSessionCompat != null) {
