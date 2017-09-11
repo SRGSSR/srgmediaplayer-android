@@ -134,7 +134,6 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         assertTrue(controller.isPlaying());
     }
 
-    // TODO: Fix, doesn't play
     @Test
     public void testPlayAudioOverHTTP() throws Exception {
         controller.play(NON_STREAMED_VIDEO_IDENTIFIER);
@@ -212,7 +211,6 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         waitUntilEvent(SRGMediaPlayerController.Event.Type.MEDIA_COMPLETED);
     }
 
-    // TODO: Fix, doesn't play
     @Test
     public void testNonStreamedMediaPlaythrough() throws Exception {
         controller.play(NON_STREAMED_VIDEO_IDENTIFIER);
@@ -220,7 +218,6 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         waitUntilState(SRGMediaPlayerController.State.RELEASED);
     }
 
-    // TODO: Fix. Cannot play the stream
     @Test
     public void testOnDemandAudioPlayback() throws Exception {
         controller.play(AUDIO_ON_DEMAND_IDENTIFIER);
@@ -238,11 +235,10 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         assertTrue(SRGMediaPlayerController.UNKNOWN_TIME != controller.getLiveTime());
     }
 
-    // TODO: Fix. Cannot play the stream
     @Test
     public void testOnDemandAudioPlaythrough() throws Exception {
         // Start near the end of the stream
-        controller.play(AUDIO_ON_DEMAND_IDENTIFIER, (long) 3566768);
+        controller.play(AUDIO_ON_DEMAND_IDENTIFIER, (long) 3230783);
         waitUntilState(SRGMediaPlayerController.State.READY);
         waitUntilEvent(SRGMediaPlayerController.Event.Type.MEDIA_COMPLETED);
     }
