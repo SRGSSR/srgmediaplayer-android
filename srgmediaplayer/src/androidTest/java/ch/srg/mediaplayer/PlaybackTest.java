@@ -32,7 +32,7 @@ import ch.srg.mediaplayer.utils.SRGMediaPlayerControllerQueueListener;
  * The goal is to test the player controller, its contract and robustness.
  */
 @RunWith(AndroidJUnit4.class)
-public class SRGMediaControllerTest extends InstrumentationTestCase {
+public class PlaybackTest extends InstrumentationTestCase {
 
     public static final int TIMEOUT_STATE_CHANGE = 10000;
     public static final String VIDEO_ON_DEMAND_IDENTIFIER = "SPECIMEN";
