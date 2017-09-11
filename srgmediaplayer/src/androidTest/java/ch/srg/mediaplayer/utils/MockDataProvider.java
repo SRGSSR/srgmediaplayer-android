@@ -26,6 +26,7 @@ public class MockDataProvider implements SRGMediaPlayerDataProvider {
             put("NDR-DVR", "http://ndr_fs-lh.akamaihd.net/i/ndrfs_nds@119224/master.m3u8");
             put("BIG-BUCK-NON-STREAMED", "http://www.sample-videos.com/video/mp4/720/big_buck_bunny_720p_1mb.mp4");
             put("C-EST-PAS-TROP-TOT", "https://rtsww-a-d.rts.ch/la-1ere/programmes/c-est-pas-trop-tot/2017/c-est-pas-trop-tot_20170628_full_c-est-pas-trop-tot_007d77e7-61fb-4aef-9491-5e6b07f7f931-128k.mp3");
+            put("DRS1", "http://lsaplus.swisstxt.ch/audio/drs1_96.stream/playlist.m3u8");
 
             put("INVALID", "http://invalid.stream/");
             put("HTTP_403", "http://httpbin.org/status/403");

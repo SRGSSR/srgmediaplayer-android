@@ -42,6 +42,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     public static final String AUDIO_ON_DEMAND_IDENTIFIER = "C-EST-PAS-TROP-TOT";
     public static final String HTTP_403_IDENTIFIER = "HTTP_403";
     public static final String HTTP_404_IDENTIFIER = "HTTP_404";
+    public static final String AUDIO_DVR_LIVESTREAM_IDENTIFIER = "DRS1";
 
     private SRGMediaPlayerController controller;
 
@@ -111,7 +112,8 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         assertFalse(controller.hasVideoTrack());
     }
 
-    // TODO: Fix
+    // TODO: Fix. Either the test is wrong and the documentation needs to be updated, or the test is
+    //       correct and the implementation needs to be fixed
     @Test
     public void testMediaIdentifier() throws Exception {
         controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
@@ -132,6 +134,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         assertTrue(controller.isPlaying());
     }
 
+    // TODO: Fix, doesn't play
     @Test
     public void testPlayAudioOverHTTP() throws Exception {
         controller.play(NON_STREAMED_VIDEO_IDENTIFIER);
@@ -209,12 +212,15 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         waitUntilEvent(SRGMediaPlayerController.Event.Type.MEDIA_COMPLETED);
     }
 
+    // TODO: Fix, doesn't play
     @Test
     public void testNonStreamedMediaPlaythrough() throws Exception {
-
+        controller.play(NON_STREAMED_VIDEO_IDENTIFIER);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        waitUntilState(SRGMediaPlayerController.State.RELEASED);
     }
 
-    // TODO: Fix
+    // TODO: Fix. Cannot play the stream
     @Test
     public void testOnDemandAudioPlayback() throws Exception {
         controller.play(AUDIO_ON_DEMAND_IDENTIFIER);
@@ -224,12 +230,21 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     @Test
     public void testDVRAudioLivestreamPlayback() throws Exception {
-
+        controller.play(AUDIO_DVR_LIVESTREAM_IDENTIFIER);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        assertFalse(controller.hasVideoTrack());
+        assertTrue(controller.isLive());
+        assertTrue(SRGMediaPlayerController.UNKNOWN_TIME != controller.getMediaDuration());
+        assertTrue(SRGMediaPlayerController.UNKNOWN_TIME != controller.getLiveTime());
     }
 
+    // TODO: Fix. Cannot play the stream
     @Test
     public void testOnDemandAudioPlaythrough() throws Exception {
-
+        // Start near the end of the stream
+        controller.play(AUDIO_ON_DEMAND_IDENTIFIER, (long) 3566768);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        waitUntilEvent(SRGMediaPlayerController.Event.Type.MEDIA_COMPLETED);
     }
 
     @Test
