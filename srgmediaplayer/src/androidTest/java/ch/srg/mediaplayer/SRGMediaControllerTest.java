@@ -49,7 +49,6 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     private SRGMediaPlayerControllerQueueListener queue;
 
     private SRGMediaPlayerException lastError;
-    private boolean mediaCompletedReceived;
     private MockDataProvider provider;
 
     @Before
@@ -70,7 +69,6 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         controller.setDebugMode(true);
 
         lastError = null;
-        mediaCompletedReceived = false;
         controller.registerEventListener(new SRGMediaPlayerController.Listener() {
             @Override
             public void onMediaPlayerEvent(SRGMediaPlayerController mp, SRGMediaPlayerController.Event event) {
@@ -78,9 +76,6 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
                     case FATAL_ERROR:
                     case TRANSIENT_ERROR:
                         lastError = event.exception;
-                        break;
-                    case MEDIA_COMPLETED:
-                        mediaCompletedReceived = true;
                         break;
                 }
             }
@@ -398,19 +393,6 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
             Runnable runnable = new CreatePlayRelease(context, provider);
             getInstrumentation().runOnMainSync(runnable);
         }
-    }
-
-    // Wait for an error, expecting it to occur right afterwards. Will fail if this is not the case.
-    private void waitForError(final String message) {
-        Log.i(getClass().getName(), "Wait for error");
-        Assert.assertTrue("Timeout waiting for error: " + message,
-                waitForCondition(TIMEOUT_STATE_CHANGE, new EventCondition() {
-                    @Override
-                    public boolean check(SRGMediaPlayerController.Event event) {
-                        return SRGMediaPlayerController.Event.Type.FATAL_ERROR == event.type
-                                && TextUtils.equals(event.exception.getMessage(), message);
-                    }
-                }));
     }
 
     // Wait for the specified state, expecting it to occur right afterwards. Will fail if this is not the case.

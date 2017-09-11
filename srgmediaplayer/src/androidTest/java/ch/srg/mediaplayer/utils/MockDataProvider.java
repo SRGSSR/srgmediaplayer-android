@@ -40,11 +40,8 @@ public class MockDataProvider implements SRGMediaPlayerDataProvider {
         }
     };
 
-    private int count;
-
     @Override
     public void getUri(String mediaIdentifier, int playerType, GetUriCallback callback) {
-        count++;
         String hlsUriString = hlsStreamsData.get(mediaIdentifier);
         if (hlsUriString != null) {
             callback.onUriLoaded(mediaIdentifier, Uri.parse(hlsUriString), mediaIdentifier, null, STREAM_HLS);
@@ -58,9 +55,5 @@ public class MockDataProvider implements SRGMediaPlayerDataProvider {
         }
 
         callback.onUriLoadFailed(mediaIdentifier, new SRGMediaPlayerException("no uri"));
-    }
-
-    public int getCount() {
-        return count;
     }
 }
