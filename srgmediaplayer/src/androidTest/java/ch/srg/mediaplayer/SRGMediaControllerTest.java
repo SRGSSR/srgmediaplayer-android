@@ -298,9 +298,36 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     }
 
     @Test
-    public void testSeekWhileNotPlaying() throws Exception {
+    public void testMultipleSeeksDuringBuffering() throws Exception {
+        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        assertTrue(controller.isPlaying());
+        assertEquals(controller.getMediaPosition() / 1000, 0);
+
+        controller.seekTo(60 * 1000);
+        waitUntilState(SRGMediaPlayerController.State.BUFFERING);
+        controller.seekTo(70 * 1000);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        assertEquals(controller.getMediaPosition() / 1000, 70);
+        assertTrue(controller.isPlaying());
+    }
+
+    @Test
+    public void testSeekWhilePreparing() throws Exception {
         controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
         waitUntilState(SRGMediaPlayerController.State.PREPARING);
+        assertFalse(controller.isPlaying());
+
+        controller.seekTo(60 * 1000);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        assertEquals(controller.getMediaPosition() / 1000, 60);
+        assertTrue(controller.isPlaying());
+    }
+
+    @Test
+    public void testSeekWhileBuffering() throws Exception {
+        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        waitUntilState(SRGMediaPlayerController.State.BUFFERING);
         assertFalse(controller.isPlaying());
 
         controller.seekTo(60 * 1000);
@@ -328,7 +355,17 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     @Test
     public void testSeekWhileReleasing() throws Exception {
+        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        waitUntilState(SRGMediaPlayerController.State.READY);
+        assertFalse(controller.isReleased());
 
+        // Trigger a release. The controller is not immediately reaching the released state.
+        controller.release();
+        assertFalse(controller.isReleased());
+        controller.seekTo(60 * 1000);
+
+        waitUntilState(SRGMediaPlayerController.State.RELEASED);
+        assertTrue(controller.isReleased());
     }
 
     @Test
