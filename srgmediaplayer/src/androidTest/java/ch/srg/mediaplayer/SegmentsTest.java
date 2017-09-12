@@ -4,7 +4,6 @@ import android.app.Instrumentation;
 import android.net.Uri;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
-import android.test.InstrumentationTestCase;
 
 import org.junit.After;
 import org.junit.Before;
@@ -18,8 +17,6 @@ import java.util.Map;
 
 import ch.srg.mediaplayer.segment.data.SegmentDataProvider;
 import ch.srg.mediaplayer.segment.model.Segment;
-import ch.srg.mediaplayer.tests.ConditionWatcher;
-import ch.srg.mediaplayer.tests.EventInstruction;
 
 class SegmentsTestDataProvider implements SRGMediaPlayerDataProvider, SegmentDataProvider {
 
@@ -56,7 +53,7 @@ class SegmentsTestDataProvider implements SRGMediaPlayerDataProvider, SegmentDat
 }
 
 @RunWith(AndroidJUnit4.class)
-public class SegmentsTest extends InstrumentationTestCase {
+public class SegmentsTest extends MediaPlayerTest {
 
     private SRGMediaPlayerController controller;
 

@@ -4,8 +4,6 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
-import android.test.InstrumentationTestCase;
-import android.text.TextUtils;
 import android.util.Log;
 
 import junit.framework.Assert;
@@ -17,11 +15,7 @@ import org.junit.runner.RunWith;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
 
-import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
-import ch.srg.mediaplayer.tests.ConditionWatcher;
-import ch.srg.mediaplayer.tests.EventInstruction;
 import ch.srg.mediaplayer.utils.MockDataProvider;
 import ch.srg.mediaplayer.utils.SRGMediaPlayerControllerQueueListener;
 
@@ -32,17 +26,18 @@ import ch.srg.mediaplayer.utils.SRGMediaPlayerControllerQueueListener;
  * The goal is to test the player controller, its contract and robustness.
  */
 @RunWith(AndroidJUnit4.class)
-public class PlaybackTest extends InstrumentationTestCase {
+public class PlaybackTest extends MediaPlayerTest {
 
-    public static final int TIMEOUT_STATE_CHANGE = 10000;
-    public static final String VIDEO_ON_DEMAND_IDENTIFIER = "SPECIMEN";
-    public static final String NON_STREAMED_VIDEO_IDENTIFIER = "BIG-BUCK-NON-STREAMED";
-    public static final String VIDEO_LIVESTREAM_IDENTIFIER = "NDR";
-    public static final String VIDEO_DVR_LIVESTREAM_IDENTIFIER = "NDR-DVR";
-    public static final String AUDIO_ON_DEMAND_IDENTIFIER = "C-EST-PAS-TROP-TOT";
-    public static final String HTTP_403_IDENTIFIER = "HTTP_403";
-    public static final String HTTP_404_IDENTIFIER = "HTTP_404";
-    public static final String AUDIO_DVR_LIVESTREAM_IDENTIFIER = "DRS1";
+    private static final int TIMEOUT_STATE_CHANGE = 10000;
+
+    private static final String VIDEO_ON_DEMAND_IDENTIFIER = "SPECIMEN";
+    private static final String NON_STREAMED_VIDEO_IDENTIFIER = "BIG-BUCK-NON-STREAMED";
+    private static final String VIDEO_LIVESTREAM_IDENTIFIER = "NDR";
+    private static final String VIDEO_DVR_LIVESTREAM_IDENTIFIER = "NDR-DVR";
+    private static final String AUDIO_ON_DEMAND_IDENTIFIER = "C-EST-PAS-TROP-TOT";
+    private static final String HTTP_403_IDENTIFIER = "HTTP_403";
+    private static final String HTTP_404_IDENTIFIER = "HTTP_404";
+    private static final String AUDIO_DVR_LIVESTREAM_IDENTIFIER = "DRS1";
 
     private SRGMediaPlayerController controller;
 
@@ -432,39 +427,6 @@ public class PlaybackTest extends InstrumentationTestCase {
             }
         }
         return false;
-    }
-
-    // Wait until an event of the specified type is received. Fails if no event is received for a given
-    // timeout period.
-    private void waitUntilEvent(final SRGMediaPlayerController.Event.Type eventType, final int timeoutSeconds) throws Exception {
-        ConditionWatcher watcher = ConditionWatcher.getInstance();
-        watcher.setTimeoutLimit(timeoutSeconds * 1000);
-        watcher.waitForCondition(new EventInstruction() {
-            @Override
-            public boolean checkCondition(SRGMediaPlayerController.Event event) {
-                return event.type == eventType;
-            }
-        });
-    }
-
-    private void waitUntilEvent(final SRGMediaPlayerController.Event.Type eventType) throws Exception {
-        waitUntilEvent(eventType, 20);
-    }
-
-    // Wait until a given state is reached. Fails if the state is not reached within a given timeout period.
-    private void waitUntilState(final SRGMediaPlayerController.State state, final int timeoutSeconds) throws Exception {
-        ConditionWatcher watcher = ConditionWatcher.getInstance();
-        watcher.setTimeoutLimit(timeoutSeconds * 1000);
-        watcher.waitForCondition(new EventInstruction() {
-            @Override
-            public boolean checkCondition(SRGMediaPlayerController.Event event) {
-                return event.state == state;
-            }
-        });
-    }
-
-    private void waitUntilState(final SRGMediaPlayerController.State state) throws Exception {
-        waitUntilState(state, 20);
     }
 
     private interface EventCondition {
