@@ -25,7 +25,9 @@ import ch.srg.mediaplayer.segment.controller.SegmentController;
 import ch.srg.mediaplayer.segment.model.Segment;
 
 /**
- * Created by npietri on 20.05.15.
+ * Copyright (c) SRG SSR. All rights reserved.
+ *
+ * License information is available from the LICENSE file.
  */
 public class PlayerControlView extends LinearLayout implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, SegmentController.Listener, PlayerViewDelegate {
     private static final long COMPLETION_TOLERANCE_MS = 5000;
@@ -285,5 +287,10 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
     @Override
     public void update() {
         // nothing to do. On all done in onPositionChange
+    }
+
+    @Override
+    public void setHideCentralButton(boolean loading) {
+
     }
 }
