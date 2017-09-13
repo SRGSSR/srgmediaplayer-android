@@ -227,39 +227,39 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
     }
 
     private void update() {
-        if (playerController == null || playerController.isReleased()) {
-            return;
-        }
-        long mediaPosition = playerController.getMediaPosition();
-        if (!playerController.isSeekPending() && mediaPosition != -1) {
-            // TODO FIX ME
-            String mediaIdentifier = playerController.getMediaUri().toString();
-            Segment blockedSegment = getBlockedSegment(mediaIdentifier, mediaPosition);
-            Segment newSegment = getSegment(mediaIdentifier, mediaPosition);
-
-            if (blockedSegment != null) {
-                if (blockedSegment != segmentBeingSkipped) {
-                    Log.v("SegmentTest", "Skipping over " + blockedSegment.getIdentifier());
-                    segmentBeingSkipped = blockedSegment;
-                    postBlockedSegmentEvent(blockedSegment, Event.Type.SEGMENT_SKIPPED_BLOCKED);
-                    seekTo(mediaIdentifier, blockedSegment.getMarkOut());
-                }
-            } else {
-                segmentBeingSkipped = null;
-                if (currentSegment != newSegment) {
-                    if (currentSegment == null) {
-                        postEvent(Event.Type.SEGMENT_START, newSegment);
-                    } else if (newSegment == null) {
-                        postEvent(Event.Type.SEGMENT_END, null);
-                    } else {
-                        postEvent(Event.Type.SEGMENT_SWITCH, newSegment);
-                    }
-                    currentSegment = newSegment;
-                }
-            }
-        }
-        // TODO FIX ME
-        notifyPositionChange(playerController.getMediaUri().toString(), mediaPosition, false);
+//        if (playerController == null || playerController.isReleased()) {
+//            return;
+//        }
+//        long mediaPosition = playerController.getMediaPosition();
+//        if (!playerController.isSeekPending() && mediaPosition != -1) {
+//            // TODO FIX ME
+//            String mediaIdentifier = playerController.getMediaUri().toString();
+//            Segment blockedSegment = getBlockedSegment(mediaIdentifier, mediaPosition);
+//            Segment newSegment = getSegment(mediaIdentifier, mediaPosition);
+//
+//            if (blockedSegment != null) {
+//                if (blockedSegment != segmentBeingSkipped) {
+//                    Log.v("SegmentTest", "Skipping over " + blockedSegment.getIdentifier());
+//                    segmentBeingSkipped = blockedSegment;
+//                    postBlockedSegmentEvent(blockedSegment, Event.Type.SEGMENT_SKIPPED_BLOCKED);
+//                    seekTo(mediaIdentifier, blockedSegment.getMarkOut());
+//                }
+//            } else {
+//                segmentBeingSkipped = null;
+//                if (currentSegment != newSegment) {
+//                    if (currentSegment == null) {
+//                        postEvent(Event.Type.SEGMENT_START, newSegment);
+//                    } else if (newSegment == null) {
+//                        postEvent(Event.Type.SEGMENT_END, null);
+//                    } else {
+//                        postEvent(Event.Type.SEGMENT_SWITCH, newSegment);
+//                    }
+//                    currentSegment = newSegment;
+//                }
+//            }
+//        }
+//        // TODO FIX ME
+//        notifyPositionChange(playerController.getMediaUri().toString(), mediaPosition, false);
     }
 
     @Nullable
