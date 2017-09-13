@@ -30,14 +30,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
-import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerView;
 import ch.srg.mediaplayer.SubtitleTrack;
 import ch.srg.mediaplayer.demo.view.LivePlayerControlView;
 import ch.srg.mediaplayer.helper.SystemUiHelper;
-import ch.srg.mediaplayer.providers.MultiDataProvider;
-import ch.srg.mediaplayer.segment.controller.SegmentController;
-import ch.srg.mediaplayer.segment.data.SegmentDataProvider;
 import ch.srg.mediaplayer.segment.model.Segment;
 import ch.srg.mediaplayer.segment.view.PlayerControlView;
 import ch.srg.mediaplayer.segment.view.SegmentView;
@@ -73,9 +69,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
 
     private Toolbar toolbar;
 
-    private SegmentController segmentController;
     private TextView statusLabel;
-    private MultiDataProvider dataProvider;
     private List<Segment> segments;
     private ListView identifierListView;
     private List<String> identifierList;
@@ -142,8 +136,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
             }
         }
 
-        dataProvider = DemoApplication.multiDataProvider;
-
         mediaPlayerFragment = (MediaPlayerFragment) getFragmentManager().findFragmentByTag(FRAGMENT_TAG);
 
         if (mediaPlayerFragment == null) {
@@ -169,18 +161,15 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
 
         segmentView = (SegmentView) findViewById(R.id.segment_demo_view);
 
-        segmentController = SegmentController.attachOrCreate(srgMediaPlayer);
         if (segmentView != null) {
-            segmentView.setBaseAdapter(adapter);
-            segmentView.setSegmentController(segmentController);
+            segmentView.setup(adapter, srgMediaPlayer, playerView);
         }
         if (segmentPlayerControlView != null) {
             segmentPlayerControlView.attachToController(srgMediaPlayer);
-            segmentPlayerControlView.setSegmentController(segmentController);
         }
 
         if (segments != null && !segments.isEmpty()) {
-            segmentController.setSegmentList(segments);
+            srgMediaPlayer.setSegmentList(segments);
         }
 
         identifierListView = (ListView) findViewById(R.id.uri_list);
@@ -213,7 +202,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
     }
 
     private SRGMediaPlayerController createPlayer() {
-        srgMediaPlayer = new SRGMediaPlayerController(this, dataProvider, PLAYER_TAG);
+        srgMediaPlayer = new SRGMediaPlayerController(this, PLAYER_TAG);
         srgMediaPlayer.setDebugMode(true);
         return srgMediaPlayer;
     }
@@ -223,7 +212,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
     }
 
     public void playTestIdentifier(String identifier) {
-        try {
+        /*try {
             String SEEK_DELIMITER = "@seek:";
             if (identifier.contains(SEEK_DELIMITER)) {
                 Long time = Long.parseLong(identifier.substring(identifier.indexOf(SEEK_DELIMITER) + SEEK_DELIMITER.length())) * 1000;
@@ -233,15 +222,13 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
             }
         } catch (SRGMediaPlayerException e) {
             Log.e(TAG, "play " + identifier, e);
-        }
+        }*/
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         srgMediaPlayer.bindToMediaPlayerView(playerView);
-
-        segmentController.startListening();
         if (livePlayerControlView != null) {
             livePlayerControlView.startListening();
         }
@@ -272,9 +259,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
                         for (; ; ) {
                             String line = reader.readLine();
                             if (line != null) {
-                                if (dataProvider.isSupported(line.split(" ")[0])) {
-                                    urls.add(line);
-                                }
+                                urls.add(line);
                             } else {
                                 break;
                             }
@@ -406,32 +391,16 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
                 }
                 break;
             case MEDIA_READY_TO_PLAY:
-                dataProvider.getSegmentList(mp.getMediaIdentifier(), new SegmentDataProvider.GetSegmentListCallback() {
-                    @Override
-                    public void onSegmentListLoaded(List<Segment> srgMediaMetadata) {
-                        if (segments != null && !segments.isEmpty() && segmentView != null) {
-                            segmentController.setSegmentList(segments);
-                            segmentView.setVisibility(View.VISIBLE);
-                        } else if (segments != null && segmentView != null && segments.isEmpty()) {
-                            segmentView.setVisibility(View.GONE);
-                        }
-                    }
-
-                    @Override
-                    public void onDataNotAvailable() {
-
-                    }
-                });
                 break;
             case EXTERNAL_EVENT:
-                if (event instanceof SegmentController.Event) {
-                    SegmentController.Event.Type segmentEventType =
-                            ((SegmentController.Event) event).segmentEventType;
+                if (event instanceof SRGMediaPlayerController.SegmentEvent) {
+                    SRGMediaPlayerController.SegmentEvent.Type segmentEventType =
+                            ((SRGMediaPlayerController.SegmentEvent) event).segmentEventType;
                     switch (segmentEventType) {
                         case SEGMENT_SKIPPED_BLOCKED:
                         case SEGMENT_USER_SEEK_BLOCKED:
                             toastCount++;
-                            Toast toast = Toast.makeText(this, segmentEventType.toString() + " / " + ((SegmentController.Event) event).blockingReason + " / " + toastCount, Toast.LENGTH_SHORT);
+                            Toast toast = Toast.makeText(this, segmentEventType.toString() + " / " + ((SRGMediaPlayerController.SegmentEvent) event).blockingReason + " / " + toastCount, Toast.LENGTH_SHORT);
                             toast.show();
                             break;
                     }
@@ -481,8 +450,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
     @Override
     protected void onPause() {
         srgMediaPlayer.unbindFromMediaPlayerView(playerView);
-        segmentController.stopListening();
-
         if (livePlayerControlView != null) {
             livePlayerControlView.stopListening();
         }
@@ -492,7 +459,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
 
     @Override
     protected void onStop() {
-        adapter.removeSegmentClickListener(segmentController);
         super.onStop();
     }
 
@@ -541,14 +507,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
 
     public SRGMediaPlayerView getPlayerView() {
         return playerView;
-    }
-
-    public SegmentController getSegmentController() {
-        return segmentController;
-    }
-
-    public MultiDataProvider getDataProvider() {
-        return dataProvider;
     }
 
 }
