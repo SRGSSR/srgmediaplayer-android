@@ -187,7 +187,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
     @IntDef({SRGMediaPlayerController.STREAM_HLS, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE, SRGMediaPlayerController.STREAM_DASH, SRGMediaPlayerController.STREAM_LOCAL_FILE})
     public static @interface SRGStreamType {
     }
-
     public static final int STREAM_HLS = 1;
     public static final int STREAM_HTTP_PROGRESSIVE = 2;
     public static final int STREAM_DASH = 3;
@@ -496,9 +495,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
      */
     public boolean play(@NonNull Uri uri, Long startPositionMs, @SRGStreamType int streamType) throws SRGMediaPlayerException {
         if (requestAudioFocus()) {
-            PrepareUriData data = new PrepareUriData(uri, startPositionMs, streamType);
-            sendMessage(MSG_PREPARE_FOR_URI, data);
-            start();
+                PrepareUriData data = new PrepareUriData(uri, startPositionMs, streamType);
+                sendMessage(MSG_PREPARE_FOR_URI, data);
+                start();
             if (startPositionMs != null) {
                 seekTo(startPositionMs);
             }
@@ -646,7 +645,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 return true;
 
             case MSG_SET_PLAY_WHEN_READY:
-                this.playWhenReady = (Boolean) msg.obj;
+                boolean playWhenReady = (Boolean) msg.obj;
                 if (exoPlayer != null) {
                     exoPlayer.setPlayWhenReady(playWhenReady);
                 }
