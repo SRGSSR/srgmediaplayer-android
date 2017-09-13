@@ -201,13 +201,8 @@ public class SegmentController implements SegmentClickListener, SRGMediaPlayerCo
             }
             return false;
         } else {
-            return false;
-            /*try {
-                playerController.play(new Uri.parse(""), mediaPosition);
-                return true;
-            } catch (SRGMediaPlayerException ignored) {
-                return false;
-            }*/
+            playerController.seekTo(mediaPosition);
+            return true;
         }
     }
 
