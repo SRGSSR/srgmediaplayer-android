@@ -394,7 +394,7 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
                 break;
             case EXTERNAL_EVENT:
                 if (event instanceof SRGMediaPlayerController.SegmentEvent) {
-                    SRGMediaPlayerController.SegmentEvent.Type segmentEventType =
+                    SRGMediaPlayerController.Event.Type segmentEventType =
                             ((SRGMediaPlayerController.SegmentEvent) event).segmentEventType;
                     switch (segmentEventType) {
                         case SEGMENT_SKIPPED_BLOCKED:

@@ -191,6 +191,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     @IntDef({SRGMediaPlayerController.STREAM_HLS, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE, SRGMediaPlayerController.STREAM_DASH, SRGMediaPlayerController.STREAM_LOCAL_FILE})
     public static @interface SRGStreamType {
     }
+
     public static final int STREAM_HLS = 1;
     public static final int STREAM_HTTP_PROGRESSIVE = 2;
     public static final int STREAM_DASH = 3;
@@ -221,14 +222,38 @@ public class SRGMediaPlayerController implements Handler.Callback,
             PLAYING_STATE_CHANGE,
             WILL_SEEK, // SEEK_STARTED
             DID_SEEK, // SEEK_STOPPED
-            USER_SEEK,
 
             EXTERNAL_EVENT,
 
             DID_BIND_TO_PLAYER_VIEW,
             DID_UNBIND_FROM_PLAYER_VIEW,
 
-            SUBTITLE_DID_CHANGE;
+            SUBTITLE_DID_CHANGE,
+
+            /**
+             * An identified segment (visible or not) is being started, while not being inside a segment before.
+             */
+            SEGMENT_START,
+            /**
+             * An identified segment (visible or not) is being ended, without another one to start.
+             */
+            SEGMENT_END,
+            /**
+             * An identified segment (visible or not) is being started, while being inside another segment before.
+             */
+            SEGMENT_SWITCH,
+            /**
+             * The user has selected a visible segment.
+             */
+            SEGMENT_SELECTED,
+            /**
+             * The playback is being seek to a later value, because it reached a blocked segment.
+             */
+            SEGMENT_SKIPPED_BLOCKED,
+            /**
+             * The user has tried to seek to a blocked segment, seek has been denied.
+             */
+            SEGMENT_USER_SEEK_BLOCKED
         }
 
         public final Type type;
@@ -246,7 +271,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
         public final boolean mediaLive;
         public final ScreenType screenType;
         public final State state;
-        public final Object externalParam;
+
+        public Segment segment;
+        public String blockingReason;
+        public Event.Type segmentEventType;
 
         public final SRGMediaPlayerException exception;
 
@@ -266,7 +294,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             return new Event(controller, Type.STATE_CHANGE, null);
         }
 
-        private Event(SRGMediaPlayerController controller, Type eventType, SRGMediaPlayerException eventException, Object externalParam) {
+        private Event(SRGMediaPlayerController controller, Type eventType, SRGMediaPlayerException eventException, Segment segment, String blockingReason) {
             type = eventType;
             tag = controller.tag;
             state = controller.state;
@@ -281,11 +309,16 @@ public class SRGMediaPlayerController implements Handler.Callback,
             mediaPlaylistStartTime = controller.getPlaylistStartTime();
             videoViewDimension = controller.mediaPlayerView != null ? controller.mediaPlayerView.getVideoRenderingViewSizeString() : SRGMediaPlayerView.UNKNOWN_DIMENSION;
             screenType = controller.getScreenType();
-            this.externalParam = externalParam;
+            this.segment = segment;
+            this.blockingReason = blockingReason;
+        }
+
+        private Event(SRGMediaPlayerController controller, Type eventType, SRGMediaPlayerException eventException, Segment segment) {
+            this(controller, eventType, eventException, segment, null);
         }
 
         private Event(SRGMediaPlayerController controller, Type eventType, SRGMediaPlayerException eventException) {
-            this(controller, eventType, eventException, null);
+            this(controller, eventType, eventException, null, null);
         }
 
         protected Event(SRGMediaPlayerController controller, SRGMediaPlayerException eventException) {
@@ -313,59 +346,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     ", screenType=" + screenType +
                     ", state=" + state +
                     ", exception=" + exception +
-                    '}';
-        }
-    }
-
-    public static class SegmentEvent extends SRGMediaPlayerController.Event {
-
-        public Segment segment;
-        public String blockingReason;
-        public Type segmentEventType;
-
-        public enum Type {
-            /**
-             * An identified segment (visible or not) is being started, while not being inside a segment before.
-             */
-            SEGMENT_START,
-            /**
-             * An identified segment (visible or not) is being ended, without another one to start.
-             */
-            SEGMENT_END,
-            /**
-             * An identified segment (visible or not) is being started, while being inside another segment before.
-             */
-            SEGMENT_SWITCH,
-            /**
-             * The user has selected a visible segment.
-             */
-            SEGMENT_SELECTED,
-            /**
-             * The playback is being seek to a later value, because it reached a blocked segment.
-             */
-            SEGMENT_SKIPPED_BLOCKED,
-            /**
-             * The user has tried to seek to a blocked segment, seek has been denied.
-             */
-            SEGMENT_USER_SEEK_BLOCKED;
-        }
-
-        public SegmentEvent(SRGMediaPlayerController controller, Type type, Segment segment) {
-            this(controller, type, segment, null);
-        }
-
-
-        public SegmentEvent(SRGMediaPlayerController controller, Type type, Segment segment, String blockingReason) {
-            super(controller, null);
-            this.segmentEventType = type;
-            this.blockingReason = blockingReason;
-            this.segment = segment;
-        }
-
-        @Override
-        public String toString() {
-            return "Event{" +
-                    "segment=" + segment +
+                    ", segment=" + segment +
                     ", blockingReason='" + blockingReason + '\'' +
                     ", segmentEventType=" + segmentEventType +
                     '}';
@@ -961,18 +942,18 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 if (blockedSegment != segmentBeingSkipped) {
                     Log.v("SegmentTest", "Skipping over " + blockedSegment.getIdentifier());
                     segmentBeingSkipped = blockedSegment;
-                    postBlockedSegmentEvent(SegmentEvent.Type.SEGMENT_SKIPPED_BLOCKED, blockedSegment);
+                    postBlockedSegmentEvent(Event.Type.SEGMENT_SKIPPED_BLOCKED, blockedSegment);
                     seekEndOfBlockedSegment(blockedSegment);
                 }
             } else {
                 segmentBeingSkipped = null;
                 if (currentSegment != newSegment) {
                     if (currentSegment == null) {
-                        postSegmentEvent(SegmentEvent.Type.SEGMENT_START, newSegment);
+                        postSegmentEvent(Event.Type.SEGMENT_START, newSegment);
                     } else if (newSegment == null) {
-                        postSegmentEvent(SegmentEvent.Type.SEGMENT_END, null);
+                        postSegmentEvent(Event.Type.SEGMENT_END, null);
                     } else {
-                        postSegmentEvent(SegmentEvent.Type.SEGMENT_SWITCH, newSegment);
+                        postSegmentEvent(Event.Type.SEGMENT_SWITCH, newSegment);
                     }
                     currentSegment = newSegment;
                 }
@@ -988,7 +969,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         Long mediaPosition = segment.getMarkOut();
         Segment blockedSegment = getBlockedSegment(mediaPosition);
         if (blockedSegment != null) {
-            postBlockedSegmentEvent(SegmentEvent.Type.SEGMENT_SKIPPED_BLOCKED, blockedSegment);
+            postBlockedSegmentEvent(Event.Type.SEGMENT_SKIPPED_BLOCKED, blockedSegment);
             long markOut = blockedSegment.getMarkOut();
             if (markOut > mediaPosition) {
                 seekEndOfBlockedSegment(blockedSegment);
@@ -1035,17 +1016,17 @@ public class SRGMediaPlayerController implements Handler.Callback,
         updateWithSegments(getMediaPosition());
     }
 
-    private void postSegmentEvent(SegmentEvent.Type type, Segment segment) {
-        broadcastEvent(new SegmentEvent(this, type, segment));
+    private void postSegmentEvent(Event.Type type, Segment segment) {
+        broadcastEvent(new Event(this, type, null, segment));
     }
 
-    private void postBlockedSegmentEvent(SegmentEvent.Type type, Segment segment) {
-        broadcastEvent(new SegmentEvent(this, type, segment, segment.getBlockingReason()));
+    private void postBlockedSegmentEvent(Event.Type type, Segment segment) {
+        broadcastEvent(new Event(this, type, null, segment, segment.getBlockingReason()));
     }
 
     public void sendUserTrackedProgress(long time) {
         userChangingProgress = true;
-        postEventInternal(new Event(this, Event.Type.USER_SEEK, null, time));
+        // TODO FIX ME
     }
 
     public void stopUserTrackingProgress() {
