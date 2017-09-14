@@ -704,7 +704,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 }
                 this.segments.clear();
                 currentSegment = null;
-                if (data.segments != null && !data.segments.isEmpty()) {
+                if (data.segments != null) {
                     segments.addAll(data.segments);
                 }
                 postEventInternal(Event.Type.MEDIA_READY_TO_PLAY);
@@ -912,7 +912,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private void periodicUpdateInternal() {
         if (exoPlayer == null) {
             currentSeekTarget = null;
-            segments.clear();
             currentSegment = null;
         } else {
             long currentPosition = exoPlayer.getCurrentPosition();
@@ -925,12 +924,12 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 }
             }
             if (!segments.isEmpty() && !userChangingProgress) {
-                updateWithSegments(currentPosition);
+                checkSegmentChange(currentPosition);
             }
         }
     }
 
-    private void updateWithSegments(long mediaPosition) {
+    private void checkSegmentChange(long mediaPosition) {
         if (exoPlayer == null || isReleased() && mediaPosition != UNKNOWN_TIME) {
             return;
         }
@@ -1008,13 +1007,13 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return null;
     }
 
-    public void setSegmentList(List<Segment> segmentList) {
-        segments.clear();
-        if (segmentList != null) {
-            segments.addAll(segmentList);
-        }
-        updateWithSegments(getMediaPosition());
-    }
+//    public void setSegmentList(List<Segment> segmentList) {
+//        segments.clear();
+//        if (segmentList != null) {
+//            segments.addAll(segmentList);
+//        }
+//        checkSegmentChange(getMediaPosition());
+//    }
 
     private void postSegmentEvent(Event.Type type, Segment segment) {
         broadcastEvent(new Event(this, type, null, segment));
