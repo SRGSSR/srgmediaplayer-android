@@ -116,10 +116,6 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
 
     public void updateWithMediaPlayerController(@Nullable SRGMediaPlayerController controller) {
         this.controller = controller;
-        if (controller != null) {
-            filterSegmentList(controller.getSegments());
-        } else {
-            segments = new ArrayList<>();
-        }
+        filterSegmentList(controller != null ? controller.getSegments() : null);
     }
 }
