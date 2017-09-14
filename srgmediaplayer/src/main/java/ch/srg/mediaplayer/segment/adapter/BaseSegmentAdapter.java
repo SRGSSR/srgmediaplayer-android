@@ -67,6 +67,11 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
         return segments.get(position).getIdentifier().hashCode();
     }
 
+    @Override
+    public int getItemCount() {
+        return segments.size();
+    }
+
     public String getSegmentIdentifier(int position) {
         return segments.get(position).getIdentifier();
     }
