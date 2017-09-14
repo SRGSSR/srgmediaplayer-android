@@ -13,48 +13,17 @@ import java.net.URL;
 import java.util.Scanner;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
-import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 
 /**
  * Created by seb on 22/07/15.
  */
-public class RawHttpDataProvider implements SRGMediaPlayerDataProvider {
+public class RawHttpDataProvider {
     private static final String TAG = "rawHttp";
     private int mediaType;
 
     public RawHttpDataProvider(int mediaType) {
         this.mediaType = mediaType;
-    }
-
-    @Override
-    public void getUri(final String mediaIdentifier, @SRGPlayerType int playerType, final GetUriCallback callback) {
-        fetch(mediaIdentifier, new URLConnectionProcessor<Uri>() {
-            @Override
-            public void onSetupHttpURLConnection(HttpURLConnection urlConnection) throws IOException {
-            }
-
-            @Override
-            public Uri onHttpURLConnectionSuccess(InputStreamReader in) throws IOException {
-                Scanner s = new Scanner(in).useDelimiter("\\A");
-                if (s.hasNext()) {
-                    String item = s.next();
-                    Scanner s2 = new Scanner(item).useDelimiter("\"");
-                    item = s2.next();
-                    callback.onUriLoaded(mediaIdentifier, Uri.parse(item), mediaIdentifier, null, SRGMediaPlayerController.STREAM_HLS);
-                }
-                else {
-                    callback.onUriLoadFailed(mediaIdentifier, new SRGMediaPlayerException("no data"));
-                }
-                return null;
-            }
-
-            @Override
-            public Uri onHttpURLConnectionError(int httpCode, Exception e) {
-                callback.onUriLoadFailed(mediaIdentifier, new SRGMediaPlayerException(e));
-                return null;
-            }
-        });
     }
 
     public interface URLConnectionProcessor<T> {

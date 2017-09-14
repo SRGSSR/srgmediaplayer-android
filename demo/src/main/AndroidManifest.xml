@@ -23,10 +23,6 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="ch.srg.mediaplayer.demo.AudioListActivity"
-            android:label="@string/title_activity_demo_media_player">
-        </activity>
-        <activity
             android:name=".DemoMediaPlayerActivity"
             android:label="@string/title_activity_demo_media_player">
         </activity>

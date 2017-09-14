@@ -8,9 +8,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
+import android.widget.Toast;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
-import ch.srg.mediaplayer.SRGMediaPlayerDataProvider;
 import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerView;
 import ch.srg.mediaplayer.helper.SystemUiHelper;
@@ -34,7 +34,6 @@ public class SimplePlayerActivity extends AppCompatActivity implements
 
     private MediaPlayerFragment mediaPlayerFragment;
     private int orientation;
-    private SRGMediaPlayerDataProvider dataProvider;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,7 +47,6 @@ public class SimplePlayerActivity extends AppCompatActivity implements
         View mediaControl = findViewById(R.id.media_control);
         playerControlView = (PlayerControlView) mediaControl;
 
-        dataProvider = DemoApplication.multiDataProvider;
 
         mediaPlayerFragment = (MediaPlayerFragment) getFragmentManager().findFragmentByTag(FRAGMENT_TAG);
 
@@ -84,22 +82,12 @@ public class SimplePlayerActivity extends AppCompatActivity implements
     }
 
     private void createPlayerController() {
-        srgMediaPlayer = new SRGMediaPlayerController(this, dataProvider, PLAYER_TAG);
+        srgMediaPlayer = new SRGMediaPlayerController(this, PLAYER_TAG);
         srgMediaPlayer.setDebugMode(true);
     }
 
     public void playTestIdentifier(String identifier) {
-        try {
-            String SEEK_DELIMITER = "@seek:";
-            if (identifier.contains(SEEK_DELIMITER)) {
-                Long time = Long.parseLong(identifier.substring(identifier.indexOf(SEEK_DELIMITER) + SEEK_DELIMITER.length())) * 1000;
-                srgMediaPlayer.play(identifier, time);
-            } else {
-                srgMediaPlayer.play(identifier);
-            }
-        } catch (SRGMediaPlayerException e) {
-            Log.e(TAG, "play " + identifier, e);
-        }
+        Toast.makeText(this, "FIXME", Toast.LENGTH_LONG).show();
     }
 
     @Override

@@ -75,11 +75,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	public void onClick(View v) {
 		int id = v.getId();
 		switch (id) {
-			case R.id.demo_audio: {
-				Intent intent = new Intent(this, AudioListActivity.class);
-				startActivity(intent);
-				break;
-			}
 			case R.id.demo_simple_media_player: {
 				Intent intent = new Intent(this, DemoMediaPlayerActivity.class);
 				startActivity(intent);
