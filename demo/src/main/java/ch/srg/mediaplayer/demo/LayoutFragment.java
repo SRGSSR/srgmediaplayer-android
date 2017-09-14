@@ -1,6 +1,7 @@
 package ch.srg.mediaplayer.demo;
 
 import android.content.Context;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
@@ -19,7 +20,7 @@ public class LayoutFragment extends android.support.v4.app.Fragment implements
     public static final String ARG_LAYOUT_ID = "layoutId";
 
     private static final String PLAYER_TAG = "main";
-    private static final String URN = "dash:http://rdmedia.bbc.co.uk/dash/ondemand/testcard/1/client_manifest-events.mpd";
+    private static final String URI = "http://rdmedia.bbc.co.uk/dash/ondemand/testcard/1/client_manifest-events.mpd";
     private static final String TAG = "DemoSegment";
 
     private SRGMediaPlayerController mediaPlayer;
@@ -44,7 +45,7 @@ public class LayoutFragment extends android.support.v4.app.Fragment implements
 
         mediaPlayer = createPlayer(context);
         try {
-            mediaPlayer.play(URN);
+            mediaPlayer.play(Uri.parse(URI), SRGMediaPlayerController.STREAM_DASH);
         } catch (SRGMediaPlayerException e) {
             Toast.makeText(context, "Player error " + e, Toast.LENGTH_LONG).show();
         }

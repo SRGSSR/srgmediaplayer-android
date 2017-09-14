@@ -392,19 +392,12 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
                 break;
             case MEDIA_READY_TO_PLAY:
                 break;
-            case EXTERNAL_EVENT:
-                if (event instanceof SRGMediaPlayerController.SegmentEvent) {
-                    SRGMediaPlayerController.Event.Type segmentEventType =
-                            ((SRGMediaPlayerController.SegmentEvent) event).segmentEventType;
-                    switch (segmentEventType) {
-                        case SEGMENT_SKIPPED_BLOCKED:
-                        case SEGMENT_USER_SEEK_BLOCKED:
-                            toastCount++;
-                            Toast toast = Toast.makeText(this, segmentEventType.toString() + " / " + ((SRGMediaPlayerController.SegmentEvent) event).blockingReason + " / " + toastCount, Toast.LENGTH_SHORT);
-                            toast.show();
-                            break;
-                    }
-                }
+
+            case SEGMENT_SKIPPED_BLOCKED:
+            case SEGMENT_USER_SEEK_BLOCKED:
+                toastCount++;
+                Toast toast = Toast.makeText(this, event.toString() + " / " + event.blockingReason + " / " + toastCount, Toast.LENGTH_SHORT);
+                toast.show();
                 break;
 
             case OVERLAY_CONTROL_DISPLAYED:
