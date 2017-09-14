@@ -168,10 +168,6 @@ public class DemoMediaPlayerActivity extends AppCompatActivity implements
             segmentPlayerControlView.attachToController(srgMediaPlayer);
         }
 
-        if (segments != null && !segments.isEmpty()) {
-            srgMediaPlayer.setSegmentList(segments);
-        }
-
         identifierListView = (ListView) findViewById(R.id.uri_list);
         identifierListView.setSelector(R.drawable.list_item_background);
         identifierListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
