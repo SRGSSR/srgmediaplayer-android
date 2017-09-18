@@ -1,6 +1,5 @@
 package ch.srg.mediaplayer;
 
-import android.app.Instrumentation;
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
@@ -49,8 +48,8 @@ public class PlaybackTest extends MediaPlayerTest {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
-        injectInstrumentation(instrumentation);
+
+        injectInstrumentation(InstrumentationRegistry.getInstrumentation());
 
         // Init variables
         provider = new MockDataProvider();
