@@ -87,6 +87,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private static final long[] EMPTY_TIME_RANGE = new long[2];
     private static final long UPDATE_PERIOD = 100;
     private static final long SEGMENT_HYSTERESIS_MS = 5000;
+    private Long userTrackingProgress;
 
     public enum ViewType {
         TYPE_SURFACEVIEW,
@@ -1009,16 +1010,23 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     public void sendUserTrackedProgress(long time) {
+        userTrackingProgress = time;
         userChangingProgress = true;
-        // TODO FIX ME
+        overlayController.setForceControls(true);
     }
 
     public void stopUserTrackingProgress() {
+        userTrackingProgress = null;
         userChangingProgress = false;
+        overlayController.setForceControls(null);
     }
 
     public boolean isUserChangingProgress() {
         return userChangingProgress;
+    }
+
+    public Long getUserTrackingProgress() {
+        return userTrackingProgress;
     }
 
     public void schedulePeriodUpdate() {
