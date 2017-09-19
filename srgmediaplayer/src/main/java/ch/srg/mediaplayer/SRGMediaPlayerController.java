@@ -945,6 +945,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
     }
 
+    @NonNull
     public List<Segment> getSegments() {
         return segments;
     }
