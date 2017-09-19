@@ -17,7 +17,7 @@ import ch.srg.mediaplayer.segment.model.Segment;
  */
 public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> extends RecyclerView.Adapter<T> {
     @Nullable
-    private SRGMediaPlayerController controller;
+    protected SRGMediaPlayerController controller;
     @Nullable
     public SegmentClickListener listener;
     @NonNull
