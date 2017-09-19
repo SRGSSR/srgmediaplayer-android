@@ -103,6 +103,47 @@ public class Segment implements Comparable<Segment> {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Segment)) return false;
+
+        Segment segment = (Segment) o;
+
+        if (markIn != segment.markIn) return false;
+        if (markOut != segment.markOut) return false;
+        if (duration != segment.duration) return false;
+        if (progress != segment.progress) return false;
+        if (isCurrent != segment.isCurrent) return false;
+        if (publishedTimestamp != segment.publishedTimestamp) return false;
+        if (displayable != segment.displayable) return false;
+        if (identifier != null ? !identifier.equals(segment.identifier) : segment.identifier != null)
+            return false;
+        if (title != null ? !title.equals(segment.title) : segment.title != null) return false;
+        if (description != null ? !description.equals(segment.description) : segment.description != null)
+            return false;
+        if (imageUrl != null ? !imageUrl.equals(segment.imageUrl) : segment.imageUrl != null)
+            return false;
+        return blockingReason != null ? blockingReason.equals(segment.blockingReason) : segment.blockingReason == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = identifier != null ? identifier.hashCode() : 0;
+        result = 31 * result + (title != null ? title.hashCode() : 0);
+        result = 31 * result + (description != null ? description.hashCode() : 0);
+        result = 31 * result + (imageUrl != null ? imageUrl.hashCode() : 0);
+        result = 31 * result + (blockingReason != null ? blockingReason.hashCode() : 0);
+        result = 31 * result + (int) (markIn ^ (markIn >>> 32));
+        result = 31 * result + (int) (markOut ^ (markOut >>> 32));
+        result = 31 * result + (int) (duration ^ (duration >>> 32));
+        result = 31 * result + progress;
+        result = 31 * result + (isCurrent ? 1 : 0);
+        result = 31 * result + (int) (publishedTimestamp ^ (publishedTimestamp >>> 32));
+        result = 31 * result + (displayable ? 1 : 0);
+        return result;
+    }
+
+    @Override
     public String toString() {
         return "Segment{" +
                 ", identifier='" + identifier + '\'' +

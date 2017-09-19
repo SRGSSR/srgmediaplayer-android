@@ -5,7 +5,9 @@ import android.view.View;
 import ch.srg.mediaplayer.segment.model.Segment;
 
 /**
- * Created by npietri on 21.05.15.
+ * Copyright (c) SRG SSR. All rights reserved.
+ * <p>
+ * License information is available from the LICENSE file.
  */
 public interface SegmentClickListener {
 

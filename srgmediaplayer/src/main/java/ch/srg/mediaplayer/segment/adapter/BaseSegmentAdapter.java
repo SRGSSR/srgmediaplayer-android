@@ -3,6 +3,7 @@ package ch.srg.mediaplayer.segment.adapter;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +17,7 @@ import ch.srg.mediaplayer.segment.model.Segment;
  * License information is available from the LICENSE file.
  */
 public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> extends RecyclerView.Adapter<T> {
+    protected static final String TAG = "BaseSegmentAdapter";
     @Nullable
     protected SRGMediaPlayerController controller;
     @Nullable
@@ -50,7 +52,7 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
         segmentChangeListeners.remove(listeners);
     }
 
-    private void filterSegmentList(@Nullable List<Segment> segmentList) {
+    public void filterSegmentList(@Nullable List<Segment> segmentList) {
         segments.clear();
         if (segmentList != null) {
             for (Segment s : segmentList) {
@@ -94,12 +96,13 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
 
     public boolean updateProgressSegments(long time) {
         boolean segmentChange = false;
-        if (time != currentTime) {
+        if (time != currentTime && controller != null) {
             currentTime = time;
             if (currentSegmentIndex != -1) {
                 notifyItemChanged(currentSegmentIndex);
             }
-            int newSegmentIndex = segments.indexOf(controller != null ? controller.getSegment(time) : null);
+            Segment segment = controller.getSegment(time);
+            int newSegmentIndex = segments.indexOf(segment);
             segmentChange = newSegmentIndex != currentSegmentIndex;
             if (segmentChange) {
                 int start = Math.max(0, Math.min(currentSegmentIndex, newSegmentIndex));
@@ -114,8 +117,7 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
         return segmentChange;
     }
 
-    public void updateWithMediaPlayerController(@Nullable SRGMediaPlayerController controller) {
+    public void setMediaPlayerController(@Nullable SRGMediaPlayerController controller) {
         this.controller = controller;
-        filterSegmentList(controller != null ? controller.getSegments() : null);
     }
 }

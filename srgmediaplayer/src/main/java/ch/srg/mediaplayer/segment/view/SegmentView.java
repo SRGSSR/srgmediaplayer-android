@@ -54,7 +54,7 @@ public class SegmentView extends RecyclerView {
         this.adapter = adapter;
         this.controller = controller;
         setAdapter(this.adapter);
-        this.adapter.updateWithMediaPlayerController(controller);
+        this.adapter.setMediaPlayerController(controller);
     }
 
     @Override
