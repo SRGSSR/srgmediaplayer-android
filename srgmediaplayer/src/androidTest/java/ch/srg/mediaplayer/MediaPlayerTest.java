@@ -12,7 +12,7 @@ public abstract class MediaPlayerTest extends InstrumentationTestCase {
 
     // Wait until an event of the specified type is received. Fails if no event is received for a given
     // timeout period.
-    protected void waitUntilEvent(final SRGMediaPlayerController.Event.Type eventType, final int timeoutSeconds) throws Exception {
+    protected void waitForEvent(final SRGMediaPlayerController.Event.Type eventType, final int timeoutSeconds) throws Exception {
         ConditionWatcher watcher = ConditionWatcher.getInstance();
         watcher.setTimeoutLimit(timeoutSeconds * 1000);
         watcher.waitForCondition(new EventInstruction() {
@@ -23,12 +23,12 @@ public abstract class MediaPlayerTest extends InstrumentationTestCase {
         });
     }
 
-    protected void waitUntilEvent(final SRGMediaPlayerController.Event.Type eventType) throws Exception {
-        waitUntilEvent(eventType, 20);
+    protected void waitForEvent(final SRGMediaPlayerController.Event.Type eventType) throws Exception {
+        waitForEvent(eventType, 20);
     }
 
     // Wait until a given state is reached. Fails if the state is not reached within a given timeout period.
-    protected void waitUntilState(final SRGMediaPlayerController.State state, final int timeoutSeconds) throws Exception {
+    protected void waitForState(final SRGMediaPlayerController.State state, final int timeoutSeconds) throws Exception {
         ConditionWatcher watcher = ConditionWatcher.getInstance();
         watcher.setTimeoutLimit(timeoutSeconds * 1000);
         watcher.waitForCondition(new EventInstruction() {
@@ -39,7 +39,7 @@ public abstract class MediaPlayerTest extends InstrumentationTestCase {
         });
     }
 
-    protected void waitUntilState(final SRGMediaPlayerController.State state) throws Exception {
-        waitUntilState(state, 20);
+    protected void waitForState(final SRGMediaPlayerController.State state) throws Exception {
+        waitForState(state, 20);
     }
 }
