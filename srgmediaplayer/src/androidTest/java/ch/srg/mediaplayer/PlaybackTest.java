@@ -13,7 +13,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 import ch.srg.mediaplayer.utils.MockDataProvider;
 import ch.srg.mediaplayer.utils.SRGMediaPlayerControllerQueueListener;
@@ -148,18 +147,15 @@ public class PlaybackTest extends MediaPlayerTest {
     @Test
     public void testNullUriError() throws Exception {
         controller.play("NULL");
-        waitForState(SRGMediaPlayerController.State.PREPARING);
-        waitForState(SRGMediaPlayerController.State.RELEASED);
+        waitUntilState(SRGMediaPlayerController.State.RELEASED);
         Assert.assertTrue(controller.isReleased());
         Assert.assertNotNull(lastError);
     }
 
     @Test
-    public void testPlaybackStateInitialSequence() throws Exception {
+    public void testPlay() throws Exception {
         controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
-        waitForState(SRGMediaPlayerController.State.PREPARING);
-        waitForState(SRGMediaPlayerController.State.BUFFERING);
-        waitForState(SRGMediaPlayerController.State.READY);
+        waitUntilState(SRGMediaPlayerController.State.READY);
     }
 
     @Test
@@ -244,7 +240,7 @@ public class PlaybackTest extends MediaPlayerTest {
     public void testPlayAfterStreamEnd() throws Exception {
         controller.play(AUDIO_ON_DEMAND_IDENTIFIER, (long) 9900000);
         waitUntilState(SRGMediaPlayerController.State.READY);
-        waitForState(SRGMediaPlayerController.State.RELEASED);
+        waitUntilState(SRGMediaPlayerController.State.RELEASED);
     }
 
     @Test
@@ -387,45 +383,6 @@ public class PlaybackTest extends MediaPlayerTest {
             Runnable runnable = new CreatePlayRelease(context, provider);
             getInstrumentation().runOnMainSync(runnable);
         }
-    }
-
-    // Wait for the specified state, expecting it to occur right afterwards. Will fail if this is not the case.
-    private void waitForState(final SRGMediaPlayerController.State state) {
-        Log.i(getClass().getName(), "Wait for state: " + state);
-        Assert.assertTrue("Timeout waiting for player state: " + state,
-                waitForCondition(TIMEOUT_STATE_CHANGE, new EventCondition() {
-                    @Override
-                    public boolean check(SRGMediaPlayerController.Event event) {
-                        if (SRGMediaPlayerController.Event.Type.STATE_CHANGE == event.type) {
-                            assertEquals(state, event.state);
-                            Log.i(getClass().getName(), "State: " + state + " find.");
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                }));
-    }
-
-    // Wait for the specified condition, expecting it to occur right afterwards. Will fail if this is not the case.
-    private boolean waitForCondition(long timeout, EventCondition condition) {
-        SRGMediaPlayerController.Event event = null;
-        long startTime = System.nanoTime();
-        long timeoutNs = TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
-        while (startTime + timeoutNs > System.nanoTime()) {
-            try {
-                event = queue.getEventInBlockingQueue();
-                Log.i(getClass().getName(), "Pool event: " + String.valueOf(event));
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            if (event != null) {
-                if (condition.check(event)) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     private interface EventCondition {
