@@ -112,6 +112,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private long controllerId;
     private static long controllerIdCounter;
 
+    private boolean firstFrameRendered;
+
     public static String getName() {
         return NAME;
     }
@@ -228,6 +230,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
             DID_UNBIND_FROM_PLAYER_VIEW,
 
             SUBTITLE_DID_CHANGE,
+
+            FIRST_FRAME_RENDERED,
+
+            POSITION_DISCONTINUITY,
 
             /**
              * An identified segment (visible or not) is being started, while not being inside a segment before.
@@ -1924,8 +1930,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (this.playbackState == null || this.playbackState != playbackState) {
             switch (playbackState) {
                 case Player.STATE_IDLE:
-                    // TODO Why ?
-                    //controller.onPlayerDelegateStateChanged(this, SRGMediaPlayerController.State.IDLE);
                     break;
                 case Player.STATE_BUFFERING:
                     sendMessage(MSG_PLAYER_BUFFERING);
@@ -1961,7 +1965,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Override
     public void onPositionDiscontinuity() {
-        // Ignore
+        broadcastEvent(Event.Type.POSITION_DISCONTINUITY);
     }
 
     @Override
@@ -1980,8 +1984,12 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Override
     public void onRenderedFirstFrame() {
-        // TODO Should we ignore this ?
-        // Ignore
+        firstFrameRendered = true;
+        broadcastEvent(Event.Type.FIRST_FRAME_RENDERED);
+    }
+
+    public boolean isFirstFrameRendered() {
+        return firstFrameRendered;
     }
 
     @Override
