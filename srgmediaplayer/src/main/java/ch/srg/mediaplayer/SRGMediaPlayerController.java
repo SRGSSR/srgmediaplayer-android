@@ -124,6 +124,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     public static final long UNKNOWN_TIME = -1;
 
+    public static final long TIME_LIVE = C.TIME_UNSET;
+
     /**
      * Disable audio focus handling. Always play audio.
      */
