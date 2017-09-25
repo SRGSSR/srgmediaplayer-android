@@ -1142,7 +1142,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     public boolean isPlaying() {
-        return exoPlayer != null && exoPlayer.getPlaybackState() == Player.STATE_READY && exoPlayer.getPlayWhenReady();
+        return state == State.READY && exoPlayer != null && exoPlayer.getPlaybackState() == Player.STATE_READY && exoPlayer.getPlayWhenReady();
     }
 
     /**
