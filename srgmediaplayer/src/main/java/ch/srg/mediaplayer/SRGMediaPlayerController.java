@@ -773,7 +773,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 return true;
 
             case MSG_EXCEPTION:
-                handleFatalExceptionInternal((SRGMediaPlayerException) msg.obj);
+                if (msg.obj instanceof ExoPlaybackException) {
+                    handleFatalExceptionInternal(new SRGMediaPlayerException((ExoPlaybackException) msg.obj));
+                } else {
+                    handleFatalExceptionInternal((SRGMediaPlayerException) msg.obj);
+                }
                 return true;
 
             case MSG_REGISTER_EVENT_LISTENER:
