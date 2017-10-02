@@ -74,13 +74,13 @@ import ch.srg.mediaplayer.segment.model.Segment;
  * if used in conjonction with a SRGMediaPlayerView can handle Video playback base on delegation on
  * actual players, like android.MediaPlayer or ExoPlayer
  */
+@SuppressWarnings({"unused", "unchecked", "UnusedReturnValue", "WeakerAccess"})
 public class SRGMediaPlayerController implements Handler.Callback,
         Player.EventListener,
         SimpleExoPlayer.VideoListener,
         AudioCapabilitiesReceiver.Listener,
         TextRenderer.Output {
     public static final String TAG = "SRGMediaPlayer";
-    public static final String NAME = "SRGMediaPlayer";
     public static final String VERSION = BuildConfig.VERSION_NAME;
     public static final int DEFAULT_AUTO_HIDE_DELAY = OverlayController.DEFAULT_AUTO_HIDE_DELAY;
 
@@ -88,10 +88,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private static final long UPDATE_PERIOD = 100;
     private static final long SEGMENT_HYSTERESIS_MS = 5000;
     private Long userTrackingProgress;
+    private static final String NAME = "SRGMediaPlayer";
 
     public enum ViewType {
         TYPE_SURFACEVIEW,
-        TYPE_TEXTUREVIEW;
+        TYPE_TEXTUREVIEW
     }
 
     /**
@@ -106,6 +107,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private boolean duckedBecauseTransientFocusLoss;
     private boolean pausedBecauseFocusLoss;
     private boolean mutedBecauseFocusLoss;
+    //TODO Use this in exoplayer 2 (or delete)
     private Long qualityOverride;
     private Long qualityDefault;
     private Throwable fatalError;
@@ -187,12 +189,12 @@ public class SRGMediaPlayerController implements Handler.Callback,
         /**
          * Player released (end state).
          */
-        RELEASED;
+        RELEASED
     }
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({SRGMediaPlayerController.STREAM_HLS, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE, SRGMediaPlayerController.STREAM_DASH, SRGMediaPlayerController.STREAM_LOCAL_FILE})
-    public static @interface SRGStreamType {
+    public @interface SRGStreamType {
     }
 
     public static final int STREAM_HLS = 1;
@@ -203,12 +205,13 @@ public class SRGMediaPlayerController implements Handler.Callback,
     /**
      * Interface definition for a callback to be invoked when the status changes or is periodically emitted.
      */
+    @SuppressWarnings({"WeakerAccess", "unused"})
     public static class Event {
 
         public enum ScreenType {
             NONE,
             DEFAULT,
-            CHROMECAST;
+            CHROMECAST
         }
 
         public enum Type {
@@ -410,10 +413,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
     private AudioCapabilities audioCapabilities;
     private EventLogger eventLogger;
-    private DefaultRenderersFactory renderersFactory;
     private ViewType viewType;
     private View renderingView;
     private Integer playbackState;
+    // TODO Use this in MediaSessionManager
     private MediaSessionCompat mediaSession;
     private List<Segment> segments = new ArrayList<>();
 
@@ -445,8 +448,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * Create a new SRGMediaPlayerController with the current context, a mediaPlayerDataProvider, and a TAG
      * if you need to retrieve a controller
      *
-     * @param context
-     * @param tag
+     * @param context context
+     * @param tag     tag to identify this controller
      */
     public SRGMediaPlayerController(Context context, String tag) {
         this.context = context;
@@ -468,7 +471,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
         eventLogger = new EventLogger(trackSelector);
-        renderersFactory = new DefaultRenderersFactory(this.context, null, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
+        DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(this.context, null, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
 
         exoPlayer = ExoPlayerFactory.newSimpleInstance(renderersFactory, trackSelector, new DefaultLoadControl());
         exoPlayer.addListener(this);
@@ -482,7 +485,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         MediaSessionConnector mediaSessionConnector =
                 new MediaSessionConnector(mediaSession);
-        mediaSessionConnector.setPlayer(exoPlayer, null, null);
+        mediaSessionConnector.setPlayer(exoPlayer, null);
     }
 
     private synchronized void startBackgroundThreadIfNecessary() {
@@ -535,7 +538,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @param uri        uri of the media
      * @param streamType {@link SRGMediaPlayerController#STREAM_DASH}, {@link SRGMediaPlayerController#STREAM_HLS}, {@link SRGMediaPlayerController#STREAM_HTTP_PROGRESSIVE} or {@link SRGMediaPlayerController#STREAM_LOCAL_FILE}
      * @return true when media is preparing and in the process of being started
-     * @throws SRGMediaPlayerException
+     * @throws SRGMediaPlayerException player exception
      */
     public boolean play(@NonNull Uri uri, int streamType) throws SRGMediaPlayerException {
         return play(uri, null, streamType);
@@ -552,7 +555,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @param startPositionMs start position in milliseconds or null to prevent seek
      * @param streamType      {@link SRGMediaPlayerController#STREAM_DASH}, {@link SRGMediaPlayerController#STREAM_HLS}, {@link SRGMediaPlayerController#STREAM_HTTP_PROGRESSIVE} or {@link SRGMediaPlayerController#STREAM_LOCAL_FILE}
      * @return true when media is preparing and in the process of being started
-     * @throws SRGMediaPlayerException
+     * @throws SRGMediaPlayerException player exception
      */
     public boolean play(@NonNull Uri uri, Long startPositionMs, @SRGStreamType int streamType) throws SRGMediaPlayerException {
         return play(uri, startPositionMs, streamType, null);
@@ -569,7 +572,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @param startPositionMs start position in milliseconds or null to prevent seek
      * @param streamType      {@link SRGMediaPlayerController#STREAM_DASH}, {@link SRGMediaPlayerController#STREAM_HLS}, {@link SRGMediaPlayerController#STREAM_HTTP_PROGRESSIVE} or {@link SRGMediaPlayerController#STREAM_LOCAL_FILE}
      * @return true when media is preparing and in the process of being started
-     * @throws SRGMediaPlayerException
+     * @throws SRGMediaPlayerException player exception
      */
     public boolean play(@NonNull Uri uri, Long startPositionMs, @SRGStreamType int streamType, List<Segment> segments) throws SRGMediaPlayerException {
         if (requestAudioFocus()) {
@@ -598,7 +601,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         int streamType;
         private List<Segment> segments;
 
-        public PrepareUriData(Uri uri, Long position, int streamType, List<Segment> segments) {
+        PrepareUriData(Uri uri, Long position, int streamType, List<Segment> segments) {
             this.uri = uri;
             this.position = position;
             this.streamType = streamType;
@@ -665,7 +668,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         sendMessage(what, null);
     }
 
-    /*package*/ void sendMessage(int what, Object param) {
+    private void sendMessage(int what, Object param) {
         logV("Sending message: " + what + " " + String.valueOf(param));
         if (!isReleased()) {
             startBackgroundThreadIfNecessary();
@@ -684,7 +687,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * Check if the player is released, this method can help you to determine if you need to
      * create a new player instance.
      *
-     * @return
+     * @return true when player is released and cannot be reused
      */
     public boolean isReleased() {
         return state == State.RELEASED;
@@ -1038,7 +1041,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return userTrackingProgress;
     }
 
-    public void schedulePeriodUpdate() {
+    private void schedulePeriodUpdate() {
         commandHandler.removeMessages(MSG_PERIODIC_UPDATE);
         commandHandler.sendMessageDelayed(
                 commandHandler.obtainMessage(MSG_PERIODIC_UPDATE), UPDATE_PERIOD);
@@ -1116,7 +1119,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private void handleFatalExceptionInternal(SRGMediaPlayerException e) {
         logE("exception occurred", e);
-        postErrorEventInternal(true, e);
+        postFatalErrorInternal(e);
         releaseInternal();
     }
 
@@ -1154,7 +1157,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     /**
-     * @return media position relative to MPST (see {@link #getMediaPlaylistStartTime} )
+     * @return media position
      */
     public long getMediaPosition() {
         if (exoPlayer != null) {
@@ -1178,25 +1181,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         } else {
             return UNKNOWN_TIME;
         }
-    }
-
-    /**
-     * Media playlist start time (MPST) is a relative offset for the available seekable range,
-     * used in sliding window live playlist.
-     * The range [0..MPST] is not available for seeking.
-     * <p/>
-     * <pre>
-     * 0 --------------- MPST --------- POSITION ------------------------------------- LIVE
-     *                    \---------------------------DURATION---------------------------/
-     * </pre>
-     * <p/>
-     * MPST stays constant with a value of 0 when playing a static video.
-     *
-     * @return MPST in ms
-     */
-    @Deprecated
-    public long getMediaPlaylistStartTime() {
-        return 0;
     }
 
     /**
@@ -1397,8 +1381,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     TextureView textureView = (TextureView) renderingView;
                     textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
                         @SuppressWarnings("ConstantConditions")
-                        // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
-                        public boolean isCurrent(SurfaceTexture surfaceTexture) {
+                            // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
+                        boolean isCurrent(SurfaceTexture surfaceTexture) {
                             return renderingView instanceof TextureView && ((TextureView) renderingView).getSurfaceTexture() == surfaceTexture;
                         }
 
@@ -1498,26 +1482,24 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return globalEventListeners.remove(listener);
     }
 
-    public void broadcastEvent(Event.Type eventType) {
+    void broadcastEvent(Event.Type eventType) {
         broadcastEvent(Event.buildEvent(this, eventType));
     }
 
-    public void broadcastEvent(Event event) {
+    void broadcastEvent(Event event) {
         sendMessage(MSG_FIRE_EVENT, event);
     }
 
-    private void postErrorEventInternal(boolean fatalError, SRGMediaPlayerException e) {
-        if (fatalError) {
-            this.fatalError = e;
-        }
-        postEventInternal(Event.buildErrorEvent(this, fatalError, e));
+    private void postFatalErrorInternal(SRGMediaPlayerException e) {
+        this.fatalError = e;
+        postEventInternal(Event.buildErrorEvent(this, true, e));
     }
 
     private void postEventInternal(Event.Type eventType) {
         postEventInternal(Event.buildEvent(this, eventType));
     }
 
-    public void postEventInternal(final Event event) {
+    private void postEventInternal(final Event event) {
         if (debugMode) {
             assertCommandHandlerThread();
         }
@@ -1544,7 +1526,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return context;
     }
 
-    public void handleAudioFocusChange(int focusChange) {
+    void handleAudioFocusChange(int focusChange) {
         switch (focusChange) {
             case AudioManager.AUDIOFOCUS_LOSS:
                 handleAudioFocusLoss(false, false);
@@ -1640,7 +1622,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private static class OnAudioFocusChangeListener implements AudioManager.OnAudioFocusChangeListener {
         private final WeakReference<SRGMediaPlayerController> playerReference;
 
-        public OnAudioFocusChangeListener(WeakReference<SRGMediaPlayerController> playerReference) {
+        OnAudioFocusChangeListener(WeakReference<SRGMediaPlayerController> playerReference) {
             this.playerReference = playerReference;
         }
 
@@ -1691,7 +1673,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return getControllerId();
     }
 
-    public void updateOverlayVisibilities() {
+    void updateOverlayVisibilities() {
         overlayController.propagateOverlayVisibility();
     }
 
@@ -1708,10 +1690,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     public boolean isShowingControlOverlays() {
-        if (overlayController != null) {
-            return overlayController.isShowingControlOverlays();
-        }
-        return true;
+        return overlayController != null && overlayController.isShowingControlOverlays();
     }
 
     public boolean isMainPlayer() {
@@ -1729,7 +1708,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return false;
     }
 
-    public void forceBroadcastStateChange() {
+    private void forceBroadcastStateChange() {
         broadcastEvent(Event.buildStateEvent(this));
     }
 

@@ -66,6 +66,7 @@ public class MediaSessionManager {
     }
 
     private void createMediaSessionCompat() {
+        // TODO Shgould not we use SRGMediaPlayerController media session ?
         mediaSessionCompat = new MediaSessionCompat(context, "MediaPlayerService");
         mediaSessionCompat.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
         mediaSessionCompat.setActive(true);
