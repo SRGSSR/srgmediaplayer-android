@@ -154,7 +154,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private static final int MSG_SET_MUTE = 7;
     private static final int MSG_APPLY_STATE = 8;
     private static final int MSG_RELEASE = 9;
-    /*package*/ static final int MSG_EXCEPTION = 12;
+    private static final int MSG_EXCEPTION = 12;
     private static final int MSG_REGISTER_EVENT_LISTENER = 13;
     private static final int MSG_UNREGISTER_EVENT_LISTENER = 14;
     private static final int MSG_PLAYER_PREPARING = 101;
@@ -773,11 +773,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 return true;
 
             case MSG_EXCEPTION:
-                if (msg.obj instanceof ExoPlaybackException) {
-                    handleFatalExceptionInternal(new SRGMediaPlayerException((ExoPlaybackException) msg.obj));
-                } else {
-                    handleFatalExceptionInternal((SRGMediaPlayerException) msg.obj);
-                }
+                handleFatalExceptionInternal((SRGMediaPlayerException) msg.obj);
                 return true;
 
             case MSG_REGISTER_EVENT_LISTENER:
@@ -1118,7 +1114,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return state;
     }
 
-    /*package*/ void handleFatalExceptionInternal(SRGMediaPlayerException e) {
+    private void handleFatalExceptionInternal(SRGMediaPlayerException e) {
         logE("exception occurred", e);
         postErrorEventInternal(true, e);
         releaseInternal();
@@ -1966,7 +1962,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     @Override
     public void onPlayerError(ExoPlaybackException error) {
         manageKeepScreenOnInternal();
-        sendMessage(MSG_EXCEPTION, error);
+        sendMessage(MSG_EXCEPTION, new SRGMediaPlayerException(error));
     }
 
     @Override
