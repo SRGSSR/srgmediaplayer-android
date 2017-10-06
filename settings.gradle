@@ -1,1 +1,1 @@
-include ':srgmediaplayer', ':demo', ':srgmediaplayertestutils'
+include ':srgmediaplayer', ':srgmediaplayertestutils'

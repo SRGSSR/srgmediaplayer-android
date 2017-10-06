@@ -1,6 +1,7 @@
 package ch.srg.mediaplayer;
 
 import android.content.Context;
+import android.net.Uri;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
@@ -14,7 +15,6 @@ import org.junit.runner.RunWith;
 
 import java.util.Random;
 
-import ch.srg.mediaplayer.utils.MockDataProvider;
 import ch.srg.mediaplayer.utils.SRGMediaPlayerControllerQueueListener;
 
 /**
@@ -25,24 +25,20 @@ import ch.srg.mediaplayer.utils.SRGMediaPlayerControllerQueueListener;
  */
 @RunWith(AndroidJUnit4.class)
 public class PlaybackTest extends MediaPlayerTest {
-
-    private static final int TIMEOUT_STATE_CHANGE = 10000;
-
-    private static final String VIDEO_ON_DEMAND_IDENTIFIER = "SPECIMEN";
-    private static final String NON_STREAMED_VIDEO_IDENTIFIER = "BIG-BUCK-NON-STREAMED";
-    private static final String VIDEO_LIVESTREAM_IDENTIFIER = "NDR";
-    private static final String VIDEO_DVR_LIVESTREAM_IDENTIFIER = "NDR-DVR";
-    private static final String AUDIO_ON_DEMAND_IDENTIFIER = "C-EST-PAS-TROP-TOT";
-    private static final String HTTP_403_IDENTIFIER = "HTTP_403";
-    private static final String HTTP_404_IDENTIFIER = "HTTP_404";
-    private static final String AUDIO_DVR_LIVESTREAM_IDENTIFIER = "DRS1";
+    private static final Uri VIDEO_ON_DEMAND_URI = Uri.parse("http://stream-i.rts.ch/i/specm/2014/specm_20141203_full_f_817794-,101,701,1201,k.mp4.csmil/master.m3u8");
+    private static final Uri NON_STREAMED_VIDEO_URI = Uri.parse("http://www.sample-videos.com/video/mp4/720/big_buck_bunny_720p_1mb.mp4");
+    private static final Uri VIDEO_LIVESTREAM_URI = Uri.parse("http://ndr_fs-lh.akamaihd.net/i/ndrfs_nds@119224/master.m3u8?dw=0");
+    private static final Uri VIDEO_DVR_LIVESTREAM_URI = Uri.parse("http://ndr_fs-lh.akamaihd.net/i/ndrfs_nds@119224/master.m3u8");
+    private static final Uri AUDIO_ON_DEMAND_URI = Uri.parse("https://rtsww-a-d.rts.ch/la-1ere/programmes/c-est-pas-trop-tot/2017/c-est-pas-trop-tot_20170628_full_c-est-pas-trop-tot_007d77e7-61fb-4aef-9491-5e6b07f7f931-128k.mp3");
+    private static final Uri HTTP_403_URI = Uri.parse("http://httpbin.org/status/403");
+    private static final Uri HTTP_404_URI = Uri.parse("http://httpbin.org/status/404");
+    private static final Uri AUDIO_DVR_LIVESTREAM_URI = Uri.parse("http://lsaplus.swisstxt.ch/audio/drs1_96.stream/playlist.m3u8");
 
     private SRGMediaPlayerController controller;
 
     private SRGMediaPlayerControllerQueueListener queue;
 
     private SRGMediaPlayerException lastError;
-    private MockDataProvider provider;
 
     @Before
     public void setUp() throws Exception {
@@ -51,11 +47,10 @@ public class PlaybackTest extends MediaPlayerTest {
         injectInstrumentation(InstrumentationRegistry.getInstrumentation());
 
         // Init variables
-        provider = new MockDataProvider();
         getInstrumentation().runOnMainSync(new Runnable() {
             @Override
             public void run() {
-                controller = new SRGMediaPlayerController(getInstrumentation().getContext(), provider, "test");
+                controller = new SRGMediaPlayerController(getInstrumentation().getContext(), "test");
                 controller.setDebugMode(true);
             }
         });
@@ -90,7 +85,6 @@ public class PlaybackTest extends MediaPlayerTest {
     @Test
     public void testIdleState() throws Exception {
         assertEquals(SRGMediaPlayerController.State.IDLE, controller.getState());
-        assertNull(controller.getMediaIdentifier());
         assertFalse(controller.isReleased());
         assertFalse(controller.isPlaying());
         assertFalse(controller.isLoading());
@@ -100,37 +94,37 @@ public class PlaybackTest extends MediaPlayerTest {
         assertFalse(controller.hasVideoTrack());
     }
 
-    // TODO: Fix. Either the test is wrong and the documentation needs to be updated, or the test is
-    //       correct and the implementation needs to be fixed
-    @Test
-    public void testMediaIdentifier() throws Exception {
-        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
-        assertEquals(VIDEO_ON_DEMAND_IDENTIFIER, controller.getMediaIdentifier());
-    }
-
     @Test
     public void testPreparingState() throws Exception {
-        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        controller.play(VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
         waitForState(SRGMediaPlayerController.State.PREPARING);
         assertFalse(controller.isPlaying());
     }
 
     @Test
     public void testReadyState() throws Exception {
-        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        controller.play(VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
         waitForState(SRGMediaPlayerController.State.READY);
         assertTrue(controller.isPlaying());
     }
 
     @Test
     public void testPlayAudioOverHTTP() throws Exception {
-        controller.play(NON_STREAMED_VIDEO_IDENTIFIER);
+        controller.play(NON_STREAMED_VIDEO_URI, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
         waitForState(SRGMediaPlayerController.State.READY);
     }
 
     @Test
-    public void testHTTP403() throws Exception {
-        controller.play(HTTP_403_IDENTIFIER);
+    public void testHTTP403HLS() throws Exception {
+        controller.play(HTTP_403_URI, SRGMediaPlayerController.STREAM_HLS);
+        waitForState(SRGMediaPlayerController.State.RELEASED);
+        Assert.assertTrue(controller.isReleased());
+        Assert.assertNotNull(lastError);
+    }
+
+    @Test
+    public void testHTTP403Progressive() throws Exception {
+        controller.play(HTTP_403_URI, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
         waitForState(SRGMediaPlayerController.State.RELEASED);
         Assert.assertTrue(controller.isReleased());
         Assert.assertNotNull(lastError);
@@ -138,7 +132,15 @@ public class PlaybackTest extends MediaPlayerTest {
 
     @Test
     public void TestHTTP404() throws Exception {
-        controller.play(HTTP_404_IDENTIFIER);
+        controller.play(HTTP_404_URI, SRGMediaPlayerController.STREAM_HLS);
+        waitForState(SRGMediaPlayerController.State.RELEASED);
+        Assert.assertTrue(controller.isReleased());
+        Assert.assertNotNull(lastError);
+    }
+
+    @Test
+    public void TestHTTP404Progressive() throws Exception {
+        controller.play(HTTP_404_URI, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
         waitForState(SRGMediaPlayerController.State.RELEASED);
         Assert.assertTrue(controller.isReleased());
         Assert.assertNotNull(lastError);
@@ -146,7 +148,15 @@ public class PlaybackTest extends MediaPlayerTest {
 
     @Test
     public void testNullUriError() throws Exception {
-        controller.play("NULL");
+        controller.play(null, SRGMediaPlayerController.STREAM_HLS);
+        waitForState(SRGMediaPlayerController.State.RELEASED);
+        Assert.assertTrue(controller.isReleased());
+        Assert.assertNotNull(lastError);
+    }
+
+    @Test
+    public void testNullUriProgressiveError() throws Exception {
+        controller.play(null, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
         waitForState(SRGMediaPlayerController.State.RELEASED);
         Assert.assertTrue(controller.isReleased());
         Assert.assertNotNull(lastError);
@@ -154,13 +164,13 @@ public class PlaybackTest extends MediaPlayerTest {
 
     @Test
     public void testPlay() throws Exception {
-        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        controller.play(VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
         waitForState(SRGMediaPlayerController.State.READY);
     }
 
     @Test
     public void testOnDemandVideoPlayback() throws Exception {
-        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        controller.play(VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
         waitForState(SRGMediaPlayerController.State.READY);
         assertTrue(controller.hasVideoTrack());
         assertFalse(controller.isLive());
@@ -170,7 +180,7 @@ public class PlaybackTest extends MediaPlayerTest {
 
     @Test
     public void testVideoLivestreamPlayback() throws Exception {
-        controller.play(VIDEO_LIVESTREAM_IDENTIFIER);
+        controller.play(VIDEO_LIVESTREAM_URI, SRGMediaPlayerController.STREAM_HLS);
         waitForState(SRGMediaPlayerController.State.READY);
         assertTrue(controller.hasVideoTrack());
         assertTrue(controller.isLive());
@@ -180,7 +190,7 @@ public class PlaybackTest extends MediaPlayerTest {
 
     @Test
     public void testDVRVideoLivestreamPlayback() throws Exception {
-        controller.play(VIDEO_DVR_LIVESTREAM_IDENTIFIER);
+        controller.play(VIDEO_DVR_LIVESTREAM_URI, SRGMediaPlayerController.STREAM_HLS);
         waitForState(SRGMediaPlayerController.State.READY);
         assertTrue(controller.hasVideoTrack());
         assertTrue(controller.isLive());
@@ -191,28 +201,29 @@ public class PlaybackTest extends MediaPlayerTest {
     @Test
     public void testOnDemandVideoPlaythrough() throws Exception {
         // Start near the end of the stream
-        controller.play(VIDEO_ON_DEMAND_IDENTIFIER, (long) 3566768);
+        controller.play(VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
+        controller.seekTo(3566768);
         waitForState(SRGMediaPlayerController.State.READY);
         waitForEvent(SRGMediaPlayerController.Event.Type.MEDIA_COMPLETED);
     }
 
     @Test
     public void testNonStreamedMediaPlaythrough() throws Exception {
-        controller.play(NON_STREAMED_VIDEO_IDENTIFIER);
+        controller.play(NON_STREAMED_VIDEO_URI, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
         waitForState(SRGMediaPlayerController.State.READY);
         waitForState(SRGMediaPlayerController.State.RELEASED);
     }
 
     @Test
     public void testOnDemandAudioPlayback() throws Exception {
-        controller.play(AUDIO_ON_DEMAND_IDENTIFIER);
+        controller.play(AUDIO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
         waitForState(SRGMediaPlayerController.State.READY);
         assertFalse(controller.hasVideoTrack());
     }
 
     @Test
     public void testDVRAudioLivestreamPlayback() throws Exception {
-        controller.play(AUDIO_DVR_LIVESTREAM_IDENTIFIER);
+        controller.play(AUDIO_DVR_LIVESTREAM_URI, SRGMediaPlayerController.STREAM_HLS);
         waitForState(SRGMediaPlayerController.State.READY);
         assertFalse(controller.hasVideoTrack());
         assertTrue(controller.isLive());
@@ -223,14 +234,16 @@ public class PlaybackTest extends MediaPlayerTest {
     @Test
     public void testOnDemandAudioPlaythrough() throws Exception {
         // Start near the end of the stream
-        controller.play(AUDIO_ON_DEMAND_IDENTIFIER, (long) 3230783);
+        controller.play(AUDIO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
+        controller.seekTo((long) 3230783);
         waitForState(SRGMediaPlayerController.State.READY);
         waitForEvent(SRGMediaPlayerController.Event.Type.MEDIA_COMPLETED);
     }
 
     @Test
     public void testPlayAtPosition() throws Exception {
-        controller.play(AUDIO_ON_DEMAND_IDENTIFIER, (long) 30000);
+        controller.play(AUDIO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
+        controller.seekTo((long) 30000);
         waitForState(SRGMediaPlayerController.State.READY);
         assertTrue(controller.isPlaying());
         assertEquals(controller.getMediaPosition() / 1000, 30);
@@ -238,14 +251,15 @@ public class PlaybackTest extends MediaPlayerTest {
 
     @Test
     public void testPlayAfterStreamEnd() throws Exception {
-        controller.play(AUDIO_ON_DEMAND_IDENTIFIER, (long) 9900000);
+        controller.play(AUDIO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
+        controller.seekTo((long) 9900000);
         waitForState(SRGMediaPlayerController.State.READY);
         waitForState(SRGMediaPlayerController.State.RELEASED);
     }
 
     @Test
     public void testPause() throws Exception {
-        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        controller.play(VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
         waitForState(SRGMediaPlayerController.State.READY);
         assertTrue(controller.isPlaying());
         controller.pause();
@@ -255,7 +269,7 @@ public class PlaybackTest extends MediaPlayerTest {
 
     @Test
     public void testSeek() throws Exception {
-        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        controller.play(VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
         waitForState(SRGMediaPlayerController.State.READY);
         assertTrue(controller.isPlaying());
         assertEquals(controller.getMediaPosition() / 1000, 0);
@@ -269,7 +283,7 @@ public class PlaybackTest extends MediaPlayerTest {
 
     @Test
     public void testMultipleSeeks() throws Exception {
-        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        controller.play(VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
         waitForState(SRGMediaPlayerController.State.READY);
         assertTrue(controller.isPlaying());
         assertEquals(controller.getMediaPosition() / 1000, 0);
@@ -284,7 +298,7 @@ public class PlaybackTest extends MediaPlayerTest {
 
     @Test
     public void testMultipleSeeksDuringBuffering() throws Exception {
-        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        controller.play(VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
         waitForState(SRGMediaPlayerController.State.READY);
         assertTrue(controller.isPlaying());
         assertEquals(controller.getMediaPosition() / 1000, 0);
@@ -299,7 +313,7 @@ public class PlaybackTest extends MediaPlayerTest {
 
     @Test
     public void testSeekWhilePreparing() throws Exception {
-        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        controller.play(VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
         waitForState(SRGMediaPlayerController.State.PREPARING);
         assertFalse(controller.isPlaying());
 
@@ -311,7 +325,7 @@ public class PlaybackTest extends MediaPlayerTest {
 
     @Test
     public void testSeekWhileBuffering() throws Exception {
-        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        controller.play(VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
         waitForState(SRGMediaPlayerController.State.BUFFERING);
         assertFalse(controller.isPlaying());
 
@@ -323,7 +337,7 @@ public class PlaybackTest extends MediaPlayerTest {
 
     @Test
     public void testSeekWhilePaused() throws Exception {
-        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        controller.play(VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
         waitForState(SRGMediaPlayerController.State.READY);
         assertTrue(controller.isPlaying());
         controller.pause();
@@ -340,7 +354,7 @@ public class PlaybackTest extends MediaPlayerTest {
 
     @Test
     public void testSeekWhileReleasing() throws Exception {
-        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        controller.play(VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
         waitForState(SRGMediaPlayerController.State.READY);
         assertFalse(controller.isReleased());
 
@@ -360,7 +374,7 @@ public class PlaybackTest extends MediaPlayerTest {
 
     @Test
     public void testRelease() throws Exception {
-        controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+        controller.play(VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
         waitForState(SRGMediaPlayerController.State.READY);
         assertFalse(controller.isReleased());
 
@@ -370,7 +384,6 @@ public class PlaybackTest extends MediaPlayerTest {
 
         waitForState(SRGMediaPlayerController.State.RELEASED);
         assertTrue(controller.isReleased());
-        assertNull(controller.getMediaIdentifier());
     }
 
     @Test
@@ -380,7 +393,7 @@ public class PlaybackTest extends MediaPlayerTest {
 
         for (int i = 0; i < testCount; i++) {
             Log.v("MediaCtrlerTest", "create/play/release " + i + " / " + testCount);
-            Runnable runnable = new CreatePlayRelease(context, provider);
+            Runnable runnable = new CreatePlayRelease(context);
             getInstrumentation().runOnMainSync(runnable);
         }
     }
@@ -392,12 +405,10 @@ public class PlaybackTest extends MediaPlayerTest {
     private static class CreatePlayRelease implements Runnable {
         SRGMediaPlayerController controller;
         private Context context;
-        private SRGMediaPlayerDataProvider provider;
         private Random r = new Random();
 
-        public CreatePlayRelease(Context context, SRGMediaPlayerDataProvider provider) {
+        public CreatePlayRelease(Context context) {
             this.context = context;
-            this.provider = provider;
         }
 
         public void run() {
@@ -413,12 +424,12 @@ public class PlaybackTest extends MediaPlayerTest {
         }
 
         private void setup() {
-            controller = new SRGMediaPlayerController(context, provider, "test");
+            controller = new SRGMediaPlayerController(context, "test");
             controller.setDebugMode(true);
         }
 
         private void test() throws SRGMediaPlayerException, InterruptedException {
-            controller.play(VIDEO_ON_DEMAND_IDENTIFIER);
+            controller.play(VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
             potentialSleep();
             controller.release();
             potentialSleep();

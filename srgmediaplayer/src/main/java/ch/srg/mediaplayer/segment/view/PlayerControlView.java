@@ -2,7 +2,6 @@ package ch.srg.mediaplayer.segment.view;
 
 import android.content.Context;
 import android.content.res.Configuration;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.Gravity;
@@ -15,26 +14,22 @@ import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import java.util.List;
 import java.util.Locale;
 
 import ch.srg.mediaplayer.PlayerViewDelegate;
 import ch.srg.mediaplayer.R;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
-import ch.srg.mediaplayer.segment.controller.SegmentController;
-import ch.srg.mediaplayer.segment.model.Segment;
 
 /**
- * Created by npietri on 20.05.15.
+ * Copyright (c) SRG SSR. All rights reserved.
+ * <p>
+ * License information is available from the LICENSE file.
  */
-public class PlayerControlView extends LinearLayout implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, SegmentController.Listener, PlayerViewDelegate {
+public class PlayerControlView extends LinearLayout implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, PlayerViewDelegate {
     private static final long COMPLETION_TOLERANCE_MS = 5000;
 
     @Nullable
-    private SRGMediaPlayerController playerController;
-
-    @Nullable
-    private SegmentController segmentController;
+    private SRGMediaPlayerController controller;
 
     private SeekBar seekBar;
 
@@ -74,14 +69,14 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
         setOrientation(HORIZONTAL);
         setGravity(Gravity.CENTER_VERTICAL);
 
-        seekBar = (SeekBar) findViewById(R.id.segment_player_control_seekbar);
+        seekBar = findViewById(R.id.segment_player_control_seekbar);
         seekBar.setOnSeekBarChangeListener(this);
 
-        pauseButton = (Button) findViewById(R.id.segment_player_control_button_pause);
-        playButton = (Button) findViewById(R.id.segment_player_control_button_play);
-        replayButton = (Button) findViewById(R.id.segment_player_control_button_replay);
-        fullscreenButton = (ImageButton) findViewById(R.id.segment_player_control_button_fullscreen);
-        subtitleButton = (ImageButton) findViewById(R.id.segment_player_control_button_subtitles);
+        pauseButton = findViewById(R.id.segment_player_control_button_pause);
+        playButton = findViewById(R.id.segment_player_control_button_play);
+        replayButton = findViewById(R.id.segment_player_control_button_replay);
+        fullscreenButton = findViewById(R.id.segment_player_control_button_fullscreen);
+        subtitleButton = findViewById(R.id.segment_player_control_button_subtitles);
 
         pauseButton.setOnClickListener(this);
         playButton.setOnClickListener(this);
@@ -89,8 +84,8 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
         fullscreenButton.setOnClickListener(this);
         subtitleButton.setOnClickListener(this);
 
-        leftTime = (TextView) findViewById(R.id.segment_player_control_time_left);
-        rightTime = (TextView) findViewById(R.id.segment_player_control_time_right);
+        leftTime = findViewById(R.id.segment_player_control_time_left);
+        rightTime = findViewById(R.id.segment_player_control_time_right);
 
         updateFullScreenButton();
         updateSubtitleButton();
@@ -103,38 +98,30 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
     }
 
     private void updateSubtitleButton() {
-        if (subtitleButton != null && playerController != null) {
-            subtitleButton.setVisibility(playerController.getSubtitleTrackList().isEmpty() ? GONE : VISIBLE);
-            subtitleButton.setSelected(playerController.getSubtitleTrack() != null);
+        if (subtitleButton != null && controller != null) {
+            subtitleButton.setVisibility(controller.getSubtitleTrackList().isEmpty() ? GONE : VISIBLE);
+            subtitleButton.setSelected(controller.getSubtitleTrack() != null);
         }
     }
 
     @Override
     public void attachToController(SRGMediaPlayerController playerController) {
-        this.playerController = playerController;
+        this.controller = playerController;
         update(SRGMediaPlayerController.UNKNOWN_TIME);
     }
 
     @Override
     public void detachFromController(SRGMediaPlayerController srgMediaPlayerController) {
-        this.playerController = null;
-    }
-
-    public void setSegmentController(@NonNull SegmentController segmentController) {
-        if (this.segmentController != null) {
-            this.segmentController.removeListener(this);
-        }
-        this.segmentController = segmentController;
-        segmentController.addListener(this);
+        this.controller = null;
     }
 
     @Override
     public void onClick(View v) {
-        if (playerController != null) {
+        if (controller != null) {
             if (v == playButton) {
-                playerController.start();
+                controller.start();
             } else if (v == pauseButton) {
-                playerController.pause();
+                controller.pause();
             } else if (v == replayButton) {
                 if (listener != null) {
                     listener.onReplayClick();
@@ -153,8 +140,8 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
 
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-        if (fromUser && segmentController != null) {
-            segmentController.sendUserTrackedProgress(progress);
+        if (fromUser && controller != null) {
+            controller.sendUserTrackedProgress(seekBarSeekToMs);
         }
         if (fromUser) {
             seekBarSeekToMs = progress;
@@ -167,15 +154,14 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
 
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
-        if (segmentController != null) {
-            segmentController.stopUserTrackingProgress();
-            if (seekBarSeekToMs >= 0 && playerController != null) {
-                segmentController.seekTo(playerController.getMediaIdentifier(), seekBarSeekToMs);
+        if (controller != null) {
+            controller.stopUserTrackingProgress();
+            if (seekBarSeekToMs >= 0 && controller != null) {
+                controller.seekTo(seekBarSeekToMs);
                 seekBarSeekToMs = -1;
             }
         }
     }
-
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -198,9 +184,9 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
     }
 
     private void update(long time) {
-        if (playerController != null && !playerController.isReleased()) {
-            boolean playing = playerController.isPlaying();
-            duration = playerController.getMediaDuration();
+        if (controller != null && !controller.isReleased()) {
+            boolean playing = controller.isPlaying();
+            duration = controller.getMediaDuration();
             boolean mediaCompleted =
                     !playing && duration != 0 && time >= duration - COMPLETION_TOLERANCE_MS;
 
@@ -228,10 +214,9 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
         if (currentPosition != position || currentDuration != duration) {
             currentPosition = position;
             currentDuration = duration;
-            if (segmentController != null
-                    && playerController != null
-                    && !segmentController.isUserChangingProgress()) {
-                int bufferPercent = playerController.getBufferPercentage();
+            if (controller != null
+                    && !controller.isUserChangingProgress()) {
+                int bufferPercent = controller.getBufferPercentage();
                 if (bufferPercent > 0) {
                     seekBar.setSecondaryProgress((int) duration * bufferPercent / 100);
                 } else {
@@ -260,15 +245,6 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
         }
     }
 
-    @Override
-    public void onPositionChange(@Nullable String mediaIdentifier, long position, boolean seeking) {
-        update(position);
-    }
-
-    @Override
-    public void onSegmentListChanged(List<Segment> segments) {
-    }
-
     public interface Listener {
         void onSubtitleClicked(View v);
 
@@ -283,6 +259,13 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
 
     @Override
     public void update() {
-        // nothing to do. On all done in onPositionChange
+        if (controller != null) {
+            update(controller.getMediaPosition());
+        }
+    }
+
+    @Override
+    public void setHideCentralButton(boolean loading) {
+
     }
 }

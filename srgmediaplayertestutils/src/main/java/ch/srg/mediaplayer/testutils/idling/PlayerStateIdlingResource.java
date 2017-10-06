@@ -51,7 +51,7 @@ public class PlayerStateIdlingResource implements IdlingResource, SRGMediaPlayer
     @Override
     public void onMediaPlayerEvent(SRGMediaPlayerController mp, SRGMediaPlayerController.Event event) {
         if (mp != null) {
-            if (urn == null || TextUtils.equals(urn, mp.getMediaIdentifier())) {
+            if (urn == null) {
                 if (eventToWait.equals(event.type)) {
                     SRGMediaPlayerController.unregisterGlobalEventListener(this);
                     idleNow = true;

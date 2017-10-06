@@ -34,6 +34,7 @@ dependencies {
     implementation "com.google.android.exoplayer:exoplayer-hls:r$rootProject.exoPlayerVersion"
     implementation "com.google.android.exoplayer:exoplayer-dash:r$rootProject.exoPlayerVersion"
     implementation "com.google.android.exoplayer:exoplayer-ui:r$rootProject.exoPlayerVersion"
+    implementation "com.google.android.exoplayer:extension-mediasession:r$rootProject.exoPlayerVersion"
 
     implementation "com.android.support:support-annotations:$rootProject.supportLibraryVersion"
     implementation "com.android.support:appcompat-v7:$rootProject.supportLibraryVersion"

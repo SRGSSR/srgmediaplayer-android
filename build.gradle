@@ -7,7 +7,7 @@ buildscript {
 		google()
 	}
 	dependencies {
-		classpath 'com.android.tools.build:gradle:3.0.0-beta3'
+		classpath 'com.android.tools.build:gradle:3.0.0-beta6'
 		classpath 'de.felixschulze.gradle:gradle-hockeyapp-plugin:3.2'
 	}
 }
@@ -37,5 +37,5 @@ ext {
     butterknifeVersion = '8.4.0'
     leakCanaryVersion = '1.5.1'
     googlePlayServiceVersion = '11.2.0'
-    exoPlayerVersion = '2.4.1'
+    exoPlayerVersion = '2.5.1'
 }
