@@ -32,7 +32,7 @@ public abstract class EventInstruction extends Instruction implements SRGMediaPl
     public void onMediaPlayerEvent(SRGMediaPlayerController mp, SRGMediaPlayerController.Event event) {
         lastEvent = event;
 
-        fulfilled = checkCondition(event);
+        fulfilled |= checkCondition(event);
         if (fulfilled) {
             SRGMediaPlayerController.unregisterGlobalEventListener(this);
         }

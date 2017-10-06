@@ -106,10 +106,11 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     @Test
     public void testNullUriError() throws Exception {
-        controller.play(null, SRGMediaPlayerController.STREAM_HLS);
-        waitForState(SRGMediaPlayerController.State.PREPARING);
-        waitForState(SRGMediaPlayerController.State.RELEASED);
-        Assert.assertNotNull(lastError);
+        try {
+            controller.play(null, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
+            Assert.fail("Expected illegal argument exception");
+        } catch (IllegalArgumentException ignored) {
+        }
     }
 
     @Test

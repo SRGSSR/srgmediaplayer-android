@@ -575,7 +575,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @return true when media is preparing and in the process of being started
      * @throws SRGMediaPlayerException player exception
      */
+    @SuppressWarnings("ConstantConditions")
     public boolean play(@NonNull Uri uri, Long startPositionMs, @SRGStreamType int streamType, List<Segment> segments) throws SRGMediaPlayerException {
+        if (uri == null) {
+            throw new IllegalArgumentException("Invalid argument: null uri");
+        }
         if (requestAudioFocus()) {
             PrepareUriData data = new PrepareUriData(uri, startPositionMs, streamType, segments);
             sendMessage(MSG_PREPARE_FOR_URI, data);
@@ -1687,7 +1691,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private long getPlaylistStartTime() {
-        long res = 0;
+        long res = UNKNOWN_TIME;
         if (isLive()) {
             res = System.currentTimeMillis();
         }
