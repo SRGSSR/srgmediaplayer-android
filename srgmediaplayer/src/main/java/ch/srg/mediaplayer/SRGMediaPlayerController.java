@@ -133,25 +133,24 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * Disable audio focus handling. Always play audio.
      */
     public static final int AUDIO_FOCUS_FLAG_DISABLED = 0;
-
     /**
      * Mute when losing audio focus.
      */
-    public static final int AUDIO_FOCUS_FLAG_MUTE = 1;
+    public static final int AUDIO_FOCUS_FLAG_MUTE = 1 << 0;
     /**
      * Pause stream when losing audio focus. Do not auto restart unless AUDIO_FOCUS_FLAG_AUTO_RESTART is also set.
      */
-    public static final int AUDIO_FOCUS_FLAG_PAUSE = 2;
+    public static final int AUDIO_FOCUS_FLAG_PAUSE = 1 << 1;
     /**
      * Duck volume when losing audio focus.
      */
-    public static final int AUDIO_FOCUS_FLAG_DUCK = 4;
+    public static final int AUDIO_FOCUS_FLAG_DUCK = 1 << 2;
     /**
      * If set, stream auto restart after gaining audio focus, must be used with AUDIO_FOCUS_FLAG_PAUSE to pause.
      */
-    public static final int AUDIO_FOCUS_FLAG_AUTO_RESTART = 8;
-    private static final int MSG_PREPARE_FOR_URI = 4;
+    public static final int AUDIO_FOCUS_FLAG_AUTO_RESTART = 1 << 3;
 
+    private static final int MSG_PREPARE_FOR_URI = 4;
     private static final int MSG_SET_PLAY_WHEN_READY = 5;
     private static final int MSG_SEEK_TO = 6;
     private static final int MSG_SET_MUTE = 7;
