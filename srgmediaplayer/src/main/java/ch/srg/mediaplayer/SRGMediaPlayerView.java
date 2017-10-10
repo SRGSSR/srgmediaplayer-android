@@ -85,9 +85,13 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
     public enum ScaleMode {
         CENTER_INSIDE,
         TOP_INSIDE,
-        /** Not currently supported. */
+        /**
+         * Not currently supported.
+         */
         CENTER_CROP,
-        /** Not currently supported. */
+        /**
+         * Not currently supported.
+         */
         FIT
     }
 
@@ -190,6 +194,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
     public void setVideoAspectMode(int aspectMode) {
         updateAspectRatio(aspectMode);
     }
+
     public void setVideoRenderingView(View newVideoRenderingView) {
         Log.v(SRGMediaPlayerController.TAG, "setVideoRenderingView");
         if (videoRenderingView == newVideoRenderingView) {

@@ -18,14 +18,12 @@ import org.junit.runner.RunWith;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
 import ch.srg.mediaplayer.utils.MockDataProvider;
-import ch.srg.mediaplayer.utils.MockDelegate;
 import ch.srg.mediaplayer.utils.SRGMediaPlayerControllerQueueListener;
 
 /**
  * Created by npietri on 12.06.15.
- *
+ * <p>
  * These tests work with a mock delegate and data provider, they do not do any playing or url decoding.
  * The goal is to test the player controller, its contract and robustness.
  */
@@ -38,7 +36,6 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     private SRGMediaPlayerControllerQueueListener queue;
 
-    private MockDelegate delegate;
     private SRGMediaPlayerException lastError;
     private boolean mediaCompletedReceived;
     private MockDataProvider provider;
@@ -59,13 +56,6 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
             }
         });
         controller.setDebugMode(true);
-        delegate = new MockDelegate(controller);
-        controller.setPlayerDelegateFactory(new PlayerDelegateFactory() {
-            @Override
-            public PlayerDelegate getDelegateForMediaIdentifier(PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, String mediaIdentifier) {
-                return delegate;
-            }
-        });
         lastError = null;
         mediaCompletedReceived = false;
         controller.registerEventListener(new SRGMediaPlayerController.Listener() {
@@ -111,12 +101,12 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     public void testPlayReady() throws Exception {
         controller.play(MEDIA_IDENTIFIER);
         waitForState(SRGMediaPlayerController.State.PREPARING);
+        waitForState(SRGMediaPlayerController.State.BUFFERING);
         waitForState(SRGMediaPlayerController.State.READY);
     }
 
     @Test
     public void testNullUriError() throws Exception {
-        delegate.setVideoSourceUrl("this is not null");
         controller.play("NULL");
         waitForState(SRGMediaPlayerController.State.PREPARING);
         waitForState(SRGMediaPlayerController.State.RELEASED);
@@ -127,30 +117,22 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     public void testPlay() throws Exception {
         controller.play(MEDIA_IDENTIFIER);
         waitForState(SRGMediaPlayerController.State.PREPARING);
+        waitForState(SRGMediaPlayerController.State.BUFFERING);
         waitForState(SRGMediaPlayerController.State.READY);
         Thread.sleep(100);
-        Log.v("test", "isPlaying: " + delegate.isPlaying());
-        assertTrue("delegate.isPlaying()", delegate.isPlaying());
+        Log.v("test", "isPlaying: " + controller.isPlaying());
+        assertTrue("delegate.isPlaying()", controller.isPlaying());
     }
 
     @Test
     public void testPause() throws Exception {
         controller.play(MEDIA_IDENTIFIER);
         waitForState(SRGMediaPlayerController.State.PREPARING);
+        waitForState(SRGMediaPlayerController.State.BUFFERING);
         waitForState(SRGMediaPlayerController.State.READY);
         controller.pause();
         Thread.sleep(100);
-        assertFalse(delegate.isPlaying());
-    }
-
-    @Test
-    public void delegateErrorPropagation() throws Exception {
-        controller.play(MEDIA_IDENTIFIER);
-        waitForState(SRGMediaPlayerController.State.PREPARING);
-        waitForState(SRGMediaPlayerController.State.READY);
-        String message = "error test (expected!)";
-        delegate.notifyError(new SRGMediaPlayerException(message));
-        waitForError(message);
+        assertFalse(controller.isPlaying());
     }
 
     @Test
@@ -220,7 +202,6 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     private static class CreatePlayRelease implements Runnable {
         SRGMediaPlayerController controller;
-        MockDelegate delegate;
         private Context context;
         private SRGMediaPlayerDataProvider provider;
         private Random r = new Random();
@@ -246,13 +227,6 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
         private void setup() {
             controller = new SRGMediaPlayerController(context, provider, "test");
             controller.setDebugMode(true);
-            delegate = new MockDelegate(controller);
-            controller.setPlayerDelegateFactory(new PlayerDelegateFactory() {
-                @Override
-                public PlayerDelegate getDelegateForMediaIdentifier(PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, String mediaIdentifier) {
-                    return delegate;
-                }
-            });
         }
 
         private void test() throws SRGMediaPlayerException, InterruptedException {

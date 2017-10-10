@@ -8,10 +8,11 @@ import android.support.annotation.Nullable;
  * License information is available from the LICENSE file.
  */
 public interface PlayerViewDelegate {
-
     void attachToController(SRGMediaPlayerController playerController);
 
     void detachFromController(SRGMediaPlayerController srgMediaPlayerController);
 
     void update();
+
+    void setHideCentralButton(boolean loading);
 }

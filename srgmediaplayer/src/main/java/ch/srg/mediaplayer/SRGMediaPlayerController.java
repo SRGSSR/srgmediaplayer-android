@@ -1,7 +1,6 @@
 package ch.srg.mediaplayer;
 
 import android.content.Context;
-import android.content.IntentFilter;
 import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
 import android.net.Uri;
@@ -11,18 +10,57 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Process;
+import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.media.session.MediaSessionCompat;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.Pair;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
 
+import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.DefaultLoadControl;
+import com.google.android.exoplayer2.DefaultRenderersFactory;
+import com.google.android.exoplayer2.ExoPlaybackException;
+import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.PlaybackParameters;
+import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.Timeline;
+import com.google.android.exoplayer2.audio.AudioCapabilities;
+import com.google.android.exoplayer2.audio.AudioCapabilitiesReceiver;
+import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
+import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
+import com.google.android.exoplayer2.source.ExtractorMediaSource;
+import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.TrackGroup;
+import com.google.android.exoplayer2.source.TrackGroupArray;
+import com.google.android.exoplayer2.source.dash.DashMediaSource;
+import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource;
+import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.text.Cue;
+import com.google.android.exoplayer2.text.TextRenderer;
+import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.trackselection.FixedTrackSelection;
+import com.google.android.exoplayer2.trackselection.MappingTrackSelector;
+import com.google.android.exoplayer2.trackselection.TrackSelection;
+import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
+import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
+import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -30,28 +68,39 @@ import java.util.List;
 import java.util.Set;
 import java.util.WeakHashMap;
 
-import ch.srg.mediaplayer.internal.PlayerDelegateFactory;
-import ch.srg.mediaplayer.internal.exoplayer.ExoPlayerDelegate;
-import ch.srg.mediaplayer.service.AudioIntentReceiver;
+import ch.srg.mediaplayer.segment.model.Segment;
 
 /**
  * Handle the playback of media.
  * if used in conjonction with a SRGMediaPlayerView can handle Video playback base on delegation on
  * actual players, like android.MediaPlayer or ExoPlayer
  */
-public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegateListener, Handler.Callback {
+@SuppressWarnings({"unused", "unchecked", "UnusedReturnValue", "WeakerAccess"})
+public class SRGMediaPlayerController implements Handler.Callback,
+        Player.EventListener,
+        SimpleExoPlayer.VideoListener,
+        AudioCapabilitiesReceiver.Listener,
+        TextRenderer.Output {
     public static final String TAG = "SRGMediaPlayer";
-    public static final String NAME = "SRGMediaPlayer";
     public static final String VERSION = BuildConfig.VERSION_NAME;
     public static final int DEFAULT_AUTO_HIDE_DELAY = OverlayController.DEFAULT_AUTO_HIDE_DELAY;
 
     private static final long[] EMPTY_TIME_RANGE = new long[2];
     private static final long UPDATE_PERIOD = 100;
+    private static final long SEGMENT_HYSTERESIS_MS = 5000;
+    private Long userTrackingProgress;
+    private static final String NAME = "SRGMediaPlayer";
+
+    public enum ViewType {
+        TYPE_SURFACEVIEW,
+        TYPE_TEXTUREVIEW
+    }
 
     /**
      * True when audio focus has been requested, does not reflect current focus (LOSS / DUCKED).
      */
     private boolean audioFocusRequested;
+
     @Nullable
     private Long currentSeekTarget;
     private boolean debugMode;
@@ -59,12 +108,14 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private boolean duckedBecauseTransientFocusLoss;
     private boolean pausedBecauseFocusLoss;
     private boolean mutedBecauseFocusLoss;
+    //TODO Use this in exoplayer 2 (or delete)
     private Long qualityOverride;
     private Long qualityDefault;
     private Throwable fatalError;
-    private AudioIntentReceiver becomingNoisyReceiver;
     private long controllerId;
     private static long controllerIdCounter;
+
+    private boolean firstFrameRendered;
 
     public static String getName() {
         return NAME;
@@ -74,7 +125,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         return VERSION;
     }
 
-    public static final long UNKNOWN_TIME = PlayerDelegate.UNKNOWN_TIME;
+    public static final long UNKNOWN_TIME = -1;
+
+    public static final long TIME_LIVE = C.TIME_UNSET;
 
     /**
      * Disable audio focus handling. Always play audio.
@@ -83,21 +136,19 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     /**
      * Mute when losing audio focus.
      */
-    public static final int AUDIO_FOCUS_FLAG_MUTE = 1;
+    public static final int AUDIO_FOCUS_FLAG_MUTE = 1 << 0;
     /**
      * Pause stream when losing audio focus. Do not auto restart unless AUDIO_FOCUS_FLAG_AUTO_RESTART is also set.
      */
-    public static final int AUDIO_FOCUS_FLAG_PAUSE = 2;
+    public static final int AUDIO_FOCUS_FLAG_PAUSE = 1 << 1;
     /**
      * Duck volume when losing audio focus.
      */
-    public static final int AUDIO_FOCUS_FLAG_DUCK = 4;
+    public static final int AUDIO_FOCUS_FLAG_DUCK = 1 << 2;
     /**
      * If set, stream auto restart after gaining audio focus, must be used with AUDIO_FOCUS_FLAG_PAUSE to pause.
      */
-    public static final int AUDIO_FOCUS_FLAG_AUTO_RESTART = 8;
-
-    private static final int MSG_PREPARE_FOR_MEDIA_IDENTIFIER = 3;
+    public static final int AUDIO_FOCUS_FLAG_AUTO_RESTART = 1 << 3;
 
     private static final int MSG_PREPARE_FOR_URI = 4;
     private static final int MSG_SET_PLAY_WHEN_READY = 5;
@@ -105,18 +156,16 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private static final int MSG_SET_MUTE = 7;
     private static final int MSG_APPLY_STATE = 8;
     private static final int MSG_RELEASE = 9;
-    /*package*/ static final int MSG_DELEGATE_EXCEPTION = 12;
+    private static final int MSG_EXCEPTION = 12;
     private static final int MSG_REGISTER_EVENT_LISTENER = 13;
     private static final int MSG_UNREGISTER_EVENT_LISTENER = 14;
-    private static final int MSG_SWAP_PLAYER_DELEGATE = 15;
-    private static final int MSG_PLAYER_DELEGATE_PREPARING = 101;
-    private static final int MSG_PLAYER_DELEGATE_READY = 102;
-    private static final int MSG_PLAYER_DELEGATE_BUFFERING = 103;
-    private static final int MSG_PLAYER_DELEGATE_COMPLETED = 104;
-    private static final int MSG_PLAYER_DELEGATE_PLAY_WHEN_READY_COMMITED = 105;
-    private static final int MSG_PLAYER_DELEGATE_SUBTITLE_CUES = 106;
-    private static final int MSG_PLAYER_DELEGATE_VIDEO_ASPECT_RATIO = 107;
-    private static final int MSG_DATA_PROVIDER_EXCEPTION = 200;
+    private static final int MSG_PLAYER_PREPARING = 101;
+    private static final int MSG_PLAYER_READY = 102;
+    private static final int MSG_PLAYER_BUFFERING = 103;
+    private static final int MSG_PLAYER_COMPLETED = 104;
+    private static final int MSG_PLAYER_PLAY_WHEN_READY_COMMITED = 105;
+    private static final int MSG_PLAYER_SUBTITLE_CUES = 106;
+    private static final int MSG_PLAYER_VIDEO_ASPECT_RATIO = 107;
     private static final int MSG_PERIODIC_UPDATE = 300;
     private static final int MSG_FIRE_EVENT = 400;
 
@@ -140,13 +189,25 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         /**
          * Player released (end state).
          */
-        RELEASED,
+        RELEASED
     }
+
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({SRGMediaPlayerController.STREAM_HLS, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE, SRGMediaPlayerController.STREAM_DASH, SRGMediaPlayerController.STREAM_LOCAL_FILE})
+    public @interface SRGStreamType {
+    }
+
+    public static final int STREAM_HLS = 1;
+    public static final int STREAM_HTTP_PROGRESSIVE = 2;
+    public static final int STREAM_DASH = 3;
+    public static final int STREAM_LOCAL_FILE = 4;
 
     /**
      * Interface definition for a callback to be invoked when the status changes or is periodically emitted.
      */
+    @SuppressWarnings({"WeakerAccess", "unused"})
     public static class Event {
+
         public enum ScreenType {
             NONE,
             DEFAULT,
@@ -173,14 +234,46 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             DID_BIND_TO_PLAYER_VIEW,
             DID_UNBIND_FROM_PLAYER_VIEW,
 
-            SUBTITLE_DID_CHANGE
+            SUBTITLE_DID_CHANGE,
+
+            FIRST_FRAME_RENDERED,
+
+            POSITION_DISCONTINUITY,
+
+            /**
+             * An identified segment (visible or not) is being started, while not being inside a segment before.
+             */
+            SEGMENT_START,
+            /**
+             * An identified segment (visible or not) is being ended, without another one to start.
+             */
+            SEGMENT_END,
+            /**
+             * An identified segment (visible or not) is being started, while being inside another segment before.
+             */
+            SEGMENT_SWITCH,
+            /**
+             * The user has selected a visible segment.
+             */
+            SEGMENT_SELECTED,
+            /**
+             * The playback is being seek to a later value, because it reached a blocked segment.
+             */
+            SEGMENT_SKIPPED_BLOCKED,
+            /**
+             * The user has tried to seek to a blocked segment, seek has been denied.
+             */
+            SEGMENT_USER_SEEK_BLOCKED,
+            /**
+             * The Segment list has changed.
+             */
+            SEGMENT_LIST_CHANGE
         }
 
         public final Type type;
 
-        public final String mediaIdentifier;
+        public final Uri mediaUri;
 
-        public final String mediaUrl;
         public final String mediaSessionId;
         public final long mediaPosition;
         public final long mediaDuration;
@@ -191,34 +284,37 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         public final long mediaPlaylistStartTime;
         public final boolean mediaLive;
         public final ScreenType screenType;
-
         public final State state;
+
+        public Segment segment;
+        public String blockingReason;
+        public Event.Type segmentEventType;
+
         public final SRGMediaPlayerException exception;
 
         private static Event buildTestEvent(SRGMediaPlayerController controller) {
-            return new Event(Type.EXTERNAL_EVENT, controller, null);
+            return new Event(controller, Type.EXTERNAL_EVENT, null);
         }
 
         private static Event buildEvent(SRGMediaPlayerController controller, Type eventType) {
-            return new Event(eventType, controller, null);
+            return new Event(controller, eventType, null);
         }
 
         private static Event buildErrorEvent(SRGMediaPlayerController controller, boolean fatalError, SRGMediaPlayerException exception) {
-            return new Event(fatalError ? Type.FATAL_ERROR : Type.TRANSIENT_ERROR, controller, exception);
+            return new Event(controller, fatalError ? Type.FATAL_ERROR : Type.TRANSIENT_ERROR, exception);
         }
 
         private static Event buildStateEvent(SRGMediaPlayerController controller) {
-            return new Event(Type.STATE_CHANGE, controller, null);
+            return new Event(controller, Type.STATE_CHANGE, null);
         }
 
-        private Event(Type eventType, SRGMediaPlayerController controller, SRGMediaPlayerException eventException) {
+        private Event(SRGMediaPlayerController controller, Type eventType, SRGMediaPlayerException eventException, Segment segment, String blockingReason) {
             type = eventType;
             tag = controller.tag;
             state = controller.state;
             exception = eventException;
-            mediaIdentifier = controller.currentMediaIdentifier;
             mediaSessionId = controller.getMediaSessionId();
-            mediaUrl = controller.currentMediaUrl;
+            mediaUri = controller.currentMediaUri;
             mediaPosition = controller.getMediaPosition();
             mediaDuration = controller.getMediaDuration();
             mediaPlaying = controller.isPlaying();
@@ -227,10 +323,20 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             mediaPlaylistStartTime = controller.getPlaylistStartTime();
             videoViewDimension = controller.mediaPlayerView != null ? controller.mediaPlayerView.getVideoRenderingViewSizeString() : SRGMediaPlayerView.UNKNOWN_DIMENSION;
             screenType = controller.getScreenType();
+            this.segment = segment;
+            this.blockingReason = blockingReason;
+        }
+
+        private Event(SRGMediaPlayerController controller, Type eventType, SRGMediaPlayerException eventException, Segment segment) {
+            this(controller, eventType, eventException, segment, null);
+        }
+
+        private Event(SRGMediaPlayerController controller, Type eventType, SRGMediaPlayerException eventException) {
+            this(controller, eventType, eventException, null, null);
         }
 
         protected Event(SRGMediaPlayerController controller, SRGMediaPlayerException eventException) {
-            this(Type.EXTERNAL_EVENT, controller, eventException);
+            this(controller, Type.EXTERNAL_EVENT, eventException);
         }
 
         public boolean hasException() {
@@ -241,8 +347,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         public String toString() {
             return "Event{" +
                     "type=" + type +
-                    ", mediaIdentifier='" + mediaIdentifier + '\'' +
-                    ", mediaUrl='" + mediaUrl + '\'' +
+                    ", mediaUrl='" + mediaUri + '\'' +
                     ", mediaSessionId='" + mediaSessionId + '\'' +
                     ", mediaPosition=" + mediaPosition +
                     ", mediaDuration=" + mediaDuration +
@@ -255,6 +360,9 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     ", screenType=" + screenType +
                     ", state=" + state +
                     ", exception=" + exception +
+                    ", segment=" + segment +
+                    ", blockingReason='" + blockingReason + '\'' +
+                    ", segmentEventType=" + segmentEventType +
                     '}';
         }
     }
@@ -263,10 +371,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         return Event.buildTestEvent(this);
     }
 
-
     private Event.ScreenType getScreenType() {
-        PlayerDelegate delegate = this.currentMediaPlayerDelegate;
-        return delegate == null ? Event.ScreenType.NONE : delegate.getScreenType();
+        return Event.ScreenType.DEFAULT;
     }
 
     public interface Listener {
@@ -278,21 +384,20 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
          * @param event corresponding event
          */
         void onMediaPlayerEvent(SRGMediaPlayerController mp, Event event);
+
     }
 
     private Context context;
 
     private Handler mainHandler;
-    private HandlerThread commandHandlerThread;
 
     private Handler commandHandler;
+    private HandlerThread commandHandlerThread;
     private final AudioManager audioManager;
-
-    private SRGMediaPlayerDataProvider mediaPlayerDataProvider;
 
     private State state = State.IDLE;
 
-    private boolean playWhenReady = true;
+    private Boolean playWhenReady = true;
 
     private Long seekToWhenReady = null;
 
@@ -300,20 +405,33 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private boolean externalWakeLock = false;
 
     private boolean muted = false;
-    private PlayerDelegateFactory playerDelegateFactory;
 
+    private final SimpleExoPlayer exoPlayer;
+    private final AudioCapabilitiesReceiver audioCapabilitiesReceiver;
+
+    private DefaultTrackSelector trackSelector;
+    private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
+    private AudioCapabilities audioCapabilities;
+    private EventLogger eventLogger;
+    private ViewType viewType;
+    private View renderingView;
+    private Integer playbackState;
+    // TODO Use this in MediaSessionManager
+    private MediaSessionCompat mediaSession;
+    private List<Segment> segments = new ArrayList<>();
+
+    private Segment segmentBeingSkipped;
     @Nullable
-    private PlayerDelegate currentMediaPlayerDelegate;
+    private Segment currentSegment = null;
+    private boolean userChangingProgress;
     @Nullable
     private SRGMediaPlayerView mediaPlayerView;
 
     private OverlayController overlayController;
 
-    private String currentMediaIdentifier = null;
+    private Uri currentMediaUri = null;
 
-    private String currentMediaUrl = null;
     private String tag;
-
     //Main player property to handle multiple player view
     private boolean mainPlayer = true;
 
@@ -330,30 +448,44 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * Create a new SRGMediaPlayerController with the current context, a mediaPlayerDataProvider, and a TAG
      * if you need to retrieve a controller
      *
-     * @param context
-     * @param mediaPlayerDataProvider
-     * @param tag
+     * @param context context
+     * @param tag     tag to identify this controller
      */
-    public SRGMediaPlayerController(Context context, SRGMediaPlayerDataProvider mediaPlayerDataProvider, String tag) {
+    public SRGMediaPlayerController(Context context, String tag) {
         this.context = context;
-        this.mediaPlayerDataProvider = mediaPlayerDataProvider;
         this.mainHandler = new Handler(Looper.getMainLooper(), this);
         this.tag = tag;
 
         overlayController = new OverlayController(this);
         registerEventListener(overlayController);
 
-        playerDelegateFactory = new PlayerDelegateFactory() {
-            @Override
-            public PlayerDelegate getDelegateForMediaIdentifier(PlayerDelegate.OnPlayerDelegateListener srgMediaPlayer, String mediaIdentifier) {
-                return new ExoPlayerDelegate(SRGMediaPlayerController.this.context,
-                        SRGMediaPlayerController.this);
-            }
-        };
-
         audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
 
         controllerId = ++controllerIdCounter;
+
+        audioCapabilitiesReceiver = new AudioCapabilitiesReceiver(this.context, this);
+        audioCapabilitiesReceiver.register();
+
+        TrackSelection.Factory videoTrackSelectionFactory =
+                new AdaptiveTrackSelection.Factory(BANDWIDTH_METER);
+
+        trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
+        eventLogger = new EventLogger(trackSelector);
+        DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(this.context, null, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
+
+        exoPlayer = ExoPlayerFactory.newSimpleInstance(renderersFactory, trackSelector, new DefaultLoadControl());
+        exoPlayer.addListener(this);
+        exoPlayer.setVideoListener(this);
+        exoPlayer.setTextOutput(this);
+        exoPlayer.setAudioDebugListener(eventLogger);
+        exoPlayer.setVideoDebugListener(eventLogger);
+        exoPlayer.setMetadataOutput(eventLogger);
+
+        mediaSession = new MediaSessionCompat(this.context, "SRGMediaPlayerController");
+
+        MediaSessionConnector mediaSessionConnector =
+                new MediaSessionConnector(mediaSession);
+        mediaSessionConnector.setPlayer(exoPlayer, null);
     }
 
     private synchronized void startBackgroundThreadIfNecessary() {
@@ -392,41 +524,61 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
     }
 
-    @Override
     public Handler getMainHandler() {
         return mainHandler;
     }
 
     /**
-     * Start a video from beginning
-     *
-     * @see #play(String, Long)
-     */
-    public boolean play(String mediaIdentifier) throws SRGMediaPlayerException {
-        return play(mediaIdentifier, null);
-    }
-
-    /**
-     * Try to play a video with a mediaIdentifier, you can't replay the current playing video.
+     * Try to play a video with a url, you can't replay the current playing video.
      * will throw an exception if you haven't setup a data provider or if the media is not present
      * in the provider.
      * <p/>
      * The corresponding events are triggered when the video loading start and is ready.
      *
-     * @param mediaIdentifier identifier
-     * @param startPositionMs start position in milliseconds or null to prevent seek
+     * @param uri        uri of the media
+     * @param streamType {@link SRGMediaPlayerController#STREAM_DASH}, {@link SRGMediaPlayerController#STREAM_HLS}, {@link SRGMediaPlayerController#STREAM_HTTP_PROGRESSIVE} or {@link SRGMediaPlayerController#STREAM_LOCAL_FILE}
      * @return true when media is preparing and in the process of being started
-     * @throws SRGMediaPlayerException
+     * @throws SRGMediaPlayerException player exception
      */
-    public boolean play(String mediaIdentifier, Long startPositionMs) throws SRGMediaPlayerException {
-        if (mediaPlayerDataProvider == null) {
-            throw new IllegalStateException("No data provider set before play");
-        }
+    public boolean play(@NonNull Uri uri, int streamType) throws SRGMediaPlayerException {
+        return play(uri, null, streamType);
+    }
+
+    /**
+     * Try to play a video with a url, you can't replay the current playing video.
+     * will throw an exception if you haven't setup a data provider or if the media is not present
+     * in the provider.
+     * <p/>
+     * The corresponding events are triggered when the video loading start and is ready.
+     *
+     * @param uri             uri of the media
+     * @param startPositionMs start position in milliseconds or null to prevent seek
+     * @param streamType      {@link SRGMediaPlayerController#STREAM_DASH}, {@link SRGMediaPlayerController#STREAM_HLS}, {@link SRGMediaPlayerController#STREAM_HTTP_PROGRESSIVE} or {@link SRGMediaPlayerController#STREAM_LOCAL_FILE}
+     * @return true when media is preparing and in the process of being started
+     * @throws SRGMediaPlayerException player exception
+     */
+    public boolean play(@NonNull Uri uri, Long startPositionMs, @SRGStreamType int streamType) throws SRGMediaPlayerException {
+        return play(uri, startPositionMs, streamType, null);
+    }
+
+    /**
+     * Try to play a video with a url and corresponding segments, you can't replay the current playing video.
+     * will throw an exception if you haven't setup a data provider or if the media is not present
+     * in the provider.
+     * <p/>
+     * The corresponding events are triggered when the video loading start and is ready.
+     *
+     * @param uri             uri of the media
+     * @param startPositionMs start position in milliseconds or null to prevent seek
+     * @param streamType      {@link SRGMediaPlayerController#STREAM_DASH}, {@link SRGMediaPlayerController#STREAM_HLS}, {@link SRGMediaPlayerController#STREAM_HTTP_PROGRESSIVE} or {@link SRGMediaPlayerController#STREAM_LOCAL_FILE}
+     * @return true when media is preparing and in the process of being started
+     * @throws SRGMediaPlayerException player exception
+     */
+    public boolean play(@NonNull Uri uri, Long startPositionMs, @SRGStreamType int streamType, List<Segment> segments) throws SRGMediaPlayerException {
         if (requestAudioFocus()) {
-            if (!TextUtils.equals(currentMediaIdentifier, mediaIdentifier)) {
-                sendMessage(MSG_PREPARE_FOR_MEDIA_IDENTIFIER, mediaIdentifier);
-                start();
-            }
+            PrepareUriData data = new PrepareUriData(uri, startPositionMs, streamType, segments);
+            sendMessage(MSG_PREPARE_FOR_URI, data);
+            start();
             if (startPositionMs != null) {
                 seekTo(startPositionMs);
             }
@@ -443,23 +595,22 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     class PrepareUriData {
-        Uri uri;
-        PlayerDelegate playerDelegate;
-        Long position;
-        String mediaIdentifier;
-        int streamType;
 
-        public PrepareUriData(Uri uri, PlayerDelegate playerDelegate, String mediaIdentifier, Long position, int streamType) {
+        Uri uri;
+        Long position;
+        int streamType;
+        private List<Segment> segments;
+
+        PrepareUriData(Uri uri, Long position, int streamType, List<Segment> segments) {
             this.uri = uri;
-            this.playerDelegate = playerDelegate;
-            this.mediaIdentifier = mediaIdentifier;
             this.position = position;
             this.streamType = streamType;
+            this.segments = segments;
         }
 
         @Override
         public String toString() {
-            return uri + "/" + playerDelegate;
+            return uri.toString();
         }
     }
 
@@ -496,8 +647,13 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * @throws IllegalStateException player error
      */
     public void seekTo(long positionMs) throws IllegalStateException {
-        currentSeekTarget = positionMs;
-        sendMessage(MSG_SEEK_TO, positionMs);
+        Segment blockedSegment = getBlockedSegment(positionMs);
+        if (blockedSegment != null) {
+            seekEndOfBlockedSegment(blockedSegment);
+        } else {
+            currentSeekTarget = positionMs;
+            sendMessage(MSG_SEEK_TO, positionMs);
+        }
     }
 
     public void mute() {
@@ -512,7 +668,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         sendMessage(what, null);
     }
 
-    /*package*/ void sendMessage(int what, Object param) {
+    private void sendMessage(int what, Object param) {
         logV("Sending message: " + what + " " + String.valueOf(param));
         if (!isReleased()) {
             startBackgroundThreadIfNecessary();
@@ -531,7 +687,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * Check if the player is released, this method can help you to determine if you need to
      * create a new player instance.
      *
-     * @return
+     * @return true when player is released and cannot be reused
      */
     public boolean isReleased() {
         return state == State.RELEASED;
@@ -547,66 +703,45 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             logV("handleMessage: " + msg);
         }
         switch (msg.what) {
-            case MSG_PREPARE_FOR_MEDIA_IDENTIFIER: {
-                String mediaIdentifier = (String) msg.obj;
-                releaseDelegateInternal();
-                prepareForIdentifierInternal(mediaIdentifier, playerDelegateFactory.getDelegateForMediaIdentifier(this, mediaIdentifier));
-                seekToWhenReady = null;
-                return true;
-            }
-            case MSG_PREPARE_FOR_URI: {
+            case MSG_PREPARE_FOR_URI:
+                setStateInternal(State.PREPARING);
                 PrepareUriData data = (PrepareUriData) msg.obj;
                 Uri uri = data.uri;
-                PlayerDelegate playerDelegate = data.playerDelegate;
                 if (seekToWhenReady == null) {
-                    // TODO
-                    // Here we have an issue: we handle restore to position only when the dataprovider
-                    // does not give us a position to seek to (segment mark in in IL case).
-                    // When the dataprovider does give a position to seek to, we don't know which
-                    // position to take as the seekto could have occurred before or
-                    // after the seek. And we don't know the segment range either...
                     seekToWhenReady = data.position;
                 }
-
-                currentMediaUrl = String.valueOf(uri);
-                currentMediaIdentifier = data.mediaIdentifier;
+                this.segments.clear();
+                currentSegment = null;
+                if (data.segments != null) {
+                    segments.addAll(data.segments);
+                }
+                postEventInternal(Event.Type.SEGMENT_LIST_CHANGE);
                 postEventInternal(Event.Type.MEDIA_READY_TO_PLAY);
                 try {
-                    if (playerDelegate == null) {
-                        createPlayerDelegateInternal(currentMediaIdentifier);
-                    } else {
-                        currentMediaPlayerDelegate = playerDelegate;
+                    if (mediaPlayerView != null) {
+                        internalUpdateMediaPlayerViewBound();
                     }
-                    if (currentMediaPlayerDelegate != null) {
-                        if (mediaPlayerView != null) {
-                            internalUpdateMediaPlayerViewBound();
+                    exoPlayer.setPlayWhenReady(playWhenReady);
+                    if (seekToWhenReady != null) {
+                        try {
+                            exoPlayer.seekTo(seekToWhenReady);
+                            seekToWhenReady = null;
+                        } catch (IllegalStateException ignored) {
                         }
-                        currentMediaPlayerDelegate.playIfReady(playWhenReady);
-                        if (seekToWhenReady != null) {
-                            try {
-                                currentMediaPlayerDelegate.seekTo(seekToWhenReady);
-                                seekToWhenReady = null;
-                            } catch (IllegalStateException ignored) {
-                            }
-                        }
-                        currentMediaPlayerDelegate.prepare(uri, data.streamType);
-                    } else {
-                        handleFatalExceptionInternal(new SRGMediaPlayerException("No delegate for this media identifier"));
                     }
+                    prepareInternal(uri, data.streamType);
                 } catch (SRGMediaPlayerException e) {
                     logE("onUriLoaded", e);
                     handleFatalExceptionInternal(e);
                 }
                 return true;
-            }
-            case MSG_SET_PLAY_WHEN_READY: {
-                this.playWhenReady = (Boolean) msg.obj;
-                if (currentMediaPlayerDelegate != null) {
-                    currentMediaPlayerDelegate.playIfReady(playWhenReady);
-                }
+
+            case MSG_SET_PLAY_WHEN_READY:
+                boolean playWhenReady = (Boolean) msg.obj;
+                exoPlayer.setPlayWhenReady(playWhenReady);
                 return true;
-            }
-            case MSG_SEEK_TO: {
+
+            case MSG_SEEK_TO:
                 Long positionMs = (Long) msg.obj;
                 if (positionMs == null) {
                     throw new IllegalArgumentException("Missing position for seek to");
@@ -614,93 +749,74 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     if (state != State.PREPARING) {
                         postEventInternal(Event.Type.WILL_SEEK);
                         seekToWhenReady = positionMs;
-                        if (currentMediaPlayerDelegate != null) {
-                            try {
-                                currentMediaPlayerDelegate.seekTo(seekToWhenReady);
-                                seekToWhenReady = null;
-                            } catch (IllegalStateException ignored) {
-                            }
+                        try {
+                            exoPlayer.seekTo(seekToWhenReady);
+                            seekToWhenReady = null;
+                        } catch (IllegalStateException ignored) {
                         }
                     } else {
                         seekToWhenReady = positionMs;
                     }
                 }
                 return true;
-            }
-            case MSG_SET_MUTE: {
+
+            case MSG_SET_MUTE:
                 if (this.muted != (Boolean) msg.obj) {
                     this.muted = (Boolean) msg.obj;
-                    if (currentMediaPlayerDelegate != null) {
-                        currentMediaPlayerDelegate.setMuted(muted);
-                    }
+                    muteInternal(muted);
                 }
                 return true;
-            }
-            case MSG_APPLY_STATE: {
+
+            case MSG_APPLY_STATE:
                 applyStateInternal();
                 return true;
-            }
-            case MSG_RELEASE: {
+
+            case MSG_RELEASE:
                 releaseInternal();
                 return true;
-            }
-            case MSG_DELEGATE_EXCEPTION:
-            case MSG_DATA_PROVIDER_EXCEPTION: {
+
+            case MSG_EXCEPTION:
                 handleFatalExceptionInternal((SRGMediaPlayerException) msg.obj);
                 return true;
-            }
-            case MSG_REGISTER_EVENT_LISTENER: {
-                Listener listener = ((WeakReference<Listener>) msg.obj).get();
-                if (listener != null) {
-                    eventListeners.add(listener);
+
+            case MSG_REGISTER_EVENT_LISTENER:
+                Listener listenerToRegister = ((WeakReference<Listener>) msg.obj).get();
+                if (listenerToRegister != null) {
+                    eventListeners.add(listenerToRegister);
                 }
                 return true;
-            }
-            case MSG_UNREGISTER_EVENT_LISTENER: {
-                Listener listener = ((WeakReference<Listener>) msg.obj).get();
-                if (listener != null) {
-                    eventListeners.remove(listener);
+
+            case MSG_UNREGISTER_EVENT_LISTENER:
+                Listener listenerToUnregister = ((WeakReference<Listener>) msg.obj).get();
+                if (listenerToUnregister != null) {
+                    eventListeners.remove(listenerToUnregister);
                 }
                 return true;
-            }
-            case MSG_SWAP_PLAYER_DELEGATE: {
-                PlayerDelegate oldDelegate = currentMediaPlayerDelegate;
-                PlayerDelegate newDelegate = (PlayerDelegate) msg.obj;
-                if (oldDelegate != null) {
-                    currentMediaPlayerDelegate = null;
-                    if (seekToWhenReady == null) {
-                        seekToWhenReady = oldDelegate.getCurrentPosition();
-                    }
-                    oldDelegate.unbindRenderingView();
-                    try {
-                        oldDelegate.release();
-                    } catch (IllegalStateException e) {
-                        Log.e(TAG, "Illegal state exception when releasing delegate");
-                    }
-                    prepareForIdentifierInternal(currentMediaIdentifier, newDelegate);
-                }
-                return true;
-            }
-            case MSG_PLAYER_DELEGATE_PREPARING:
+
+            case MSG_PLAYER_PREPARING:
                 setStateInternal(State.PREPARING);
                 return true;
-            case MSG_PLAYER_DELEGATE_READY:
-                startBecomingNoisyReceiver();
+
+            case MSG_PLAYER_READY:
                 setStateInternal(State.READY);
                 applyStateInternal();
                 return true;
-            case MSG_PLAYER_DELEGATE_BUFFERING:
+
+            case MSG_PLAYER_BUFFERING:
                 setStateInternal(State.BUFFERING);
                 return true;
-            case MSG_PLAYER_DELEGATE_COMPLETED:
+
+            case MSG_PLAYER_COMPLETED:
                 setStateInternal(State.READY);
                 postEventInternal(Event.Type.MEDIA_COMPLETED);
                 releaseInternal();
                 return true;
-            case MSG_PLAYER_DELEGATE_PLAY_WHEN_READY_COMMITED:
+
+            case MSG_PLAYER_PLAY_WHEN_READY_COMMITED:
                 postEventInternal(Event.Type.PLAYING_STATE_CHANGE);
                 return true;
-            case MSG_PLAYER_DELEGATE_SUBTITLE_CUES:
+
+            case MSG_PLAYER_SUBTITLE_CUES:
                 final List<Cue> cueList = (List<Cue>) msg.obj;
                 mainHandler.post(new Runnable() {
                     @Override
@@ -711,7 +827,8 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     }
                 });
                 return true;
-            case MSG_PLAYER_DELEGATE_VIDEO_ASPECT_RATIO:
+
+            case MSG_PLAYER_VIDEO_ASPECT_RATIO:
                 final float aspectRatio = (Float) msg.obj;
                 mainHandler.post(new Runnable() {
                     @Override
@@ -722,14 +839,17 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     }
                 });
                 return true;
+
             case MSG_PERIODIC_UPDATE:
-                periodicUpdateInteral();
+                periodicUpdateInternal();
                 schedulePeriodUpdate();
                 return true;
+
             case MSG_FIRE_EVENT:
                 postEventInternal((Event) msg.obj);
                 return true;
-            default: {
+
+            default:
                 String message = "Unknown message: " + msg.what + " / " + msg.obj;
                 if (isDebugMode()) {
                     throw new IllegalArgumentException(message);
@@ -737,49 +857,212 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     logE(message);
                     return false;
                 }
-            }
+
         }
     }
 
-    private void startBecomingNoisyReceiver() {
-        becomingNoisyReceiver = new AudioIntentReceiver(this);
-        context.registerReceiver(becomingNoisyReceiver, new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY));
+    private void prepareInternal(Uri videoUri, int streamType) throws SRGMediaPlayerException {
+        Log.v(TAG, "Preparing " + videoUri + " (" + streamType + ")");
+        try {
+            if (this.currentMediaUri != null && this.currentMediaUri.equals(videoUri)) {
+                return;
+            }
+            sendMessage(MSG_PLAYER_PREPARING);
+            this.currentMediaUri = videoUri;
+
+            String userAgent = "curl/Letterbox_2.0"; // temporarily using curl/ user agent to force subtitles with Akamai beta
+
+            DefaultHttpDataSourceFactory httpDataSourceFactory = new DefaultHttpDataSourceFactory(
+                    userAgent,
+                    BANDWIDTH_METER,
+                    DefaultHttpDataSource.DEFAULT_CONNECT_TIMEOUT_MILLIS,
+                    DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS,
+                    true);
+
+            DefaultDataSourceFactory dataSourceFactory = new DefaultDataSourceFactory(context, BANDWIDTH_METER, httpDataSourceFactory);
+
+            MediaSource mediaSource;
+
+            switch (streamType) {
+                case STREAM_DASH:
+                    mediaSource = new DashMediaSource(videoUri, dataSourceFactory,
+                            new DefaultDashChunkSource.Factory(dataSourceFactory), mainHandler, eventLogger);
+                    break;
+                case STREAM_HLS:
+                    mediaSource = new HlsMediaSource(videoUri, dataSourceFactory, mainHandler, eventLogger);
+                    break;
+                case STREAM_HTTP_PROGRESSIVE:
+                    mediaSource = new ExtractorMediaSource(videoUri, dataSourceFactory, new DefaultExtractorsFactory(),
+                            mainHandler, eventLogger);
+                    break;
+                case STREAM_LOCAL_FILE:
+                    FileDataSourceFactory fileDataSourceFactory = new FileDataSourceFactory();
+                    mediaSource = new ExtractorMediaSource(videoUri, fileDataSourceFactory, new DefaultExtractorsFactory(),
+                            mainHandler, eventLogger);
+                    break;
+                default:
+                    throw new IllegalStateException("Invalid source type: " + streamType);
+            }
+
+            exoPlayer.prepare(mediaSource);
+
+        } catch (Exception e) {
+            release();
+            throw new SRGMediaPlayerException(e);
+        }
     }
 
-    private void periodicUpdateInteral() {
-        if (currentMediaPlayerDelegate == null) {
-            currentSeekTarget = null;
-        } else {
-            if (currentSeekTarget != null) {
-                long currentPosition = currentMediaPlayerDelegate.getCurrentPosition();
-                if (currentPosition != UNKNOWN_TIME
-                        && currentPosition != currentSeekTarget
-                        || !playWhenReady) {
-                    currentSeekTarget = null;
-                    postEventInternal(Event.Type.DID_SEEK);
+    private void muteInternal(boolean muted) {
+        exoPlayer.setVolume(muted ? 0f : 1f);
+    }
+
+    private void periodicUpdateInternal() {
+        long currentPosition = exoPlayer.getCurrentPosition();
+        if (currentSeekTarget != null) {
+            if (currentPosition != UNKNOWN_TIME
+                    && currentPosition != currentSeekTarget
+                    || !playWhenReady) {
+                currentSeekTarget = null;
+                postEventInternal(Event.Type.DID_SEEK);
+            }
+        }
+        if (!segments.isEmpty() && !userChangingProgress) {
+            checkSegmentChange(currentPosition);
+        }
+    }
+
+    private void checkSegmentChange(long mediaPosition) {
+        if (isReleased() && mediaPosition != UNKNOWN_TIME) {
+            return;
+        }
+        if (!isSeekPending() && mediaPosition != -1) {
+            Segment blockedSegment = getBlockedSegment(mediaPosition);
+            Segment newSegment = getSegment(mediaPosition);
+
+            if (blockedSegment != null) {
+                if (blockedSegment != segmentBeingSkipped) {
+                    Log.v("SegmentTest", "Skipping over " + blockedSegment.getIdentifier());
+                    segmentBeingSkipped = blockedSegment;
+                    postBlockedSegmentEvent(Event.Type.SEGMENT_SKIPPED_BLOCKED, blockedSegment);
+                    seekEndOfBlockedSegment(blockedSegment);
+                }
+            } else {
+                segmentBeingSkipped = null;
+                if (currentSegment != newSegment) {
+                    if (currentSegment == null) {
+                        postSegmentEvent(Event.Type.SEGMENT_START, newSegment);
+                    } else if (newSegment == null) {
+                        postSegmentEvent(Event.Type.SEGMENT_END, null);
+                    } else {
+                        postSegmentEvent(Event.Type.SEGMENT_SWITCH, newSegment);
+                    }
+                    currentSegment = newSegment;
                 }
             }
         }
     }
 
-    public void schedulePeriodUpdate() {
+    @NonNull
+    public List<Segment> getSegments() {
+        return segments;
+    }
+
+    private void seekEndOfBlockedSegment(Segment segment) {
+        Long mediaPosition = segment.getMarkOut();
+        Segment blockedSegment = getBlockedSegment(mediaPosition);
+        if (blockedSegment != null) {
+            postBlockedSegmentEvent(Event.Type.SEGMENT_SKIPPED_BLOCKED, blockedSegment);
+            long markOut = blockedSegment.getMarkOut();
+            if (markOut > mediaPosition) {
+                seekEndOfBlockedSegment(blockedSegment);
+            } else {
+                seekTo(mediaPosition);
+            }
+        } else {
+            seekTo(mediaPosition);
+        }
+    }
+
+    @Nullable
+    public Segment getSegment(long time) {
+        if (currentSegment != null && segments.contains(currentSegment)
+                && time >= currentSegment.getMarkIn() - SEGMENT_HYSTERESIS_MS
+                && time < currentSegment.getMarkOut()) {
+            return currentSegment;
+        }
+        for (Segment segment : segments) {
+            if (time >= segment.getMarkIn() && time < segment.getMarkOut()) {
+                return segment;
+            }
+        }
+        return null;
+    }
+
+    @Nullable
+    private Segment getBlockedSegment(long time) {
+        for (Segment segment : segments) {
+            if (!TextUtils.isEmpty(segment.getBlockingReason())) {
+                if (time >= segment.getMarkIn() && time < segment.getMarkOut()) {
+                    return segment;
+                }
+            }
+        }
+        return null;
+    }
+
+    public void setSegmentList(List<Segment> segmentList) {
+        segments.clear();
+        if (segmentList != null) {
+            segments.addAll(segmentList);
+        }
+        checkSegmentChange(getMediaPosition());
+        broadcastEvent(Event.Type.SEGMENT_LIST_CHANGE);
+    }
+
+    private void postSegmentEvent(Event.Type type, Segment segment) {
+        broadcastEvent(new Event(this, type, null, segment));
+    }
+
+    private void postBlockedSegmentEvent(Event.Type type, Segment segment) {
+        broadcastEvent(new Event(this, type, null, segment, segment.getBlockingReason()));
+    }
+
+    public void sendUserTrackedProgress(long time) {
+        userTrackingProgress = time;
+        userChangingProgress = true;
+        overlayController.setForceControls(true);
+    }
+
+    public void stopUserTrackingProgress() {
+        userTrackingProgress = null;
+        userChangingProgress = false;
+        overlayController.setForceControls(null);
+    }
+
+    public boolean isUserChangingProgress() {
+        return userChangingProgress;
+    }
+
+    public Long getUserTrackingProgress() {
+        return userTrackingProgress;
+    }
+
+    private void schedulePeriodUpdate() {
         commandHandler.removeMessages(MSG_PERIODIC_UPDATE);
         commandHandler.sendMessageDelayed(
                 commandHandler.obtainMessage(MSG_PERIODIC_UPDATE), UPDATE_PERIOD);
     }
 
     private void applyStateInternal() {
-        if (currentMediaPlayerDelegate != null) {
-            currentMediaPlayerDelegate.setQualityOverride(qualityOverride);
-            currentMediaPlayerDelegate.setQualityDefault(qualityDefault);
-            currentMediaPlayerDelegate.setMuted(muted);
-            currentMediaPlayerDelegate.playIfReady(playWhenReady);
+        if (exoPlayer != null) {
+            muteInternal(muted);
+            exoPlayer.setPlayWhenReady(playWhenReady);
             Long seekTarget = this.seekToWhenReady;
             if (seekTarget != null) {
                 postEventInternal(Event.Type.WILL_SEEK);
                 Log.v(TAG, "Apply state / Seeking to " + seekTarget);
                 try {
-                    currentMediaPlayerDelegate.seekTo(seekTarget);
+                    exoPlayer.seekTo(seekTarget);
                     currentSeekTarget = seekTarget;
                     this.seekToWhenReady = null;
                 } catch (IllegalStateException ignored) {
@@ -789,35 +1072,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 schedulePeriodUpdate();
             }
         }
-    }
-
-    private void prepareForIdentifierInternal(String mediaIdentifier, final PlayerDelegate playerDelegate) {
-        setStateInternal(State.PREPARING);
-        if (mediaIdentifier == null) {
-            throw new IllegalArgumentException("Media identifier is null in prepare for identifier");
-        }
-        currentMediaIdentifier = mediaIdentifier;
-        currentMediaUrl = null;
-
-        mediaPlayerDataProvider.getUri(mediaIdentifier, SRGMediaPlayerDataProvider.PLAYER_TYPE_EXOPLAYER, new SRGMediaPlayerDataProvider.GetUriCallback() {
-            @Override
-            public void onUriLoaded(String mediaIdentifier, Uri uri, String realMediaIdentifier, Long position, int streamType) {
-                if (realMediaIdentifier == null) {
-                    throw new IllegalArgumentException("realMediaIdentifier may not be null");
-                }
-                sendMessage(MSG_PREPARE_FOR_URI, new PrepareUriData(uri, playerDelegate, realMediaIdentifier, position, streamType));
-            }
-
-            @Override
-            public void onUriLoadFailed(String mediaIdentifier, SRGMediaPlayerException exception) {
-                sendMessage(MSG_DATA_PROVIDER_EXCEPTION, exception);
-            }
-        });
-    }
-
-    private void createPlayerDelegateInternal(String mediaIdentifier) {
-        releaseDelegateInternal();
-        currentMediaPlayerDelegate = playerDelegateFactory.getDelegateForMediaIdentifier(this, mediaIdentifier);
     }
 
     private void manageKeepScreenOnInternal() {
@@ -857,88 +1111,22 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         if (debugMode) {
             assertCommandHandlerThread();
         }
-        if (currentMediaPlayerDelegate != null) {
-            postEventInternal(Event.Type.MEDIA_STOPPED);
-            currentMediaPlayerDelegate.release();
-            currentMediaPlayerDelegate = null;
-            currentMediaIdentifier = null;
-            currentMediaUrl = null;
-            seekToWhenReady = null;
-        }
+        postEventInternal(Event.Type.MEDIA_STOPPED);
+        exoPlayer.stop();
+        exoPlayer.release();
+        currentMediaUri = null;
+        seekToWhenReady = null;
+        audioCapabilitiesReceiver.unregister();
     }
 
     public State getState() {
         return state;
     }
 
-    /*package*/ void handleFatalExceptionInternal(SRGMediaPlayerException e) {
+    private void handleFatalExceptionInternal(SRGMediaPlayerException e) {
         logE("exception occurred", e);
-        postErrorEventInternal(true, e);
+        postFatalErrorInternal(e);
         releaseInternal();
-    }
-
-    @Override
-    public void onPlayerDelegatePreparing(PlayerDelegate delegate) {
-        if (delegate == currentMediaPlayerDelegate) {
-            sendMessage(MSG_PLAYER_DELEGATE_PREPARING);
-        }
-    }
-
-    @Override
-    public void onPlayerDelegateReady(PlayerDelegate delegate) {
-        manageKeepScreenOnInternal();
-        if (delegate == currentMediaPlayerDelegate) {
-            sendMessage(MSG_PLAYER_DELEGATE_READY);
-        }
-    }
-
-    @Override
-    public void onPlayerDelegatePlayWhenReadyCommited(PlayerDelegate delegate) {
-        manageKeepScreenOnInternal();
-        if (delegate == currentMediaPlayerDelegate) {
-            sendMessage(MSG_PLAYER_DELEGATE_PLAY_WHEN_READY_COMMITED);
-        }
-    }
-
-    @Override
-    public void onPlayerDelegateBuffering(PlayerDelegate delegate) {
-        if (delegate == currentMediaPlayerDelegate) {
-            sendMessage(MSG_PLAYER_DELEGATE_BUFFERING);
-        }
-    }
-
-    @Override
-    public void onPlayerDelegateCompleted(PlayerDelegate delegate) {
-        manageKeepScreenOnInternal();
-        if (delegate == currentMediaPlayerDelegate) {
-            sendMessage(MSG_PLAYER_DELEGATE_COMPLETED);
-        }
-    }
-
-    @Override
-    public void onPlayerDelegateError(PlayerDelegate delegate, SRGMediaPlayerException e) {
-        manageKeepScreenOnInternal();
-        if (delegate == currentMediaPlayerDelegate) {
-            sendMessage(MSG_DELEGATE_EXCEPTION, e);
-        }
-    }
-
-    @Override
-    public void onPlayerDelegateSubtitleCues(PlayerDelegate delegate, List<Cue> cues) {
-        if (delegate == currentMediaPlayerDelegate) {
-            sendMessage(MSG_PLAYER_DELEGATE_SUBTITLE_CUES, cues);
-        }
-    }
-
-    @Override
-    public void onPlayerDelegateVideoSizeChanged(PlayerDelegate delegate, int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
-        if (delegate == currentMediaPlayerDelegate) {
-            float aspectRatio = ((float) width / (float) height) * pixelWidthHeightRatio;
-            if ((aspectRatio / 90) % 2 == 1) {
-                aspectRatio = 1 / aspectRatio;
-            }
-            sendMessage(MSG_PLAYER_DELEGATE_VIDEO_ASPECT_RATIO, aspectRatio);
-        }
     }
 
     /**
@@ -949,15 +1137,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         if (mediaPlayerView != null) {
             showControlOverlays();
             unbindFromMediaPlayerView(mediaPlayerView);
-        }
-        if (becomingNoisyReceiver != null) {
-            try {
-                context.unregisterReceiver(becomingNoisyReceiver);
-            } catch (IllegalArgumentException ignored) {
-                // Prevent crash if race condition during receiver unregistering
-                Log.e(TAG, "Becoming noisy receiver was not registered");
-            }
-            becomingNoisyReceiver = null;
         }
         sendMessage(MSG_RELEASE);
     }
@@ -972,28 +1151,27 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     public boolean isPlaying() {
-        PlayerDelegate delegate = this.currentMediaPlayerDelegate;
-        return delegate != null && delegate.isPlaying() && seekToWhenReady == null;
+        return state == State.READY && exoPlayer != null && exoPlayer.getPlaybackState() == Player.STATE_READY && exoPlayer.getPlayWhenReady();
     }
 
     /**
-     * Return the current mediaIdentifier played.
+     * Return the current Url played.
      */
     @Nullable
-    public String getMediaIdentifier() {
-        return currentMediaIdentifier;
+    public Uri getMediaUri() {
+        return currentMediaUri;
     }
 
     /**
-     * @return media position relative to MPST (see {@link #getMediaPlaylistStartTime} )
+     * @return media position
      */
     public long getMediaPosition() {
-        if (currentMediaPlayerDelegate != null) {
+        if (exoPlayer != null) {
             Long seekToWhenReady = this.seekToWhenReady;
             if (seekToWhenReady != null) {
                 return seekToWhenReady;
             } else {
-                return currentMediaPlayerDelegate.getCurrentPosition();
+                return exoPlayer.getCurrentPosition();
             }
         } else {
             return UNKNOWN_TIME;
@@ -1004,30 +1182,11 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * @return Media duration relative to 0.
      */
     public long getMediaDuration() {
-        if (currentMediaPlayerDelegate != null) {
-            return currentMediaPlayerDelegate.getDuration();
+        if (exoPlayer != null) {
+            return exoPlayer.getDuration();
         } else {
             return UNKNOWN_TIME;
         }
-    }
-
-    /**
-     * Media playlist start time (MPST) is a relative offset for the available seekable range,
-     * used in sliding window live playlist.
-     * The range [0..MPST] is not available for seeking.
-     * <p/>
-     * <pre>
-     * 0 --------------- MPST --------- POSITION ------------------------------------- LIVE
-     *                    \---------------------------DURATION---------------------------/
-     * </pre>
-     * <p/>
-     * MPST stays constant with a value of 0 when playing a static video.
-     *
-     * @return MPST in ms
-     */
-    @Deprecated
-    public long getMediaPlaylistStartTime() {
-        return 0;
     }
 
     /**
@@ -1039,24 +1198,24 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
      * @return reference wall clock time in ms
      */
     public long getLiveTime() {
-        if (currentMediaPlayerDelegate != null) {
-            return currentMediaPlayerDelegate.getPlaylistReferenceTime();
+        if (exoPlayer != null) {
+            return getPlaylistStartTime();
         } else {
             return UNKNOWN_TIME;
         }
     }
 
     public long getBufferPosition() {
-        if (currentMediaPlayerDelegate != null) {
-            return currentMediaPlayerDelegate.getBufferPosition();
+        if (exoPlayer != null) {
+            return exoPlayer.getBufferedPosition();
         } else {
             return UNKNOWN_TIME;
         }
     }
 
     public int getBufferPercentage() {
-        if (currentMediaPlayerDelegate != null) {
-            return currentMediaPlayerDelegate.getBufferPercentage();
+        if (exoPlayer != null) {
+            return exoPlayer.getBufferedPercentage();
         } else {
             return 0;
         }
@@ -1101,7 +1260,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         if (mediaPlayerView != null) {
             unbindFromMediaPlayerView(mediaPlayerView);
         }
-
         mediaPlayerView = newView;
         newView.setCues(Collections.<Cue>emptyList());
         internalUpdateMediaPlayerViewBound();
@@ -1109,29 +1267,103 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         manageKeepScreenOnInternal();
     }
 
-    @Override
+    @Nullable
     public SRGMediaPlayerView getMediaPlayerView() {
         return mediaPlayerView;
     }
 
     private void internalUpdateMediaPlayerViewBound() {
-
         //Both not null
-        if (mediaPlayerView != null && currentMediaPlayerDelegate != null) {
+        if (mediaPlayerView != null && exoPlayer != null) {
 
-            if (!currentMediaPlayerDelegate.canRenderInView(mediaPlayerView.getVideoRenderingView())) {
+            if (!canRenderInView(mediaPlayerView.getVideoRenderingView())) {
                 // We need to create a new rendering view.
-                final View renderingView = currentMediaPlayerDelegate.createRenderingView(mediaPlayerView.getContext());
+                createRenderingViewInMainThread(mediaPlayerView.getContext());
                 Log.v(TAG, renderingView + "binding, creating rendering view" + mediaPlayerView);
+            } else {
+                renderingView = mediaPlayerView.getVideoRenderingView();
+                mainHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Log.v(TAG, "binding, bindRenderingViewInUiThread " + mediaPlayerView);
+                            bindRenderingViewInUiThread();
+                        } catch (SRGMediaPlayerException e) {
+                            Log.d(TAG, "Error binding view", e);
+                        }
+                    }
+                });
+            }
 
+        } else
+            // mediaPlayerView null, just unbind delegate
+            if (mediaPlayerView == null) {
+                unbindRenderingView();
+            }
+        //Other cases are :
+        // - both mediaPlayerView and delegate null, do nothing
+        // - delegate null only, mediaPlayerView already stored as class attributes and will be set when needed
+    }
+
+    private void bindRenderingViewInUiThread() throws SRGMediaPlayerException {
+        if (mediaPlayerView == null ||
+                !canRenderInView(mediaPlayerView.getVideoRenderingView())) {
+            throw new SRGMediaPlayerException("ExoPlayer cannot render video in a "
+                    + mediaPlayerView);
+        }
+        pushSurface();
+        broadcastEvent(Event.Type.DID_BIND_TO_PLAYER_VIEW);
+    }
+
+    private void pushSurface() {
+        if (exoPlayer != null) {
+            if (renderingView instanceof SurfaceView) {
+                exoPlayer.setVideoSurfaceView((SurfaceView) renderingView);
+            } else if (renderingView instanceof TextureView) {
+                exoPlayer.setVideoTextureView((TextureView) renderingView);
+            }
+        }
+    }
+
+    /**
+     * Clear the current mediaPlayer, unbind the delegate and the overlayController
+     *
+     * @param playerView video container to unbind from.
+     */
+    public void unbindFromMediaPlayerView(SRGMediaPlayerView playerView) {
+        if (mediaPlayerView == playerView) {
+            overlayController.bindToVideoContainer(null);
+            unbindRenderingView();
+            mediaPlayerView = null;
+            broadcastEvent(Event.Type.DID_UNBIND_FROM_PLAYER_VIEW);
+        }
+    }
+
+    private boolean canRenderInView(View view) {
+        return view instanceof SurfaceView || view instanceof TextureView;
+    }
+
+    private void createRenderingViewInMainThread(final Context parentContext) {
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (viewType == ViewType.TYPE_SURFACEVIEW) {
+                    renderingView = new SurfaceView(parentContext);
+                } else {
+                    renderingView = new TextureView(parentContext);
+                }
+                if (mediaPlayerView != null) {
+                    Log.v(TAG, "binding, setVideoRenderingView " + mediaPlayerView);
+                    mediaPlayerView.setVideoRenderingView(renderingView);
+                }
                 if (renderingView instanceof SurfaceView) {
                     ((SurfaceView) renderingView).getHolder().addCallback(new SurfaceHolder.Callback() {
                         @Override
                         public void surfaceCreated(SurfaceHolder holder) {
                             Log.v(TAG, renderingView + "binding, surfaceCreated" + mediaPlayerView);
                             try {
-                                if (currentMediaPlayerDelegate != null && ((SurfaceView) renderingView).getHolder() == holder) {
-                                    bindDelegateToRenderingViewInUiThread();
+                                if (exoPlayer != null && ((SurfaceView) renderingView).getHolder() == holder) {
+                                    bindRenderingViewInUiThread();
                                 } else {
                                     Log.d(TAG, "Surface created, but media player delegate retired");
                                 }
@@ -1155,17 +1387,17 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                     TextureView textureView = (TextureView) renderingView;
                     textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
                         @SuppressWarnings("ConstantConditions")
-                        // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
-                        public boolean isCurrent(SurfaceTexture surfaceTexture) {
+                            // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
+                        boolean isCurrent(SurfaceTexture surfaceTexture) {
                             return renderingView instanceof TextureView && ((TextureView) renderingView).getSurfaceTexture() == surfaceTexture;
                         }
 
                         @Override
                         public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
                             Log.v(TAG, renderingView + "binding, surfaceTextureAvailable" + mediaPlayerView);
-                            if (currentMediaPlayerDelegate != null && isCurrent(surfaceTexture)) {
+                            if (exoPlayer != null && isCurrent(surfaceTexture)) {
                                 try {
-                                    bindDelegateToRenderingViewInUiThread();
+                                    bindRenderingViewInUiThread();
                                 } catch (SRGMediaPlayerException e) {
                                     Log.d(TAG, "Error binding view", e);
                                 }
@@ -1187,78 +1419,20 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
                         }
                     });
-
-                } else {
-                    Log.v(TAG, renderingView + "binding, attaching rendering view" + mediaPlayerView);
-
-                    renderingView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
-                        @Override
-                        public void onViewAttachedToWindow(View v) {
-                            Log.v(TAG, renderingView + "binding, attached rendering view" + mediaPlayerView);
-                        }
-
-                        @Override
-                        public void onViewDetachedFromWindow(View v) {
-                            //TODO if a delegate is bound to this surface, we need tu unbind it
-                        }
-                    });
-                }
-                mainHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (mediaPlayerView != null) {
-                            Log.v(TAG, "binding, setVideoRenderingView " + mediaPlayerView);
-                            mediaPlayerView.setVideoRenderingView(renderingView);
-                        }
-                    }
-                });
-            } else {
-                mainHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            Log.v(TAG, "binding, bindRenderingViewInUiThread " + mediaPlayerView);
-                            bindDelegateToRenderingViewInUiThread();
-                        } catch (SRGMediaPlayerException e) {
-                            Log.d(TAG, "Error binding view", e);
-                        }
-                    }
-                });
-            }
-
-        } else
-            // mediaPlayerView null, just unbind delegate
-            if (mediaPlayerView == null) {
-                if (currentMediaPlayerDelegate != null) {
-                    currentMediaPlayerDelegate.unbindRenderingView();
                 }
             }
-        //Other cases are :
-        // - both mediaPlayerView and delegate null, do nothing
-        // - delegate null only, mediaPlayerView already stored as class attributes and will be set when needed
+        });
     }
 
-    private void bindDelegateToRenderingViewInUiThread() throws SRGMediaPlayerException {
-        if (currentMediaPlayerDelegate != null) {
-            currentMediaPlayerDelegate.bindRenderingViewInUiThread(mediaPlayerView);
-        }
-        broadcastEvent(Event.Type.DID_BIND_TO_PLAYER_VIEW);
+    public void setViewType(ViewType viewType) {
+        this.viewType = viewType;
     }
 
-    /**
-     * Clear the current mediaPlayer, unbind the delegate and the overlayController
-     *
-     * @param playerView video container to unbind from.
-     */
-    public void unbindFromMediaPlayerView(SRGMediaPlayerView playerView) {
-        if (mediaPlayerView == playerView) {
-            overlayController.bindToVideoContainer(null);
-            if (currentMediaPlayerDelegate != null) {
-                currentMediaPlayerDelegate.unbindRenderingView();
-            }
-            mediaPlayerView = null;
-            broadcastEvent(Event.Type.DID_UNBIND_FROM_PLAYER_VIEW);
+    private void unbindRenderingView() {
+        if (exoPlayer != null) {
+            exoPlayer.clearVideoSurface();
         }
+        renderingView = null;
     }
 
     private void setStateInternal(State state) {
@@ -1270,7 +1444,6 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
             postEventInternal(Event.buildStateEvent(this));
         }
     }
-
 
     /**
      * Register a listener on events fired by this SRGMediaPlayerController. WARNING, The listener
@@ -1315,26 +1488,24 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         return globalEventListeners.remove(listener);
     }
 
-    public void broadcastEvent(Event.Type eventType) {
+    void broadcastEvent(Event.Type eventType) {
         broadcastEvent(Event.buildEvent(this, eventType));
     }
 
-    public void broadcastEvent(Event event) {
+    void broadcastEvent(Event event) {
         sendMessage(MSG_FIRE_EVENT, event);
     }
 
-    private void postErrorEventInternal(boolean fatalError, SRGMediaPlayerException e) {
-        if (fatalError) {
-            this.fatalError = e;
-        }
-        postEventInternal(Event.buildErrorEvent(this, fatalError, e));
+    private void postFatalErrorInternal(SRGMediaPlayerException e) {
+        this.fatalError = e;
+        postEventInternal(Event.buildErrorEvent(this, true, e));
     }
 
     private void postEventInternal(Event.Type eventType) {
         postEventInternal(Event.buildEvent(this, eventType));
     }
 
-    public void postEventInternal(final Event event) {
+    private void postEventInternal(final Event event) {
         if (debugMode) {
             assertCommandHandlerThread();
         }
@@ -1357,25 +1528,11 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
     }
 
-    /**
-     * Specify a custom PlayerDelegateFactory, you should use this if you need to use a different
-     * delegate or if you want to use our ExoPlayerDelegate for AAC audio playing.
-     *
-     * @param playerDelegateFactory
-     */
-    public void setPlayerDelegateFactory(PlayerDelegateFactory playerDelegateFactory) {
-        this.playerDelegateFactory = playerDelegateFactory;
-    }
-
-    public PlayerDelegateFactory getPlayerDelegateFactory() {
-        return playerDelegateFactory;
-    }
-
     public Context getContext() {
         return context;
     }
 
-    public void handleAudioFocusChange(int focusChange) {
+    void handleAudioFocusChange(int focusChange) {
         switch (focusChange) {
             case AudioManager.AUDIOFOCUS_LOSS:
                 handleAudioFocusLoss(false, false);
@@ -1471,7 +1628,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     private static class OnAudioFocusChangeListener implements AudioManager.OnAudioFocusChangeListener {
         private final WeakReference<SRGMediaPlayerController> playerReference;
 
-        public OnAudioFocusChangeListener(WeakReference<SRGMediaPlayerController> playerReference) {
+        OnAudioFocusChangeListener(WeakReference<SRGMediaPlayerController> playerReference) {
             this.playerReference = playerReference;
         }
 
@@ -1511,7 +1668,7 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     /*package*/
     static Event createTestEvent(Event.Type eventType, SRGMediaPlayerController controller, SRGMediaPlayerException eventException) {
-        return new Event(eventType, controller, eventException);
+        return new Event(controller, eventType, eventException);
     }
 
     public String getControllerId() {
@@ -1522,23 +1679,24 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         return getControllerId();
     }
 
-    public void updateOverlayVisibilities() {
+    void updateOverlayVisibilities() {
         overlayController.propagateOverlayVisibility();
     }
 
     private long getPlaylistStartTime() {
-        return currentMediaPlayerDelegate != null ? currentMediaPlayerDelegate.getPlaylistStartTime() : 0;
+        long res = 0;
+        if (isLive()) {
+            res = System.currentTimeMillis();
+        }
+        return res;
     }
 
     public boolean isLive() {
-        return currentMediaPlayerDelegate != null && currentMediaPlayerDelegate.isLive();
+        return exoPlayer.isCurrentWindowDynamic();
     }
 
     public boolean isShowingControlOverlays() {
-        if (overlayController != null) {
-            return overlayController.isShowingControlOverlays();
-        }
-        return true;
+        return overlayController != null && overlayController.isShowingControlOverlays();
     }
 
     public boolean isMainPlayer() {
@@ -1552,30 +1710,11 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
         }
     }
 
-    /**
-     * Change the player delegate for another one. The currently playing stream will be stopped on the old
-     * player delegate and resumed with the new one.
-     * <p/>
-     * Warning this only impacts the current stream.
-     *
-     * @param playerDelegate player delegate or null to use the default one (using current delegate factory)
-     */
-    public void swapPlayerDelegate(PlayerDelegate playerDelegate) {
-        if (playerDelegate == null && currentMediaIdentifier != null) {
-            playerDelegate = playerDelegateFactory.getDelegateForMediaIdentifier(this, currentMediaIdentifier);
-        }
-        sendMessage(MSG_SWAP_PLAYER_DELEGATE, playerDelegate);
-    }
-
-    public PlayerDelegate getPlayerDelegate() {
-        return currentMediaPlayerDelegate;
-    }
-
     public boolean isRemote() {
-        return currentMediaPlayerDelegate != null && currentMediaPlayerDelegate.isRemote();
+        return false;
     }
 
-    public void forceBroadcastStateChange() {
+    private void forceBroadcastStateChange() {
         broadcastEvent(Event.buildStateEvent(this));
     }
 
@@ -1612,32 +1751,29 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     /**
-     * @return bandwidth estimate in bits/sec if available, null otherwise
-     */
-    public Long getBandwidthEstimate() {
-        if (currentMediaPlayerDelegate != null) {
-            return currentMediaPlayerDelegate.getBandwidthEstimate();
-        } else {
-            return null;
-        }
-    }
-
-    /**
      * Get Total bandwidth of currently playing stream.
      *
      * @return current bandwidth in bits/seconds or null if not available
      */
     public Long getCurrentBandwidth() {
-        if (currentMediaPlayerDelegate != null) {
-            return currentMediaPlayerDelegate.getCurrentBandwidth();
-        } else {
-            return null;
-        }
+        Format videoFormat = exoPlayer.getVideoFormat();
+        Format audioFormat = exoPlayer.getAudioFormat();
+        int videoBandwidth = videoFormat != null && videoFormat.bitrate != Format.NO_VALUE ? videoFormat.bitrate : 0;
+        int audioBandwidth = audioFormat != null && audioFormat.bitrate != Format.NO_VALUE ? audioFormat.bitrate : 0;
+        long bandwidth = videoBandwidth + audioBandwidth;
+        return bandwidth > 0 ? bandwidth : null;
     }
 
-
     public boolean hasVideoTrack() {
-        return currentMediaPlayerDelegate != null && currentMediaPlayerDelegate.hasVideoTrack();
+        TrackSelectionArray currentTrackSelections = exoPlayer.getCurrentTrackSelections();
+        for (int i = 0; i < currentTrackSelections.length; i++) {
+            if (exoPlayer.getRendererType(i) == C.TRACK_TYPE_VIDEO) {
+                if (currentTrackSelections.get(i) != null) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public Throwable getFatalError() {
@@ -1646,13 +1782,22 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
 
     @NonNull
     public List<SubtitleTrack> getSubtitleTrackList() {
-        List<SubtitleTrack> result;
-        if (currentMediaPlayerDelegate != null) {
-            result = currentMediaPlayerDelegate.getSubtitleTrackList();
-        } else {
-            result = Collections.emptyList();
+        List<SubtitleTrack> result = new ArrayList<>();
+        MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+        int subtitleRendererId = getSubtitleRendererId();
+        if (mappedTrackInfo != null && subtitleRendererId != -1) {
+            TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(subtitleRendererId);
+            for (int i = 0; i < trackGroups.length; i++) {
+                TrackGroup trackGroup = trackGroups.get(i);
+                for (int j = 0; j < trackGroup.length; j++) {
+                    SubtitleTrack subtitleTrack = getSubtitleTrack(trackGroup, i, j);
+                    if (subtitleTrack != null) {
+                        result.add(subtitleTrack);
+                    }
+                }
+            }
         }
-        if (debugMode && (result == null || result.size() == 0)) {
+        if (debugMode && (result.isEmpty())) {
             return Arrays.asList(
                     new SubtitleTrack(0, "English", null),
                     new SubtitleTrack(0, "French", null),
@@ -1664,18 +1809,72 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
     }
 
     public void setSubtitleTrack(@Nullable SubtitleTrack track) {
-        if (currentMediaPlayerDelegate != null) {
-            currentMediaPlayerDelegate.setSubtitleTrack(track);
-            broadcastEvent(Event.Type.SUBTITLE_DID_CHANGE);
+        int rendererIndex = getSubtitleRendererId();
+        MappingTrackSelector.MappedTrackInfo trackInfo = trackSelector.getCurrentMappedTrackInfo();
+        if (rendererIndex != -1 && trackInfo != null) {
+            TrackGroupArray trackGroups = trackInfo.getTrackGroups(rendererIndex);
+            trackSelector.setRendererDisabled(rendererIndex, track == null);
+            if (track != null) {
+                TrackSelection.Factory factory = new FixedTrackSelection.Factory();
+                Pair<Integer, Integer> integerPair = (Pair<Integer, Integer>) track.tag;
+                int groupIndex = integerPair.first;
+                int trackIndex = integerPair.second;
+                MappingTrackSelector.SelectionOverride override = new MappingTrackSelector.SelectionOverride(factory, groupIndex, trackIndex);
+                trackSelector.setSelectionOverride(rendererIndex, trackGroups, override);
+            } else {
+                trackSelector.clearSelectionOverride(rendererIndex, trackGroups);
+            }
         }
+        broadcastEvent(Event.Type.SUBTITLE_DID_CHANGE);
     }
 
     @Nullable
     public SubtitleTrack getSubtitleTrack() {
-        if (currentMediaPlayerDelegate != null) {
-            return currentMediaPlayerDelegate.getSubtitleTrack();
+        int rendererIndex = getSubtitleRendererId();
+
+        MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+        if (mappedTrackInfo != null && rendererIndex != -1) {
+            TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(rendererIndex);
+
+            MappingTrackSelector.SelectionOverride override = trackSelector.getSelectionOverride(rendererIndex, trackGroups);
+            if (override != null) {
+                int[] tracks = override.tracks;
+                if (tracks.length != 0) {
+                    return getSubtitleTrackByTrackId(override.groupIndex, tracks[0]);
+                }
+            }
         }
         return null;
+    }
+
+    private SubtitleTrack getSubtitleTrack(TrackGroup trackGroup, int i, int j) {
+        Format format = trackGroup.getFormat(j);
+        if (format.id != null && format.language != null) {
+            return new SubtitleTrack(new Pair<>(i, j), format.id, format.language);
+        } else {
+            return null;
+        }
+    }
+
+    private SubtitleTrack getSubtitleTrackByTrackId(int i, int j) {
+        MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+        TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(getSubtitleRendererId());
+        TrackGroup trackGroup = trackGroups.get(i);
+        return getSubtitleTrack(trackGroup, i, j);
+    }
+
+    private int getSubtitleRendererId() {
+        MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+
+        if (mappedTrackInfo != null) {
+            for (int i = 0; i < mappedTrackInfo.length; i++) {
+                if (mappedTrackInfo.getTrackGroups(i).length > 0
+                        && exoPlayer.getRendererType(i) == C.TRACK_TYPE_TEXT) {
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
 
     /**
@@ -1686,4 +1885,103 @@ public class SRGMediaPlayerController implements PlayerDelegate.OnPlayerDelegate
                 || getState() == SRGMediaPlayerController.State.BUFFERING
                 || isSeekPending();
     }
+
+
+    @Override
+    public void onAudioCapabilitiesChanged(AudioCapabilities audioCapabilities) {
+        boolean audioCapabilitiesChanged = !audioCapabilities.equals(this.audioCapabilities);
+        if (audioCapabilitiesChanged) {
+            this.audioCapabilities = audioCapabilities;
+        }
+    }
+
+    @Override
+    public void onTimelineChanged(Timeline timeline, Object manifest) {
+        // Ignore
+    }
+
+    @Override
+    public void onTracksChanged(TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {
+        // Ignore
+    }
+
+    @Override
+    public void onLoadingChanged(boolean isLoading) {
+        // TODO Should we really ignore this ?
+        // Ignore
+    }
+
+    @Override
+    public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+        Log.v(TAG, toString() + " exo state change: " + playWhenReady + " " + playbackState);
+        if (this.playbackState == null || this.playbackState != playbackState) {
+            switch (playbackState) {
+                case Player.STATE_IDLE:
+                    break;
+                case Player.STATE_BUFFERING:
+                    sendMessage(MSG_PLAYER_BUFFERING);
+                    break;
+                case Player.STATE_READY:
+                    manageKeepScreenOnInternal();
+                    sendMessage(MSG_PLAYER_READY);
+                    break;
+                case Player.STATE_ENDED:
+                    manageKeepScreenOnInternal();
+                    sendMessage(MSG_PLAYER_COMPLETED);
+                    break;
+            }
+            this.playbackState = playbackState;
+        }
+        if (this.playWhenReady == null || this.playWhenReady != playWhenReady) {
+            manageKeepScreenOnInternal();
+            sendMessage(MSG_PLAYER_PLAY_WHEN_READY_COMMITED);
+            this.playWhenReady = playWhenReady;
+        }
+    }
+
+    @Override
+    public void onRepeatModeChanged(int repeatMode) {
+        // Ignore
+    }
+
+    @Override
+    public void onPlayerError(ExoPlaybackException error) {
+        manageKeepScreenOnInternal();
+        sendMessage(MSG_EXCEPTION, new SRGMediaPlayerException(error));
+    }
+
+    @Override
+    public void onPositionDiscontinuity() {
+        broadcastEvent(Event.Type.POSITION_DISCONTINUITY);
+    }
+
+    @Override
+    public void onPlaybackParametersChanged(PlaybackParameters playbackParameters) {
+        // Ignore
+    }
+
+    @Override
+    public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
+        float aspectRatio = ((float) width / (float) height) * pixelWidthHeightRatio;
+        if ((aspectRatio / 90) % 2 == 1) {
+            aspectRatio = 1 / aspectRatio;
+        }
+        sendMessage(MSG_PLAYER_VIDEO_ASPECT_RATIO, aspectRatio);
+    }
+
+    @Override
+    public void onRenderedFirstFrame() {
+        firstFrameRendered = true;
+        broadcastEvent(Event.Type.FIRST_FRAME_RENDERED);
+    }
+
+    public boolean isFirstFrameRendered() {
+        return firstFrameRendered;
+    }
+
+    @Override
+    public void onCues(List<Cue> cues) {
+        sendMessage(MSG_PLAYER_SUBTITLE_CUES, cues);
+    }
+
 }

@@ -9,24 +9,20 @@ import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 
-import java.util.List;
-
 import ch.srg.mediaplayer.ControlTouchListener;
 import ch.srg.mediaplayer.R;
+import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.segment.adapter.BaseSegmentAdapter;
-import ch.srg.mediaplayer.segment.controller.SegmentController;
-import ch.srg.mediaplayer.segment.model.Segment;
 
 /**
- * Created by npietri on 20.05.15.
+ * Copyright (c) SRG SSR. All rights reserved.
+ * <p>
+ * License information is available from the LICENSE file.
  */
-public class SegmentView extends RecyclerView implements SegmentController.Listener {
-    private LinearLayoutManager linearLayoutManager;
-    private SegmentController segmentController;
-
+public class SegmentView extends RecyclerView {
+    private SRGMediaPlayerController controller;
     @Nullable
     private ControlTouchListener controlTouchListener;
-
     @Nullable
     private BaseSegmentAdapter adapter;
 
@@ -43,7 +39,7 @@ public class SegmentView extends RecyclerView implements SegmentController.Liste
 
         TypedArray a = context.getTheme().obtainStyledAttributes(attrs, R.styleable.SegmentView, 0, 0);
 
-        linearLayoutManager = new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false);
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false);
         setLayoutManager(linearLayoutManager);
 
         // TODO Items change often during seek. Disabling animator fix the flashing, is there a better way to do this?
@@ -51,39 +47,14 @@ public class SegmentView extends RecyclerView implements SegmentController.Liste
         a.recycle();
     }
 
-    public void setBaseAdapter(@NonNull BaseSegmentAdapter adapter) {
+    public void setup(@NonNull BaseSegmentAdapter adapter,
+                      @NonNull SRGMediaPlayerController controller,
+                      @Nullable ControlTouchListener controlTouchListener){
+        this.controlTouchListener = controlTouchListener;
         this.adapter = adapter;
-        setAdapter(adapter);
-        adapter.updateWithSegmentController(segmentController);
-    }
-
-    public void setSegmentController(@NonNull SegmentController segmentController) {
-        if (this.segmentController != null) {
-            this.segmentController.removeListener(this);
-        }
-        this.segmentController = segmentController;
-        segmentController.addListener(this);
-        if (adapter != null) {
-            adapter.updateWithSegmentController(segmentController);
-        }
-    }
-
-    @Override
-    public void onPositionChange(@Nullable String mediaIdentifier, long time, boolean seeking) {
-        boolean change =
-                mediaIdentifier != null
-                && adapter != null
-                && adapter.updateProgressSegments(mediaIdentifier, time);
-        if (change) {
-            scrollToPosition(adapter.getCurrentSegmentIndex());
-        }
-    }
-
-    @Override
-    public void onSegmentListChanged(List<Segment> segments) {
-        if (adapter != null) {
-            adapter.updateWithSegmentController(segmentController);
-        }
+        this.controller = controller;
+        setAdapter(this.adapter);
+        this.adapter.setMediaPlayerController(controller);
     }
 
     @Override
@@ -93,9 +64,5 @@ public class SegmentView extends RecyclerView implements SegmentController.Liste
             controlTouchListener.onMediaControlTouched();
         }
         return handled;
-    }
-
-    public void setControlTouchListener(ControlTouchListener controlTouchListener) {
-        this.controlTouchListener = controlTouchListener;
     }
 }
