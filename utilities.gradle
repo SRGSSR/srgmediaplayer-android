@@ -62,6 +62,19 @@ uploadArchives {
                     }
                 }
             }
+
+            pom.whenConfigured { pom ->
+                println("Current Dependencies ${pom.dependencies}")
+                pom.dependencies.each { dep ->
+                    println("Processing ${dep}")
+                    if (dep.getVersion() == "unspecified" && dep.getGroupId() == rootProjectDir) {
+                        println("Updating Dependencies")
+                        dep.setGroupId(GROUP)
+                        dep.setVersion(project.versionName)
+                        println("Updated ${dep}")
+                    }
+                }
+            }
         }
     }
 
