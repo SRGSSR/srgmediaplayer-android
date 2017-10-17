@@ -3,7 +3,6 @@ package ch.srg.mediaplayer.segment.adapter;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,16 +51,31 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
         segmentChangeListeners.remove(listeners);
     }
 
-    public void filterSegmentList(@Nullable List<Segment> segmentList) {
-        segments.clear();
+    /**
+     * Change the segment list with filtered segments.
+     *
+     * @param segmentList segment list
+     * @return true if there has been a change in the segment dataset
+     */
+    public boolean filterSegmentList(@Nullable List<Segment> segmentList) {
+        ArrayList<Segment> newSegments = new ArrayList<>();
+
         if (segmentList != null) {
             for (Segment s : segmentList) {
                 if (s.isDisplayable()) {
-                    segments.add(s);
+                    newSegments.add(s);
                 }
             }
         }
-        notifyDataSetChanged();
+
+        if (!newSegments.equals(segments)) {
+            segments.clear();
+            segments.addAll(newSegments);
+            notifyDataSetChanged();
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @Override
