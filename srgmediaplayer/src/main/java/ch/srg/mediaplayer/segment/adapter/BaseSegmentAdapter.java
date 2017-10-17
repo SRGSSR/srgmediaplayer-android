@@ -69,6 +69,8 @@ public abstract class BaseSegmentAdapter<T extends RecyclerView.ViewHolder> exte
         }
 
         if (!newSegments.equals(segments)) {
+            segments.clear();
+            segments.addAll(newSegments);
             notifyDataSetChanged();
             return true;
         } else {
