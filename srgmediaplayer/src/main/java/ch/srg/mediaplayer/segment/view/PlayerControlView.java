@@ -16,7 +16,6 @@ import android.widget.TextView;
 
 import java.util.Locale;
 
-import ch.srg.mediaplayer.PlayerViewDelegate;
 import ch.srg.mediaplayer.R;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 
@@ -25,7 +24,7 @@ import ch.srg.mediaplayer.SRGMediaPlayerController;
  * <p>
  * License information is available from the LICENSE file.
  */
-public class PlayerControlView extends LinearLayout implements View.OnClickListener, SeekBar.OnSeekBarChangeListener, PlayerViewDelegate {
+public class PlayerControlView extends LinearLayout implements View.OnClickListener, SeekBar.OnSeekBarChangeListener {
     private static final long COMPLETION_TOLERANCE_MS = 5000;
 
     @Nullable
@@ -104,13 +103,11 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
         }
     }
 
-    @Override
     public void attachToController(SRGMediaPlayerController playerController) {
         this.controller = playerController;
         update(SRGMediaPlayerController.UNKNOWN_TIME);
     }
 
-    @Override
     public void detachFromController(SRGMediaPlayerController srgMediaPlayerController) {
         this.controller = null;
     }
@@ -257,14 +254,12 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
         this.listener = listener;
     }
 
-    @Override
     public void update() {
         if (controller != null) {
             update(controller.getMediaPosition());
         }
     }
 
-    @Override
     public void setHideCentralButton(boolean loading) {
 
     }
