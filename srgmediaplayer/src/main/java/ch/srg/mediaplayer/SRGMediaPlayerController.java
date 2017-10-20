@@ -1899,8 +1899,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Override
     public void onLoadingChanged(boolean isLoading) {
-        // TODO Should we really ignore this ?
-        // Ignore
+        manageKeepScreenOnInternal();
     }
 
     @Override
