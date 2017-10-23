@@ -416,8 +416,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private ViewType viewType;
     private View renderingView;
     private Integer playbackState;
-    // TODO Use this in MediaSessionManager
-    private MediaSessionCompat mediaSession;
     private List<Segment> segments = new ArrayList<>();
 
     private Segment segmentBeingSkipped;
@@ -480,12 +478,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         exoPlayer.setAudioDebugListener(eventLogger);
         exoPlayer.setVideoDebugListener(eventLogger);
         exoPlayer.setMetadataOutput(eventLogger);
-
-        mediaSession = new MediaSessionCompat(this.context, "SRGMediaPlayerController");
-
-        MediaSessionConnector mediaSessionConnector =
-                new MediaSessionConnector(mediaSession);
-        mediaSessionConnector.setPlayer(exoPlayer, null);
     }
 
     private synchronized void startBackgroundThreadIfNecessary() {
@@ -1907,8 +1899,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Override
     public void onLoadingChanged(boolean isLoading) {
-        // TODO Should we really ignore this ?
-        // Ignore
+        manageKeepScreenOnInternal();
     }
 
     @Override
