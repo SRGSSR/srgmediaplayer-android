@@ -18,23 +18,24 @@ public class Segment implements Comparable<Segment> {
     private long markOut;
     private long duration;
     private int progress;
-    private boolean isCurrent;
     private long publishedTimestamp;
     private boolean displayable;
+    private boolean isLive;
 
     public Segment(String identifier, String title, String description, String imageUrl,
-                   String blocking, long markIn, long markOut, long duration, long publishedTimestamp,
-                   boolean displayable) {
+                   String blockingReason, long markIn, long markOut, long duration, long publishedTimestamp,
+                   boolean displayable, boolean isLive) {
         this.identifier = identifier;
         this.title = title;
         this.description = description;
         this.imageUrl = imageUrl;
+        this.blockingReason = blockingReason;
         this.markIn = markIn;
         this.markOut = markOut;
         this.duration = duration;
         this.publishedTimestamp = publishedTimestamp;
         this.displayable = displayable;
-        blockingReason = blocking;
+        this.isLive = isLive;
     }
 
     public String getTitle() {
@@ -69,14 +70,6 @@ public class Segment implements Comparable<Segment> {
         return progress;
     }
 
-    public void setIsCurrent(boolean value) {
-        isCurrent = value;
-    }
-
-    public boolean isCurrent() {
-        return isCurrent;
-    }
-
     public long getPublishedTimestamp() {
         return publishedTimestamp;
     }
@@ -105,7 +98,7 @@ public class Segment implements Comparable<Segment> {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Segment)) return false;
+        if (o == null || getClass() != o.getClass()) return false;
 
         Segment segment = (Segment) o;
 
@@ -113,9 +106,9 @@ public class Segment implements Comparable<Segment> {
         if (markOut != segment.markOut) return false;
         if (duration != segment.duration) return false;
         if (progress != segment.progress) return false;
-        if (isCurrent != segment.isCurrent) return false;
         if (publishedTimestamp != segment.publishedTimestamp) return false;
         if (displayable != segment.displayable) return false;
+        if (isLive != segment.isLive) return false;
         if (identifier != null ? !identifier.equals(segment.identifier) : segment.identifier != null)
             return false;
         if (title != null ? !title.equals(segment.title) : segment.title != null) return false;
@@ -137,16 +130,16 @@ public class Segment implements Comparable<Segment> {
         result = 31 * result + (int) (markOut ^ (markOut >>> 32));
         result = 31 * result + (int) (duration ^ (duration >>> 32));
         result = 31 * result + progress;
-        result = 31 * result + (isCurrent ? 1 : 0);
         result = 31 * result + (int) (publishedTimestamp ^ (publishedTimestamp >>> 32));
         result = 31 * result + (displayable ? 1 : 0);
+        result = 31 * result + (isLive ? 1 : 0);
         return result;
     }
 
     @Override
     public String toString() {
         return "Segment{" +
-                ", identifier='" + identifier + '\'' +
+                "identifier='" + identifier + '\'' +
                 ", title='" + title + '\'' +
                 ", description='" + description + '\'' +
                 ", imageUrl='" + imageUrl + '\'' +
@@ -155,10 +148,13 @@ public class Segment implements Comparable<Segment> {
                 ", markOut=" + markOut +
                 ", duration=" + duration +
                 ", progress=" + progress +
-                ", isCurrent=" + isCurrent +
                 ", publishedTimestamp=" + publishedTimestamp +
                 ", displayable=" + displayable +
+                ", isLive=" + isLive +
                 '}';
     }
 
+    public boolean isLive() {
+        return isLive;
+    }
 }
