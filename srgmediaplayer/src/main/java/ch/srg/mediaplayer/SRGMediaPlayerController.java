@@ -1135,6 +1135,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (mediaPlayerView != null) {
             showControlOverlays();
             unbindFromMediaPlayerView(mediaPlayerView);
+            if (renderingView instanceof SurfaceView) {
+                exoPlayer.clearVideoSurfaceView((SurfaceView) renderingView);
+            } else if (renderingView instanceof TextureView) {
+                exoPlayer.clearVideoTextureView((TextureView) renderingView);
+            }
         }
         sendMessage(MSG_RELEASE);
     }
