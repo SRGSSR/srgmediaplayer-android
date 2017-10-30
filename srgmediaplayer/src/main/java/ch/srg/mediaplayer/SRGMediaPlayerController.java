@@ -1135,11 +1135,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (mediaPlayerView != null) {
             showControlOverlays();
             unbindFromMediaPlayerView(mediaPlayerView);
-            if (renderingView instanceof SurfaceView) {
-                exoPlayer.clearVideoSurfaceView((SurfaceView) renderingView);
-            } else if (renderingView instanceof TextureView) {
-                exoPlayer.clearVideoTextureView((TextureView) renderingView);
-            }
         }
         sendMessage(MSG_RELEASE);
     }
@@ -1433,7 +1428,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private void unbindRenderingView() {
         if (exoPlayer != null) {
-            exoPlayer.clearVideoSurface();
+            if (renderingView instanceof SurfaceView) {
+                exoPlayer.clearVideoSurfaceView((SurfaceView) renderingView);
+            } else if (renderingView instanceof TextureView) {
+                exoPlayer.clearVideoTextureView((TextureView) renderingView);
+            }
         }
         renderingView = null;
     }
