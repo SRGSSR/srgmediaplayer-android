@@ -566,7 +566,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @return true when media is preparing and in the process of being started
      * @throws SRGMediaPlayerException player exception
      */
+    @SuppressWarnings("ConstantConditions")
     public boolean play(@NonNull Uri uri, Long startPositionMs, @SRGStreamType int streamType, List<Segment> segments) throws SRGMediaPlayerException {
+        if (uri == null) {
+            throw new IllegalArgumentException("Invalid argument: null uri");
+        }
         if (requestAudioFocus()) {
             PrepareUriData data = new PrepareUriData(uri, startPositionMs, streamType, segments);
             sendMessage(MSG_PREPARE_FOR_URI, data);
@@ -1124,6 +1128,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     /**
      * Release the current player. Once the player is released you have to create a new player
      * if you want to play a new video.
+     * <p>
+     * Remark: The player does not immediately reach the released state.
      */
     public void release() {
         if (mediaPlayerView != null) {
@@ -1422,7 +1428,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private void unbindRenderingView() {
         if (exoPlayer != null) {
-            exoPlayer.clearVideoSurface();
+            if (renderingView instanceof SurfaceView) {
+                exoPlayer.clearVideoSurfaceView((SurfaceView) renderingView);
+            } else if (renderingView instanceof TextureView) {
+                exoPlayer.clearVideoTextureView((TextureView) renderingView);
+            }
         }
         renderingView = null;
     }
@@ -1676,7 +1686,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private long getPlaylistStartTime() {
-        long res = 0;
+        long res = UNKNOWN_TIME;
         if (isLive()) {
             res = System.currentTimeMillis();
         }
