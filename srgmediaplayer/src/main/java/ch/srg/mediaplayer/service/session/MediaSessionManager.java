@@ -1,7 +1,5 @@
 package ch.srg.mediaplayer.service.session;
 
-import android.app.PendingIntent;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
@@ -204,6 +202,7 @@ public class MediaSessionManager {
                 for (Listener listener : listeners) {
                     listener.onPauseSession();
                 }
+                return true;
             } else if (keyEvent != null && keyEvent.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PLAY) {
                 if (listeners.isEmpty()) {
                     Log.d(TAG, "No listener found for onResumeSession");
@@ -213,8 +212,9 @@ public class MediaSessionManager {
                 for (Listener listener : listeners) {
                     listener.onResumeSession();
                 }
+                return true;
             }
-            return true;
+            return false;
         }
 
         @Override
