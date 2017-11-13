@@ -213,8 +213,9 @@ public class MediaSessionManager {
                     listener.onResumeSession();
                 }
                 return true;
+            } else {
+                return false;
             }
-            return false;
         }
 
         @Override
