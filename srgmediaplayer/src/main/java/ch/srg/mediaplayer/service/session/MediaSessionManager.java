@@ -22,7 +22,9 @@ import ch.srg.mediaplayer.service.NotificationData;
 import ch.srg.mediaplayer.service.utils.AppUtils;
 
 /**
- * Created by npietri on 09.11.15.
+ * Copyright (c) SRG SSR. All rights reserved.
+ * <p>
+ * License information is available from the LICENSE file.
  */
 public class MediaSessionManager {
 
@@ -32,18 +34,10 @@ public class MediaSessionManager {
     private static MediaSessionManager instance;
     private MediaSessionCompat mediaSessionCompat;
 
-    private static int dimensionInPixels;
-    private Bitmap mediaArtBitmap;
-
     private Set<Listener> listeners = new HashSet<>();
 
     protected MediaSessionManager(Context context) {
         this.context = context;
-        try {
-            dimensionInPixels = AppUtils.convertDpToPixel(context, context.getResources().getDimension(R.dimen.notification_image_size));
-        } catch (Resources.NotFoundException e) {
-            dimensionInPixels = 0;
-        }
     }
 
     public static synchronized MediaSessionManager initialize(Context context) {
@@ -80,10 +74,6 @@ public class MediaSessionManager {
         createMediaSessionCompat();
 
         boolean live = false;
-
-        // TODO Handle live for duration
-
-        String mediaThumbnailUri = "";
 
         MediaMetadataCompat.Builder meta = new MediaMetadataCompat.Builder();
         meta.putString(MediaMetadataCompat.METADATA_KEY_TITLE, notificationData.title);
