@@ -13,7 +13,6 @@ import android.os.Process;
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.media.session.MediaSessionCompat;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
@@ -34,7 +33,6 @@ import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.audio.AudioCapabilities;
 import com.google.android.exoplayer2.audio.AudioCapabilitiesReceiver;
-import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
@@ -90,6 +88,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private static final long SEGMENT_HYSTERESIS_MS = 5000;
     private Long userTrackingProgress;
     private static final String NAME = "SRGMediaPlayer";
+    private boolean currentViewKeepScreenOn;
 
     public enum ViewType {
         TYPE_SURFACEVIEW,
@@ -1071,18 +1070,27 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void manageKeepScreenOnInternal() {
-        final boolean lock = externalWakeLock || (playWhenReady && isPlaying());
-        mainHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (mediaPlayerView != null) {
-                    mediaPlayerView.setKeepScreenOn(lock);
-                    logV("Changing keepScreenOn for currently attached mediaPlayerView to " + lock + "[" + mediaPlayerView + "]");
-                } else {
-                    logV("Cannot change keepScreenOn, no mediaPlayerView attached");
+        int playbackState = exoPlayer == null ? Player.STATE_IDLE : exoPlayer.getPlaybackState();
+        boolean playWhenReady = exoPlayer != null && exoPlayer.getPlayWhenReady();
+        final boolean lock = externalWakeLock ||
+                ((playbackState == Player.STATE_READY || playbackState == Player.STATE_BUFFERING) && playWhenReady);
+        logV("Scheduling change keepScreenOn currently attached mediaPlayerView to " + lock
+                + state + " " +
+                (exoPlayer != null ? playbackState + " " + playWhenReady : "no exo"));
+        if (currentViewKeepScreenOn != lock) {
+            currentViewKeepScreenOn = lock;
+            mainHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (mediaPlayerView != null) {
+                        mediaPlayerView.setKeepScreenOn(lock);
+                        logV("Changing keepScreenOn for currently attached mediaPlayerView to " + lock + "[" + mediaPlayerView + "]");
+                    } else {
+                        logV("Cannot change keepScreenOn, no mediaPlayerView attached");
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     private void logV(String msg) {
@@ -1309,6 +1317,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             throw new SRGMediaPlayerException("ExoPlayer cannot render video in a "
                     + mediaPlayerView);
         }
+        currentViewKeepScreenOn = mediaPlayerView.getKeepScreenOn();
         pushSurface();
         broadcastEvent(Event.Type.DID_BIND_TO_PLAYER_VIEW);
     }
@@ -1909,7 +1918,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Override
     public void onLoadingChanged(boolean isLoading) {
-        manageKeepScreenOnInternal();
     }
 
     @Override
@@ -1934,10 +1942,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
             this.playbackState = playbackState;
         }
         if (this.playWhenReady == null || this.playWhenReady != playWhenReady) {
-            manageKeepScreenOnInternal();
             sendMessage(MSG_PLAYER_PLAY_WHEN_READY_COMMITED);
             this.playWhenReady = playWhenReady;
         }
+        manageKeepScreenOnInternal();
     }
 
     @Override
