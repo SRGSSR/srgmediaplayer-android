@@ -36,13 +36,14 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    testImplementation 'junit:junit:4.12'
+    implementation 'junit:junit:4.12'
 
     //noinspection GradleDependency
     implementation "com.android.support:appcompat-v7:$rootProject.supportLibraryVersion"
     //noinspection GradleDependency
     implementation "com.android.support:recyclerview-v7:$rootProject.supportLibraryVersion"
 
+    // Here we use implementation instead of androidTestImplementation as srgmediaplayertestutils is used only in test builds
     implementation "com.android.support.test:rules:$rootProject.androidSupportTest"
     implementation "com.android.support.test:runner:$rootProject.androidSupportTest"
     implementation 'org.hamcrest:hamcrest-library:1.3'
