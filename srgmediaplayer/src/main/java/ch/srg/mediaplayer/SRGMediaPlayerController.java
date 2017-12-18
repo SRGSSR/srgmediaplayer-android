@@ -146,6 +146,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     public static final int AUDIO_FOCUS_FLAG_DUCK = 1 << 2;
     /**
      * If set, stream auto restart after gaining audio focus, must be used with AUDIO_FOCUS_FLAG_PAUSE to pause.
+     * This concerns only non transient focus loss, in case of a transient focus lost the stream will always restart.
      */
     public static final int AUDIO_FOCUS_FLAG_AUTO_RESTART = 1 << 3;
 
@@ -1564,7 +1565,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (duckedBecauseTransientFocusLoss) {
             unmute();
         }
-        if (pausedBecauseFocusLoss && ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_AUTO_RESTART) != 0 || pausedBecauseTransientFocusLoss)) {
+        if (pausedBecauseFocusLoss && ((audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_AUTO_RESTART) != 0
+                || pausedBecauseTransientFocusLoss)) {
             sendMessage(MSG_SET_PLAY_WHEN_READY, true);
         }
         if (mutedBecauseFocusLoss) {
