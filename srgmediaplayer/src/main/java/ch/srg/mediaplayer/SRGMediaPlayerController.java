@@ -98,7 +98,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     /**
      * True when audio focus has been requested, does not reflect current focus (LOSS / DUCKED).
      */
-    private boolean audioFocusRequested;
+    private boolean audioFocusGranted;
 
     @Nullable
     private Long currentSeekTarget;
@@ -435,6 +435,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private int audioFocusBehaviorFlag = AUDIO_FOCUS_FLAG_PAUSE;
 
+    private OnAudioFocusChangeListener audioFocusChangeListener;
+
     /**
      * Listeners registered to this player
      */
@@ -478,6 +480,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
         exoPlayer.setAudioDebugListener(eventLogger);
         exoPlayer.setVideoDebugListener(eventLogger);
         exoPlayer.setMetadataOutput(eventLogger);
+
+        audioFocusChangeListener = new OnAudioFocusChangeListener(new WeakReference<>(this));
+        audioFocusGranted = false;
     }
 
     private synchronized void startBackgroundThreadIfNecessary() {
@@ -571,18 +576,13 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (uri == null) {
             throw new IllegalArgumentException("Invalid argument: null uri");
         }
-        if (requestAudioFocus()) {
-            PrepareUriData data = new PrepareUriData(uri, startPositionMs, streamType, segments);
-            sendMessage(MSG_PREPARE_FOR_URI, data);
-            start();
-            if (startPositionMs != null) {
-                seekTo(startPositionMs);
-            }
-            return true;
-        } else {
-            Log.v(TAG, "Audio focus request failed");
-            return false;
+        PrepareUriData data = new PrepareUriData(uri, startPositionMs, streamType, segments);
+        sendMessage(MSG_PREPARE_FOR_URI, data);
+        boolean isStarted = start();
+        if (startPositionMs != null) {
+            seekTo(startPositionMs);
         }
+        return isStarted;
     }
 
     public void keepScreenOn(boolean lock) {
@@ -612,10 +612,16 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     /**
      * Resume playing after a pause call or make the controller start immediately after the preparation phase.
+     *
+     * @return true if focus audio granted
      */
-    public void start() {
-        if (!hasLostAudioFocus()) {
+    public boolean start() {
+        if (requestAudioFocus()) {
             sendMessage(MSG_SET_PLAY_WHEN_READY, true);
+            return true;
+        } else {
+            Log.v(TAG, "Audio focus request failed");
+            return false;
         }
     }
 
@@ -624,6 +630,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      */
     public void pause() {
         resetAudioFocusResume();
+        abandonAudioFocus();
         sendMessage(MSG_SET_PLAY_WHEN_READY, false);
     }
 
@@ -1562,6 +1569,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void handleAudioFocusGain() {
+        audioFocusGranted = true;
         if (duckedBecauseTransientFocusLoss) {
             unmute();
         }
@@ -1588,6 +1596,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void handleAudioFocusLoss(boolean transientFocus, boolean mayDuck) {
+        audioFocusGranted = false; //NO more Audio focus
         boolean playing = isPlaying();
         if (mayDuck && (audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_DUCK) != 0) {
             if (!muted) {
@@ -1608,19 +1617,18 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private boolean requestAudioFocus() {
-        if (audioFocusBehaviorFlag == 0 || audioFocusRequested) {
+        if (audioFocusBehaviorFlag == 0 || audioFocusGranted) {
             return true;
         } else {
             Log.d(TAG, "Request audio focus");
-            final WeakReference<SRGMediaPlayerController> selfReference = new WeakReference<>(this);
-
+            //final WeakReference<SRGMediaPlayerController> selfReference = new WeakReference<>(this);
             int result = audioManager.requestAudioFocus(
-                    new OnAudioFocusChangeListener(selfReference),
+                    audioFocusChangeListener,
                     AudioManager.STREAM_MUSIC,
                     AudioManager.AUDIOFOCUS_GAIN);
 
             if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-                audioFocusRequested = true;
+                audioFocusGranted = true;
                 return true;
             } else {
                 logE("Could not get audio focus granted...");
@@ -1630,11 +1638,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void abandonAudioFocus() {
-        if (audioFocusRequested && audioFocusBehaviorFlag != 0) {
+        if (audioFocusGranted && audioFocusBehaviorFlag != 0) {
             Log.d(TAG, "Abandon audio focus");
 
-            audioManager.abandonAudioFocus(null);
-            audioFocusRequested = false;
+            audioManager.abandonAudioFocus(audioFocusChangeListener);
+            audioFocusGranted = false;
         }
     }
 
