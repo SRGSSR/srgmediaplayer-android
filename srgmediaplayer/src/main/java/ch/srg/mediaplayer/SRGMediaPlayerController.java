@@ -73,7 +73,7 @@ import ch.srg.mediaplayer.segment.model.Segment;
  * if used in conjonction with a SRGMediaPlayerView can handle Video playback base on delegation on
  * actual players, like android.MediaPlayer or ExoPlayer
  */
-@SuppressWarnings({"unused", "unchecked", "UnusedReturnValue", "WeakerAccess"})
+@SuppressWarnings({"unused", "unchecked", "UnusedReturnValue", "WeakerAccess", "PointlessBitwiseExpression"})
 public class SRGMediaPlayerController implements Handler.Callback,
         Player.EventListener,
         SimpleExoPlayer.VideoListener,
@@ -205,7 +205,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     /**
      * Interface definition for a callback to be invoked when the status changes or is periodically emitted.
      */
-    @SuppressWarnings({"WeakerAccess", "unused"})
+    @SuppressWarnings({"WeakerAccess", "unused", "SameParameterValue"})
     public static class Event {
 
         public enum ScreenType {
@@ -397,7 +397,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private State state = State.IDLE;
 
-    private Boolean playWhenReady = true;
+    private boolean exoPlayerCurrentPlayWhenReady;
 
     private Long seekToWhenReady = null;
 
@@ -406,6 +406,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private boolean muted = false;
 
+    @NonNull
     private final SimpleExoPlayer exoPlayer;
     private final AudioCapabilitiesReceiver audioCapabilitiesReceiver;
 
@@ -480,6 +481,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         exoPlayer.setAudioDebugListener(eventLogger);
         exoPlayer.setVideoDebugListener(eventLogger);
         exoPlayer.setMetadataOutput(eventLogger);
+        exoPlayerCurrentPlayWhenReady = exoPlayer.getPlayWhenReady();
 
         audioFocusChangeListener = new OnAudioFocusChangeListener(new WeakReference<>(this));
         audioFocusGranted = false;
@@ -555,7 +557,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @throws SRGMediaPlayerException player exception
      */
     public boolean play(@NonNull Uri uri, Long startPositionMs, @SRGStreamType int streamType) throws SRGMediaPlayerException {
-        return play(uri, startPositionMs, streamType, null);
+        prepare(uri, startPositionMs, streamType, null);
+        return start();
     }
 
     /**
@@ -568,25 +571,21 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @param uri             uri of the media
      * @param startPositionMs start position in milliseconds or null to prevent seek
      * @param streamType      {@link SRGMediaPlayerController#STREAM_DASH}, {@link SRGMediaPlayerController#STREAM_HLS}, {@link SRGMediaPlayerController#STREAM_HTTP_PROGRESSIVE} or {@link SRGMediaPlayerController#STREAM_LOCAL_FILE}
-     * @return true when media is preparing and in the process of being started
      * @throws SRGMediaPlayerException player exception
      */
     @SuppressWarnings("ConstantConditions")
-    public boolean play(@NonNull Uri uri, Long startPositionMs, @SRGStreamType int streamType, List<Segment> segments) throws SRGMediaPlayerException {
+    public void prepare(@NonNull Uri uri,
+                        Long startPositionMs,
+                        @SRGStreamType int streamType,
+                        List<Segment> segments) throws SRGMediaPlayerException {
         if (uri == null) {
             throw new IllegalArgumentException("Invalid argument: null uri");
         }
-        boolean isStarted = start();
-        if (isStarted) {
         PrepareUriData data = new PrepareUriData(uri, startPositionMs, streamType, segments);
-        sendMessage(MSG_PREPARE_FOR_URI, data);
-        if (startPositionMs != null) {
-            seekTo(startPositionMs);
-        }
-            return true;
-        } else {
-            return false;
-        }
+            sendMessage(MSG_PREPARE_FOR_URI, data);
+            if (startPositionMs != null) {
+                seekTo(startPositionMs);
+            }
     }
 
     public void keepScreenOn(boolean lock) {
@@ -595,7 +594,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     class PrepareUriData {
-
         Uri uri;
         Long position;
         int streamType;
@@ -714,9 +712,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 setStateInternal(State.PREPARING);
                 PrepareUriData data = (PrepareUriData) msg.obj;
                 Uri uri = data.uri;
-                if (seekToWhenReady == null) {
-                    seekToWhenReady = data.position;
-                }
                 this.segments.clear();
                 currentSegment = null;
                 if (data.segments != null) {
@@ -728,7 +723,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     if (mediaPlayerView != null) {
                         internalUpdateMediaPlayerViewBound();
                     }
-                    exoPlayer.setPlayWhenReady(playWhenReady);
                     if (seekToWhenReady != null) {
                         try {
                             exoPlayer.seekTo(seekToWhenReady);
@@ -928,7 +922,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (currentSeekTarget != null) {
             if (currentPosition != UNKNOWN_TIME
                     && currentPosition != currentSeekTarget
-                    || !playWhenReady) {
+                    || !exoPlayerCurrentPlayWhenReady) {
                 currentSeekTarget = null;
                 postEventInternal(Event.Type.DID_SEEK);
             }
@@ -1061,34 +1055,29 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void applyStateInternal() {
-        if (exoPlayer != null) {
-            muteInternal(muted);
-            exoPlayer.setPlayWhenReady(playWhenReady);
-            Long seekTarget = this.seekToWhenReady;
-            if (seekTarget != null) {
-                postEventInternal(Event.Type.WILL_SEEK);
-                Log.v(TAG, "Apply state / Seeking to " + seekTarget);
-                try {
-                    exoPlayer.seekTo(seekTarget);
-                    currentSeekTarget = seekTarget;
-                    this.seekToWhenReady = null;
-                } catch (IllegalStateException ignored) {
-                }
+        muteInternal(muted);
+        Long seekTarget = this.seekToWhenReady;
+        if (seekTarget != null) {
+            postEventInternal(Event.Type.WILL_SEEK);
+            Log.v(TAG, "Apply state / Seeking to " + seekTarget);
+            try {
+                exoPlayer.seekTo(seekTarget);
+                currentSeekTarget = seekTarget;
+                this.seekToWhenReady = null;
+            } catch (IllegalStateException ignored) {
             }
-            if (playWhenReady) {
-                schedulePeriodUpdate();
-            }
+        }
+        if (exoPlayerCurrentPlayWhenReady) {
+            schedulePeriodUpdate();
         }
     }
 
     private void manageKeepScreenOnInternal() {
-        int playbackState = exoPlayer == null ? Player.STATE_IDLE : exoPlayer.getPlaybackState();
-        boolean playWhenReady = exoPlayer != null && exoPlayer.getPlayWhenReady();
+        int playbackState = exoPlayer.getPlaybackState();
+        boolean playWhenReady = exoPlayer.getPlayWhenReady();
         final boolean lock = externalWakeLock ||
                 ((playbackState == Player.STATE_READY || playbackState == Player.STATE_BUFFERING) && playWhenReady);
-        logV("Scheduling change keepScreenOn currently attached mediaPlayerView to " + lock
-                + state + " " +
-                (exoPlayer != null ? playbackState + " " + playWhenReady : "no exo"));
+        logV("Scheduling change keepScreenOn currently attached mediaPlayerView to " + lock + state + " " + playbackState + " " + playWhenReady);
         if (currentViewKeepScreenOn != lock) {
             currentViewKeepScreenOn = lock;
             mainHandler.post(new Runnable() {
@@ -1169,7 +1158,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     public boolean isPlaying() {
-        return state == State.READY && exoPlayer != null && exoPlayer.getPlaybackState() == Player.STATE_READY && exoPlayer.getPlayWhenReady();
+        return state == State.READY && exoPlayer.getPlaybackState() == Player.STATE_READY && exoPlayer.getPlayWhenReady();
     }
 
     /**
@@ -1184,15 +1173,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @return media position
      */
     public long getMediaPosition() {
-        if (exoPlayer != null) {
-            Long seekToWhenReady = this.seekToWhenReady;
-            if (seekToWhenReady != null) {
-                return seekToWhenReady;
-            } else {
-                return exoPlayer.getCurrentPosition();
-            }
+        Long seekToWhenReady = this.seekToWhenReady;
+        if (seekToWhenReady != null) {
+            return seekToWhenReady;
         } else {
-            return UNKNOWN_TIME;
+            return exoPlayer.getCurrentPosition();
         }
     }
 
@@ -1200,11 +1185,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @return Media duration relative to 0.
      */
     public long getMediaDuration() {
-        if (exoPlayer != null) {
-            return exoPlayer.getDuration();
-        } else {
-            return UNKNOWN_TIME;
-        }
+        return exoPlayer.getDuration();
     }
 
     /**
@@ -1216,27 +1197,15 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @return reference wall clock time in ms
      */
     public long getLiveTime() {
-        if (exoPlayer != null) {
-            return getPlaylistStartTime();
-        } else {
-            return UNKNOWN_TIME;
-        }
+        return getPlaylistStartTime();
     }
 
     public long getBufferPosition() {
-        if (exoPlayer != null) {
-            return exoPlayer.getBufferedPosition();
-        } else {
-            return UNKNOWN_TIME;
-        }
+        return exoPlayer.getBufferedPosition();
     }
 
     public int getBufferPercentage() {
-        if (exoPlayer != null) {
-            return exoPlayer.getBufferedPercentage();
-        } else {
-            return 0;
-        }
+        return exoPlayer.getBufferedPercentage();
     }
 
     public void showControlOverlays() {
@@ -1291,9 +1260,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void internalUpdateMediaPlayerViewBound() {
-        //Both not null
-        if (mediaPlayerView != null && exoPlayer != null) {
-
+        if (mediaPlayerView != null) {
             if (!canRenderInView(mediaPlayerView.getVideoRenderingView())) {
                 // We need to create a new rendering view.
                 createRenderingViewInMainThread(mediaPlayerView.getContext());
@@ -1312,15 +1279,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     }
                 });
             }
-
-        } else
+        } else {
             // mediaPlayerView null, just unbind delegate
-            if (mediaPlayerView == null) {
-                unbindRenderingView();
-            }
-        //Other cases are :
-        // - both mediaPlayerView and delegate null, do nothing
-        // - delegate null only, mediaPlayerView already stored as class attributes and will be set when needed
+            unbindRenderingView();
+        }
     }
 
     private void bindRenderingViewInUiThread() throws SRGMediaPlayerException {
@@ -1335,12 +1297,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void pushSurface() {
-        if (exoPlayer != null) {
-            if (renderingView instanceof SurfaceView) {
-                exoPlayer.setVideoSurfaceView((SurfaceView) renderingView);
-            } else if (renderingView instanceof TextureView) {
-                exoPlayer.setVideoTextureView((TextureView) renderingView);
-            }
+        if (renderingView instanceof SurfaceView) {
+            exoPlayer.setVideoSurfaceView((SurfaceView) renderingView);
+        } else if (renderingView instanceof TextureView) {
+            exoPlayer.setVideoTextureView((TextureView) renderingView);
         }
     }
 
@@ -1381,7 +1341,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                         public void surfaceCreated(SurfaceHolder holder) {
                             Log.v(TAG, renderingView + "binding, surfaceCreated" + mediaPlayerView);
                             try {
-                                if (exoPlayer != null && ((SurfaceView) renderingView).getHolder() == holder) {
+                                if (((SurfaceView) renderingView).getHolder() == holder) {
                                     bindRenderingViewInUiThread();
                                 } else {
                                     Log.d(TAG, "Surface created, but media player delegate retired");
@@ -1414,7 +1374,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                         @Override
                         public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
                             Log.v(TAG, renderingView + "binding, surfaceTextureAvailable" + mediaPlayerView);
-                            if (exoPlayer != null && isCurrent(surfaceTexture)) {
+                            if (isCurrent(surfaceTexture)) {
                                 try {
                                     bindRenderingViewInUiThread();
                                 } catch (SRGMediaPlayerException e) {
@@ -1448,12 +1408,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void unbindRenderingView() {
-        if (exoPlayer != null) {
-            if (renderingView instanceof SurfaceView) {
-                exoPlayer.clearVideoSurfaceView((SurfaceView) renderingView);
-            } else if (renderingView instanceof TextureView) {
-                exoPlayer.clearVideoTextureView((TextureView) renderingView);
-            }
+        if (renderingView instanceof SurfaceView) {
+            exoPlayer.clearVideoSurfaceView((SurfaceView) renderingView);
+        } else if (renderingView instanceof TextureView) {
+            exoPlayer.clearVideoTextureView((TextureView) renderingView);
         }
         renderingView = null;
     }
@@ -1561,8 +1519,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 handleAudioFocusLoss(false, false);
                 break;
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+                handleAudioFocusLoss(true, false);
+                break;
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
-                handleAudioFocusLoss(true, focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK);
+                handleAudioFocusLoss(true, true);
                 break;
             case AudioManager.AUDIOFOCUS_GAIN:
             case AudioManager.AUDIOFOCUS_GAIN_TRANSIENT:
@@ -1600,7 +1560,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void handleAudioFocusLoss(boolean transientFocus, boolean mayDuck) {
-        audioFocusGranted = false; //NO more Audio focus
+        audioFocusGranted = false;
         boolean playing = isPlaying();
         if (mayDuck && (audioFocusBehaviorFlag & AUDIO_FOCUS_FLAG_DUCK) != 0) {
             if (!muted) {
@@ -1955,9 +1915,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
             }
             this.playbackState = playbackState;
         }
-        if (this.playWhenReady == null || this.playWhenReady != playWhenReady) {
+        if (this.exoPlayerCurrentPlayWhenReady != playWhenReady) {
             sendMessage(MSG_PLAYER_PLAY_WHEN_READY_COMMITED);
-            this.playWhenReady = playWhenReady;
+            this.exoPlayerCurrentPlayWhenReady = playWhenReady;
         }
         manageKeepScreenOnInternal();
     }
