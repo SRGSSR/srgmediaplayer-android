@@ -583,9 +583,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
         PrepareUriData data = new PrepareUriData(uri, startPositionMs, streamType, segments);
         sendMessage(MSG_PREPARE_FOR_URI, data);
-        if (startPositionMs != null) {
-            seekTo(startPositionMs);
-        }
     }
 
     public void keepScreenOn(boolean lock) {
@@ -713,6 +710,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 PrepareUriData data = (PrepareUriData) msg.obj;
                 Uri uri = data.uri;
                 this.segments.clear();
+                seekToWhenReady = data.position;
                 currentSegment = null;
                 if (data.segments != null) {
                     segments.addAll(data.segments);
@@ -722,13 +720,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 try {
                     if (mediaPlayerView != null) {
                         internalUpdateMediaPlayerViewBound();
-                    }
-                    if (seekToWhenReady != null) {
-                        try {
-                            exoPlayer.seekTo(seekToWhenReady);
-                            seekToWhenReady = null;
-                        } catch (IllegalStateException ignored) {
-                        }
                     }
                     prepareInternal(uri, data.streamType);
                 } catch (SRGMediaPlayerException e) {
@@ -906,7 +897,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
             }
 
             exoPlayer.prepare(mediaSource);
-
         } catch (Exception e) {
             release();
             throw new SRGMediaPlayerException(e);
