@@ -576,13 +576,17 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (uri == null) {
             throw new IllegalArgumentException("Invalid argument: null uri");
         }
+        boolean isStarted = start();
+        if (isStarted) {
         PrepareUriData data = new PrepareUriData(uri, startPositionMs, streamType, segments);
         sendMessage(MSG_PREPARE_FOR_URI, data);
-        boolean isStarted = start();
         if (startPositionMs != null) {
             seekTo(startPositionMs);
         }
-        return isStarted;
+            return true;
+        } else {
+            return false;
+        }
     }
 
     public void keepScreenOn(boolean lock) {
