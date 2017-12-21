@@ -582,10 +582,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
             throw new IllegalArgumentException("Invalid argument: null uri");
         }
         PrepareUriData data = new PrepareUriData(uri, startPositionMs, streamType, segments);
-            sendMessage(MSG_PREPARE_FOR_URI, data);
-            if (startPositionMs != null) {
-                seekTo(startPositionMs);
-            }
+        sendMessage(MSG_PREPARE_FOR_URI, data);
+        if (startPositionMs != null) {
+            seekTo(startPositionMs);
+        }
     }
 
     public void keepScreenOn(boolean lock) {
@@ -944,7 +944,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 if (blockedSegment != segmentBeingSkipped) {
                     Log.v("SegmentTest", "Skipping over " + blockedSegment.getIdentifier());
                     segmentBeingSkipped = blockedSegment;
-                    postBlockedSegmentEvent(Event.Type.SEGMENT_SKIPPED_BLOCKED, blockedSegment);
                     seekEndOfBlockedSegment(blockedSegment);
                 }
             } else {
@@ -969,19 +968,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void seekEndOfBlockedSegment(Segment segment) {
-        Long mediaPosition = segment.getMarkOut();
-        Segment blockedSegment = getBlockedSegment(mediaPosition);
-        if (blockedSegment != null) {
-            postBlockedSegmentEvent(Event.Type.SEGMENT_SKIPPED_BLOCKED, blockedSegment);
-            long markOut = blockedSegment.getMarkOut();
-            if (markOut > mediaPosition) {
-                seekEndOfBlockedSegment(blockedSegment);
-            } else {
-                seekTo(mediaPosition);
-            }
-        } else {
-            seekTo(mediaPosition);
-        }
+        postBlockedSegmentEvent(Event.Type.SEGMENT_SKIPPED_BLOCKED, segment);
+        seekTo(segment.getMarkOut());
     }
 
     @Nullable
