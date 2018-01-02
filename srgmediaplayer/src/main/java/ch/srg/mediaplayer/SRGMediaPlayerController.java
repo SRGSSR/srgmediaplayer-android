@@ -1844,9 +1844,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @return loading state (preparing, buffering or seek pending)
      */
     public boolean isLoading() {
-        return getState() == SRGMediaPlayerController.State.PREPARING
-                || getState() == SRGMediaPlayerController.State.BUFFERING
-                || isSeekPending();
+        return getState() == State.PREPARING || getState() == State.BUFFERING || isSeekPending();
     }
 
 
