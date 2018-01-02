@@ -305,9 +305,12 @@ public class PlaybackTest extends MediaPlayerTest {
         assertFalse(controller.isPlaying());
 
         controller.seekTo(60 * 1000);
+        assertTrue(controller.isLoading() || controller.isPlaying());
         waitForState(SRGMediaPlayerController.State.READY);
         assertEquals(60,controller.getMediaPosition() / 1000);
-        assertTrue(controller.isPlaying());
+        while (!controller.isPlaying()) {
+            Thread.sleep(100);
+        }
     }
 
     @Test
