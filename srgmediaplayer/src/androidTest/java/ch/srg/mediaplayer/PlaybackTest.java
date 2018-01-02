@@ -305,9 +305,12 @@ public class PlaybackTest extends MediaPlayerTest {
         assertFalse(controller.isPlaying());
 
         controller.seekTo(60 * 1000);
+        assertTrue(controller.isLoading() || controller.isPlaying());
         waitForState(SRGMediaPlayerController.State.READY);
         assertEquals(60,controller.getMediaPosition() / 1000);
-        assertTrue(controller.isPlaying());
+        while (!controller.isPlaying()) {
+            Thread.sleep(100);
+        }
     }
 
     @Test
@@ -338,6 +341,26 @@ public class PlaybackTest extends MediaPlayerTest {
         waitForEvent(SRGMediaPlayerController.Event.Type.DID_SEEK);
         assertEquals(60,controller.getMediaPosition() / 1000);
         assertFalse(controller.isPlaying());
+    }
+
+    @Test
+    public void testPauseStartPositionKept() throws Exception {
+        controller.play(VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
+        waitForState(SRGMediaPlayerController.State.READY);
+        assertTrue(controller.isPlaying());
+        controller.seekTo(60 * 1000);
+        waitForEvent(SRGMediaPlayerController.Event.Type.DID_SEEK);
+        controller.pause();
+        Thread.sleep(100); // Need to wait
+        assertFalse(controller.isPlaying());
+        assertEquals(60,controller.getMediaPosition() / 1000);
+
+        controller.start();
+        waitForState(SRGMediaPlayerController.State.READY);
+        waitForEvent(SRGMediaPlayerController.Event.Type.PLAYING_STATE_CHANGE);
+
+        assertEquals(60,controller.getMediaPosition() / 1000);
+        assertTrue(controller.isPlaying());
     }
 
     @Test
