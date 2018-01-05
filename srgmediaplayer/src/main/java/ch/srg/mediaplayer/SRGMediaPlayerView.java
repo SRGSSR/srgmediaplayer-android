@@ -4,10 +4,14 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Rect;
+import android.graphics.SurfaceTexture;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.Surface;
+import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
@@ -24,38 +28,15 @@ import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.ui.SubtitleView;
 import com.google.android.exoplayer2.util.Util;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * This class is a placeholder for some video.
  * Place it in your layout, or create it programmatically and bind it to a SRGMediaPlayerController to play video
  */
 public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchListener {
-
-    // This code may be used to disallow multiple view on Nexus 5 for exemple
-    //
-    // private static final AtomicInteger surfaceViewCount = new AtomicInteger(0);
-    //private static final List<String> restrictedLandscapeModel = Arrays.asList("hammerhead");
-    //		if (restrictedLandscapeModel.contains(Build.DEVICE) && getContext().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-    //			if (surfaceViewCount.compareAndSet(0, 1)) {
-    //				SurfaceView surfaceView = new SurfaceView(this.getContext());
-    //				surfaceView.addOnAttachStateChangeListener(new OnAttachStateChangeListener() {
-    //					@Override
-    //					public void onViewAttachedToWindow(View v) {}
-    //
-    //					@Override
-    //					public void onViewDetachedFromWindow(View v) {
-    //						surfaceViewCount.decrementAndGet();
-    //					}
-    //				});
-    //				setVideoRenderingView(surfaceView);
-    //				return surfaceView;
-    //			} else {
-    //				return null;
-    //			}
-    //		}
-
-
     public static final String TAG = "SRGMediaPlayerView";
     public static final float DEFAULT_ASPECT_RATIO = 16 / 9f;
     public static final String UNKNOWN_DIMENSION = "0x0";
@@ -66,20 +47,9 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
     public static final int ASPECT_RATIO_21_9 = 5;
     public static final int ASPECT_RATIO_AUTO = 0;
     private static final float ASPECT_RATIO_TOLERANCE = 0.01f;
-    private boolean onTop;
-    private boolean adjustToParentScrollView;
-    private boolean debugMode;
-    private boolean subtitleViewConfigured;
 
-    public boolean isDebugMode() {
-        return debugMode;
-    }
-
-    @Nullable
-    private SubtitleView subtitleView;
-
-    public void setDebugMode(boolean debugMode) {
-        this.debugMode = debugMode;
+    public interface Listener {
+        void onVideoContentReady(@NonNull View view, @NonNull Surface surface);
     }
 
     public enum ScaleMode {
@@ -95,6 +65,20 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
         FIT
     }
 
+    public enum ViewType {
+        TYPE_SURFACEVIEW,
+        TYPE_TEXTUREVIEW,
+        TYPE_360,
+    }
+
+    private boolean onTop;
+    private boolean adjustToParentScrollView;
+    private boolean debugMode;
+    private boolean subtitleViewConfigured;
+
+    @Nullable
+    private SubtitleView subtitleView;
+
     private boolean autoAspect = true;
     /**
      * Aspect ratio of the entire container.
@@ -107,11 +91,19 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
 
     private ScaleMode scaleMode = null;
 
+    @Nullable
     private View videoRenderingView;
     private int videoRenderingViewWidth = -1;
     private int videoRenderingViewHeight = -1;
     @Nullable
     private ControlTouchListener touchListener;
+    @NonNull
+    private ViewType viewType;
+
+    private Set<Listener> listeners;
+
+    private boolean isVrModeEnable;
+    private boolean isVideo360Enable;
 
     public SRGMediaPlayerView(Context context) {
         this(context, null, 0);
@@ -145,6 +137,23 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
         updateAspectRatio(aspectVal);
         adjustToParentScrollView = a.getBoolean(R.styleable.SRGMediaPlayerView_adjustToParentScrollView, true);
         a.recycle();
+        viewType = ViewType.TYPE_360; //put in preferences
+
+        this.listeners = new HashSet<>();
+    }
+
+    public boolean registerListener(@NonNull Listener listener) {
+        return this.listeners.add(listener);
+    }
+
+    public boolean unregisterListener(@NonNull Listener listener) {
+        return listeners.remove(listener);
+    }
+
+    private void notifyListeners(@NonNull View view, @NonNull Surface surface) {
+        for (Listener listener : listeners) {
+            listener.onVideoContentReady(view, surface);
+        }
     }
 
     private void updateAspectRatio(int aspectMode) {
@@ -288,7 +297,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
     }
 
     protected void onVideoRenderViewClicked() {
-
+        // Nothing
     }
 
     public boolean isControlHit(int x, int y) {
@@ -313,7 +322,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
-
         //Then we do some math to force actual size of the videoRenderingView
         if (videoRenderingView != null) {
             int l = 0, t = 0;
@@ -372,10 +380,19 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
         }
     }
 
-    @Override
-    protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
+
+    public void onPause() {
+        if (videoRenderingView instanceof SRG360VideoView) {
+            ((SRG360VideoView) videoRenderingView).firePause();
+        }
     }
+
+    public void onResume() {
+        if (videoRenderingView instanceof SRG360VideoView) {
+            ((SRG360VideoView) videoRenderingView).fireResume();
+        }
+    }
+
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -670,5 +687,94 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
             touchListener.onMediaControlBackgroundTouched();
         }
     }
+
+    public void createVideoRenderingView() {
+        if (videoRenderingView == null) {
+            switch (viewType) {
+                case TYPE_SURFACEVIEW:
+                    final SurfaceView surfaceView = new SurfaceView(getContext());
+                    surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
+                        @Override
+                        public void surfaceCreated(SurfaceHolder holder) {
+                            Log.v(TAG, videoRenderingView + "binding, surfaceCreated" + this);
+                            if (surfaceView.getHolder() == holder) {
+                                notifyListeners(videoRenderingView, surfaceView.getHolder().getSurface());
+                            } else {
+                                Log.d(TAG, "Surface created, but media player delegate retired");
+                            }
+                        }
+
+                        @Override
+                        public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+                            Log.v(TAG, videoRenderingView + "binding, surfaceChanged" + this);
+                        }
+
+                        @Override
+                        public void surfaceDestroyed(SurfaceHolder holder) {
+                            Log.v(TAG, videoRenderingView + "binding, surfaceDestroyed" + this);
+                            //TODO if a delegate is bound to this surface, we need tu unbind it
+                        }
+                    });
+                    setVideoRenderingView(surfaceView);
+                    break;
+                case TYPE_TEXTUREVIEW:
+                    final TextureView textureView = new TextureView(getContext());
+                    textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+                        @SuppressWarnings("ConstantConditions")
+                            // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
+                        boolean isCurrent(SurfaceTexture surfaceTexture) {
+                            return videoRenderingView instanceof TextureView && ((TextureView) videoRenderingView).getSurfaceTexture() == surfaceTexture;
+                        }
+
+                        @Override
+                        public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
+                            Log.v(TAG, videoRenderingView + "binding, surfaceTextureAvailable" + videoRenderingView);
+                            if (isCurrent(surfaceTexture)) {
+                                notifyListeners(videoRenderingView, null);
+                            }
+                        }
+
+                        @Override
+                        public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
+                            // TODO what to do?
+                        }
+
+                        @Override
+                        public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
+                            return false;
+                        }
+
+                        @Override
+                        public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
+
+                        }
+                    });
+                    setVideoRenderingView(textureView);
+                    break;
+                case TYPE_360:
+                    final SRG360VideoView srg360VideoView = new SRG360VideoView(getContext(), new SRG360VideoView.Callback() {
+                        @Override
+                        public void onSurfaceReady(Surface surface) {
+                            notifyListeners(videoRenderingView, surface);
+                        }
+                    });
+                    setVideoRenderingView(srg360VideoView);
+                    break;
+            }
+        } else {
+            Log.d(TAG, "ContentVideoAlreadyCreated");
+        }
+    }
+
+
+    public void setDebugMode(boolean debugMode) {
+        this.debugMode = debugMode;
+    }
+
+    public boolean isDebugMode() {
+        return debugMode;
+    }
+
+
 }
 
