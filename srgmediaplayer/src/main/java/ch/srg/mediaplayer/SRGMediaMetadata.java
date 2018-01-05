@@ -4,6 +4,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 /**
+ * TODO : Should move to ILDataSource project, never used in SRGMediaPlayer
  * Created by seb on 19/07/16.
  */
 public interface SRGMediaMetadata {
