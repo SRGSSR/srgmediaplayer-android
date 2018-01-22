@@ -3,6 +3,7 @@ package ch.srg.mediaplayer;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.View;
@@ -33,8 +34,10 @@ import android.view.ViewGroup;
     static final int DEFAULT_AUTO_HIDE_DELAY = 3000;
     private static int overlayAutoHideDelay = DEFAULT_AUTO_HIDE_DELAY;
 
+    @Nullable
     private SRGMediaPlayerView videoContainer;
-    private SRGMediaPlayerController playerController;
+    @NonNull
+    private final SRGMediaPlayerController playerController;
 
     private boolean showingControlOverlays = true;
     private boolean showingLoadings = true;
@@ -55,7 +58,7 @@ import android.view.ViewGroup;
         return remote || paused || playerController.isReleased();
     }
 
-    OverlayController(SRGMediaPlayerController playerController) {
+    OverlayController(@NonNull SRGMediaPlayerController playerController) {
         this.playerController = playerController;
         showControlOverlays();
         updateWithPlayer();
@@ -93,8 +96,8 @@ import android.view.ViewGroup;
             this.videoContainer.setControlTouchListener(null);
         }
         this.videoContainer = videoContainer;
-        if (this.videoContainer != null) {
-            this.videoContainer.setControlTouchListener(this);
+        if (videoContainer != null) {
+            videoContainer.setControlTouchListener(this);
         }
         propagateOverlayVisibility();
         updateLoadings();
@@ -192,7 +195,9 @@ import android.view.ViewGroup;
     }
 
     void propagateOverlayVisibility() {
-        Log.v(TAG, "visibility: " + showingControlOverlays + ", " + controlsForced + " | " + showingLoadings + ", " + loadingForced);
+        if (playerController.isDebugMode()) {
+            Log.v(TAG, "visibility: " + showingControlOverlays + ", " + controlsForced + " | " + showingLoadings + ", " + loadingForced + " for " + (videoContainer != null ? videoContainer.hashCode() : "(null)"));
+        }
         if (videoContainer != null) {
             int childCount = videoContainer.getChildCount();
             for (int i = 0; i < childCount; i++) {
@@ -255,6 +260,10 @@ import android.view.ViewGroup;
         this.controlsForced = controlsForced;
         if (controlsForced != null) {
             handler.removeMessages(MSG_HIDE_CONTROLS);
+        } else {
+            if (showingControlOverlays) {
+                ensureControlsHiding();
+            }
         }
         propagateOverlayVisibility();
     }
