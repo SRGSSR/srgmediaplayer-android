@@ -260,6 +260,10 @@ import android.view.ViewGroup;
         this.controlsForced = controlsForced;
         if (controlsForced != null) {
             handler.removeMessages(MSG_HIDE_CONTROLS);
+        } else {
+            if (showingControlOverlays) {
+                ensureControlsHiding();
+            }
         }
         propagateOverlayVisibility();
     }
