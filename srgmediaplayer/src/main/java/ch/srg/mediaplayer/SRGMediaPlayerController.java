@@ -1006,6 +1006,30 @@ public class SRGMediaPlayerController implements Handler.Callback,
         broadcastEvent(new Event(this, type, null, segment, segment.getBlockingReason()));
     }
 
+    private void switchToSegment(Segment segment) {
+        postSegmentEvent(Event.Type.SEGMENT_SELECTED, segment);
+        seekTo(segment.getMarkIn());
+    }
+
+    /**
+     * Start playing a segment in the segment list. This is considered a user request.
+     * This will seek to the beginning of the segment whether or not we are currently in this
+     * segment.
+     * This does not affect playing state.
+     *
+     * @param identifier segment identifier
+     * @return true if segment found and switch occured
+     */
+    public boolean switchToSegment(String identifier) {
+        for (Segment segment : segments) {
+            if (TextUtils.equals(segment.getIdentifier(), identifier)) {
+                switchToSegment(segment);
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void sendUserTrackedProgress(long time) {
         userTrackingProgress = time;
         userChangingProgress = true;
