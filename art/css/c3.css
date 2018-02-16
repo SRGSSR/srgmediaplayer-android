@@ -1,0 +1,16 @@
+.background {
+  background-color: rgb(0, 0, 0);
+}
+
+.logo {
+  background-image: url(https://srgssr.github.io/SRGMediaPlayer-Android/art/logo/c3-logo-text_512.png);
+}
+
+.progressBar {
+  background-color: rgb(98, 255, 171);
+}
+
+.watermark {
+  background-image: url(https://srgssr.github.io/SRGMediaPlayer-Android/art/watermark/c3_logo-200x200.png);
+  background-size: 57px 57px;
+}
