@@ -3,7 +3,7 @@
 }
 
 .logo {
-  background-image: url(https://srgssr.github.io/SRGMediaPlayer-Android/art/logo/c3-logo-text_512.png);
+  background-image: url(https://srgssr.github.io/SRGMediaPlayer-Android/art/logo/c3.png);
 }
 
 .progressBar {
@@ -11,6 +11,6 @@
 }
 
 .watermark {
-  background-image: url(https://srgssr.github.io/SRGMediaPlayer-Android/art/watermark/c3_logo-200x200.png);
+  background-image: url(https://srgssr.github.io/SRGMediaPlayer-Android/art/watermark/c3.png);
   background-size: 57px 57px;
 }
