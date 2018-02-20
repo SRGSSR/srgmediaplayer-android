@@ -10,6 +10,10 @@
   background-color: rgb(98, 255, 171);
 }
 
+.splash {
+  background-image: url(https://srgssr.github.io/SRGMediaPlayer-Android/art/logo/c3_splash.png);
+}
+
 .watermark {
   background-image: url(https://srgssr.github.io/SRGMediaPlayer-Android/art/watermark/c3.png);
   background-size: 57px 57px;
