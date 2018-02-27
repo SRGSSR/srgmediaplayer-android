@@ -138,7 +138,7 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
         if (fromUser && controller != null) {
-            controller.sendUserTrackedProgress(seekBarSeekToMs);
+//            controller.sendUserTrackedProgress(seekBarSeekToMs);
         }
         if (fromUser) {
             seekBarSeekToMs = progress;
@@ -152,7 +152,7 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
         if (controller != null) {
-            controller.stopUserTrackingProgress();
+//            controller.stopUserTrackingProgress();
             if (seekBarSeekToMs >= 0 && controller != null) {
                 controller.seekTo(seekBarSeekToMs);
                 seekBarSeekToMs = -1;
@@ -212,7 +212,8 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
             currentPosition = position;
             currentDuration = duration;
             if (controller != null
-                    && !controller.isUserChangingProgress()) {
+//                    && !controller.isUserChangingProgress()
+                    ) {
                 int bufferPercent = controller.getBufferPercentage();
                 if (bufferPercent > 0) {
                     seekBar.setSecondaryProgress((int) duration * bufferPercent / 100);
