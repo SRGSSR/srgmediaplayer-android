@@ -31,31 +31,6 @@ import java.util.List;
  * Place it in your layout, or create it programmatically and bind it to a SRGMediaPlayerController to play video
  */
 public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchListener {
-
-    // This code may be used to disallow multiple view on Nexus 5 for exemple
-    //
-    // private static final AtomicInteger surfaceViewCount = new AtomicInteger(0);
-    //private static final List<String> restrictedLandscapeModel = Arrays.asList("hammerhead");
-    //		if (restrictedLandscapeModel.contains(Build.DEVICE) && getContext().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-    //			if (surfaceViewCount.compareAndSet(0, 1)) {
-    //				SurfaceView surfaceView = new SurfaceView(this.getContext());
-    //				surfaceView.addOnAttachStateChangeListener(new OnAttachStateChangeListener() {
-    //					@Override
-    //					public void onViewAttachedToWindow(View v) {}
-    //
-    //					@Override
-    //					public void onViewDetachedFromWindow(View v) {
-    //						surfaceViewCount.decrementAndGet();
-    //					}
-    //				});
-    //				setVideoRenderingView(surfaceView);
-    //				return surfaceView;
-    //			} else {
-    //				return null;
-    //			}
-    //		}
-
-
     public static final String TAG = "SRGMediaPlayerView";
     public static final float DEFAULT_ASPECT_RATIO = 16 / 9f;
     public static final String UNKNOWN_DIMENSION = "0x0";
@@ -257,8 +232,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
         this.touchListener = controlTouchListener;
     }
 
-    private boolean videoRenderViewTrackingTouch = false;
-
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
         Log.v(SRGMediaPlayerController.TAG, "dispatchTouchEvent " + event.getAction());
@@ -267,47 +240,13 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
         boolean handled = super.dispatchTouchEvent(event);
 
         if (touchListener != null) {
-            boolean controlHandled = isControlHit((int) event.getX(), (int) event.getY()) && handled;
-            if (controlHandled) {
-                touchListener.onMediaControlTouched();
-            } else {
-                if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
-                    videoRenderViewTrackingTouch = true;
-                }
-                if (videoRenderViewTrackingTouch) {
-                    if (event.getAction() == MotionEvent.ACTION_UP) {
-                        onVideoRenderViewClicked();
-                        videoRenderViewTrackingTouch = false;
-                        touchListener.onMediaControlBackgroundTouched();
-                    }
-                }
-                handled = true;
-            }
+            touchListener.onMediaControlTouched();
         }
         return handled;
     }
 
     protected void onVideoRenderViewClicked() {
 
-    }
-
-    public boolean isControlHit(int x, int y) {
-        boolean controlHit = false;
-        for (int i = getChildCount(); i >= 0; --i) {
-            View child = getChildAt(i);
-            if (child != null) {
-                ViewGroup.LayoutParams layoutParams = child.getLayoutParams();
-                if (child.getVisibility() == VISIBLE && layoutParams instanceof LayoutParams && ((LayoutParams) layoutParams).overlayMode == LayoutParams.OVERLAY_CONTROL) {
-                    Rect bounds = new Rect();
-                    child.getHitRect(bounds);
-                    if (bounds.contains(x, y)) {
-                        controlHit = true;
-                        break;
-                    }
-                }
-            }
-        }
-        return controlHit;
     }
 
     @Override
@@ -510,22 +449,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
     @Override
     public RelativeLayout.LayoutParams generateLayoutParams(AttributeSet attrs) {
         return new SRGMediaPlayerView.LayoutParams(getContext(), attrs);
-    }
-
-    /**
-     * Apply a specific overlayMode. Make sure to call {@link SRGMediaPlayerController#updateOverlayVisibilities}
-     * to force visibilty update after this.
-     *
-     * @param targetView the view on which the mode will be applied
-     * @param targetMode the mode to apply
-     * @return true if the mode is applied, false otherwise
-     */
-    public static final boolean applyOverlayMode(View targetView, int targetMode) {
-        if (targetView != null && targetView.getLayoutParams() != null && targetView.getLayoutParams() instanceof SRGMediaPlayerView.LayoutParams) {
-            ((SRGMediaPlayerView.LayoutParams) targetView.getLayoutParams()).overlayMode = targetMode;
-            return true;
-        }
-        return false;
     }
 
     /**
