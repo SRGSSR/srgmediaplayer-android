@@ -3,8 +3,6 @@ package ch.srg.mediaplayer;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.os.Handler;
-import android.os.Message;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -12,7 +10,6 @@ import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
-import android.view.ViewDebug;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.accessibility.CaptioningManager;
@@ -31,7 +28,7 @@ import java.util.List;
  * This class is a placeholder for some video.
  * Place it in your layout, or create it programmatically and bind it to a SRGMediaPlayerController to play video
  */
-public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchListener, Handler.Callback {
+public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchListener {
 
     public enum ScaleMode {
         CENTER_INSIDE,
@@ -46,10 +43,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
         FIT
     }
 
-    public interface ControlVisibilityChangeListener {
-        void onControlVisibilityChanged(boolean visible);
-    }
-
     public static final String TAG = "SRGMediaPlayerView";
     public static final float DEFAULT_ASPECT_RATIO = 16 / 9f;
     public static final String UNKNOWN_DIMENSION = "0x0";
@@ -60,21 +53,12 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
     public static final int ASPECT_RATIO_21_9 = 5;
     public static final int ASPECT_RATIO_AUTO = 0;
     private static final float ASPECT_RATIO_TOLERANCE = 0.01f;
-    public static final int DEFAULT_AUTO_HIDE_DELAY = 3000;
-    private static int overlayAutoHideDelay = DEFAULT_AUTO_HIDE_DELAY;
-    private static final int MSG_HIDE_CONTROLS = 1;
+
 
     private boolean onTop;
     private boolean adjustToParentScrollView;
     private boolean debugMode;
     private boolean subtitleViewConfigured;
-
-    private boolean showingControlOverlays = true;
-
-    private final Handler handler = new Handler(this);
-
-    private ControlVisibilityChangeListener controlVisibilityChangeListener;
-
 
     @Nullable
     private SubtitleView subtitleView;
@@ -253,9 +237,9 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
         //This will trigger the onTouch attached to the videorenderingview if it's the case.
         boolean handled = super.dispatchTouchEvent(event);
 
-        if (touchListener != null) {
-            touchListener.onMediaControlTouched();
-        }
+//        if (touchListener != null) {
+//            touchListener.onMediaControlTouched();
+//        }
         return handled;
     }
 
@@ -446,7 +430,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
      */
     @Override
     protected ViewGroup.LayoutParams generateDefaultLayoutParams() {
-        return new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, LayoutParams.OVERLAY_UNMANAGED);
+        return new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
     }
 
     // Override to allow type-checking of LayoutParams.
@@ -533,158 +517,9 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
         }
     }
 
-    @Override
-    public boolean handleMessage(Message msg) {
-        switch (msg.what) {
-            case MSG_HIDE_CONTROLS:
-                hide();
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    private void updateChildrenVisibility(boolean show) {
-        for (int i = 0; i < getChildCount(); i++) {
-            View child = getChildAt(i);
-            ViewGroup.LayoutParams vlp = child.getLayoutParams();
-            if (vlp instanceof SRGMediaPlayerView.LayoutParams) {
-                switch (((SRGMediaPlayerView.LayoutParams) vlp).overlayMode) {
-                    case LayoutParams.OVERLAY_ALWAYS_SHOWN:
-                        child.setVisibility(VISIBLE);
-                        break;
-                    case LayoutParams.OVERLAY_CONTROL:
-                        child.setVisibility(show ? VISIBLE : GONE);
-                        break;
-                    case LayoutParams.OVERLAY_LOADING:
-                    case LayoutParams.OVERLAY_UNMANAGED:
-                    default:
-                        // Do nothing
-                        break;
-                }
-            }
-        }
-    }
-
-    public void hide() {
-        if (showingControlOverlays) {
-            updateChildrenVisibility(false);
-            showingControlOverlays = false;
-            if (controlVisibilityChangeListener != null) {
-                controlVisibilityChangeListener.onControlVisibilityChanged(false);
-            }
-        }
-    }
-
-    public void show() {
-        cancel();
-        if (!showingControlOverlays) {
-            updateChildrenVisibility(true);
-            showingControlOverlays = true;
-            if (controlVisibilityChangeListener != null) {
-                controlVisibilityChangeListener.onControlVisibilityChanged(true);
-            }
-        }
-    }
-
-    public void cancel() {
-        handler.removeCallbacksAndMessages(null);
-    }
-
-    public void showTemporarly() {
-        show();
-        postponeControlsHiding();
-    }
-
-    public void ensureHiding() {
-        if (showingControlOverlays && !handler.hasMessages(MSG_HIDE_CONTROLS)) {
-            postponeControlsHiding();
-        }
-    }
-
-    private void postponeControlsHiding() {
-        handler.removeMessages(MSG_HIDE_CONTROLS);
-        handler.sendEmptyMessageDelayed(MSG_HIDE_CONTROLS, overlayAutoHideDelay);
-    }
-
-    public boolean isShowingControlOverlays() {
-        return this.showingControlOverlays;
-    }
-
-    public void setControlVisibilityChangeListener(ControlVisibilityChangeListener controlVisibilityChangeListener) {
-        this.controlVisibilityChangeListener = controlVisibilityChangeListener;
-        if (controlVisibilityChangeListener != null) {
-            controlVisibilityChangeListener.onControlVisibilityChanged(isShowingControlOverlays());
-        }
-    }
-
-    public static void setOverlayAutoHideDelay(int overlayAutoHideDelay) {
-        SRGMediaPlayerView.overlayAutoHideDelay = overlayAutoHideDelay;
-    }
-
-    public static int getOverlayAutoHideDelay() {
-        return SRGMediaPlayerView.overlayAutoHideDelay;
-    }
-
     public void setDebugMode(boolean debugMode) {
         this.debugMode = debugMode;
     }
 
-    /**
-     * Per-child layout information associated with VideoContainer.
-     */
-    public static class LayoutParams extends RelativeLayout.LayoutParams {
-        /**
-         * Indicate that the child must be leave unchanged
-         */
-        public static final int OVERLAY_UNMANAGED = -1;
-
-        /**
-         * Indicate that the child can be auto hidden by the component
-         */
-        public static final int OVERLAY_CONTROL = -2;
-
-        /**
-         * Indicate that the child is always shown
-         */
-        public static final int OVERLAY_ALWAYS_SHOWN = -3;
-
-        /**
-         * Indicate that the child is displayed when player is loading
-         */
-        public static final int OVERLAY_LOADING = -4;
-
-        /**
-         * Information about how is handle the component visibility. Can be one of the
-         * constants AUTO_HIDE or ALWAYS_SHOW.
-         */
-        @ViewDebug.ExportedProperty(category = "layout", mapping = {
-                @ViewDebug.IntToString(from = OVERLAY_UNMANAGED, to = "UNMANAGED"),
-                @ViewDebug.IntToString(from = OVERLAY_CONTROL, to = "CONTROL"),
-                @ViewDebug.IntToString(from = OVERLAY_ALWAYS_SHOWN, to = "ALWAYS_SHOWN"),
-                @ViewDebug.IntToString(from = OVERLAY_LOADING, to = "LOADING")
-        })
-
-        public int overlayMode;
-
-        public LayoutParams(int width, int height, int overlayMode) {
-            super(width, height);
-            this.overlayMode = overlayMode;
-        }
-
-        public LayoutParams(Context c, AttributeSet attrs) {
-            super(c, attrs);
-            TypedArray a = c.obtainStyledAttributes(attrs, R.styleable.VideoContainer_Layout);
-            this.overlayMode = a.getInt(R.styleable.VideoContainer_Layout_overlay_mode, OVERLAY_UNMANAGED);
-            a.recycle();
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        public LayoutParams(ViewGroup.LayoutParams source) {
-            super(source);
-        }
-    }
 }
 
