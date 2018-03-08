@@ -1,5 +1,6 @@
 package ch.srg.mediaplayer.segment.view;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.support.annotation.Nullable;
@@ -137,9 +138,6 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
 
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-        if (fromUser && controller != null) {
-//            controller.sendUserTrackedProgress(seekBarSeekToMs);
-        }
         if (fromUser) {
             seekBarSeekToMs = progress;
         }
@@ -152,14 +150,14 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
         if (controller != null) {
-//            controller.stopUserTrackingProgress();
-            if (seekBarSeekToMs >= 0 && controller != null) {
+            if (seekBarSeekToMs >= 0) {
                 controller.seekTo(seekBarSeekToMs);
                 seekBarSeekToMs = -1;
             }
         }
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         float seekBarX = seekBar.getX();
@@ -168,6 +166,7 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
         float y = event.getY();
 
         float seekBarWidth = seekBar.getWidth();
+
         if (event.getAction() == MotionEvent.ACTION_UP || x >= 0 && x < seekBarWidth) {
             x = Math.min(Math.max(0, x), seekBarWidth);
 
@@ -211,9 +210,7 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
         if (currentPosition != position || currentDuration != duration) {
             currentPosition = position;
             currentDuration = duration;
-            if (controller != null
-//                    && !controller.isUserChangingProgress()
-                    ) {
+            if (controller != null) {
                 int bufferPercent = controller.getBufferPercentage();
                 if (bufferPercent > 0) {
                     seekBar.setSecondaryProgress((int) duration * bufferPercent / 100);
@@ -259,9 +256,5 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
         if (controller != null) {
             update(controller.getMediaPosition());
         }
-    }
-
-    public void setHideCentralButton(boolean loading) {
-
     }
 }
