@@ -3,6 +3,7 @@ package ch.srg.mediaplayer;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.graphics.Rect;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -10,6 +11,7 @@ import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
+import android.view.ViewDebug;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.accessibility.CaptioningManager;
@@ -30,6 +32,56 @@ import java.util.List;
  */
 public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchListener {
 
+    // This code may be used to disallow multiple view on Nexus 5 for exemple
+    //
+    // private static final AtomicInteger surfaceViewCount = new AtomicInteger(0);
+    //private static final List<String> restrictedLandscapeModel = Arrays.asList("hammerhead");
+    //		if (restrictedLandscapeModel.contains(Build.DEVICE) && getContext().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+    //			if (surfaceViewCount.compareAndSet(0, 1)) {
+    //				SurfaceView surfaceView = new SurfaceView(this.getContext());
+    //				surfaceView.addOnAttachStateChangeListener(new OnAttachStateChangeListener() {
+    //					@Override
+    //					public void onViewAttachedToWindow(View v) {}
+    //
+    //					@Override
+    //					public void onViewDetachedFromWindow(View v) {
+    //						surfaceViewCount.decrementAndGet();
+    //					}
+    //				});
+    //				setVideoRenderingView(surfaceView);
+    //				return surfaceView;
+    //			} else {
+    //				return null;
+    //			}
+    //		}
+
+
+    public static final String TAG = "SRGMediaPlayerView";
+    public static final float DEFAULT_ASPECT_RATIO = 16 / 9f;
+    public static final String UNKNOWN_DIMENSION = "0x0";
+    public static final int ASPECT_RATIO_SQUARE = 1;
+    public static final int ASPECT_RATIO_4_3 = 2;
+    public static final int ASPECT_RATIO_16_10 = 3;
+    public static final int ASPECT_RATIO_16_9 = 4;
+    public static final int ASPECT_RATIO_21_9 = 5;
+    public static final int ASPECT_RATIO_AUTO = 0;
+    private static final float ASPECT_RATIO_TOLERANCE = 0.01f;
+    private boolean onTop;
+    private boolean adjustToParentScrollView;
+    private boolean debugMode;
+    private boolean subtitleViewConfigured;
+
+    public boolean isDebugMode() {
+        return debugMode;
+    }
+
+    @Nullable
+    private SubtitleView subtitleView;
+
+    public void setDebugMode(boolean debugMode) {
+        this.debugMode = debugMode;
+    }
+
     public enum ScaleMode {
         CENTER_INSIDE,
         TOP_INSIDE,
@@ -42,27 +94,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
          */
         FIT
     }
-
-    public static final String TAG = "SRGMediaPlayerView";
-    public static final float DEFAULT_ASPECT_RATIO = 16 / 9f;
-    public static final String UNKNOWN_DIMENSION = "0x0";
-    public static final int ASPECT_RATIO_SQUARE = 1;
-    public static final int ASPECT_RATIO_4_3 = 2;
-    public static final int ASPECT_RATIO_16_10 = 3;
-    public static final int ASPECT_RATIO_16_9 = 4;
-    public static final int ASPECT_RATIO_21_9 = 5;
-    public static final int ASPECT_RATIO_AUTO = 0;
-    private static final float ASPECT_RATIO_TOLERANCE = 0.01f;
-
-
-    private boolean onTop;
-    private boolean adjustToParentScrollView;
-    private boolean debugMode;
-    private boolean subtitleViewConfigured;
-
-    @Nullable
-    private SubtitleView subtitleView;
-
 
     private boolean autoAspect = true;
     /**
@@ -204,10 +235,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
         updateOnTopInternal(onTop);
     }
 
-    public boolean isDebugMode() {
-        return debugMode;
-    }
-
     private void updateOnTopInternal(boolean onTop) {
         if (videoRenderingView != null && videoRenderingView instanceof SurfaceView) {
             //((SurfaceView) videoRenderingView).setZOrderMediaOverlay(onTop);
@@ -230,6 +257,8 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
         this.touchListener = controlTouchListener;
     }
 
+    private boolean videoRenderViewTrackingTouch = false;
+
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
         Log.v(SRGMediaPlayerController.TAG, "dispatchTouchEvent " + event.getAction());
@@ -237,14 +266,48 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
         //This will trigger the onTouch attached to the videorenderingview if it's the case.
         boolean handled = super.dispatchTouchEvent(event);
 
-//        if (touchListener != null) {
-//            touchListener.onMediaControlTouched();
-//        }
+        if (touchListener != null) {
+            boolean controlHandled = isControlHit((int) event.getX(), (int) event.getY()) && handled;
+            if (controlHandled) {
+                touchListener.onMediaControlTouched();
+            } else {
+                if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
+                    videoRenderViewTrackingTouch = true;
+                }
+                if (videoRenderViewTrackingTouch) {
+                    if (event.getAction() == MotionEvent.ACTION_UP) {
+                        onVideoRenderViewClicked();
+                        videoRenderViewTrackingTouch = false;
+                        touchListener.onMediaControlBackgroundTouched();
+                    }
+                }
+                handled = true;
+            }
+        }
         return handled;
     }
 
     protected void onVideoRenderViewClicked() {
 
+    }
+
+    public boolean isControlHit(int x, int y) {
+        boolean controlHit = false;
+        for (int i = getChildCount(); i >= 0; --i) {
+            View child = getChildAt(i);
+            if (child != null) {
+                ViewGroup.LayoutParams layoutParams = child.getLayoutParams();
+                if (child.getVisibility() == VISIBLE && layoutParams instanceof LayoutParams && ((LayoutParams) layoutParams).overlayMode == LayoutParams.OVERLAY_CONTROL) {
+                    Rect bounds = new Rect();
+                    child.getHitRect(bounds);
+                    if (bounds.contains(x, y)) {
+                        controlHit = true;
+                        break;
+                    }
+                }
+            }
+        }
+        return controlHit;
     }
 
     @Override
@@ -430,7 +493,7 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
      */
     @Override
     protected ViewGroup.LayoutParams generateDefaultLayoutParams() {
-        return new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        return new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, LayoutParams.OVERLAY_UNMANAGED);
     }
 
     // Override to allow type-checking of LayoutParams.
@@ -447,6 +510,97 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
     @Override
     public RelativeLayout.LayoutParams generateLayoutParams(AttributeSet attrs) {
         return new SRGMediaPlayerView.LayoutParams(getContext(), attrs);
+    }
+
+    /**
+     * Apply a specific overlayMode. Make sure to call {@link SRGMediaPlayerController#updateOverlayVisibilities}
+     * to force visibilty update after this.
+     *
+     * @param targetView the view on which the mode will be applied
+     * @param targetMode the mode to apply
+     * @return true if the mode is applied, false otherwise
+     */
+    public static final boolean applyOverlayMode(View targetView, int targetMode) {
+        if (targetView != null && targetView.getLayoutParams() != null && targetView.getLayoutParams() instanceof SRGMediaPlayerView.LayoutParams) {
+            ((SRGMediaPlayerView.LayoutParams) targetView.getLayoutParams()).overlayMode = targetMode;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Per-child layout information associated with VideoContainer.
+     */
+    public static class LayoutParams extends RelativeLayout.LayoutParams {
+        /**
+         * Indicate that the child must be leave unchanged
+         */
+        public static final int OVERLAY_UNMANAGED = -1;
+
+        /**
+         * Indicate that the child can be auto hidden by the component
+         */
+        public static final int OVERLAY_CONTROL = -2;
+
+        /**
+         * Indicate that the child is always shown
+         */
+        public static final int OVERLAY_ALWAYS_SHOWN = -3;
+
+        /**
+         * Indicate that the child is displayed when player is loading
+         */
+        public static final int OVERLAY_LOADING = -4;
+
+        /**
+         * Information about how is handle the component visibility. Can be one of the
+         * constants AUTO_HIDE or ALWAYS_SHOW.
+         */
+        @ViewDebug.ExportedProperty(category = "layout", mapping = {
+                @ViewDebug.IntToString(from = OVERLAY_UNMANAGED, to = "UNMANAGED"),
+                @ViewDebug.IntToString(from = OVERLAY_CONTROL, to = "CONTROL"),
+                @ViewDebug.IntToString(from = OVERLAY_ALWAYS_SHOWN, to = "ALWAYS_SHOWN"),
+                @ViewDebug.IntToString(from = OVERLAY_LOADING, to = "LOADING")
+        })
+        public int overlayMode;
+
+        public LayoutParams(int width, int height, int showMode) {
+            super(width, height);
+            resolveShowMode(showMode);
+        }
+
+        public LayoutParams(Context c, AttributeSet attrs) {
+            super(c, attrs);
+            TypedArray a = c.obtainStyledAttributes(attrs, R.styleable.VideoContainer_Layout);
+            resolveShowMode(a.getInt(R.styleable.VideoContainer_Layout_overlay_mode, OVERLAY_UNMANAGED));
+            a.recycle();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public LayoutParams(ViewGroup.LayoutParams source) {
+            super(source);
+        }
+
+        private void resolveShowMode(int value) {
+            // TODO Why this ?, why not: overlayMode = value; AssertValidOverlayMode(value); ?
+            switch (value) {
+                case OVERLAY_CONTROL:
+                    this.overlayMode = OVERLAY_CONTROL;
+                    break;
+                case OVERLAY_ALWAYS_SHOWN:
+                    this.overlayMode = OVERLAY_ALWAYS_SHOWN;
+                    break;
+                case OVERLAY_LOADING:
+                    this.overlayMode = OVERLAY_LOADING;
+                    break;
+                case OVERLAY_UNMANAGED:
+                default:
+                    this.overlayMode = OVERLAY_UNMANAGED;
+                    break;
+            }
+        }
     }
 
     public void setAdjustToParentScrollView(boolean adjustToParentScrollView) {
@@ -516,10 +670,5 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
             touchListener.onMediaControlBackgroundTouched();
         }
     }
-
-    public void setDebugMode(boolean debugMode) {
-        this.debugMode = debugMode;
-    }
-
 }
 

@@ -81,6 +81,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         TextRenderer.Output {
     public static final String TAG = "SRGMediaPlayer";
     public static final String VERSION = BuildConfig.VERSION_NAME;
+    public static final int DEFAULT_AUTO_HIDE_DELAY = OverlayController.DEFAULT_AUTO_HIDE_DELAY;
 
     private static final long[] EMPTY_TIME_RANGE = new long[2];
     private static final long UPDATE_PERIOD = 100;
@@ -222,6 +223,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
             MEDIA_COMPLETED,
             MEDIA_STOPPED,
 
+            OVERLAY_CONTROL_DISPLAYED,
+            OVERLAY_CONTROL_HIDDEN,
             PLAYING_STATE_CHANGE,
             WILL_SEEK, // SEEK_STARTED
             DID_SEEK, // SEEK_STOPPED
@@ -423,6 +426,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     @Nullable
     private SRGMediaPlayerView mediaPlayerView;
 
+    private OverlayController overlayController;
+
     private Uri currentMediaUri = null;
 
     private String tag;
@@ -451,6 +456,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
         this.context = context;
         this.mainHandler = new Handler(Looper.getMainLooper(), this);
         this.tag = tag;
+
+        overlayController = new OverlayController(this);
+        registerEventListener(overlayController);
 
         audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
 
@@ -1022,6 +1030,26 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return false;
     }
 
+    public void sendUserTrackedProgress(long time) {
+        userTrackingProgress = time;
+        userChangingProgress = true;
+        overlayController.setForceControls(true);
+    }
+
+    public void stopUserTrackingProgress() {
+        userTrackingProgress = null;
+        userChangingProgress = false;
+        overlayController.setForceControls(null);
+    }
+
+    public boolean isUserChangingProgress() {
+        return userChangingProgress;
+    }
+
+    public Long getUserTrackingProgress() {
+        return userTrackingProgress;
+    }
+
     private void schedulePeriodUpdate() {
         commandHandler.removeMessages(MSG_PERIODIC_UPDATE);
         commandHandler.sendMessageDelayed(
@@ -1116,6 +1144,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      */
     public void release() {
         if (mediaPlayerView != null) {
+            showControlOverlays();
             unbindFromMediaPlayerView(mediaPlayerView);
         }
         sendMessage(MSG_RELEASE);
@@ -1181,6 +1210,30 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return exoPlayer.getBufferedPercentage();
     }
 
+    public void showControlOverlays() {
+        overlayController.showControlOverlays();
+    }
+
+    public void hideControlOverlays() {
+        overlayController.hideControlOverlaysImmediately();
+    }
+
+    public void toggleOverlay() {
+        if (overlayController.isControlsVisible()) {
+            overlayController.hideControlOverlaysImmediately();
+        } else {
+            overlayController.showControlOverlays();
+        }
+    }
+
+    public void setForceLoaders(Boolean forceLoaders) {
+        overlayController.setForceLoaders(forceLoaders);
+    }
+
+    public void setForceControls(Boolean forceControls) {
+        overlayController.setForceControls(forceControls);
+    }
+
     public boolean isBoundToMediaPlayerView() {
         return mediaPlayerView != null;
     }
@@ -1199,6 +1252,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         mediaPlayerView = newView;
         newView.setCues(Collections.<Cue>emptyList());
         internalUpdateMediaPlayerViewBound();
+        overlayController.bindToVideoContainer(this.mediaPlayerView);
         manageKeepScreenOnInternal();
     }
 
@@ -1259,6 +1313,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      */
     public void unbindFromMediaPlayerView(SRGMediaPlayerView playerView) {
         if (mediaPlayerView == playerView) {
+            overlayController.bindToVideoContainer(null);
             unbindRenderingView();
             mediaPlayerView = null;
             broadcastEvent(Event.Type.DID_UNBIND_FROM_PLAYER_VIEW);
@@ -1416,11 +1471,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return globalEventListeners.remove(listener);
     }
 
-    private void broadcastEvent(Event.Type eventType) {
+    void broadcastEvent(Event.Type eventType) {
         broadcastEvent(Event.buildEvent(this, eventType));
     }
 
-    private void broadcastEvent(Event event) {
+    void broadcastEvent(Event event) {
         sendMessage(MSG_FIRE_EVENT, event);
     }
 
@@ -1611,6 +1666,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return getControllerId();
     }
 
+    void updateOverlayVisibilities() {
+        overlayController.propagateOverlayVisibility();
+    }
+
     private long getPlaylistStartTime() {
         long res = UNKNOWN_TIME;
         if (isLive()) {
@@ -1621,6 +1680,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     public boolean isLive() {
         return exoPlayer.isCurrentWindowDynamic();
+    }
+
+    public boolean isShowingControlOverlays() {
+        return overlayController != null && overlayController.isShowingControlOverlays();
     }
 
     public boolean isMainPlayer() {
@@ -1640,6 +1703,15 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private void forceBroadcastStateChange() {
         broadcastEvent(Event.buildStateEvent(this));
+    }
+
+    /**
+     * Configure auto hide delay (delay to change visibility for overlay of OVERLAY_CONTROL type)
+     *
+     * @param overlayAutoHideDelay auto hide delay in ms
+     */
+    public static void setOverlayAutoHideDelay(int overlayAutoHideDelay) {
+        OverlayController.setOverlayAutoHideDelay(overlayAutoHideDelay);
     }
 
     /**
