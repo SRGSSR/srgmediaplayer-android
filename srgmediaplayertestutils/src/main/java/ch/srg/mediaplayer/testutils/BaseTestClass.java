@@ -34,7 +34,7 @@ public abstract class BaseTestClass {
         }
     }
 
-    public Context getTestContext() {
+    public static Context getTestContext() {
         return getInstrumentation().getTargetContext();
     }
 
