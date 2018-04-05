@@ -6,7 +6,7 @@ import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.source.TrackGroup;
 
 /**
- * Helper
+ * Helper to manage ExoPlayer AudioTrack
  */
 public class AudioTrack {
     public final int groupIndex;
@@ -53,5 +53,4 @@ public class AudioTrack {
         result = 31 * result + (language != null ? language.hashCode() : 0);
         return result;
     }
-
 }

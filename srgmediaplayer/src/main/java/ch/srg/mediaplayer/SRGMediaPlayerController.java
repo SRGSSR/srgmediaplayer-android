@@ -1712,9 +1712,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
     public List<AudioTrack> getAudioTrackList() {
         List<AudioTrack> result = new ArrayList<>();
         MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
-        int subtitleRendererId = getAudioTrackRendererId();
-        if (mappedTrackInfo != null && subtitleRendererId != -1) {
-            TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(subtitleRendererId);
+        int audioTrackRendererId = getAudioTrackRendererId();
+        if (mappedTrackInfo != null && audioTrackRendererId != -1) {
+            TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(audioTrackRendererId);
             for (int trackGroupIndex = 0; trackGroupIndex < trackGroups.length; trackGroupIndex++) {
                 TrackGroup trackGroup = trackGroups.get(trackGroupIndex);
                 for (int trackIndex = 0; trackIndex < trackGroup.length; trackIndex++) {
@@ -1727,10 +1727,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
         if (debugMode && (result.isEmpty())) {
             return Arrays.asList(
-                    new AudioTrack(0, 0, null, "English"),
-                    new AudioTrack(0, 1, null, "French"),
-                    new AudioTrack(0, 2, null, "عربي"),
-                    new AudioTrack(0, 3, null, "中文"));
+                    new AudioTrack(0, 0, "English", null),
+                    new AudioTrack(0, 1, "French", null),
+                    new AudioTrack(0, 2, "عربي", null),
+                    new AudioTrack(0, 3, "中文", null));
         } else {
             return result;
         }
