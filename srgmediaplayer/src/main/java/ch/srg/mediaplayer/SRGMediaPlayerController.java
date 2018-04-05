@@ -232,6 +232,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             DID_UNBIND_FROM_PLAYER_VIEW,
 
             SUBTITLE_DID_CHANGE,
+            AUDIO_TRACK_DID_CHANGE,
 
             FIRST_FRAME_RENDERED,
 
@@ -1691,8 +1692,84 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return false;
     }
 
+    public boolean hasAudioTrack() {
+        TrackSelectionArray currentTrackSelections = exoPlayer.getCurrentTrackSelections();
+        for (int i = 0; i < currentTrackSelections.length; i++) {
+            if (exoPlayer.getRendererType(i) == C.TRACK_TYPE_AUDIO) {
+                if (currentTrackSelections.get(i) != null) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public Throwable getFatalError() {
         return fatalError;
+    }
+
+    @NonNull
+    public List<AudioTrack> getAudioTrackList() {
+        List<AudioTrack> result = new ArrayList<>();
+        MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+        int subtitleRendererId = getAudioTrackRendererId();
+        if (mappedTrackInfo != null && subtitleRendererId != -1) {
+            TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(subtitleRendererId);
+            for (int trackGroupIndex = 0; trackGroupIndex < trackGroups.length; trackGroupIndex++) {
+                TrackGroup trackGroup = trackGroups.get(trackGroupIndex);
+                for (int trackIndex = 0; trackIndex < trackGroup.length; trackIndex++) {
+                    AudioTrack audioTrack = AudioTrack.createFrom(trackGroup, trackGroupIndex, trackIndex);
+                    if (audioTrack != null) {
+                        result.add(audioTrack);
+                    }
+                }
+            }
+        }
+        if (debugMode && (result.isEmpty())) {
+            return Arrays.asList(
+                    new AudioTrack(0, 0, null, "English"),
+                    new AudioTrack(0, 1, null, "French"),
+                    new AudioTrack(0, 2, null, "عربي"),
+                    new AudioTrack(0, 3, null, "中文"));
+        } else {
+            return result;
+        }
+    }
+
+    public void setAudioTrack(@Nullable AudioTrack track) {
+        int rendererIndex = getAudioTrackRendererId();
+        MappingTrackSelector.MappedTrackInfo trackInfo = trackSelector.getCurrentMappedTrackInfo();
+        if (rendererIndex != -1 && trackInfo != null) {
+            TrackGroupArray trackGroups = trackInfo.getTrackGroups(rendererIndex);
+            trackSelector.setRendererDisabled(rendererIndex, track == null);
+            if (track != null) {
+                TrackSelection.Factory factory = new FixedTrackSelection.Factory();
+                MappingTrackSelector.SelectionOverride override = new MappingTrackSelector.SelectionOverride(factory, track.groupIndex, track.trackIndex);
+                trackSelector.setSelectionOverride(rendererIndex, trackGroups, override);
+            } else {
+                trackSelector.clearSelectionOverride(rendererIndex, trackGroups);
+            }
+        }
+        broadcastEvent(Event.Type.AUDIO_TRACK_DID_CHANGE);
+    }
+
+    @Nullable
+    public AudioTrack getCurrentAudioTrack() {
+        int rendererIndex = getAudioTrackRendererId();
+
+        MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+        if (mappedTrackInfo != null && rendererIndex != -1) {
+            TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(rendererIndex);
+
+            MappingTrackSelector.SelectionOverride override = trackSelector.getSelectionOverride(rendererIndex, trackGroups);
+            if (override != null) {
+                int[] tracks = override.tracks;
+                if (tracks.length != 0) {
+                    return AudioTrack.createFrom(trackGroups.get(override.groupIndex), override.groupIndex, tracks[0]);
+                }
+            }
+        }
+        return null;
     }
 
     @NonNull
@@ -1785,6 +1862,20 @@ public class SRGMediaPlayerController implements Handler.Callback,
             for (int i = 0; i < mappedTrackInfo.length; i++) {
                 if (mappedTrackInfo.getTrackGroups(i).length > 0
                         && exoPlayer.getRendererType(i) == C.TRACK_TYPE_TEXT) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private int getAudioTrackRendererId() {
+        MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+
+        if (mappedTrackInfo != null) {
+            for (int i = 0; i < mappedTrackInfo.length; i++) {
+                if (mappedTrackInfo.getTrackGroups(i).length > 0
+                        && exoPlayer.getRendererType(i) == C.TRACK_TYPE_AUDIO) {
                     return i;
                 }
             }
