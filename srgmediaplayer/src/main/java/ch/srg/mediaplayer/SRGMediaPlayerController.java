@@ -1732,6 +1732,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
     }
 
+    /**
+     * If track is null, no sound is playing during playback.
+     *
+     * @param track
+     */
     public void setAudioTrack(@Nullable AudioTrack track) {
         int rendererIndex = getAudioTrackRendererId();
         MappingTrackSelector.MappedTrackInfo trackInfo = trackSelector.getCurrentMappedTrackInfo();
