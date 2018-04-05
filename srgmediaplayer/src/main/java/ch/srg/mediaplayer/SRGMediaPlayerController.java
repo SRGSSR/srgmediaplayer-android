@@ -1681,21 +1681,17 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     public boolean hasVideoTrack() {
-        TrackSelectionArray currentTrackSelections = exoPlayer.getCurrentTrackSelections();
-        for (int i = 0; i < currentTrackSelections.length; i++) {
-            if (exoPlayer.getRendererType(i) == C.TRACK_TYPE_VIDEO) {
-                if (currentTrackSelections.get(i) != null) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return hasTrackOfType(C.TRACK_TYPE_VIDEO);
     }
 
     public boolean hasAudioTrack() {
+        return hasTrackOfType(C.TRACK_TYPE_AUDIO);
+    }
+
+    private boolean hasTrackOfType(int trackType) {
         TrackSelectionArray currentTrackSelections = exoPlayer.getCurrentTrackSelections();
         for (int i = 0; i < currentTrackSelections.length; i++) {
-            if (exoPlayer.getRendererType(i) == C.TRACK_TYPE_AUDIO) {
+            if (exoPlayer.getRendererType(i) == trackType) {
                 if (currentTrackSelections.get(i) != null) {
                     return true;
                 }
@@ -1856,26 +1852,20 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private int getSubtitleRendererId() {
-        MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
-
-        if (mappedTrackInfo != null) {
-            for (int i = 0; i < mappedTrackInfo.length; i++) {
-                if (mappedTrackInfo.getTrackGroups(i).length > 0
-                        && exoPlayer.getRendererType(i) == C.TRACK_TYPE_TEXT) {
-                    return i;
-                }
-            }
-        }
-        return -1;
+        return getTrackRendererIdOfType(C.TRACK_TYPE_TEXT);
     }
 
     private int getAudioTrackRendererId() {
+        return getTrackRendererIdOfType(C.TRACK_TYPE_AUDIO);
+    }
+
+    private int getTrackRendererIdOfType(int trackType) {
         MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
 
         if (mappedTrackInfo != null) {
             for (int i = 0; i < mappedTrackInfo.length; i++) {
                 if (mappedTrackInfo.getTrackGroups(i).length > 0
-                        && exoPlayer.getRendererType(i) == C.TRACK_TYPE_AUDIO) {
+                        && exoPlayer.getRendererType(i) == trackType) {
                     return i;
                 }
             }
