@@ -67,6 +67,7 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 import ch.srg.mediaplayer.segment.model.Segment;
+import ch.srg.mediaplayer.segment.model.SegmentList;
 
 /**
  * Handle the playback of media.
@@ -415,11 +416,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private ViewType viewType;
     private View renderingView;
     private Integer playbackState;
-    private List<Segment> segments = new ArrayList<>();
-
+    private SegmentList segments = new SegmentList();
     private Segment segmentBeingSkipped;
-    @Nullable
-    private Segment currentSegment = null;
     private boolean userChangingProgress;
     @Nullable
     private SRGMediaPlayerView mediaPlayerView;
@@ -704,9 +702,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 Uri uri = data.uri;
                 this.segments.clear();
                 seekToWhenReady = data.position;
-                currentSegment = null;
-                if (data.segments != null) {
-                    segments.addAll(data.segments);
+                segments.setSegmentList(data.segments);
+                if (data.position != null) {
+                    segments.selectSegment(data.position);
                 }
                 postEventInternal(Event.Type.SEGMENT_LIST_CHANGE);
                 postEventInternal(Event.Type.MEDIA_READY_TO_PLAY);
@@ -921,7 +919,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
         if (!isSeekPending() && mediaPosition != -1) {
             Segment blockedSegment = getBlockedSegment(mediaPosition);
-            Segment newSegment = getSegment(mediaPosition);
+            Segment newSegment = segments.getSegment(mediaPosition);
 
             if (blockedSegment != null) {
                 if (blockedSegment != segmentBeingSkipped) {
@@ -931,6 +929,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 }
             } else {
                 segmentBeingSkipped = null;
+                Segment currentSegment = segments.getCurrentSegment();
                 if (currentSegment != newSegment) {
                     if (currentSegment == null) {
                         postSegmentEvent(Event.Type.SEGMENT_START, newSegment);
@@ -939,14 +938,15 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     } else {
                         postSegmentEvent(Event.Type.SEGMENT_SWITCH, newSegment);
                     }
-                    currentSegment = newSegment;
+
+                    segments.setCurrentSegment(newSegment);
                 }
             }
         }
     }
 
     @NonNull
-    public List<Segment> getSegments() {
+    public SegmentList getSegments() {
         return segments;
     }
 
@@ -957,17 +957,12 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Nullable
     public Segment getSegment(long time) {
-        if (currentSegment != null && segments.contains(currentSegment)
-                && time >= currentSegment.getMarkIn() - SEGMENT_HYSTERESIS_MS
-                && time < currentSegment.getMarkOut()) {
-            return currentSegment;
-        }
-        for (Segment segment : segments) {
-            if (time >= segment.getMarkIn() && time < segment.getMarkOut()) {
-                return segment;
-            }
-        }
-        return null;
+        return segments.getSegment(time);
+    }
+
+    @Nullable
+    public Segment getCurrentSegment() {
+        return segments.getCurrentSegment();
     }
 
     @Nullable
@@ -983,10 +978,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     public void setSegmentList(List<Segment> segmentList) {
-        segments.clear();
-        if (segmentList != null) {
-            segments.addAll(segmentList);
-        }
+        segments.setSegmentList(segmentList);
         checkSegmentChange(getMediaPosition());
         broadcastEvent(Event.Type.SEGMENT_LIST_CHANGE);
     }
