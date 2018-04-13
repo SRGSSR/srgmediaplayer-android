@@ -703,9 +703,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 this.segments.clear();
                 seekToWhenReady = data.position;
                 segments.setSegmentList(data.segments);
-                if (data.position != null) {
-                    segments.selectSegment(data.position);
-                }
                 postEventInternal(Event.Type.SEGMENT_LIST_CHANGE);
                 postEventInternal(Event.Type.MEDIA_READY_TO_PLAY);
                 try {
