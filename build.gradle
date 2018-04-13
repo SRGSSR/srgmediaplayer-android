@@ -7,7 +7,7 @@ buildscript {
 		google()
 	}
 	dependencies {
-		classpath 'com.android.tools.build:gradle:3.0.0-beta6'
+		classpath 'com.android.tools.build:gradle:3.1.0'
 		classpath 'de.felixschulze.gradle:gradle-hockeyapp-plugin:3.2'
 	}
 }
@@ -29,7 +29,7 @@ ext {
 	buildToolsVersion = '26.0.1'
 
 	//libs
-	supportLibraryVersion = '26.0.1'
+	supportLibraryVersion = '27.1.0'
 	SRGLibraryVersion = '1.4.314@aar'
 	SRGSnapLibraryVersion = '1.4.246-SNAPSHOT@aar'
     androidSupportTest = '0.5'

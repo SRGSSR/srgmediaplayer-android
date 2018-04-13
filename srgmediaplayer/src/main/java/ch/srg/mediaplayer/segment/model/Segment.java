@@ -8,7 +8,6 @@ import android.support.annotation.NonNull;
  * License information is available from the LICENSE file.
  */
 public class Segment implements Comparable<Segment> {
-
     private String identifier;
     private String title;
     private String description;
@@ -21,10 +20,11 @@ public class Segment implements Comparable<Segment> {
     private long publishedTimestamp;
     private boolean displayable;
     private boolean isLive;
+    private boolean is360;
 
     public Segment(String identifier, String title, String description, String imageUrl,
                    String blockingReason, long markIn, long markOut, long duration, long publishedTimestamp,
-                   boolean displayable, boolean isLive) {
+                   boolean displayable, boolean isLive, boolean is360) {
         this.identifier = identifier;
         this.title = title;
         this.description = description;
@@ -36,6 +36,7 @@ public class Segment implements Comparable<Segment> {
         this.publishedTimestamp = publishedTimestamp;
         this.displayable = displayable;
         this.isLive = isLive;
+        this.is360 = is360;
     }
 
     public String getTitle() {
@@ -109,6 +110,7 @@ public class Segment implements Comparable<Segment> {
         if (publishedTimestamp != segment.publishedTimestamp) return false;
         if (displayable != segment.displayable) return false;
         if (isLive != segment.isLive) return false;
+        if (is360 != segment.is360) return false;
         if (identifier != null ? !identifier.equals(segment.identifier) : segment.identifier != null)
             return false;
         if (title != null ? !title.equals(segment.title) : segment.title != null) return false;
@@ -133,6 +135,7 @@ public class Segment implements Comparable<Segment> {
         result = 31 * result + (int) (publishedTimestamp ^ (publishedTimestamp >>> 32));
         result = 31 * result + (displayable ? 1 : 0);
         result = 31 * result + (isLive ? 1 : 0);
+        result = 31 * result + (is360 ? 1 : 0);
         return result;
     }
 
@@ -151,10 +154,15 @@ public class Segment implements Comparable<Segment> {
                 ", publishedTimestamp=" + publishedTimestamp +
                 ", displayable=" + displayable +
                 ", isLive=" + isLive +
+                ", is360=" + is360 +
                 '}';
     }
 
     public boolean isLive() {
         return isLive;
+    }
+
+    public boolean is360() {
+        return is360;
     }
 }

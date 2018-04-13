@@ -92,6 +92,6 @@ public class SegmentsTest extends MediaPlayerTest {
     }
 
     private static Segment createSegment(String identifier, long markIn, long markOut, boolean blocked) {
-        return new Segment(identifier, null, null, null, blocked ? "blocked" : null, markIn, markOut, markOut - markIn, 0, true, false);
+        return new Segment(identifier, null, null, null, blocked ? "blocked" : null, markIn, markOut, markOut - markIn, 0, true, false, false);
     }
 }
