@@ -96,6 +96,11 @@ public class Segment implements Comparable<Segment> {
         return ((int) (markIn - another.getMarkIn()));
     }
 
+    public boolean isInInterval(long time) {
+        return time >= markIn && time < markOut;
+    }
+
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
