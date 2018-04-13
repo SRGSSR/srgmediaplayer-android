@@ -3,6 +3,7 @@ package ch.srg.mediaplayer.segment.model;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -21,7 +22,10 @@ public class SegmentList implements Iterable<Segment> {
 
 
     public interface Listener {
-        void onCurrentSegmentChanged(@NonNull Segment segment);
+        /**
+         * @param segment null when switching to a non current segment
+         */
+        void onCurrentSegmentChanged(@Nullable Segment segment);
     }
 
     private SegmentList(List<Segment> list) {
@@ -50,20 +54,14 @@ public class SegmentList implements Iterable<Segment> {
     }
 
     public void setCurrentSegment(@Nullable Segment segment) {
-        if (segment != currentSegment) this.currentSegment = segment;
-        this.currentSegmentIndex = currentSegment != null ? indexOf(segment) : -1;
-        for (Listener listener : listeners) {
-            listener.onCurrentSegmentChanged(segment);
+        Log.d("SegmentList", "CurrentSegment = " + segment);
+        if (segment != currentSegment) {
+            this.currentSegment = segment;
+            this.currentSegmentIndex = currentSegment != null ? indexOf(segment) : -1;
+            for (Listener listener : listeners) {
+                listener.onCurrentSegmentChanged(segment);
+            }
         }
-    }
-
-    public boolean selectSegment(long time) {
-        Segment newSegment = getSegment(time);
-        if (newSegment != currentSegment) {
-            setCurrentSegment(newSegment);
-            return true;
-        }
-        return false;
     }
 
     @Nullable
