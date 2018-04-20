@@ -238,6 +238,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
             POSITION_DISCONTINUITY,
 
+            LOADING_STATE_CHANGED,
+
             /**
              * An identified segment (visible or not) is being started, while not being inside a segment before.
              */
@@ -733,6 +735,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 } else {
                     if (state != State.PREPARING) {
                         postEventInternal(Event.Type.WILL_SEEK);
+                        broadcastEvent(Event.Type.LOADING_STATE_CHANGED);
                         seekToWhenReady = positionMs;
                         try {
                             exoPlayer.seekTo(seekToWhenReady);
@@ -908,6 +911,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     || !exoPlayerCurrentPlayWhenReady) {
                 currentSeekTarget = null;
                 postEventInternal(Event.Type.DID_SEEK);
+                postEventInternal(Event.Type.LOADING_STATE_CHANGED);
             }
         }
         if (!segments.isEmpty() && !userChangingProgress) {
@@ -1034,6 +1038,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         Long seekTarget = this.seekToWhenReady;
         if (seekTarget != null) {
             postEventInternal(Event.Type.WILL_SEEK);
+            broadcastEvent(Event.Type.LOADING_STATE_CHANGED);
             Log.v(TAG, "Apply state / Seeking to " + seekTarget);
             try {
                 exoPlayer.seekTo(seekTarget);
@@ -1906,6 +1911,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Override
     public void onLoadingChanged(boolean isLoading) {
+        broadcastEvent(Event.Type.LOADING_STATE_CHANGED);
     }
 
     @Override
@@ -1928,6 +1934,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     break;
             }
             this.playbackState = playbackState;
+            broadcastEvent(Event.Type.LOADING_STATE_CHANGED);
         }
         if (this.exoPlayerCurrentPlayWhenReady != playWhenReady) {
             sendMessage(MSG_PLAYER_PLAY_WHEN_READY_COMMITED);

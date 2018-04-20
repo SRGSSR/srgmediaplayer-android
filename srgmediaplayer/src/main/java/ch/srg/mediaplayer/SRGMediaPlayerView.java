@@ -28,7 +28,7 @@ import java.util.List;
  * This class is a placeholder for some video.
  * Place it in your layout, or create it programmatically and bind it to a SRGMediaPlayerController to play video
  */
-public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchListener {
+public class SRGMediaPlayerView extends RelativeLayout {
 
     public enum ScaleMode {
         CENTER_INSIDE,
@@ -79,8 +79,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
     private View videoRenderingView;
     private int videoRenderingViewWidth = -1;
     private int videoRenderingViewHeight = -1;
-    @Nullable
-    private ControlTouchListener touchListener;
 
     public SRGMediaPlayerView(Context context) {
         this(context, null, 0);
@@ -224,27 +222,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
             videoRenderingViewWidth = -1;
             videoRenderingViewHeight = -1;
         }
-    }
-
-    public void setControlTouchListener(ControlTouchListener controlTouchListener) {
-        this.touchListener = controlTouchListener;
-    }
-
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent event) {
-        Log.v(SRGMediaPlayerController.TAG, "dispatchTouchEvent " + event.getAction());
-
-        //This will trigger the onTouch attached to the videorenderingview if it's the case.
-        boolean handled = super.dispatchTouchEvent(event);
-
-//        if (touchListener != null) {
-//            touchListener.onMediaControlTouched();
-//        }
-        return handled;
-    }
-
-    protected void onVideoRenderViewClicked() {
-
     }
 
     @Override
@@ -501,20 +478,6 @@ public class SRGMediaPlayerView extends RelativeLayout implements ControlTouchLi
 
     private CaptioningManager getCaptioningManager() {
         return (CaptioningManager) getContext().getSystemService(Context.CAPTIONING_SERVICE);
-    }
-
-    @Override
-    public void onMediaControlTouched() {
-        if (touchListener != null) {
-            touchListener.onMediaControlTouched();
-        }
-    }
-
-    @Override
-    public void onMediaControlBackgroundTouched() {
-        if (touchListener != null) {
-            touchListener.onMediaControlBackgroundTouched();
-        }
     }
 
     public void setDebugMode(boolean debugMode) {
