@@ -29,9 +29,8 @@ ext {
 
     //libs
     supportLibraryVersion = '27.1.1'
-    SRGLibraryVersion = '1.4.314@aar'
+    googlePlayServiceVersion = '15.0.1'
     androidSupportTest = '1.0.2'
     espressoVersion = '3.0.2'
-    googlePlayServiceVersion = '15.0.1'
     exoPlayerVersion = '2.5.1'
 }
