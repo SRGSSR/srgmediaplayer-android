@@ -19,11 +19,6 @@ android {
     }
 }
 
-repositories {
-    mavenLocal()
-    mavenCentral()
-}
-
 dependencies {
     // Testing-only dependencies
     androidTestImplementation "com.android.support.test:runner:$rootProject.androidSupportTest"

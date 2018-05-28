@@ -1,18 +1,18 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
-buildscript {
-    repositories {
-        mavenCentral()
-        jcenter()
-        google()
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:3.1.2'
-        classpath 'de.felixschulze.gradle:gradle-hockeyapp-plugin:3.5'
-    }
-}
-
 allprojects {
+    buildscript {
+        repositories {
+            mavenCentral()
+            jcenter()
+            google()
+        }
+        dependencies {
+            classpath 'com.android.tools.build:gradle:3.1.2'
+            classpath 'de.felixschulze.gradle:gradle-hockeyapp-plugin:3.5'
+        }
+    }
+
     repositories {
         mavenCentral()
         jcenter()
