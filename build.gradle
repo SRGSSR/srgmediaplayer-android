@@ -1,18 +1,18 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
-buildscript {
-    repositories {
-        mavenCentral()
-        jcenter()
-        google()
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:3.1.2'
-        classpath 'de.felixschulze.gradle:gradle-hockeyapp-plugin:3.5'
-    }
-}
-
 allprojects {
+    buildscript {
+        repositories {
+            mavenCentral()
+            jcenter()
+            google()
+        }
+        dependencies {
+            classpath 'com.android.tools.build:gradle:3.1.2'
+            classpath 'de.felixschulze.gradle:gradle-hockeyapp-plugin:3.5'
+        }
+    }
+
     repositories {
         mavenCentral()
         jcenter()
@@ -29,9 +29,8 @@ ext {
 
     //libs
     supportLibraryVersion = '27.1.1'
-    SRGLibraryVersion = '1.4.314@aar'
+    googlePlayServiceVersion = '15.0.1'
     androidSupportTest = '1.0.2'
     espressoVersion = '3.0.2'
-    googlePlayServiceVersion = '15.0.1'
     exoPlayerVersion = '2.5.1'
 }

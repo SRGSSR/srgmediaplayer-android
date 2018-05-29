@@ -19,29 +19,21 @@ android {
     }
 }
 
-repositories {
-    mavenLocal()
-    mavenCentral()
-}
-
 dependencies {
     // Testing-only dependencies
     androidTestImplementation "com.android.support.test:runner:$rootProject.androidSupportTest"
     androidTestImplementation "com.android.support.test:rules:$rootProject.androidSupportTest"
+
+    implementation "com.android.support:appcompat-v7:$rootProject.supportLibraryVersion"
+    implementation "com.android.support:support-annotations:$rootProject.supportLibraryVersion"
+    implementation "com.android.support:mediarouter-v7:$rootProject.supportLibraryVersion"
+    implementation "com.android.support:support-media-compat:$rootProject.supportLibraryVersion"
 
     api "com.google.android.exoplayer:exoplayer-core:r$rootProject.exoPlayerVersion"
     implementation "com.google.android.exoplayer:exoplayer-hls:r$rootProject.exoPlayerVersion"
     implementation "com.google.android.exoplayer:exoplayer-dash:r$rootProject.exoPlayerVersion"
     implementation "com.google.android.exoplayer:exoplayer-ui:r$rootProject.exoPlayerVersion"
     implementation "com.google.android.exoplayer:extension-mediasession:r$rootProject.exoPlayerVersion"
-
-    implementation "com.android.support:support-annotations:$rootProject.supportLibraryVersion"
-    implementation "com.android.support:appcompat-v7:$rootProject.supportLibraryVersion"
-    implementation "com.android.support:recyclerview-v7:$rootProject.supportLibraryVersion"
-    implementation "com.android.support:support-annotations:$rootProject.supportLibraryVersion"
-    implementation "com.android.support:mediarouter-v7:$rootProject.supportLibraryVersion"
-    implementation "com.android.support:support-media-compat:$rootProject.supportLibraryVersion"
-    implementation "com.google.android.gms:play-services-cast-framework:$rootProject.googlePlayServiceVersion"
 }
 
 apply from: '../utilities.gradle'
