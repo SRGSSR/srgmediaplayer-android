@@ -21,6 +21,7 @@ import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
 
+import com.akamai.android.exoplayer2loader.AkamaiExoPlayerLoader;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.DefaultRenderersFactory;
@@ -64,6 +65,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.WeakHashMap;
 
 import ch.srg.mediaplayer.segment.model.Segment;
@@ -443,6 +445,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private static Set<Listener> globalEventListeners = Collections.newSetFromMap(new WeakHashMap<Listener, Boolean>());
 
+    private AkamaiExoPlayerLoader akamaiExoPlayerLoader;
+
     /**
      * Create a new SRGMediaPlayerController with the current context, a mediaPlayerDataProvider, and a TAG
      * if you need to retrieve a controller
@@ -480,6 +484,14 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         audioFocusChangeListener = new OnAudioFocusChangeListener(new WeakReference<>(this));
         audioFocusGranted = false;
+
+        String AKAMAI_QOS_VIEWER_ID = UUID.randomUUID().toString(); //FIXME Generate for each exoplayer session or shared between all exoplayer for a device?
+        String AKAMAI_QOS_CONFIG_URL = "https://ma252-r.analytics.edgekey.net/config/beacon-17838.xml";
+        akamaiExoPlayerLoader = new AkamaiExoPlayerLoader(getContext(), "AKAMAI_QOS_CONFIG_URL", true);
+        akamaiExoPlayerLoader.setViewerId(AKAMAI_QOS_VIEWER_ID);
+        akamaiExoPlayerLoader.setViewerDiagnosticsId(AKAMAI_QOS_VIEWER_ID);
+
+        exoPlayer.setVideoDebugListener(akamaiExoPlayerLoader);
     }
 
     private synchronized void startBackgroundThreadIfNecessary() {
@@ -851,6 +863,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private void prepareInternal(Uri videoUri, int streamType) throws SRGMediaPlayerException {
         Log.v(TAG, "Preparing " + videoUri + " (" + streamType + ")");
+        akamaiExoPlayerLoader.initializeLoader(exoPlayer, videoUri.toString());
         try {
             if (this.currentMediaUri != null && this.currentMediaUri.equals(videoUri)) {
                 return;
@@ -874,10 +887,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
             switch (streamType) {
                 case STREAM_DASH:
                     mediaSource = new DashMediaSource(videoUri, dataSourceFactory,
-                            new DefaultDashChunkSource.Factory(dataSourceFactory), mainHandler, eventLogger);
+                            new DefaultDashChunkSource.Factory(dataSourceFactory), mainHandler, akamaiExoPlayerLoader);
                     break;
                 case STREAM_HLS:
-                    mediaSource = new HlsMediaSource(videoUri, dataSourceFactory, mainHandler, eventLogger);
+                    mediaSource = new HlsMediaSource(videoUri, dataSourceFactory, mainHandler, akamaiExoPlayerLoader);
                     break;
                 case STREAM_HTTP_PROGRESSIVE:
                     mediaSource = new ExtractorMediaSource(videoUri, dataSourceFactory, new DefaultExtractorsFactory(),
@@ -1096,7 +1109,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (debugMode) {
             assertCommandHandlerThread();
         }
+
         postEventInternal(Event.Type.MEDIA_STOPPED);
+        akamaiExoPlayerLoader.releaseLoader();
         exoPlayer.stop();
         exoPlayer.release();
         currentMediaUri = null;
