@@ -65,7 +65,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import java.util.WeakHashMap;
 
 import ch.srg.mediaplayer.segment.model.Segment;
@@ -445,7 +444,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private static Set<Listener> globalEventListeners = Collections.newSetFromMap(new WeakHashMap<Listener, Boolean>());
 
+    @Nullable
     private AkamaiExoPlayerLoader akamaiExoPlayerLoader;
+
+    @Nullable
+    private AkamaiMediaAnalyticsConfiguration akamaiMediaAnalyticsConfiguration;
 
     /**
      * Create a new SRGMediaPlayerController with the current context, a mediaPlayerDataProvider, and a TAG
@@ -484,14 +487,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         audioFocusChangeListener = new OnAudioFocusChangeListener(new WeakReference<>(this));
         audioFocusGranted = false;
-
-        String AKAMAI_QOS_VIEWER_ID = UUID.randomUUID().toString(); //FIXME Generate for each exoplayer session or shared between all exoplayer for a device?
-        String AKAMAI_QOS_CONFIG_URL = "https://ma252-r.analytics.edgekey.net/config/beacon-17838.xml";
-        akamaiExoPlayerLoader = new AkamaiExoPlayerLoader(getContext(), "AKAMAI_QOS_CONFIG_URL", true);
-        akamaiExoPlayerLoader.setViewerId(AKAMAI_QOS_VIEWER_ID);
-        akamaiExoPlayerLoader.setViewerDiagnosticsId(AKAMAI_QOS_VIEWER_ID);
-
-        exoPlayer.setVideoDebugListener(akamaiExoPlayerLoader);
     }
 
     private synchronized void startBackgroundThreadIfNecessary() {
@@ -861,9 +856,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
     }
 
-    private void prepareInternal(Uri videoUri, int streamType) throws SRGMediaPlayerException {
+    private void prepareInternal(@NonNull Uri videoUri, int streamType) throws SRGMediaPlayerException {
         Log.v(TAG, "Preparing " + videoUri + " (" + streamType + ")");
-        akamaiExoPlayerLoader.initializeLoader(exoPlayer, videoUri.toString());
+        setupAkamaiQos(videoUri);
         try {
             if (this.currentMediaUri != null && this.currentMediaUri.equals(videoUri)) {
                 return;
@@ -884,13 +879,15 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
             MediaSource mediaSource;
 
+            eventLogger.setChainedListener(akamaiExoPlayerLoader);
+
             switch (streamType) {
                 case STREAM_DASH:
                     mediaSource = new DashMediaSource(videoUri, dataSourceFactory,
-                            new DefaultDashChunkSource.Factory(dataSourceFactory), mainHandler, akamaiExoPlayerLoader);
+                            new DefaultDashChunkSource.Factory(dataSourceFactory), mainHandler, eventLogger);
                     break;
                 case STREAM_HLS:
-                    mediaSource = new HlsMediaSource(videoUri, dataSourceFactory, mainHandler, akamaiExoPlayerLoader);
+                    mediaSource = new HlsMediaSource(videoUri, dataSourceFactory, mainHandler, eventLogger);
                     break;
                 case STREAM_HTTP_PROGRESSIVE:
                     mediaSource = new ExtractorMediaSource(videoUri, dataSourceFactory, new DefaultExtractorsFactory(),
@@ -909,6 +906,18 @@ public class SRGMediaPlayerController implements Handler.Callback,
         } catch (Exception e) {
             release();
             throw new SRGMediaPlayerException(e);
+        }
+    }
+
+    private void setupAkamaiQos(@NonNull Uri videoUri) {
+        if (akamaiMediaAnalyticsConfiguration != null) {
+            akamaiExoPlayerLoader = new AkamaiExoPlayerLoader(getContext(), akamaiMediaAnalyticsConfiguration.getAkamaiMediaAnalyticsConfigUrl(), isDebugMode());
+            akamaiExoPlayerLoader.setViewerId(akamaiMediaAnalyticsConfiguration.getAkamaiMediaAnalyticsViewerId());
+            for (Pair<String, String> keyValue : akamaiMediaAnalyticsConfiguration.getAkamaiMediaAnalyticsDataSet()) {
+                akamaiExoPlayerLoader.setData(keyValue.first, keyValue.second);
+            }
+            akamaiExoPlayerLoader.initializeLoader(exoPlayer, videoUri.toString());
+            exoPlayer.setVideoDebugListener(akamaiExoPlayerLoader);
         }
     }
 
@@ -1111,7 +1120,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
 
         postEventInternal(Event.Type.MEDIA_STOPPED);
-        akamaiExoPlayerLoader.releaseLoader();
+        if (akamaiExoPlayerLoader != null) {
+            akamaiExoPlayerLoader.releaseLoader();
+        }
         exoPlayer.stop();
         exoPlayer.release();
         currentMediaUri = null;
@@ -2007,4 +2018,13 @@ public class SRGMediaPlayerController implements Handler.Callback,
         sendMessage(MSG_PLAYER_SUBTITLE_CUES, cues);
     }
 
+    /**
+     * Provide Akamai QOS Configuration.
+     *
+     * @param akamaiMediaAnalyticsConfiguration akamai qos configuration to enable QOS monitoring. null to disable
+     *                                          akamai qos.
+     */
+    public void setAkamaiMediaAnalyticsConfiguration(@Nullable AkamaiMediaAnalyticsConfiguration akamaiMediaAnalyticsConfiguration) {
+        this.akamaiMediaAnalyticsConfiguration = akamaiMediaAnalyticsConfiguration;
+    }
 }
