@@ -16,9 +16,11 @@
 package ch.srg.mediaplayer;
 
 import android.os.SystemClock;
+import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.Surface;
 
+import com.akamai.android.exoplayer2loader.AkamaiExoPlayerLoader;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
@@ -77,6 +79,8 @@ import java.util.Locale;
     private final Timeline.Window window;
     private final Timeline.Period period;
     private final long startTimeMs;
+    @Nullable
+    private AdaptiveMediaSourceEventListener chainedListener;
 
     public EventLogger(MappingTrackSelector trackSelector) {
         this.trackSelector = trackSelector;
@@ -330,6 +334,9 @@ import java.util.Locale;
                               int trackSelectionReason, Object trackSelectionData, long mediaStartTimeMs,
                               long mediaEndTimeMs, long elapsedRealtimeMs) {
         // Do nothing.
+        if (chainedListener != null) {
+            chainedListener.onLoadStarted(dataSpec, dataType, trackType, trackFormat, trackSelectionReason, trackSelectionData, mediaStartTimeMs, mediaEndTimeMs, elapsedRealtimeMs);
+        }
     }
 
     @Override
@@ -338,6 +345,9 @@ import java.util.Locale;
                             long mediaEndTimeMs, long elapsedRealtimeMs, long loadDurationMs, long bytesLoaded,
                             IOException error, boolean wasCanceled) {
         printInternalError("loadError", error);
+        if (chainedListener != null) {
+            chainedListener.onLoadError(dataSpec, dataType, trackType, trackFormat, trackSelectionReason, trackSelectionData, mediaStartTimeMs, mediaEndTimeMs, elapsedRealtimeMs, loadDurationMs, bytesLoaded, error, wasCanceled);
+        }
     }
 
     @Override
@@ -345,6 +355,9 @@ import java.util.Locale;
                                int trackSelectionReason, Object trackSelectionData, long mediaStartTimeMs,
                                long mediaEndTimeMs, long elapsedRealtimeMs, long loadDurationMs, long bytesLoaded) {
         // Do nothing.
+        if (chainedListener != null) {
+            chainedListener.onLoadCanceled(dataSpec, dataType, trackType, trackFormat, trackSelectionReason, trackSelectionData, mediaStartTimeMs, mediaEndTimeMs, elapsedRealtimeMs, loadDurationMs, bytesLoaded);
+        }
     }
 
     @Override
@@ -352,17 +365,26 @@ import java.util.Locale;
                                 int trackSelectionReason, Object trackSelectionData, long mediaStartTimeMs,
                                 long mediaEndTimeMs, long elapsedRealtimeMs, long loadDurationMs, long bytesLoaded) {
         Log.d(TAG, "onLoadCompleted: mediaStartTimeMs:" + mediaStartTimeMs + " mediaEndTimeMs:" + mediaEndTimeMs + " elapsedRealtimeMs:" + elapsedRealtimeMs);
+        if (chainedListener != null) {
+            chainedListener.onLoadCompleted(dataSpec, dataType, trackType, trackFormat, trackSelectionReason, trackSelectionData, mediaStartTimeMs, mediaEndTimeMs, elapsedRealtimeMs, loadDurationMs, bytesLoaded);
+        }
     }
 
     @Override
     public void onUpstreamDiscarded(int trackType, long mediaStartTimeMs, long mediaEndTimeMs) {
         // Do nothing.
+        if (chainedListener != null) {
+            chainedListener.onUpstreamDiscarded(trackType, mediaStartTimeMs, mediaEndTimeMs);
+        }
     }
 
     @Override
     public void onDownstreamFormatChanged(int trackType, Format trackFormat, int trackSelectionReason,
                                           Object trackSelectionData, long mediaTimeMs) {
         // Do nothing.
+        if (chainedListener != null) {
+            chainedListener.onDownstreamFormatChanged(trackType, trackFormat, trackSelectionReason, trackSelectionData, mediaTimeMs);
+        }
     }
 
     // Internal methods
@@ -471,4 +493,8 @@ import java.util.Locale;
         return enabled ? "[X]" : "[ ]";
     }
 
+    @Nullable
+    public void setChainedListener(AdaptiveMediaSourceEventListener chainedListener) {
+        this.chainedListener = chainedListener;
+    }
 }
