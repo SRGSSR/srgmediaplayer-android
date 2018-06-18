@@ -322,7 +322,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
             mediaMuted = controller.muted;
             mediaLive = controller.isLive();
             mediaPlaylistStartTime = controller.getPlaylistStartTime();
-            videoViewDimension = controller.mediaPlayerView != null ? controller.mediaPlayerView.getVideoRenderingViewSizeString() : SRGMediaPlayerView.UNKNOWN_DIMENSION;
+            SRGMediaPlayerView mediaPlayerView = controller.mediaPlayerView;
+            videoViewDimension = mediaPlayerView != null ? mediaPlayerView.getVideoRenderingViewSizeString() : SRGMediaPlayerView.UNKNOWN_DIMENSION;
             screenType = controller.getScreenType();
             this.segment = segment;
             this.blockingReason = blockingReason;
@@ -706,6 +707,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (msg.what != MSG_PERIODIC_UPDATE) {
             logV("handleMessage: " + msg);
         }
+        final SRGMediaPlayerView mediaPlayerView = this.mediaPlayerView;
         switch (msg.what) {
             case MSG_PREPARE_FOR_URI:
                 setStateInternal(State.PREPARING);
@@ -1244,6 +1246,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void internalUpdateMediaPlayerViewBound() {
+        final SRGMediaPlayerView mediaPlayerView = this.mediaPlayerView;
         if (mediaPlayerView != null) {
             if (!canRenderInView(mediaPlayerView.getVideoRenderingView())) {
                 // We need to create a new rendering view.
@@ -1270,6 +1273,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void bindRenderingViewInUiThread() throws SRGMediaPlayerException {
+        SRGMediaPlayerView mediaPlayerView = this.mediaPlayerView;
         if (mediaPlayerView == null ||
                 !canRenderInView(mediaPlayerView.getVideoRenderingView())) {
             throw new SRGMediaPlayerException("ExoPlayer cannot render video in a "

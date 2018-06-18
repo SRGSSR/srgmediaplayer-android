@@ -3,7 +3,23 @@
 - [ ] Updated libraries to the latest version
 - [ ] Read through the README of the project
 
+### Context description
+
+```
+INSERT PROJECT (Business Unit / project team) and a few words about your usage of the player
+```
+
 ### Issue Description
+
+```
+INSERT DESCRIPTION HERE
+```
+
+#### Steps to reproduce the behaviour
+
+```
+INSERT STEPS HERE
+```
 
 ##### Complete stacktrace output
 
