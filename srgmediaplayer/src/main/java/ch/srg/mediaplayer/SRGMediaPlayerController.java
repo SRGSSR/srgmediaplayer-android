@@ -1218,6 +1218,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void internalUpdateMediaPlayerViewBound() {
+        final SRGMediaPlayerView mediaPlayerView = this.mediaPlayerView;
         if (mediaPlayerView != null) {
             if (!canRenderInView(mediaPlayerView.getVideoRenderingView())) {
                 // We need to create a new rendering view.
