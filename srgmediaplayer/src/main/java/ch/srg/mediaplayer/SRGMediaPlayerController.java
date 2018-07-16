@@ -503,11 +503,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         exoPlayer = ExoPlayerFactory.newSimpleInstance(renderersFactory, trackSelector, new DefaultLoadControl());
         exoPlayer.addListener(this);
-        exoPlayer.addVideoListener(this);
-        exoPlayer.addTextOutput(this);
+        exoPlayer.setVideoListener(this);
+        exoPlayer.setTextOutput(this);
         exoPlayer.setAudioDebugListener(eventLogger);
         exoPlayer.setVideoDebugListener(eventLogger);
-        exoPlayer.addMetadataOutput(eventLogger);
+        exoPlayer.setMetadataOutput(eventLogger);
         exoPlayerCurrentPlayWhenReady = exoPlayer.getPlayWhenReady();
 
         audioFocusChangeListener = new OnAudioFocusChangeListener(new WeakReference<>(this));
@@ -908,7 +908,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
             switch (streamType) {
                 case STREAM_DASH:
-                    mediaSource = new DashMediaSource(videoUri, dataSourceFactory,
+                    mediaSource = new DashMediaSource(videoUri, new DefaultHttpDataSourceFactory(userAgent),
                             new DefaultDashChunkSource.Factory(dataSourceFactory), mainHandler, eventLogger);
                     break;
                 case STREAM_HLS:
