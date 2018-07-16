@@ -34,6 +34,12 @@ import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.audio.AudioCapabilities;
 import com.google.android.exoplayer2.audio.AudioCapabilitiesReceiver;
+import com.google.android.exoplayer2.drm.DefaultDrmSessionManager;
+import com.google.android.exoplayer2.drm.DrmSessionManager;
+import com.google.android.exoplayer2.drm.FrameworkMediaCrypto;
+import com.google.android.exoplayer2.drm.FrameworkMediaDrm;
+import com.google.android.exoplayer2.drm.HttpMediaDrmCallback;
+import com.google.android.exoplayer2.drm.UnsupportedDrmException;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
@@ -55,6 +61,7 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
+import com.google.android.exoplayer2.util.Util;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -450,6 +457,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Nullable
     private AkamaiMediaAnalyticsConfiguration akamaiMediaAnalyticsConfiguration;
+    // FIXME : why userAgent letterbox is set here?
+    private static final String userAgent = "curl/Letterbox_2.0"; // temporarily using curl/ user agent to force subtitles with Akamai beta
+    private static final String LICENCE_URL = "https://rng.stage.ott.irdeto.com/licenseServer/widevine/v1/SRG/license?contentId=srg-content";
 
     /**
      * Create a new SRGMediaPlayerController with the current context, a mediaPlayerDataProvider, and a TAG
@@ -475,15 +485,29 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
         eventLogger = new EventLogger(trackSelector);
-        DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(this.context, null, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
+        DrmSessionManager<FrameworkMediaCrypto> drmSessionManager = null;
+        //DRM is only supported at API level 18+
+        if (Util.SDK_INT >= 18) {
+            try {
+                HttpMediaDrmCallback drmCallback = new HttpMediaDrmCallback(LICENCE_URL, new DefaultHttpDataSourceFactory(userAgent));
+                drmSessionManager = new DefaultDrmSessionManager<>(C.WIDEVINE_UUID,
+                        FrameworkMediaDrm.newInstance(C.WIDEVINE_UUID),
+                        drmCallback, null, mainHandler, eventLogger);
+            } catch (UnsupportedDrmException e) {
+                // TODO : Post DRMErrorEvent
+                // fatalError = e;
+                e.printStackTrace();
+            }
+        }
+        DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(this.context, drmSessionManager, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
 
         exoPlayer = ExoPlayerFactory.newSimpleInstance(renderersFactory, trackSelector, new DefaultLoadControl());
         exoPlayer.addListener(this);
-        exoPlayer.setVideoListener(this);
-        exoPlayer.setTextOutput(this);
+        exoPlayer.addVideoListener(this);
+        exoPlayer.addTextOutput(this);
         exoPlayer.setAudioDebugListener(eventLogger);
         exoPlayer.setVideoDebugListener(eventLogger);
-        exoPlayer.setMetadataOutput(eventLogger);
+        exoPlayer.addMetadataOutput(eventLogger);
         exoPlayerCurrentPlayWhenReady = exoPlayer.getPlayWhenReady();
 
         audioFocusChangeListener = new OnAudioFocusChangeListener(new WeakReference<>(this));
@@ -868,7 +892,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
             sendMessage(MSG_PLAYER_PREPARING);
             this.currentMediaUri = videoUri;
 
-            String userAgent = "curl/Letterbox_2.0"; // temporarily using curl/ user agent to force subtitles with Akamai beta
 
             DefaultHttpDataSourceFactory httpDataSourceFactory = new DefaultHttpDataSourceFactory(
                     userAgent,
