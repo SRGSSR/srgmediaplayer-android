@@ -46,7 +46,6 @@ import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.dash.DashMediaSource;
-import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.text.TextRenderer;
@@ -489,7 +488,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         //DRM is only supported at API level 18+
         if (Util.SDK_INT >= 18) {
             try {
-                HttpMediaDrmCallback drmCallback = new HttpMediaDrmCallback(LICENCE_URL, new DefaultHttpDataSourceFactory(userAgent));
+                HttpMediaDrmCallback drmCallback = new HttpMediaDrmCallback(LICENCE_URL, new DefaultHttpDataSourceFactory("Mozilla/5.0 (Linux; Android 7.1.1; F5321 Build/34.3.A.0.238) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.137 Mobile Safari/537.36"));
                 drmSessionManager = new DefaultDrmSessionManager<>(C.WIDEVINE_UUID,
                         FrameworkMediaDrm.newInstance(C.WIDEVINE_UUID),
                         drmCallback, null, mainHandler, eventLogger);
