@@ -60,7 +60,6 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
-import com.google.android.exoplayer2.util.Util;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -71,6 +70,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.WeakHashMap;
 
 import ch.srg.mediaplayer.segment.model.Segment;
@@ -489,7 +489,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
         eventLogger = new EventLogger(trackSelector);
         DrmSessionManager<FrameworkMediaCrypto> drmSessionManager = null;
-        //&& Util.SDK_INT >= 18
+        UnsupportedDrmException unsupportedDrm = null;
         if (drmConfig != null) {
             try {
                 UUID drmType = drmConfig.getDrmType();
@@ -499,13 +499,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
                         drmCallback, null, mainHandler, this);
                 setViewType(ViewType.TYPE_SURFACEVIEW);
             } catch (UnsupportedDrmException e) {
-                Event event = Event.buildErrorEvent(this, e);
-                fatalError = event.exception;
-                postEventInternal(event);
+                fatalError = new SRGDrmMediaPlayerException(e);
             }
         }
-        DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(this.context, drmSessionManager, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
 
+        DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(this.context, drmSessionManager, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
         exoPlayer = ExoPlayerFactory.newSimpleInstance(renderersFactory, trackSelector, new DefaultLoadControl());
         exoPlayer.addListener(this);
         exoPlayer.setVideoListener(this);
@@ -517,6 +515,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         audioFocusChangeListener = new OnAudioFocusChangeListener(new WeakReference<>(this));
         audioFocusGranted = false;
+        if (fatalError != null) {
+            Event event = new Event(this, Event.Type.UNSUPPORTED_DRM, (SRGMediaPlayerException) fatalError);
+        }
     }
 
     private synchronized void startBackgroundThreadIfNecessary() {
