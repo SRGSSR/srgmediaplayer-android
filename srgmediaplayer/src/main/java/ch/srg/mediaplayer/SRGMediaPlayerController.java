@@ -275,7 +275,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
             /**
              * The Segment list has changed.
              */
-            SEGMENT_LIST_CHANGE
+            SEGMENT_LIST_CHANGE,
+
+            UNSUPPORTED_DRM
         }
 
         public final Type type;
@@ -459,7 +461,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private AkamaiMediaAnalyticsConfiguration akamaiMediaAnalyticsConfiguration;
     // FIXME : why userAgent letterbox is set here?
     private static final String userAgent = "curl/Letterbox_2.0"; // temporarily using curl/ user agent to force subtitles with Akamai beta
-    private static final String LICENCE_URL = "https://rng.stage.ott.irdeto.com/licenseServer/widevine/v1/SRG/license?contentId=srg-content";
+    @Nullable
+    private DrmConfig drmConfig;
 
     /**
      * Create a new SRGMediaPlayerController with the current context, a mediaPlayerDataProvider, and a TAG
@@ -468,7 +471,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @param context context
      * @param tag     tag to identify this controller
      */
-    public SRGMediaPlayerController(Context context, String tag) {
+    public SRGMediaPlayerController(Context context, String tag, @Nullable DrmConfig drmConfig) {
         this.context = context;
         this.mainHandler = new Handler(Looper.getMainLooper(), this);
         this.tag = tag;
@@ -486,17 +489,19 @@ public class SRGMediaPlayerController implements Handler.Callback,
         trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
         eventLogger = new EventLogger(trackSelector);
         DrmSessionManager<FrameworkMediaCrypto> drmSessionManager = null;
-        //DRM is only supported at API level 18+
-        if (Util.SDK_INT >= 18) {
+        //&& Util.SDK_INT >= 18
+        if (drmConfig != null) {
             try {
-                HttpMediaDrmCallback drmCallback = new HttpMediaDrmCallback(LICENCE_URL, new DefaultHttpDataSourceFactory("Mozilla/5.0 (Linux; Android 7.1.1; F5321 Build/34.3.A.0.238) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.137 Mobile Safari/537.36"));
-                drmSessionManager = new DefaultDrmSessionManager<>(C.WIDEVINE_UUID,
-                        FrameworkMediaDrm.newInstance(C.WIDEVINE_UUID),
-                        drmCallback, null, mainHandler, eventLogger);
+                UUID drmType = drmConfig.getDrmType();
+                HttpMediaDrmCallback drmCallback = new HttpMediaDrmCallback(drmConfig.getLicenceUrl(), new DefaultHttpDataSourceFactory(userAgent));
+                drmSessionManager = new DefaultDrmSessionManager<>(drmType,
+                        FrameworkMediaDrm.newInstance(drmType),
+                        drmCallback, null, mainHandler, this);
+                setViewType(ViewType.TYPE_SURFACEVIEW);
             } catch (UnsupportedDrmException e) {
-                // TODO : Post DRMErrorEvent
-                // fatalError = e;
-                e.printStackTrace();
+                Event event = Event.buildErrorEvent(this, e);
+                fatalError = event.exception;
+                postEventInternal(event);
             }
         }
         DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(this.context, drmSessionManager, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
