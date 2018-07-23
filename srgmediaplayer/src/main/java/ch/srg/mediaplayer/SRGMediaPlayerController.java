@@ -83,6 +83,7 @@ import ch.srg.mediaplayer.segment.model.Segment;
 @SuppressWarnings({"unused", "unchecked", "UnusedReturnValue", "WeakerAccess", "PointlessBitwiseExpression"})
 public class SRGMediaPlayerController implements Handler.Callback,
         Player.EventListener,
+        DefaultDrmSessionManager.EventListener,
         SimpleExoPlayer.VideoListener,
         AudioCapabilitiesReceiver.Listener,
         TextRenderer.Output {
@@ -2043,6 +2044,28 @@ public class SRGMediaPlayerController implements Handler.Callback,
     public void onCues(List<Cue> cues) {
         sendMessage(MSG_PLAYER_SUBTITLE_CUES, cues);
     }
+
+    @Override
+    public void onDrmKeysLoaded() {
+        eventLogger.onDrmKeysLoaded();
+    }
+
+    @Override
+    public void onDrmSessionManagerError(Exception e) {
+        eventLogger.onDrmSessionManagerError(e);
+        postFatalErrorInternal(new SRGDrmMediaPlayerException(e));
+    }
+
+    @Override
+    public void onDrmKeysRestored() {
+        eventLogger.onDrmKeysRestored();
+    }
+
+    @Override
+    public void onDrmKeysRemoved() {
+        eventLogger.onDrmKeysRemoved();
+    }
+
 
     /**
      * Provide Akamai QOS Configuration.
