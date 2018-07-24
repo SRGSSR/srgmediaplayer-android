@@ -2060,6 +2060,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
     public void onDrmSessionManagerError(Exception e) {
         eventLogger.onDrmSessionManagerError(e);
         postFatalErrorInternal(new SRGDrmMediaPlayerException(e));
+        if (akamaiExoPlayerLoader != null) {
+            akamaiExoPlayerLoader.onDrmSessionManagerError(e);
+        }
     }
 
     @Override
