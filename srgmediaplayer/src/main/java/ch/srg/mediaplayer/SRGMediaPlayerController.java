@@ -225,6 +225,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             STATE_CHANGE,
             FATAL_ERROR,
             TRANSIENT_ERROR, /* To be removed ? */
+            DRM_ERROR,
 
             MEDIA_READY_TO_PLAY,
             MEDIA_COMPLETED,
@@ -499,7 +500,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                         drmCallback, null, mainHandler, this);
                 setViewType(ViewType.TYPE_SURFACEVIEW);
             } catch (UnsupportedDrmException e) {
-                fatalError = new SRGDrmMediaPlayerException(e);
+                fatalError = e;
             }
         }
 
@@ -1494,8 +1495,17 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void postFatalErrorInternal(SRGMediaPlayerException e) {
+        // Don't update fatal error if a Drm exception occurs
+        if (fatalError instanceof SRGDrmMediaPlayerException || fatalError instanceof UnsupportedDrmException) {
+            return;
+        }
         this.fatalError = e;
         postEventInternal(Event.buildErrorEvent(this, true, e));
+    }
+
+    private void postDrmErrorInternal(SRGDrmMediaPlayerException e) {
+        this.fatalError = e;
+        postEventInternal(new Event(this, Event.Type.DRM_ERROR, e));
     }
 
     private void postEventInternal(Event.Type eventType) {
