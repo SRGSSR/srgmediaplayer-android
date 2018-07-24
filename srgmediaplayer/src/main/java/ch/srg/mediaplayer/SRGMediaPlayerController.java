@@ -466,11 +466,23 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private DrmConfig drmConfig;
 
     /**
-     * Create a new SRGMediaPlayerController with the current context, a mediaPlayerDataProvider, and a TAG
+     * Create a new SRGMediaPlayerController with no DRM support with the current context, a mediaPlayerDataProvider, and a TAG
      * if you need to retrieve a controller
      *
      * @param context context
      * @param tag     tag to identify this controller
+     */
+    public SRGMediaPlayerController(Context context, String tag) {
+        this(context, tag, null);
+    }
+
+    /**
+     * Create a new SRGMediaPlayerController with the current context, a mediaPlayerDataProvider, and a TAG
+     * if you need to retrieve a controller
+     *
+     * @param context   context
+     * @param tag       tag to identify this controller
+     * @param drmConfig drm configuration
      */
     public SRGMediaPlayerController(Context context, String tag, @Nullable DrmConfig drmConfig) {
         this.context = context;
