@@ -60,6 +60,7 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
+import com.google.android.exoplayer2.util.Util;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -501,7 +502,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         eventLogger = new EventLogger(trackSelector);
         DrmSessionManager<FrameworkMediaCrypto> drmSessionManager = null;
         UnsupportedDrmException unsupportedDrm = null;
-        if (drmConfig != null) {
+        if (drmConfig != null && Util.SDK_INT >= 18) {
             try {
                 UUID drmType = drmConfig.getDrmType();
                 HttpMediaDrmCallback drmCallback = new HttpMediaDrmCallback(drmConfig.getLicenceUrl(), new DefaultHttpDataSourceFactory(userAgent));
@@ -2104,5 +2105,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
      */
     public void setAkamaiMediaAnalyticsConfiguration(@Nullable AkamaiMediaAnalyticsConfiguration akamaiMediaAnalyticsConfiguration) {
         this.akamaiMediaAnalyticsConfiguration = akamaiMediaAnalyticsConfiguration;
+    }
+
+    public static boolean isDrmSupported() {
+        return Util.SDK_INT >= 18;
     }
 }
