@@ -60,6 +60,7 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
+import com.google.android.exoplayer2.upstream.HttpDataSource;
 import com.google.android.exoplayer2.util.Util;
 
 import java.lang.annotation.Retention;
@@ -2035,7 +2036,14 @@ public class SRGMediaPlayerController implements Handler.Callback,
     @Override
     public void onPlayerError(ExoPlaybackException error) {
         manageKeepScreenOnInternal();
-        sendMessage(MSG_PLAYER_EXCEPTION, new SRGMediaPlayerException(error));
+        Throwable cause = error.getCause();
+        SRGMediaPlayerException exception = new SRGMediaPlayerException(error);
+        if (cause instanceof HttpDataSource.InvalidResponseCodeException) {
+            if (((HttpDataSource.InvalidResponseCodeException) cause).responseCode == 403) {
+                exception = new SRGMediaPlayerForbiddenException(error);
+            }
+        }
+        sendMessage(MSG_PLAYER_EXCEPTION, exception);
     }
 
     @Override
