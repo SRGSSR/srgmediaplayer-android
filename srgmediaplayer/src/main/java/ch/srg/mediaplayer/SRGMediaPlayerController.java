@@ -163,7 +163,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private static final int MSG_SET_MUTE = 7;
     private static final int MSG_APPLY_STATE = 8;
     private static final int MSG_RELEASE = 9;
-    private static final int MSG_EXCEPTION = 12;
+    private static final int MSG_PLAYER_EXCEPTION = 12;
     private static final int MSG_REGISTER_EVENT_LISTENER = 13;
     private static final int MSG_UNREGISTER_EVENT_LISTENER = 14;
     private static final int MSG_PLAYER_PREPARING = 101;
@@ -225,7 +225,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
             STATE_CHANGE,
             FATAL_ERROR,
             TRANSIENT_ERROR, /* To be removed ? */
-            DRM_ERROR,
 
             MEDIA_READY_TO_PLAY,
             MEDIA_COMPLETED,
@@ -276,9 +275,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             /**
              * The Segment list has changed.
              */
-            SEGMENT_LIST_CHANGE,
-
-            UNSUPPORTED_DRM
+            SEGMENT_LIST_CHANGE
         }
 
         public final Type type;
@@ -426,7 +423,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
     private AudioCapabilities audioCapabilities;
     private EventLogger eventLogger;
-    private ViewType viewType;
+    @NonNull
+    private ViewType viewType = ViewType.TYPE_TEXTUREVIEW;
     private View renderingView;
     private Integer playbackState;
     private List<Segment> segments = new ArrayList<>();
@@ -482,7 +480,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      *
      * @param context   context
      * @param tag       tag to identify this controller
-     * @param drmConfig drm configuration
+     * @param drmConfig drm configuration null for no DRM support
      */
     public SRGMediaPlayerController(Context context, String tag, @Nullable DrmConfig drmConfig) {
         this.context = context;
@@ -510,7 +508,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 drmSessionManager = new DefaultDrmSessionManager<>(drmType,
                         FrameworkMediaDrm.newInstance(drmType),
                         drmCallback, null, mainHandler, this);
-                setViewType(ViewType.TYPE_SURFACEVIEW);
+                viewType = ViewType.TYPE_SURFACEVIEW;
             } catch (UnsupportedDrmException e) {
                 fatalError = e;
             }
@@ -528,9 +526,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         audioFocusChangeListener = new OnAudioFocusChangeListener(new WeakReference<>(this));
         audioFocusGranted = false;
-        if (fatalError != null) {
-            Event event = new Event(this, Event.Type.UNSUPPORTED_DRM, (SRGMediaPlayerException) fatalError);
-        }
     }
 
     private synchronized void startBackgroundThreadIfNecessary() {
@@ -771,7 +766,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     prepareInternal(uri, data.streamType);
                 } catch (SRGMediaPlayerException e) {
                     logE("onUriLoaded", e);
-                    handleFatalExceptionInternal(e);
+                    handlePlayerExceptionInternal(e);
                 }
                 return true;
 
@@ -815,8 +810,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 releaseInternal();
                 return true;
 
-            case MSG_EXCEPTION:
-                handleFatalExceptionInternal((SRGMediaPlayerException) msg.obj);
+            case MSG_PLAYER_EXCEPTION:
+                handlePlayerExceptionInternal((SRGMediaPlayerException) msg.obj);
                 return true;
 
             case MSG_REGISTER_EVENT_LISTENER:
@@ -1178,9 +1173,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return state;
     }
 
-    private void handleFatalExceptionInternal(SRGMediaPlayerException e) {
+    private void handlePlayerExceptionInternal(SRGMediaPlayerException e) {
         logE("exception occurred", e);
-        postFatalErrorInternal(e);
+        postFatalErrorInternal(e, false);
         releaseInternal();
     }
 
@@ -1357,8 +1352,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
             public void run() {
                 if (viewType == ViewType.TYPE_SURFACEVIEW) {
                     renderingView = new SurfaceView(parentContext);
-                } else {
+                } else if (viewType == ViewType.TYPE_TEXTUREVIEW) {
                     renderingView = new TextureView(parentContext);
+                } else {
+                    throw new IllegalStateException("Unsupported view type: " + viewType);
                 }
                 if (mediaPlayerView != null) {
                     Log.v(TAG, "binding, setVideoRenderingView " + mediaPlayerView);
@@ -1432,7 +1429,15 @@ public class SRGMediaPlayerController implements Handler.Callback,
         });
     }
 
-    public void setViewType(ViewType viewType) {
+    /**
+     * Warning texture view not supported to play DRM content.
+     *
+     * @param viewType view type
+     */
+    public void setViewType(@NonNull ViewType viewType) {
+        if (debugMode && drmConfig != null && viewType == ViewType.TYPE_TEXTUREVIEW) {
+            Log.w(TAG, "Texture view does not support DRM");
+        }
         this.viewType = viewType;
     }
 
@@ -1506,18 +1511,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
         sendMessage(MSG_FIRE_EVENT, event);
     }
 
-    private void postFatalErrorInternal(SRGMediaPlayerException e) {
-        // Don't update fatal error if a Drm exception occurs
-        if (fatalError instanceof SRGDrmMediaPlayerException || fatalError instanceof UnsupportedDrmException) {
-            return;
+    private void postFatalErrorInternal(SRGMediaPlayerException e, boolean override) {
+        if (override || fatalError != null) {
+            this.fatalError = e;
+            postEventInternal(Event.buildErrorEvent(this, true, e));
         }
-        this.fatalError = e;
-        postEventInternal(Event.buildErrorEvent(this, true, e));
-    }
-
-    private void postDrmErrorInternal(SRGDrmMediaPlayerException e) {
-        this.fatalError = e;
-        postEventInternal(new Event(this, Event.Type.DRM_ERROR, e));
     }
 
     private void postEventInternal(Event.Type eventType) {
@@ -2036,7 +2034,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     @Override
     public void onPlayerError(ExoPlaybackException error) {
         manageKeepScreenOnInternal();
-        sendMessage(MSG_EXCEPTION, new SRGMediaPlayerException(error));
+        sendMessage(MSG_PLAYER_EXCEPTION, new SRGMediaPlayerException(error));
     }
 
     @Override
@@ -2081,7 +2079,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     @Override
     public void onDrmSessionManagerError(Exception e) {
         eventLogger.onDrmSessionManagerError(e);
-        postFatalErrorInternal(new SRGDrmMediaPlayerException(e));
+        postFatalErrorInternal(new SRGDrmMediaPlayerException(e), true);
         if (akamaiExoPlayerLoader != null) {
             akamaiExoPlayerLoader.onDrmSessionManagerError(e);
         }
