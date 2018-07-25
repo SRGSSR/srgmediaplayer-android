@@ -1513,7 +1513,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void postFatalErrorInternal(SRGMediaPlayerException e, boolean override) {
-        if (override || fatalError != null) {
+        if (override || fatalError == null) {
             this.fatalError = e;
             postEventInternal(Event.buildErrorEvent(this, true, e));
         }
