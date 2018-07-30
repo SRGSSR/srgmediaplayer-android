@@ -13,6 +13,7 @@ import android.os.Process;
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.media.session.MediaSessionCompat;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
@@ -40,6 +41,7 @@ import com.google.android.exoplayer2.drm.FrameworkMediaCrypto;
 import com.google.android.exoplayer2.drm.FrameworkMediaDrm;
 import com.google.android.exoplayer2.drm.HttpMediaDrmCallback;
 import com.google.android.exoplayer2.drm.UnsupportedDrmException;
+import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
@@ -424,6 +426,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private final SimpleExoPlayer exoPlayer;
     private final AudioCapabilitiesReceiver audioCapabilitiesReceiver;
 
+    private final MediaSessionCompat mediaSession;
+    private final MediaSessionConnector mediaSessionConnector;
+
     private DefaultTrackSelector trackSelector;
     private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
     private AudioCapabilities audioCapabilities;
@@ -530,6 +535,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         audioFocusChangeListener = new OnAudioFocusChangeListener(new WeakReference<>(this));
         audioFocusGranted = false;
+
+        mediaSession = new MediaSessionCompat(context, context.getPackageName());
+        mediaSessionConnector = new MediaSessionConnector(mediaSession);
+        mediaSessionConnector.setPlayer(exoPlayer, null, null);
+        mediaSession.setActive(true);
     }
 
     private synchronized void startBackgroundThreadIfNecessary() {
@@ -1229,6 +1239,19 @@ public class SRGMediaPlayerController implements Handler.Callback,
         releaseInternal();
     }
 
+    @NonNull
+    public SimpleExoPlayer getExoPlayer() {
+        return exoPlayer;
+    }
+
+    @Nullable
+    public MediaSessionCompat.Token getMediaSessionToken() {
+        if (mediaSession != null) {
+            return mediaSession.getSessionToken();
+        }
+        return null;
+    }
+
     /**
      * Release the current player. Once the player is released you have to create a new player
      * if you want to play a new video.
@@ -1236,6 +1259,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * Remark: The player does not immediately reach the released state.
      */
     public void release() {
+        mediaSessionConnector.setPlayer(null, null, null);
+        mediaSession.setActive(false);
         if (mediaPlayerView != null) {
             unbindFromMediaPlayerView(mediaPlayerView);
         }
