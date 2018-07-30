@@ -34,8 +34,8 @@ import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.audio.AudioCapabilities;
 import com.google.android.exoplayer2.audio.AudioCapabilitiesReceiver;
+import com.google.android.exoplayer2.drm.DefaultDrmSessionEventListener;
 import com.google.android.exoplayer2.drm.DefaultDrmSessionManager;
-import com.google.android.exoplayer2.drm.DrmSessionManager;
 import com.google.android.exoplayer2.drm.FrameworkMediaCrypto;
 import com.google.android.exoplayer2.drm.FrameworkMediaDrm;
 import com.google.android.exoplayer2.drm.HttpMediaDrmCallback;
@@ -46,9 +46,11 @@ import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.dash.DashMediaSource;
+import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource;
+import com.google.android.exoplayer2.source.hls.DefaultHlsDataSourceFactory;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.text.Cue;
-import com.google.android.exoplayer2.text.TextRenderer;
+import com.google.android.exoplayer2.text.TextOutput;
 import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.FixedTrackSelection;
@@ -62,6 +64,7 @@ import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
 import com.google.android.exoplayer2.upstream.HttpDataSource;
 import com.google.android.exoplayer2.util.Util;
+import com.google.android.exoplayer2.video.VideoListener;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -85,10 +88,10 @@ import ch.srg.mediaplayer.segment.model.Segment;
 @SuppressWarnings({"unused", "unchecked", "UnusedReturnValue", "WeakerAccess", "PointlessBitwiseExpression"})
 public class SRGMediaPlayerController implements Handler.Callback,
         Player.EventListener,
-        DefaultDrmSessionManager.EventListener,
-        SimpleExoPlayer.VideoListener,
+        DefaultDrmSessionEventListener,
+        VideoListener,
         AudioCapabilitiesReceiver.Listener,
-        TextRenderer.Output {
+        TextOutput {
     public static final String TAG = "SRGMediaPlayer";
     public static final String VERSION = BuildConfig.VERSION_NAME;
 
@@ -500,7 +503,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
         eventLogger = new EventLogger(trackSelector);
-        DrmSessionManager<FrameworkMediaCrypto> drmSessionManager = null;
+        DefaultDrmSessionManager<FrameworkMediaCrypto> drmSessionManager = null;
         UnsupportedDrmException unsupportedDrm = null;
         if (drmConfig != null && Util.SDK_INT >= 18) {
             try {
@@ -508,21 +511,21 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 HttpMediaDrmCallback drmCallback = new HttpMediaDrmCallback(drmConfig.getLicenceUrl(), new DefaultHttpDataSourceFactory(userAgent));
                 drmSessionManager = new DefaultDrmSessionManager<>(drmType,
                         FrameworkMediaDrm.newInstance(drmType),
-                        drmCallback, null, mainHandler, this);
+                        drmCallback, null);
+                drmSessionManager.addListener(mainHandler, this);
                 viewType = ViewType.TYPE_SURFACEVIEW;
             } catch (UnsupportedDrmException e) {
                 fatalError = e;
             }
         }
 
-        DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(this.context, drmSessionManager, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
-        exoPlayer = ExoPlayerFactory.newSimpleInstance(renderersFactory, trackSelector, new DefaultLoadControl());
+        DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(this.context, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
+        exoPlayer = ExoPlayerFactory.newSimpleInstance(renderersFactory, trackSelector, new DefaultLoadControl(), drmSessionManager);
         exoPlayer.addListener(this);
-        exoPlayer.setVideoListener(this);
-        exoPlayer.setTextOutput(this);
-        exoPlayer.setAudioDebugListener(eventLogger);
-        exoPlayer.setVideoDebugListener(eventLogger);
-        exoPlayer.setMetadataOutput(eventLogger);
+        exoPlayer.addVideoListener(this);
+        exoPlayer.addTextOutput(this);
+        exoPlayer.addAnalyticsListener(eventLogger);
+        exoPlayer.addMetadataOutput(eventLogger);
         exoPlayerCurrentPlayWhenReady = exoPlayer.getPlayWhenReady();
 
         audioFocusChangeListener = new OnAudioFocusChangeListener(new WeakReference<>(this));
@@ -953,31 +956,32 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
             MediaSource mediaSource;
 
-            eventLogger.setChainedListener(akamaiExoPlayerLoader);
-
             switch (streamType) {
                 case STREAM_DASH:
                     // Use DefaultDashChunkSource with workaround that don't crash the application if problem during manifest parsing
                     // https://github.com/google/ExoPlayer/issues/2795
-                    mediaSource = new DashMediaSource(videoUri, new DefaultHttpDataSourceFactory(userAgent),
-                            new ch.srg.mediaplayer.DefaultDashChunkSource.Factory(dataSourceFactory), mainHandler, eventLogger);
+                    mediaSource = new DashMediaSource.Factory(new DefaultDashChunkSource.Factory(dataSourceFactory), null)
+                            .createMediaSource(videoUri);
                     break;
                 case STREAM_HLS:
-                    mediaSource = new HlsMediaSource(videoUri, dataSourceFactory, mainHandler, eventLogger);
+                    mediaSource = new HlsMediaSource.Factory(new DefaultHlsDataSourceFactory(dataSourceFactory))
+                            .createMediaSource(videoUri);
                     break;
                 case STREAM_HTTP_PROGRESSIVE:
-                    mediaSource = new ExtractorMediaSource(videoUri, dataSourceFactory, new DefaultExtractorsFactory(),
-                            mainHandler, eventLogger);
+                    mediaSource = new ExtractorMediaSource.Factory(dataSourceFactory)
+                            .setExtractorsFactory(new DefaultExtractorsFactory())
+                            .createMediaSource(videoUri);
                     break;
                 case STREAM_LOCAL_FILE:
                     FileDataSourceFactory fileDataSourceFactory = new FileDataSourceFactory();
-                    mediaSource = new ExtractorMediaSource(videoUri, fileDataSourceFactory, new DefaultExtractorsFactory(),
-                            mainHandler, eventLogger);
+                    mediaSource = new ExtractorMediaSource.Factory(fileDataSourceFactory)
+                            .setExtractorsFactory(new DefaultExtractorsFactory())
+                            .createMediaSource(videoUri);
                     break;
                 default:
                     throw new IllegalStateException("Invalid source type: " + streamType);
             }
-
+            //mediaSource.addEventListener(mainHandler, eventLogger);
             exoPlayer.prepare(mediaSource);
             if (playbackStartPosition != null) {
                 try {
@@ -1002,7 +1006,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 akamaiExoPlayerLoader.setData(keyValue.first, keyValue.second);
             }
             akamaiExoPlayerLoader.initializeLoader(exoPlayer, videoUri.toString());
-            exoPlayer.setVideoDebugListener(akamaiExoPlayerLoader);
+            exoPlayer.addAnalyticsListener(akamaiExoPlayerLoader);
         }
     }
 
@@ -1876,14 +1880,16 @@ public class SRGMediaPlayerController implements Handler.Callback,
         MappingTrackSelector.MappedTrackInfo trackInfo = trackSelector.getCurrentMappedTrackInfo();
         if (rendererIndex != -1 && trackInfo != null) {
             TrackGroupArray trackGroups = trackInfo.getTrackGroups(rendererIndex);
-            trackSelector.setRendererDisabled(rendererIndex, track == null);
+            DefaultTrackSelector.ParametersBuilder builder = new DefaultTrackSelector.ParametersBuilder();
+            builder.setRendererDisabled(rendererIndex, track == null);
             if (track != null) {
                 TrackSelection.Factory factory = new FixedTrackSelection.Factory();
-                MappingTrackSelector.SelectionOverride override = new MappingTrackSelector.SelectionOverride(factory, track.groupIndex, track.trackIndex);
-                trackSelector.setSelectionOverride(rendererIndex, trackGroups, override);
+                DefaultTrackSelector.SelectionOverride override = new DefaultTrackSelector.SelectionOverride(track.groupIndex, track.trackIndex);
+                builder.setSelectionOverride(rendererIndex, trackGroups, override);
             } else {
-                trackSelector.clearSelectionOverride(rendererIndex, trackGroups);
+                builder.clearSelectionOverride(rendererIndex, trackGroups);
             }
+            trackSelector.setParameters(builder);
         }
         broadcastEvent(Event.Type.AUDIO_TRACK_DID_CHANGE);
     }
@@ -1896,7 +1902,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (mappedTrackInfo != null && rendererIndex != -1) {
             TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(rendererIndex);
 
-            MappingTrackSelector.SelectionOverride override = trackSelector.getSelectionOverride(rendererIndex, trackGroups);
+            DefaultTrackSelector.SelectionOverride override = trackSelector.getParameters().getSelectionOverride(rendererIndex, trackGroups);
             if (override != null) {
                 int[] tracks = override.tracks;
                 if (tracks.length != 0) {
@@ -1940,17 +1946,19 @@ public class SRGMediaPlayerController implements Handler.Callback,
         MappingTrackSelector.MappedTrackInfo trackInfo = trackSelector.getCurrentMappedTrackInfo();
         if (rendererIndex != -1 && trackInfo != null) {
             TrackGroupArray trackGroups = trackInfo.getTrackGroups(rendererIndex);
-            trackSelector.setRendererDisabled(rendererIndex, track == null);
+            DefaultTrackSelector.ParametersBuilder builder = new DefaultTrackSelector.ParametersBuilder();
+            builder.setRendererDisabled(rendererIndex, track == null);
             if (track != null) {
                 TrackSelection.Factory factory = new FixedTrackSelection.Factory();
                 Pair<Integer, Integer> integerPair = (Pair<Integer, Integer>) track.tag;
                 int groupIndex = integerPair.first;
                 int trackIndex = integerPair.second;
-                MappingTrackSelector.SelectionOverride override = new MappingTrackSelector.SelectionOverride(factory, groupIndex, trackIndex);
-                trackSelector.setSelectionOverride(rendererIndex, trackGroups, override);
+                DefaultTrackSelector.SelectionOverride override = new DefaultTrackSelector.SelectionOverride(groupIndex, trackIndex);
+                builder.setSelectionOverride(rendererIndex, trackGroups, override);
             } else {
-                trackSelector.clearSelectionOverride(rendererIndex, trackGroups);
+                builder.clearSelectionOverride(rendererIndex, trackGroups);
             }
+            trackSelector.setParameters(builder);
         }
         broadcastEvent(Event.Type.SUBTITLE_DID_CHANGE);
     }
@@ -1963,7 +1971,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (mappedTrackInfo != null && rendererIndex != -1) {
             TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(rendererIndex);
 
-            MappingTrackSelector.SelectionOverride override = trackSelector.getSelectionOverride(rendererIndex, trackGroups);
+            DefaultTrackSelector.SelectionOverride override = trackSelector.getParameters().getSelectionOverride(rendererIndex, trackGroups);
             if (override != null) {
                 int[] tracks = override.tracks;
                 if (tracks.length != 0) {
@@ -2002,7 +2010,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
 
         if (mappedTrackInfo != null) {
-            for (int i = 0; i < mappedTrackInfo.length; i++) {
+            for (int i = 0; i < mappedTrackInfo.getRendererCount(); i++) {
                 if (mappedTrackInfo.getTrackGroups(i).length > 0
                         && exoPlayer.getRendererType(i) == trackType) {
                     return i;
@@ -2029,7 +2037,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     @Override
-    public void onTimelineChanged(Timeline timeline, Object manifest) {
+    public void onTimelineChanged(Timeline timeline, Object manifest, int reason) {
         // Ignore
     }
 
@@ -2091,13 +2099,26 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     @Override
-    public void onPositionDiscontinuity() {
+    public void onPositionDiscontinuity(int reason) {
+        // Should handle/log reason info
         broadcastEvent(Event.Type.POSITION_DISCONTINUITY);
+    }
+
+    @Override
+    public void onShuffleModeEnabledChanged(boolean shuffleModeEnabled) {
+        // Ignore
     }
 
     @Override
     public void onPlaybackParametersChanged(PlaybackParameters playbackParameters) {
         // Ignore
+    }
+
+    @Override
+    public void onSeekProcessed() {
+        currentSeekTarget = null;
+        broadcastEvent(Event.Type.DID_SEEK);
+        broadcastEvent(Event.Type.LOADING_STATE_CHANGED);
     }
 
     @Override
@@ -2126,12 +2147,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Override
     public void onDrmKeysLoaded() {
-        eventLogger.onDrmKeysLoaded();
+        // already handled by eventLogger
     }
 
     @Override
     public void onDrmSessionManagerError(Exception e) {
-        eventLogger.onDrmSessionManagerError(e);
         postFatalErrorInternal(new SRGDrmMediaPlayerException(e), true);
         if (akamaiExoPlayerLoader != null) {
             akamaiExoPlayerLoader.onDrmSessionManagerError(e);
@@ -2140,12 +2160,12 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Override
     public void onDrmKeysRestored() {
-        eventLogger.onDrmKeysRestored();
+        // already handled by eventLogger
     }
 
     @Override
     public void onDrmKeysRemoved() {
-        eventLogger.onDrmKeysRemoved();
+        // already handled by eventLogger
     }
 
 
