@@ -538,7 +538,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         audioFocusGranted = false;
 
         mediaSession = new MediaSessionCompat(context, context.getPackageName());
-        mediaSessionConnector = new MediaSessionConnector(mediaSession);
+        mediaSessionConnector = new MediaSessionConnector(mediaSession, null, false, null);
         mediaSessionConnector.setPlayer(exoPlayer, null, null);
         mediaSession.setActive(true);
     }
@@ -1251,6 +1251,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
             return mediaSession.getSessionToken();
         }
         return null;
+    }
+
+    public MediaSessionCompat getMediaSession(){
+        return mediaSession;
     }
 
     /**
