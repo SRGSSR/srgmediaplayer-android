@@ -539,7 +539,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         mediaSession = new MediaSessionCompat(context, context.getPackageName());
         mediaSessionConnector = new MediaSessionConnector(mediaSession, null, false, null);
-        mediaSessionConnector.setPlayer(exoPlayer, null, null);
+        mediaSessionConnector.setPlayer(exoPlayer, null, (MediaSessionConnector.CustomActionProvider[]) null);
         mediaSession.setActive(true);
     }
 
@@ -1253,7 +1253,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return null;
     }
 
-    public MediaSessionCompat getMediaSession(){
+    public MediaSessionCompat getMediaSession() {
         return mediaSession;
     }
 
@@ -1264,8 +1264,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * Remark: The player does not immediately reach the released state.
      */
     public void release() {
-        mediaSessionConnector.setPlayer(null, null, null);
-        mediaSession.setActive(false);
+        // Cause runtime exception if call from non ui thread
+//        mediaSessionConnector.setPlayer(null, null, (MediaSessionConnector.CustomActionProvider[]) null);
+//        mediaSession.setActive(false);
         if (mediaPlayerView != null) {
             unbindFromMediaPlayerView(mediaPlayerView);
         }
@@ -1273,6 +1274,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void releaseInternal() {
+        mediaSessionConnector.setPlayer(null, null, (MediaSessionConnector.CustomActionProvider[]) null);
+        mediaSession.setActive(false);
         currentSeekTarget = null;
         setStateInternal(State.RELEASED);
         abandonAudioFocus();
