@@ -1223,6 +1223,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
             akamaiExoPlayerLoader.releaseLoader();
         }
         exoPlayer.stop();
+        // Done after stop to be sure that no event listener are called.
+        mediaSessionConnector.setPlayer(null, null, (MediaSessionConnector.CustomActionProvider[]) null);
+        mediaSession.setActive(false);
+
         exoPlayer.release();
         currentMediaUri = null;
         seekToWhenReady = null;
@@ -1273,8 +1277,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void releaseInternal() {
-        mediaSessionConnector.setPlayer(null, null, (MediaSessionConnector.CustomActionProvider[]) null);
-        mediaSession.setActive(false);
+        // Race condition in MediaSessionConnector :(
         currentSeekTarget = null;
         setStateInternal(State.RELEASED);
         abandonAudioFocus();
