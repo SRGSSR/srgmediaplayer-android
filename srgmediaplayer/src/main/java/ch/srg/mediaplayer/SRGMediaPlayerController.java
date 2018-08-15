@@ -613,20 +613,48 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * The corresponding events are triggered when the video loading start and is ready.
      *
      * @param uri             uri of the media
-     * @param startPositionMs start position in milliseconds or null to prevent seek
+     * @param startPositionMs start position in milliseconds relative to uri or segment when given or null to prevent seek
      * @param streamType      {@link SRGMediaPlayerController#STREAM_DASH}, {@link SRGMediaPlayerController#STREAM_HLS}, {@link SRGMediaPlayerController#STREAM_HTTP_PROGRESSIVE} or {@link SRGMediaPlayerController#STREAM_LOCAL_FILE}
-     * @throws SRGMediaPlayerException player exception
+     * @param segments        logical segment list
+     * @param segment         segment to play, must be in segments list. This is considered a user selected segment (SEGMENT_SELECTED is sent)
+     * @throws IllegalArgumentException if segment is not in segment list or uri is null
      */
     @SuppressWarnings("ConstantConditions")
     public void prepare(@NonNull Uri uri,
                         Long startPositionMs,
                         @SRGStreamType int streamType,
-                        List<Segment> segments) throws SRGMediaPlayerException {
+                        List<Segment> segments,
+                        Segment segment) {
         if (uri == null) {
             throw new IllegalArgumentException("Invalid argument: null uri");
         }
-        PrepareUriData data = new PrepareUriData(uri, startPositionMs, streamType, segments);
+        if (segment != null && !segments.contains(segment)) {
+            throw new IllegalArgumentException("Unknown segment: " + segment);
+        }
+        PrepareUriData data = new PrepareUriData(uri, startPositionMs, streamType, segments, segment);
         sendMessage(MSG_PREPARE_FOR_URI, data);
+    }
+
+    /**
+     * Try to play a video with a url and corresponding segments, you can't replay the current playing video.
+     * will throw an exception if you haven't setup a data provider or if the media is not present
+     * in the provider.
+     * <p/>
+     * The corresponding events are triggered when the video loading start and is ready.
+     *
+     * @param uri             uri of the media
+     * @param startPositionMs start position in milliseconds or null to prevent seek
+     * @param streamType      {@link SRGMediaPlayerController#STREAM_DASH}, {@link SRGMediaPlayerController#STREAM_HLS}, {@link SRGMediaPlayerController#STREAM_HTTP_PROGRESSIVE} or {@link SRGMediaPlayerController#STREAM_LOCAL_FILE}
+     * @param segments        logical segment list
+     * @throws IllegalArgumentException if segment is not in segment list or uri is null
+     * @ player exception
+     */
+    @SuppressWarnings("ConstantConditions")
+    public void prepare(@NonNull Uri uri,
+                        Long startPositionMs,
+                        @SRGStreamType int streamType,
+                        List<Segment> segments) {
+        prepare(uri, startPositionMs, streamType, segments, null);
     }
 
     public void keepScreenOn(boolean lock) {
@@ -639,12 +667,14 @@ public class SRGMediaPlayerController implements Handler.Callback,
         Long position;
         int streamType;
         private List<Segment> segments;
+        private Segment segment;
 
-        PrepareUriData(Uri uri, Long position, int streamType, List<Segment> segments) {
+        PrepareUriData(Uri uri, Long position, int streamType, List<Segment> segments, Segment segment) {
             this.uri = uri;
             this.position = position;
             this.streamType = streamType;
             this.segments = segments;
+            this.segment = segment;
         }
 
         @Override
@@ -754,11 +784,15 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 setStateInternal(State.PREPARING);
                 PrepareUriData data = (PrepareUriData) msg.obj;
                 Uri uri = data.uri;
-                this.segments.clear();
                 seekToWhenReady = data.position;
+                this.segments.clear();
                 currentSegment = null;
                 if (data.segments != null) {
                     segments.addAll(data.segments);
+                    if (data.segment != null) {
+                        postEventInternal(new Event(this, Event.Type.SEGMENT_SELECTED, null, data.segment));
+                        seekToWhenReady = data.position + data.segment.getMarkIn();
+                    }
                 }
                 postEventInternal(Event.Type.SEGMENT_LIST_CHANGE);
                 postEventInternal(Event.Type.MEDIA_READY_TO_PLAY);
