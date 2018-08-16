@@ -46,7 +46,6 @@ import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.dash.DashMediaSource;
-import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.text.TextRenderer;
@@ -791,7 +790,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     segments.addAll(data.segments);
                     if (data.segment != null) {
                         postEventInternal(new Event(this, Event.Type.SEGMENT_SELECTED, null, data.segment));
-                        seekToWhenReady = data.position + data.segment.getMarkIn();
+                        seekToWhenReady = (data.position != null ? data.position : 0) + data.segment.getMarkIn();
                     }
                 }
                 postEventInternal(Event.Type.SEGMENT_LIST_CHANGE);
@@ -959,8 +958,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
             switch (streamType) {
                 case STREAM_DASH:
+                    // Use DefaultDashChunkSource with workaround that don't crash the application if problem during manifest parsing
                     mediaSource = new DashMediaSource(videoUri, new DefaultHttpDataSourceFactory(userAgent),
-                            new DefaultDashChunkSource.Factory(dataSourceFactory), mainHandler, eventLogger);
+                            new ch.srg.mediaplayer.DefaultDashChunkSource.Factory(dataSourceFactory), mainHandler, eventLogger);
                     break;
                 case STREAM_HLS:
                     mediaSource = new HlsMediaSource(videoUri, dataSourceFactory, mainHandler, eventLogger);

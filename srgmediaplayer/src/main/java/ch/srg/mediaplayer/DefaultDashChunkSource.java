@@ -56,6 +56,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * Work around to avoid application crash due to an OutOfBoundException
  * A default {@link DashChunkSource} implementation.
  */
 public class DefaultDashChunkSource implements DashChunkSource {
@@ -154,6 +155,7 @@ public class DefaultDashChunkSource implements DashChunkSource {
             List<Representation> representations = getRepresentations();
             for (int i = 0; i < representationHolders.length; i++) {
                 int index = trackSelection.getIndexInTrackGroup(i);
+                // FIXME : workaround, check if still needed with 2.8.2
                 if (index >= representations.size()) {
                     index = 0;
                     Log.e("DefaultDashChunkSource", "invalid track index " + index + " (" + representations.size() + ") ");
