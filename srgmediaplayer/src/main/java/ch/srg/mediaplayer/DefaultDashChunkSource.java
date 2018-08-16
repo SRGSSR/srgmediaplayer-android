@@ -157,8 +157,8 @@ public class DefaultDashChunkSource implements DashChunkSource {
                 int index = trackSelection.getIndexInTrackGroup(i);
                 // FIXME : workaround, check if still needed with 2.8.2
                 if (index >= representations.size()) {
-                    index = 0;
                     Log.e("DefaultDashChunkSource", "invalid track index " + index + " (" + representations.size() + ") ");
+                    index = 0;
                 }
                 Representation representation = representations.get(index);
                 representationHolders[i].updateRepresentation(periodDurationUs, representation);
