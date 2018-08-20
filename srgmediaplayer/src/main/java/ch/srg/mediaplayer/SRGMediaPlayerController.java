@@ -783,14 +783,14 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 setStateInternal(State.PREPARING);
                 PrepareUriData data = (PrepareUriData) msg.obj;
                 Uri uri = data.uri;
-                seekToWhenReady = data.position;
+                Long playbackStartPosition = data.position;
                 this.segments.clear();
                 currentSegment = null;
                 if (data.segments != null) {
                     segments.addAll(data.segments);
                     if (data.segment != null) {
                         postEventInternal(new Event(this, Event.Type.SEGMENT_SELECTED, null, data.segment));
-                        seekToWhenReady = (data.position != null ? data.position : 0) + data.segment.getMarkIn();
+                        playbackStartPosition = (data.position != null ? data.position : 0) + data.segment.getMarkIn();
                     }
                 }
                 postEventInternal(Event.Type.SEGMENT_LIST_CHANGE);
@@ -799,7 +799,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     if (mediaPlayerView != null) {
                         internalUpdateMediaPlayerViewBound();
                     }
-                    prepareInternal(uri, data.streamType);
+                    prepareInternal(uri, playbackStartPosition, data.streamType);
                 } catch (SRGMediaPlayerException e) {
                     logE("onUriLoaded", e);
                     handlePlayerExceptionInternal(e);
@@ -932,7 +932,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
     }
 
-    private void prepareInternal(@NonNull Uri videoUri, int streamType) throws SRGMediaPlayerException {
+    private void prepareInternal(@NonNull Uri videoUri, @Nullable Long playbackStartPosition, int streamType) throws SRGMediaPlayerException {
         Log.v(TAG, "Preparing " + videoUri + " (" + streamType + ")");
         setupAkamaiQos(videoUri);
         try {
@@ -980,6 +980,15 @@ public class SRGMediaPlayerController implements Handler.Callback,
             }
 
             exoPlayer.prepare(mediaSource);
+            if (playbackStartPosition != null) {
+                try {
+                    exoPlayer.seekTo(playbackStartPosition);
+                    checkSegmentChange(playbackStartPosition); // Done here ?
+                } catch (IllegalStateException ignored) {
+                    Log.w(TAG, "Invalid initial playback position", ignored);
+                }
+            }
+
         } catch (Exception e) {
             release();
             throw new SRGMediaPlayerException(e);
