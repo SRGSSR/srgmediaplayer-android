@@ -82,7 +82,12 @@ public class PlaybackTest extends MediaPlayerTest {
     public void release() {
         controller.unregisterEventListener(queue);
         queue.clear();
-        controller.release();
+        getInstrumentation().runOnMainSync(new Runnable() {
+            @Override
+            public void run() {
+                controller.release();
+            }
+        });
     }
 
     @Test
@@ -405,13 +410,22 @@ public class PlaybackTest extends MediaPlayerTest {
         waitForState(SRGMediaPlayerController.State.READY);
         assertFalse(controller.isReleased());
 
-        // Trigger a release. The controller is not immediately reaching the released state.
-        controller.release();
-        assertFalse(controller.isReleased());
-        controller.seekTo(60 * 1000);
+        getInstrumentation().runOnMainSync(new Runnable() {
+            @Override
+            public void run() {
+                // Trigger a release. The controller is not immediately reaching the released state.
+                controller.release();
+                assertFalse(controller.isReleased());
+                controller.seekTo(60 * 1000);
 
-        waitForState(SRGMediaPlayerController.State.RELEASED);
-        assertTrue(controller.isReleased());
+                try {
+                    waitForState(SRGMediaPlayerController.State.RELEASED);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                assertTrue(controller.isReleased());
+            }
+        });
     }
 
     @Test
@@ -426,11 +440,20 @@ public class PlaybackTest extends MediaPlayerTest {
         assertFalse(controller.isReleased());
 
         // Trigger a release. The controller is not immediately reaching the released state.
-        controller.release();
-        assertFalse(controller.isReleased());
+        getInstrumentation().runOnMainSync(new Runnable() {
+            @Override
+            public void run() {
+                controller.release();
+                assertFalse(controller.isReleased());
 
-        waitForState(SRGMediaPlayerController.State.RELEASED);
-        assertTrue(controller.isReleased());
+                try {
+                    waitForState(SRGMediaPlayerController.State.RELEASED);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                assertTrue(controller.isReleased());
+            }
+        });
     }
 
     @Test

@@ -64,10 +64,15 @@ public class SegmentsTest extends MediaPlayerTest {
 
     @After
     public void release() {
-        if (controller != null) {
-            controller.release();
-            controller = null;
-        }
+        getInstrumentation().runOnMainSync(new Runnable() {
+            @Override
+            public void run() {
+                if (controller != null) {
+                    controller.release();
+                    controller = null;
+                }
+            }
+        });
     }
 
     @Test
