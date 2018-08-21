@@ -1267,9 +1267,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * Remark: The player does not immediately reach the released state.
      */
     public void release() {
-        // Cause runtime exception if call from non ui thread
-//        mediaSessionConnector.setPlayer(null, null, (MediaSessionConnector.CustomActionProvider[]) null);
-//        mediaSession.setActive(false);
+        mediaSessionConnector.setPlayer(null, null, (MediaSessionConnector.CustomActionProvider[]) null);
+        mediaSession.setActive(false);
         if (mediaPlayerView != null) {
             unbindFromMediaPlayerView(mediaPlayerView);
         }
@@ -1277,7 +1276,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void releaseInternal() {
-        // Race condition in MediaSessionConnector :(
         currentSeekTarget = null;
         setStateInternal(State.RELEASED);
         abandonAudioFocus();
