@@ -248,6 +248,15 @@ public class PlaybackTest extends MediaPlayerTest {
     }
 
     @Test
+    public void testPlayAtStartingPositionNull() throws Exception {
+        Long position = null;
+        controller.play(AUDIO_ON_DEMAND_URI, position, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
+        waitForState(SRGMediaPlayerController.State.READY);
+        assertTrue(controller.isPlaying());
+        assertEquals(0, controller.getMediaPosition() / 1000);
+    }
+
+    @Test
     public void testPlayAtStartingPositionWitSegment() throws Exception {
         Segment segment0 = new Segment("segmentId0", "Segment0", null, null, null,
                 3000L, 10000L, 7000L, 0L, true, false, false);
