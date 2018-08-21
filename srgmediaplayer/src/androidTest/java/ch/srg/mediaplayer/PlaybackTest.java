@@ -13,8 +13,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
+import ch.srg.mediaplayer.segment.model.Segment;
 import ch.srg.mediaplayer.utils.SRGMediaPlayerControllerQueueListener;
 
 /**
@@ -226,13 +229,37 @@ public class PlaybackTest extends MediaPlayerTest {
     }
 
     @Test
-    public void testPlayAtPosition() throws Exception {
+    public void testPlayAndSeekToPosition() throws Exception {
         controller.play(AUDIO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
         waitForState(SRGMediaPlayerController.State.READY);
         controller.seekTo((long) 30000);
         assertTrue(controller.isPlaying());
         waitForEvent(SRGMediaPlayerController.Event.Type.DID_SEEK);
         assertEquals(30, controller.getMediaPosition() / 1000);
+    }
+
+    @Test
+    public void testPlayAtStartingPosition() throws Exception {
+        Long position = 3000L;
+        controller.play(AUDIO_ON_DEMAND_URI, position, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
+        waitForState(SRGMediaPlayerController.State.READY);
+        assertTrue(controller.isPlaying());
+        assertEquals(3, controller.getMediaPosition() / 1000);
+    }
+
+    @Test
+    public void testPlayAtStartingPositionWitSegment() throws Exception {
+        Segment segment0 = new Segment("segmentId0", "Segment0", null, null, null,
+                3000L, 10000L, 7000L, 0L, true, false, false);
+        Segment segment1 = new Segment("segmentId1", "Segment1", null, null, null,
+                12000L, 15000L, 3000L, 0L, true, false, false);
+        List<Segment> listSegment = Arrays.asList(segment0, segment1);
+
+        controller.prepare(AUDIO_ON_DEMAND_URI, 0L, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE, listSegment, segment1);
+        controller.start();
+        waitForState(SRGMediaPlayerController.State.READY);
+        assertTrue(controller.isPlaying());
+        assertEquals(12, controller.getMediaPosition() / 1000);
     }
 
     @Test
@@ -263,7 +290,7 @@ public class PlaybackTest extends MediaPlayerTest {
         controller.seekTo(60 * 1000);
         waitForState(SRGMediaPlayerController.State.BUFFERING);
         waitForState(SRGMediaPlayerController.State.READY);
-        assertEquals(60,controller.getMediaPosition() / 1000);
+        assertEquals(60, controller.getMediaPosition() / 1000);
         assertTrue(controller.isPlaying());
     }
 
@@ -307,7 +334,7 @@ public class PlaybackTest extends MediaPlayerTest {
         controller.seekTo(60 * 1000);
         assertTrue(controller.isLoading() || controller.isPlaying());
         waitForState(SRGMediaPlayerController.State.READY);
-        assertEquals(60,controller.getMediaPosition() / 1000);
+        assertEquals(60, controller.getMediaPosition() / 1000);
         while (!controller.isPlaying()) {
             Thread.sleep(100);
         }
@@ -333,13 +360,13 @@ public class PlaybackTest extends MediaPlayerTest {
         controller.pause();
         Thread.sleep(100); // Need to wait
         assertFalse(controller.isPlaying());
-        assertEquals(0,controller.getMediaPosition() / 1000);
+        assertEquals(0, controller.getMediaPosition() / 1000);
 
         controller.seekTo(60 * 1000);
         // TODO: No BUFFERING?
         waitForState(SRGMediaPlayerController.State.READY);
         waitForEvent(SRGMediaPlayerController.Event.Type.DID_SEEK);
-        assertEquals(60,controller.getMediaPosition() / 1000);
+        assertEquals(60, controller.getMediaPosition() / 1000);
         assertFalse(controller.isPlaying());
     }
 
@@ -353,13 +380,13 @@ public class PlaybackTest extends MediaPlayerTest {
         controller.pause();
         Thread.sleep(100); // Need to wait
         assertFalse(controller.isPlaying());
-        assertEquals(60,controller.getMediaPosition() / 1000);
+        assertEquals(60, controller.getMediaPosition() / 1000);
 
         controller.start();
         waitForState(SRGMediaPlayerController.State.READY);
         waitForEvent(SRGMediaPlayerController.Event.Type.PLAYING_STATE_CHANGE);
 
-        assertEquals(60,controller.getMediaPosition() / 1000);
+        assertEquals(60, controller.getMediaPosition() / 1000);
         assertTrue(controller.isPlaying());
     }
 
