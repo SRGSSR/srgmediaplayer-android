@@ -17,13 +17,12 @@ public class Segment implements Comparable<Segment> {
     private long markOut;
     private long duration;
     private int progress;
-    private long publishedTimestamp;
     private boolean displayable;
     private boolean isLive;
     private boolean is360;
 
     public Segment(String identifier, String title, String description, String imageUrl,
-                   String blockingReason, long markIn, long markOut, long duration, long publishedTimestamp,
+                   String blockingReason, long markIn, long markOut, long duration,
                    boolean displayable, boolean isLive, boolean is360) {
         this.identifier = identifier;
         this.title = title;
@@ -33,7 +32,6 @@ public class Segment implements Comparable<Segment> {
         this.markIn = markIn;
         this.markOut = markOut;
         this.duration = duration;
-        this.publishedTimestamp = publishedTimestamp;
         this.displayable = displayable;
         this.isLive = isLive;
         this.is360 = is360;
@@ -71,10 +69,6 @@ public class Segment implements Comparable<Segment> {
         return progress;
     }
 
-    public long getPublishedTimestamp() {
-        return publishedTimestamp;
-    }
-
     public String getBlockingReason() {
         return blockingReason;
     }
@@ -89,6 +83,15 @@ public class Segment implements Comparable<Segment> {
 
     public boolean isDisplayable() {
         return displayable;
+    }
+
+
+    public boolean isLive() {
+        return isLive;
+    }
+
+    public boolean is360() {
+        return is360;
     }
 
     @Override
@@ -107,7 +110,6 @@ public class Segment implements Comparable<Segment> {
         if (markOut != segment.markOut) return false;
         if (duration != segment.duration) return false;
         if (progress != segment.progress) return false;
-        if (publishedTimestamp != segment.publishedTimestamp) return false;
         if (displayable != segment.displayable) return false;
         if (isLive != segment.isLive) return false;
         if (is360 != segment.is360) return false;
@@ -132,7 +134,6 @@ public class Segment implements Comparable<Segment> {
         result = 31 * result + (int) (markOut ^ (markOut >>> 32));
         result = 31 * result + (int) (duration ^ (duration >>> 32));
         result = 31 * result + progress;
-        result = 31 * result + (int) (publishedTimestamp ^ (publishedTimestamp >>> 32));
         result = 31 * result + (displayable ? 1 : 0);
         result = 31 * result + (isLive ? 1 : 0);
         result = 31 * result + (is360 ? 1 : 0);
@@ -151,18 +152,10 @@ public class Segment implements Comparable<Segment> {
                 ", markOut=" + markOut +
                 ", duration=" + duration +
                 ", progress=" + progress +
-                ", publishedTimestamp=" + publishedTimestamp +
                 ", displayable=" + displayable +
                 ", isLive=" + isLive +
                 ", is360=" + is360 +
                 '}';
     }
 
-    public boolean isLive() {
-        return isLive;
-    }
-
-    public boolean is360() {
-        return is360;
-    }
 }
