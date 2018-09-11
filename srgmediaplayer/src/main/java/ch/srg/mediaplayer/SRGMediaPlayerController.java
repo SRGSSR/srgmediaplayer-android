@@ -460,7 +460,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Nullable
     private AkamaiMediaAnalyticsConfiguration akamaiMediaAnalyticsConfiguration;
-    // FIXME : why userAgent letterbox is set here?
     private static final String userAgent = "curl/Letterbox_2.0"; // temporarily using curl/ user agent to force subtitles with Akamai beta
     @Nullable
     private DrmConfig drmConfig;
