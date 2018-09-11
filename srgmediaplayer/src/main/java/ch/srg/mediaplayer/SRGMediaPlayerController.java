@@ -1322,6 +1322,14 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return getPlaylistStartTime();
     }
 
+    /**
+     * @return null if no DrmConfig was set
+     */
+    @Nullable
+    public DrmConfig getDrmConfig() {
+        return drmConfig;
+    }
+
     public long getBufferPosition() {
         return exoPlayer.getBufferedPosition();
     }
