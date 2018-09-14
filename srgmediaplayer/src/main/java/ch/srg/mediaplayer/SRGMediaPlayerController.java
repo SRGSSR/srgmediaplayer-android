@@ -1026,15 +1026,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private void periodicUpdateInternal() {
         long currentPosition = exoPlayer.getCurrentPosition();
-        if (currentSeekTarget != null) {
-            if (currentPosition != UNKNOWN_TIME
-                    && currentPosition != currentSeekTarget
-                    || !exoPlayerCurrentPlayWhenReady) {
-                currentSeekTarget = null;
-                postEventInternal(Event.Type.DID_SEEK);
-                postEventInternal(Event.Type.LOADING_STATE_CHANGED);
-            }
-        }
         if (!segments.isEmpty() && !userChangingProgress) {
             checkSegmentChange(currentPosition);
         }
