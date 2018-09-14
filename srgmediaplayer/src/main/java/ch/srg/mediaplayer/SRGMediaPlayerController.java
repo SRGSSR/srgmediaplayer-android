@@ -970,7 +970,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 case STREAM_DASH:
                     // Use DefaultDashChunkSource with workaround that don't crash the application if problem during manifest parsing
                     // https://github.com/google/ExoPlayer/issues/2795
-                    mediaSource = new DashMediaSource.Factory(new ch.srg.mediaplayer.DefaultDashChunkSource.Factory(dataSourceFactory), null)
+                    mediaSource = new DashMediaSource.Factory(new ch.srg.mediaplayer.DefaultDashChunkSource.Factory(dataSourceFactory),dataSourceFactory)
                             .createMediaSource(videoUri);
                     break;
                 case STREAM_HLS:
