@@ -82,7 +82,12 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
     public void release() {
         controller.unregisterEventListener(queue);
         queue.clear();
-        controller.release();
+        getInstrumentation().runOnMainSync(new Runnable() {
+            @Override
+            public void run() {
+                controller.release();
+            }
+        });
     }
 
     @Test
