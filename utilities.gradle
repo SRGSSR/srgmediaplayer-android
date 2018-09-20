@@ -33,6 +33,8 @@ uploadArchives {
             pom.artifactId = project.name
             pom.groupId = GROUP
             pom.version = project.versionName
+            println("ENV_RELEASE  =  ${System.getenv().RELEASE}")
+            println("ENV BUILD NUMBER =  ${System.getenv().BUILD_NUMBER}")
             println("Archives version name =  ${project.versionName}")
             repository(url: sonatypeRepositoryUrl) {
                 authentication(userName: getRepositoryUsername(), password: getRepositoryPassword())
