@@ -2,9 +2,11 @@
 apply plugin: 'maven'
 apply plugin: 'signing'
 
-project.ext.versionName = VERSION_BASE + "." + (
-        System.getenv().DEFAULT_BRANCH == "true" ? (System.getenv().BUILD_NUMBER ?: "9999-SNAPSHOT")
-                                                 : (System.getenv().BUILD_NUMBER + "-SNAPSHOT"))
+def envBuildNumber = System.getenv().BUILD_NUMBER == null ? "9999" : System.getenv().BUILD_NUMBER
+def release = System.getenv().RELEASE
+def suffix = release != null ? (release ? "" : "-SNAPSHOT") : "-SNAPSHOT"
+
+project.ext.versionName = VERSION_BASE + '.' + envBuildNumber + suffix
 
 def isReleaseBuild() {
     return project.versionName.contains("SNAPSHOT") == false
@@ -31,7 +33,7 @@ uploadArchives {
             pom.artifactId = project.name
             pom.groupId = GROUP
             pom.version = project.versionName
-
+            println("Archives version name =  ${project.versionName}")
             repository(url: sonatypeRepositoryUrl) {
                 authentication(userName: getRepositoryUsername(), password: getRepositoryPassword())
             }
@@ -67,7 +69,7 @@ uploadArchives {
                 println("Current Dependencies ${pom.dependencies}")
                 pom.dependencies.each { dep ->
                     println("Processing ${dep}")
-                    if (dep.getVersion() == "unspecified" && dep.getGroupId() == rootProjectDir) {
+                    if (dep.getVersion() == "unspecified") {
                         println("Updating Dependencies")
                         dep.setGroupId(GROUP)
                         dep.setVersion(project.versionName)
@@ -99,9 +101,11 @@ uploadArchives {
     }
 
     task gitTagArchive() {
-        def tagWithVersionCommand = 'git tag -a ' + project.versionName + ' -m ' + project.versionName
-        tagWithVersionCommand.execute()
-        'git push origin --tags'.execute()
+        if (isReleaseBuild()) {
+            def tagWithVersionCommand = 'git tag -a ' + project.versionName + ' -m ' + project.versionName
+            tagWithVersionCommand.execute()
+            'git push origin --tags'.execute()
+        }
     }
 
     artifacts {
