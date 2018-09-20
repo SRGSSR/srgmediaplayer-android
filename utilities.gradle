@@ -4,7 +4,7 @@ apply plugin: 'signing'
 
 def envBuildNumber = System.getenv().BUILD_NUMBER == null ? "9999" : System.getenv().BUILD_NUMBER
 def release = System.getenv().RELEASE
-def suffix = release != null ? (release ? "" : "-SNAPSHOT") : "-SNAPSHOT"
+def suffix = release != null ? (release.equalsIgnoreCase("true") ? "" : "-SNAPSHOT") : "-SNAPSHOT"
 
 project.ext.versionName = VERSION_BASE + '.' + envBuildNumber + suffix
 

@@ -23,7 +23,7 @@ android {
         def release = System.getenv().RELEASE
         versionCode buildNumber
         versionName VERSION_BASE + "." + buildNumber
-        versionNameSuffix release != null ? (release ? "" : "-SNAPSHOT") : "-SNAPSHOT"
+        versionNameSuffix release != null ? (release.equalsIgnoreCase("true") ? "" : "-SNAPSHOT") : "-SNAPSHOT"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
