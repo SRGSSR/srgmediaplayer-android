@@ -108,3 +108,5 @@ tasks.withType(com.android.build.gradle.internal.tasks.databinding.DataBindingEx
         })
     }
 }
+
+apply from: '../utilities.gradle'
