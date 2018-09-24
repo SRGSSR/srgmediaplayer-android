@@ -37,9 +37,11 @@ import com.google.android.exoplayer2.audio.AudioCapabilities;
 import com.google.android.exoplayer2.audio.AudioCapabilitiesReceiver;
 import com.google.android.exoplayer2.drm.DefaultDrmSessionEventListener;
 import com.google.android.exoplayer2.drm.DefaultDrmSessionManager;
+import com.google.android.exoplayer2.drm.ExoMediaDrm;
 import com.google.android.exoplayer2.drm.FrameworkMediaCrypto;
 import com.google.android.exoplayer2.drm.FrameworkMediaDrm;
 import com.google.android.exoplayer2.drm.HttpMediaDrmCallback;
+import com.google.android.exoplayer2.drm.MediaDrmCallback;
 import com.google.android.exoplayer2.drm.UnsupportedDrmException;
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
@@ -48,7 +50,6 @@ import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.dash.DashMediaSource;
-import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource;
 import com.google.android.exoplayer2.source.hls.DefaultHlsDataSourceFactory;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.text.Cue;
@@ -103,6 +104,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private Long userTrackingProgress;
     private static final String NAME = "SRGMediaPlayer";
     private boolean currentViewKeepScreenOn;
+    private MonitoringDrmCallback monitoringDrmCallback;
+    @Nullable
+    private Long lastPeriodicUpdate;
 
     public enum ViewType {
         TYPE_SURFACEVIEW,
@@ -129,6 +133,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private static long controllerIdCounter;
 
     private boolean firstFrameRendered;
+    private boolean playbackActuallyStarted;
 
     public static String getName() {
         return NAME;
@@ -282,7 +287,19 @@ public class SRGMediaPlayerController implements Handler.Callback,
             /**
              * The Segment list has changed.
              */
-            SEGMENT_LIST_CHANGE
+            SEGMENT_LIST_CHANGE,
+            /**
+             * DRM Keys have been received. Can be called multiple times during stream playback.
+             */
+            DRM_KEYS_LOADED,
+            /**
+             * Stream timeline (DASH Manifest) has been updated. (Warning: This is not related to segments).
+             */
+            STREAM_TIMELINE_CHANGED,
+            /**
+             * Playback actually started: media stream position is changing after playback.
+             */
+            PLAYBACK_ACTUALLY_STARTED;
         }
 
         public final Type type;
@@ -511,12 +528,13 @@ public class SRGMediaPlayerController implements Handler.Callback,
         DefaultDrmSessionManager<FrameworkMediaCrypto> drmSessionManager = null;
         UnsupportedDrmException unsupportedDrm = null;
         if (drmConfig != null && Util.SDK_INT >= 18) {
+            this.drmConfig = drmConfig;
             try {
                 UUID drmType = drmConfig.getDrmType();
-                HttpMediaDrmCallback drmCallback = new HttpMediaDrmCallback(drmConfig.getLicenceUrl(), new DefaultHttpDataSourceFactory(userAgent));
+                monitoringDrmCallback = new MonitoringDrmCallback(new HttpMediaDrmCallback(drmConfig.getLicenceUrl(), new DefaultHttpDataSourceFactory(userAgent)));
                 drmSessionManager = new DefaultDrmSessionManager<>(drmType,
                         FrameworkMediaDrm.newInstance(drmType),
-                        drmCallback, null);
+                        monitoringDrmCallback, null);
                 drmSessionManager.addListener(mainHandler, this);
                 viewType = ViewType.TYPE_SURFACEVIEW;
             } catch (UnsupportedDrmException e) {
@@ -970,7 +988,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 case STREAM_DASH:
                     // Use DefaultDashChunkSource with workaround that don't crash the application if problem during manifest parsing
                     // https://github.com/google/ExoPlayer/issues/2795
-                    mediaSource = new DashMediaSource.Factory(new ch.srg.mediaplayer.DefaultDashChunkSource.Factory(dataSourceFactory),dataSourceFactory)
+                    mediaSource = new DashMediaSource.Factory(new ch.srg.mediaplayer.DefaultDashChunkSource.Factory(dataSourceFactory), dataSourceFactory)
                             .createMediaSource(videoUri);
                     break;
                 case STREAM_HLS:
@@ -1001,7 +1019,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     Log.w(TAG, "Invalid initial playback position", ignored);
                 }
             }
-
+            lastPeriodicUpdate = null;
+            playbackActuallyStarted = false;
         } catch (Exception e) {
             release();
             throw new SRGMediaPlayerException(e);
@@ -1026,6 +1045,15 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private void periodicUpdateInternal() {
         long currentPosition = exoPlayer.getCurrentPosition();
+        if (lastPeriodicUpdate == null || currentPosition != lastPeriodicUpdate) {
+            if (lastPeriodicUpdate != null) {
+                if (!playbackActuallyStarted) {
+                    playbackActuallyStarted = true;
+                    postEventInternal(Event.Type.PLAYBACK_ACTUALLY_STARTED);
+                }
+            }
+            lastPeriodicUpdate = currentPosition;
+        }
         if (!segments.isEmpty() && !userChangingProgress) {
             checkSegmentChange(currentPosition);
         }
@@ -1320,6 +1348,14 @@ public class SRGMediaPlayerController implements Handler.Callback,
      */
     public long getLiveTime() {
         return getPlaylistStartTime();
+    }
+
+    /**
+     * @return null if no DrmConfig was set
+     */
+    @Nullable
+    public DrmConfig getDrmConfig() {
+        return drmConfig;
     }
 
     public long getBufferPosition() {
@@ -2062,7 +2098,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Override
     public void onTimelineChanged(Timeline timeline, Object manifest, int reason) {
-        // Ignore
+        broadcastEvent(Event.Type.STREAM_TIMELINE_CHANGED);
     }
 
     @Override
@@ -2164,6 +2200,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return firstFrameRendered;
     }
 
+    public boolean isPlaybackActuallyStarted() {
+        return playbackActuallyStarted;
+    }
+
     @Override
     public void onCues(List<Cue> cues) {
         sendMessage(MSG_PLAYER_SUBTITLE_CUES, cues);
@@ -2171,7 +2211,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Override
     public void onDrmKeysLoaded() {
-        // already handled by eventLogger
+        broadcastEvent(Event.Type.DRM_KEYS_LOADED);
     }
 
     @Override
@@ -2205,5 +2245,34 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     public static boolean isDrmSupported() {
         return Util.SDK_INT >= 18;
+    }
+
+    public int getDrmRequestDuration() {
+        return monitoringDrmCallback != null ? monitoringDrmCallback.drmRequestDuration : 0;
+    }
+
+    private class MonitoringDrmCallback implements MediaDrmCallback {
+        private final MediaDrmCallback callback;
+        private int drmRequestDuration;
+
+        public MonitoringDrmCallback(MediaDrmCallback mediaDrmCallback) {
+            this.callback = mediaDrmCallback;
+        }
+
+        @Override
+        public byte[] executeProvisionRequest(UUID uuid, ExoMediaDrm.ProvisionRequest request) throws Exception {
+            long now = System.currentTimeMillis();
+            byte[] result = callback.executeProvisionRequest(uuid, request);
+            drmRequestDuration += System.currentTimeMillis() - now;
+            return result;
+        }
+
+        @Override
+        public byte[] executeKeyRequest(UUID uuid, ExoMediaDrm.KeyRequest request) throws Exception {
+            long now = System.currentTimeMillis();
+            byte[] result = callback.executeKeyRequest(uuid, request);
+            drmRequestDuration += System.currentTimeMillis() - now;
+            return result;
+        }
     }
 }
