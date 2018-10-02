@@ -443,8 +443,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private final SimpleExoPlayer exoPlayer;
     private final AudioCapabilitiesReceiver audioCapabilitiesReceiver;
 
-    private final MediaSessionCompat mediaSession;
-    private final MediaSessionConnector mediaSessionConnector;
+    @Nullable
+    private MediaSessionCompat mediaSession;
+    @Nullable
+    private MediaSessionConnector mediaSessionConnector;
 
     private DefaultTrackSelector trackSelector;
     private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
@@ -554,10 +556,15 @@ public class SRGMediaPlayerController implements Handler.Callback,
         audioFocusChangeListener = new OnAudioFocusChangeListener(new WeakReference<>(this));
         audioFocusGranted = false;
 
-        mediaSession = new MediaSessionCompat(context, context.getPackageName());
-        mediaSessionConnector = new MediaSessionConnector(mediaSession, null, false, null);
-        mediaSessionConnector.setPlayer(exoPlayer, null, (MediaSessionConnector.CustomActionProvider[]) null);
-        mediaSession.setActive(true);
+        try {
+            mediaSession = new MediaSessionCompat(context, context.getPackageName());
+            mediaSessionConnector = new MediaSessionConnector(mediaSession, null, false, null);
+            mediaSessionConnector.setPlayer(exoPlayer, null, (MediaSessionConnector.CustomActionProvider[]) null);
+            mediaSession.setActive(true);
+        } catch (Throwable ignored) {
+            // Seems an
+            // See https://github.com/SRGSSR/SRGMediaPlayer-Android/issues/25
+        }
     }
 
     private synchronized void startBackgroundThreadIfNecessary() {
@@ -1243,8 +1250,12 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
         exoPlayer.stop();
         // Done after stop to be sure that no event listener are called.
-        mediaSessionConnector.setPlayer(null, null, (MediaSessionConnector.CustomActionProvider[]) null);
-        mediaSession.setActive(false);
+        if (mediaSessionConnector != null) {
+            mediaSessionConnector.setPlayer(null, null, (MediaSessionConnector.CustomActionProvider[]) null);
+        }
+        if (mediaSession != null) {
+            mediaSession.setActive(false);
+        }
 
         exoPlayer.release();
         currentMediaUri = null;
@@ -1275,6 +1286,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return null;
     }
 
+    @Nullable
     public MediaSessionCompat getMediaSession() {
         return mediaSession;
     }
@@ -1286,8 +1298,12 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * Remark: The player does not immediately reach the released state.
      */
     public void release() {
-        mediaSessionConnector.setPlayer(null, null, (MediaSessionConnector.CustomActionProvider[]) null);
-        mediaSession.setActive(false);
+        if (mediaSessionConnector != null) {
+            mediaSessionConnector.setPlayer(null, null, (MediaSessionConnector.CustomActionProvider[]) null);
+        }
+        if (mediaSession != null) {
+            mediaSession.setActive(false);
+        }
         if (mediaPlayerView != null) {
             unbindFromMediaPlayerView(mediaPlayerView);
         }
