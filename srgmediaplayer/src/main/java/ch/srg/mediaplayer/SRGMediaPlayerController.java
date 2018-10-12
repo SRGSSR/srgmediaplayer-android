@@ -1956,7 +1956,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         MappingTrackSelector.MappedTrackInfo trackInfo = trackSelector.getCurrentMappedTrackInfo();
         if (rendererIndex != -1 && trackInfo != null) {
             TrackGroupArray trackGroups = trackInfo.getTrackGroups(rendererIndex);
-            DefaultTrackSelector.ParametersBuilder builder = new DefaultTrackSelector.ParametersBuilder();
+            DefaultTrackSelector.ParametersBuilder builder = trackSelector.buildUponParameters();
             builder.setRendererDisabled(rendererIndex, track == null);
             if (track != null) {
                 TrackSelection.Factory factory = new FixedTrackSelection.Factory();
@@ -1977,7 +1977,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
         if (mappedTrackInfo != null && rendererIndex != -1) {
             TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(rendererIndex);
-
             DefaultTrackSelector.SelectionOverride override = trackSelector.getParameters().getSelectionOverride(rendererIndex, trackGroups);
             if (override != null) {
                 int[] tracks = override.tracks;
@@ -2022,7 +2021,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         MappingTrackSelector.MappedTrackInfo trackInfo = trackSelector.getCurrentMappedTrackInfo();
         if (rendererIndex != -1 && trackInfo != null) {
             TrackGroupArray trackGroups = trackInfo.getTrackGroups(rendererIndex);
-            DefaultTrackSelector.ParametersBuilder builder = new DefaultTrackSelector.ParametersBuilder();
+            DefaultTrackSelector.ParametersBuilder builder = trackSelector.buildUponParameters();
             builder.setRendererDisabled(rendererIndex, track == null);
             if (track != null) {
                 TrackSelection.Factory factory = new FixedTrackSelection.Factory();
@@ -2046,7 +2045,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
         if (mappedTrackInfo != null && rendererIndex != -1) {
             TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(rendererIndex);
-
             DefaultTrackSelector.SelectionOverride override = trackSelector.getParameters().getSelectionOverride(rendererIndex, trackGroups);
             if (override != null) {
                 int[] tracks = override.tracks;
