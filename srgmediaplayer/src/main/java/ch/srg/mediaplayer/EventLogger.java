@@ -238,17 +238,6 @@ import java.util.Locale;
     }
 
     @Override
-    public void onViewportSizeChange(EventTime eventTime, int width, int height) {
-        Log.d(TAG, "onViewportSizeChange [" + eventTime.realtimeMs + ", " + width + ", " + height + "]");
-    }
-
-    @Override
-    public void onNetworkTypeChanged(EventTime eventTime, @Nullable NetworkInfo networkInfo) {
-        String networkInfoString = networkInfo != null ? networkInfo.toString() : "";
-        Log.d(TAG, "onNetworkTypeChanged [" + eventTime.realtimeMs + ", " + networkInfoString + "]");
-    }
-
-    @Override
     public void onMetadata(EventTime eventTime, Metadata metadata) {
         Log.d(TAG, "onMetadata [" + eventTime.realtimeMs + "]");
     }

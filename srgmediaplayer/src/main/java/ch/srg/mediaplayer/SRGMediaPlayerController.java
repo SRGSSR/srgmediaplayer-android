@@ -522,8 +522,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         audioCapabilitiesReceiver = new AudioCapabilitiesReceiver(this.context, this);
         audioCapabilitiesReceiver.register();
 
-        TrackSelection.Factory videoTrackSelectionFactory =
-                new AdaptiveTrackSelection.Factory(BANDWIDTH_METER);
+        TrackSelection.Factory videoTrackSelectionFactory = new AdaptiveTrackSelection.Factory();
 
         trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
         eventLogger = new EventLogger(trackSelector);
@@ -545,7 +544,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
 
         DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(this.context, DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
-        exoPlayer = ExoPlayerFactory.newSimpleInstance(renderersFactory, trackSelector, new DefaultLoadControl(), drmSessionManager);
+        exoPlayer = ExoPlayerFactory.newSimpleInstance(this.context,renderersFactory, trackSelector, new DefaultLoadControl(), drmSessionManager);
         exoPlayer.addListener(this);
         exoPlayer.addVideoListener(this);
         exoPlayer.addTextOutput(this);
