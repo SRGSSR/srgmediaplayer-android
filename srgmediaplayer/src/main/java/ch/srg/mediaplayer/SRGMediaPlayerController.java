@@ -815,7 +815,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * Release the current player. Once the player is released you have to create a new player
      * if you want to play a new video.
      * <p>
-     * Remark: The player does not immediately reach the released state.
+     * Remark: The player come in RELEASED state, the resources may not be released immediatly (managed by exoplayer)
      */
     public void release() {
         postEventInternal(Event.Type.MEDIA_STOPPED);
