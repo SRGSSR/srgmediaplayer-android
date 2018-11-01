@@ -105,7 +105,7 @@ public class PlaybackTest extends MediaPlayerTest {
     @Test
     public void testPreparingState() throws Exception {
         controller.play(VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
-        waitForState(SRGMediaPlayerController.State.PREPARING);
+        assertEquals(SRGMediaPlayerController.State.BUFFERING,controller.getState());
         assertFalse(controller.isPlaying());
     }
 
@@ -342,7 +342,6 @@ public class PlaybackTest extends MediaPlayerTest {
     @Test
     public void testSeekWhilePreparing() throws Exception {
         controller.play(VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
-        waitForState(SRGMediaPlayerController.State.PREPARING);
         assertFalse(controller.isPlaying());
 
         controller.seekTo(60 * 1000);
@@ -413,9 +412,9 @@ public class PlaybackTest extends MediaPlayerTest {
         getInstrumentation().runOnMainSync(new Runnable() {
             @Override
             public void run() {
-                // Trigger a release. The controller is not immediately reaching the released state.
+                // Trigger a release. The controller immediately set to released but the exoplayer release operation is asynchronous
                 controller.release();
-                assertFalse(controller.isReleased());
+                assertTrue(controller.isReleased());
                 controller.seekTo(60 * 1000);
 
                 try {
