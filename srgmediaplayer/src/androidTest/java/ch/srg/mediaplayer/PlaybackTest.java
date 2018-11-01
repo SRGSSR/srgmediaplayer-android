@@ -396,8 +396,8 @@ public class PlaybackTest extends MediaPlayerTest {
         assertEquals(60, controller.getMediaPosition() / 1000);
 
         controller.start();
-        waitForState(SRGMediaPlayerController.State.READY);
-        waitForEvent(SRGMediaPlayerController.Event.Type.PLAYING_STATE_CHANGE);
+        waitForState(SRGMediaPlayerController.State.READY); // pause or play, the player is ready
+        assertTrue(controller.isPlaying());
 
         assertEquals(60, controller.getMediaPosition() / 1000);
         assertTrue(controller.isPlaying());
