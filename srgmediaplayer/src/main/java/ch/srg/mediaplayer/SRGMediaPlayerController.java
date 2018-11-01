@@ -599,7 +599,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @return true when media is preparing and in the process of being started
      * @throws IllegalArgumentException if segment is not in segment list or uri is null
      */
-    public boolean play(@NonNull Uri uri, Long startPositionMs, @SRGStreamType int streamType){
+    public boolean play(@NonNull Uri uri, Long startPositionMs, @SRGStreamType int streamType) {
         prepare(uri, startPositionMs, streamType, null);
         return start();
     }
@@ -643,7 +643,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             }
         }
         postEventInternal(Event.Type.SEGMENT_LIST_CHANGE);
-        postEventInternal(Event.Type.MEDIA_READY_TO_PLAY); //TODO should not be done from exoplayer listener
+        postEventInternal(Event.Type.MEDIA_READY_TO_PLAY); //TODO should be done in exoplayer listener?
         try {
             if (mediaPlayerView != null) {
                 internalUpdateMediaPlayerViewBound();
@@ -683,7 +683,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @return true if focus audio granted
      */
     public boolean start() {
-        if (requestAudioFocus()) { //TODO audio focus should be managed by the exoplayer state changes!
+        if (requestAudioFocus()) {
             exoPlayer.setPlayWhenReady(true);
             return true;
         } else {
@@ -776,7 +776,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 default:
                     throw new IllegalStateException("Invalid source type: " + streamType);
             }
-            //mediaSource.addEventListener(mainHandler, eventLogger); //TODO need to be deleted?
             exoPlayer.prepare(mediaSource);
             if (playbackStartPosition != null) {
                 try {
@@ -967,7 +966,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void schedulePeriodUpdate() {
-        if(periodicUpdateHandler!=null){
+        if (periodicUpdateHandler != null) {
             periodicUpdateHandler.removeMessages(MSG_PERIODIC_UPDATE);
             periodicUpdateHandler.sendMessageDelayed(periodicUpdateHandler.obtainMessage(MSG_PERIODIC_UPDATE), UPDATE_PERIOD);
         }
