@@ -438,14 +438,13 @@ public class PlaybackTest extends MediaPlayerTest {
         waitForState(SRGMediaPlayerController.State.READY);
         assertFalse(controller.isReleased());
 
-        // Trigger a release. The controller is not immediately reaching the released state.
         getInstrumentation().runOnMainSync(new Runnable() {
             @Override
             public void run() {
                 controller.release();
-                assertFalse(controller.isReleased());
-
+                assertTrue(controller.isReleased());
                 try {
+                    waitForEvent(SRGMediaPlayerController.Event.Type.MEDIA_COMPLETED);
                     waitForState(SRGMediaPlayerController.State.RELEASED);
                 } catch (Exception e) {
                     e.printStackTrace();
