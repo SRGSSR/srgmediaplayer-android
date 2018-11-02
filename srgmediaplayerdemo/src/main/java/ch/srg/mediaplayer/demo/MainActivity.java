@@ -29,11 +29,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         mediaPlayerController.bindToMediaPlayerView(mediaPlayerView);
-        try {
-            mediaPlayerController.play(Uri.parse(URL), streamType);
-        } catch (SRGMediaPlayerException e) {
-            e.printStackTrace();
-        }
+        mediaPlayerController.play(Uri.parse(URL), streamType);
     }
 
     @Override
