@@ -720,7 +720,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         } else {
             exoPlayer.seekTo(positionMs);
             postEventInternal(Event.Type.WILL_SEEK);
-            broadcastEvent(Event.Type.LOADING_STATE_CHANGED); // TODO still necessarily?
         }
     }
 
