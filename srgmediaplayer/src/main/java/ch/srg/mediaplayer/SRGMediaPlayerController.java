@@ -105,8 +105,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private static final String NAME = "SRGMediaPlayer";
     private boolean currentViewKeepScreenOn;
     private MonitoringDrmCallback monitoringDrmCallback;
-    @Nullable
-    private Long lastPeriodicUpdate;
 
     public enum ViewType {
         TYPE_SURFACEVIEW,
@@ -882,80 +880,26 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     //endregion
 
-    @Override
-    public boolean handleMessage(final Message msg) {
-        if (isReleased()) {
-            logE("handleMessage when released: skipping " + msg);
-            return true;
-        }
-        if (msg.what != MSG_PERIODIC_UPDATE) {
-            logV("handleMessage: " + msg);
-        }
-        final SRGMediaPlayerView mediaPlayerView = this.mediaPlayerView;
-        switch (msg.what) {
-            case MSG_PERIODIC_UPDATE:
-                periodicUpdateInternal();
-                schedulePeriodUpdate();
-                return true;
-
-
-            default:
-                String message = "Unknown message: " + msg.what + " / " + msg.obj;
-                if (isDebugMode()) {
-                    throw new IllegalArgumentException(message);
-                } else {
-                    logE(message);
-                    return false;
-                }
-        }
-    }
-
     //region period update
-
     @Nullable
     private HandlerThread periodicUpdateHandlerThread;
     @Nullable
     private Handler periodicUpdateHandler;
-    private Handler.Callback periodicUpdateCallback = new Handler.Callback() {
-        @Override
-        public boolean handleMessage(Message msg) {
-            if (isReleased()) {
-                logE("handleMessage when released: skipping " + msg);
-                return true;
-            }
-            switch (msg.what) {
-                case MSG_PERIODIC_UPDATE:
-                    periodicUpdateInternal();
-                    schedulePeriodUpdate();
-                    return true;
-            }
-            return false;
+    @Nullable
+    private Long lastPeriodicUpdate;
+
+    private synchronized void startPeriodicUpdateThreadIfNecessary() {
+        if (periodicUpdateHandlerThread == null) {
+            periodicUpdateHandlerThread = new HandlerThread(getClass().getSimpleName() + ":PeriodicUpdateHandler", Process.THREAD_PRIORITY_DEFAULT);
+            periodicUpdateHandlerThread.start();
+            logV("Started periodic update thread: " + periodicUpdateHandlerThread);
+            periodicUpdateHandler = new Handler(periodicUpdateHandlerThread.getLooper(), this);
+            schedulePeriodUpdate();
         }
-    };
-
-
-    private synchronized void startBackgroundThreadIfNecessary() {
-        // Synchronization seems necessary here to prevent two startBackgroundThread back to back.
-        if (periodicUpdateHandler == null || periodicUpdateHandlerThread == null || !periodicUpdateHandlerThread.isAlive()) {
-            startBackgroundThread();
-        }
-    }
-
-    private synchronized void startBackgroundThread() {
-        stopBackgroundThread();
-        periodicUpdateHandlerThread = new HandlerThread(getClass().getSimpleName() + ":PeriodicUpdateHandler", Process.THREAD_PRIORITY_DEFAULT);
-        periodicUpdateHandlerThread.start();
-        logV("Started command thread: " + periodicUpdateHandlerThread);
-        periodicUpdateHandler = new Handler(periodicUpdateHandlerThread.getLooper(), this);
-        schedulePeriodUpdate();
     }
 
     private synchronized void stopBackgroundThread() {
-        logV("Stopping command thread: " + periodicUpdateHandlerThread);
-        if (periodicUpdateHandler != null) {
-            periodicUpdateHandler.removeCallbacksAndMessages(null);
-            periodicUpdateHandler = null;
-        }
+        logV("Stopping periodic update thread: " + periodicUpdateHandlerThread);
         if (periodicUpdateHandlerThread != null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
                 periodicUpdateHandlerThread.quitSafely();
@@ -966,12 +910,21 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void schedulePeriodUpdate() {
-        if (periodicUpdateHandler != null) {
-            periodicUpdateHandler.removeMessages(MSG_PERIODIC_UPDATE);
-            periodicUpdateHandler.sendMessageDelayed(periodicUpdateHandler.obtainMessage(MSG_PERIODIC_UPDATE), UPDATE_PERIOD);
+        Handler handler = this.periodicUpdateHandler;
+        if (handler != null) {
+            handler.removeMessages(MSG_PERIODIC_UPDATE);
+            handler.sendMessageDelayed(handler.obtainMessage(MSG_PERIODIC_UPDATE), UPDATE_PERIOD);
         }
     }
 
+    @Override
+    public boolean handleMessage(final Message msg) {
+        if (!isReleased()) {
+            periodicUpdateInternal();
+            schedulePeriodUpdate();
+        }
+        return false;
+    }
 
     private void periodicUpdateInternal() {
         long currentPosition = exoPlayer.getCurrentPosition();
@@ -982,10 +935,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     postEventInternal(Event.Type.PLAYBACK_ACTUALLY_STARTED);
                 }
             }
+            if (!segments.isEmpty()) {
+                checkSegmentChange(currentPosition);
+            }
             lastPeriodicUpdate = currentPosition;
-        }
-        if (!segments.isEmpty()) {
-            checkSegmentChange(currentPosition);
         }
     }
     //endregion
@@ -2036,7 +1989,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     break;
                 case Player.STATE_READY:
                     setStateInternal(State.READY);
-                    startBackgroundThreadIfNecessary();
+                    startPeriodicUpdateThreadIfNecessary();
                     break;
                 case Player.STATE_ENDED:
                     setStateInternal(State.READY);
