@@ -16,6 +16,10 @@ repositories {
 android {
     compileSdkVersion rootProject.compileSdkVersion
 
+    compileOptions {
+        sourceCompatibility 1.8
+        targetCompatibility 1.8
+    }
     defaultConfig {
         minSdkVersion rootProject.minSdkVersion
         targetSdkVersion rootProject.targetSdkVersion
