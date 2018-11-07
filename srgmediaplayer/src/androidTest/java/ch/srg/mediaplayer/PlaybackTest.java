@@ -20,6 +20,11 @@ import java.util.Random;
 import ch.srg.mediaplayer.segment.model.Segment;
 import ch.srg.mediaplayer.utils.SRGMediaPlayerControllerQueueListener;
 
+import static android.support.test.InstrumentationRegistry.getInstrumentation;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 /**
  * Created by npietri on 12.06.15.
  * <p>
@@ -44,11 +49,7 @@ public class PlaybackTest extends MediaPlayerTest {
     private SRGMediaPlayerException lastError;
 
     @Before
-    public void setUp() throws Exception {
-        super.setUp();
-
-        injectInstrumentation(InstrumentationRegistry.getInstrumentation());
-
+    public void setUp() {
         // Init variables
         getInstrumentation().runOnMainSync(new Runnable() {
             @Override
@@ -237,8 +238,9 @@ public class PlaybackTest extends MediaPlayerTest {
     public void testPlayAndSeekToPosition() throws Exception {
         controller.play(AUDIO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
         waitForState(SRGMediaPlayerController.State.READY);
+        assertTrue("is playing", controller.isPlaying());
         controller.seekTo((long) 30000);
-        assertTrue(controller.isPlaying());
+        assertTrue("still playing after seek", controller.isPlaying());
         waitForEvent(SRGMediaPlayerController.Event.Type.DID_SEEK);
         assertEquals(30, controller.getMediaPosition() / 1000);
     }
