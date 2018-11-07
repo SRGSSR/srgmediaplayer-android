@@ -93,13 +93,19 @@ public class SRGMediaControllerTest {
 
     @Test
     public void testPreparingState() throws Exception {
-        controller.play(MEDIA_URI, SRGMediaPlayerController.STREAM_HLS);
+        playMainThread();
         waitForState(SRGMediaPlayerController.State.PREPARING);
+    }
+
+    private void playMainThread() {
+        getInstrumentation().runOnMainSync(() -> {
+            controller.play(MEDIA_URI, SRGMediaPlayerController.STREAM_HLS);
+        });
     }
 
     @Test
     public void testPlayReady() throws Exception {
-        controller.play(MEDIA_URI, SRGMediaPlayerController.STREAM_HLS);
+        playMainThread();
         waitForState(SRGMediaPlayerController.State.PREPARING);
         waitForState(SRGMediaPlayerController.State.BUFFERING);
         waitForState(SRGMediaPlayerController.State.READY);
@@ -113,7 +119,7 @@ public class SRGMediaControllerTest {
 
     @Test
     public void testPlay() throws Exception {
-        controller.play(MEDIA_URI, SRGMediaPlayerController.STREAM_HLS);
+        playMainThread();
         waitForState(SRGMediaPlayerController.State.PREPARING);
         waitForState(SRGMediaPlayerController.State.BUFFERING);
         waitForState(SRGMediaPlayerController.State.READY);
@@ -124,7 +130,7 @@ public class SRGMediaControllerTest {
 
     @Test
     public void testPause() throws Exception {
-        controller.play(MEDIA_URI, SRGMediaPlayerController.STREAM_HLS);
+        playMainThread();
         waitForState(SRGMediaPlayerController.State.PREPARING);
         waitForState(SRGMediaPlayerController.State.BUFFERING);
         waitForState(SRGMediaPlayerController.State.READY);
