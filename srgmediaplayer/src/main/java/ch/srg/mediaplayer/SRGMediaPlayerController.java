@@ -641,7 +641,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
             }
         }
         broadcastEvent(Event.Type.SEGMENT_LIST_CHANGE);
-        broadcastEvent(Event.Type.MEDIA_READY_TO_PLAY); //TODO should be done in exoplayer listener?
         try {
             if (mediaPlayerView != null) {
                 updateMediaPlayerViewBound();
@@ -1961,6 +1960,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     setState(State.BUFFERING);
                     break;
                 case Player.STATE_READY:
+                    broadcastEvent(Event.Type.MEDIA_READY_TO_PLAY);
                     setState(State.READY);
                     startPeriodicUpdateThreadIfNecessary();
                     break;
