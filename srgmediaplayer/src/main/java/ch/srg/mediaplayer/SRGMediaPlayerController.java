@@ -105,6 +105,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private static final String NAME = "SRGMediaPlayer";
     private boolean currentViewKeepScreenOn;
     private MonitoringDrmCallback monitoringDrmCallback;
+    /** Set to true first time player goes to READY. */
+    private boolean playingOrBuffering;
 
     public enum ViewType {
         TYPE_SURFACEVIEW,
@@ -1970,7 +1972,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     setState(State.BUFFERING);
                     break;
                 case Player.STATE_READY:
-                    broadcastEvent(Event.Type.MEDIA_READY_TO_PLAY);
+                    if (!playingOrBuffering) {
+                        broadcastEvent(Event.Type.MEDIA_READY_TO_PLAY);
+                        playingOrBuffering = true;
+                    }
                     setState(State.READY);
                     startPeriodicUpdateThreadIfNecessary();
                     break;
