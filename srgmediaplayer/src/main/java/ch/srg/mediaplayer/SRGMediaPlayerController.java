@@ -120,9 +120,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private boolean duckedBecauseTransientFocusLoss;
     private boolean pausedBecauseFocusLoss;
     private boolean mutedBecauseFocusLoss;
-    //TODO Use this in exoplayer 2 (or delete)
-    private Long qualityOverride;
-    private Long qualityDefault;
     private Throwable fatalError;
     private long controllerId;
     private static long controllerIdCounter;
@@ -1692,24 +1689,35 @@ public class SRGMediaPlayerController implements Handler.Callback,
     /**
      * Force use specific quality (when supported). Represented by bandwidth.
      * Can be 0 to force lowest quality or Integer.MAX for highest for instance.
+     * <p>
+     * Currently only supported partially to limit the maximum quality.
+     * The player will be adapt between 0 and the quality selected.
      *
      * @param quality bandwidth quality in bits/sec or null to disable
      */
     public void setQualityOverride(Long quality) {
-        qualityOverride = quality;
-        // TODO currently does nothing?
+        DefaultTrackSelector.ParametersBuilder parameters = trackSelector.buildUponParameters();
+        if (quality == null) {
+            trackSelector.setParameters(parameters.setMaxVideoBitrate(Integer.MAX_VALUE).setForceLowestBitrate(false));
+        } else {
+            if (quality == 0) {
+                trackSelector.setParameters(parameters.setForceLowestBitrate(true));
+            } else {
+                trackSelector.setParameters(parameters.setMaxVideoBitrate(quality.intValue()).setForceLowestBitrate(false));
+            }
+        }
     }
 
     /**
      * Use a specific quality when an estimate is not available (when supported).
      * Represented by bandwidth. Typically used to force a better quality during startup.
      * Can be 0 to force lowest quality or Integer.MAX for highest for instance.
+     * <p>
+     * WARNING: Not supported at the moment.
      *
      * @param qualityDefault bandwidth quality in bits/sec or null to disable
      */
     public void setQualityDefault(Long qualityDefault) {
-        this.qualityDefault = qualityDefault;
-        // TODO currently does nothing?
     }
 
     //endregion
@@ -1894,9 +1902,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private SubtitleTrack getSubtitleTrackByTrackId(int i, int j) {
         MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
         if (mappedTrackInfo != null) {
-        TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(getSubtitleRendererId());
-        TrackGroup trackGroup = trackGroups.get(i);
-        return getSubtitleTrack(trackGroup, i, j);
+            TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(getSubtitleRendererId());
+            TrackGroup trackGroup = trackGroups.get(i);
+            return getSubtitleTrack(trackGroup, i, j);
         } else {
             return null;
         }
