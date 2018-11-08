@@ -428,16 +428,16 @@ public class SRGMediaPlayerController implements Handler.Callback,
     @NonNull
     private final SimpleExoPlayer exoPlayer;
     private final AudioCapabilitiesReceiver audioCapabilitiesReceiver;
+    private final DefaultTrackSelector trackSelector;
+    private final EventLogger eventLogger;
 
     @Nullable
     private MediaSessionCompat mediaSession;
     @Nullable
     private MediaSessionConnector mediaSessionConnector;
 
-    private DefaultTrackSelector trackSelector;
     private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
     private AudioCapabilities audioCapabilities;
-    private EventLogger eventLogger;
     @NonNull
     private ViewType viewType = ViewType.TYPE_TEXTUREVIEW;
     private View renderingView;
@@ -463,9 +463,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
     /**
      * Listeners registered to this player
      */
-    private Set<Listener> eventListeners = Collections.newSetFromMap(new WeakHashMap<Listener, Boolean>());
+    private Set<Listener> eventListeners = Collections.newSetFromMap(new WeakHashMap<>());
 
-    private static Set<Listener> globalEventListeners = Collections.newSetFromMap(new WeakHashMap<Listener, Boolean>());
+    private static Set<Listener> globalEventListeners = Collections.newSetFromMap(new WeakHashMap<>());
 
     @Nullable
     private AkamaiExoPlayerLoader akamaiExoPlayerLoader;
@@ -1137,7 +1137,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             unbindFromMediaPlayerView(mediaPlayerView);
         }
         mediaPlayerView = newView;
-        newView.setCues(Collections.<Cue>emptyList());
+        newView.setCues(Collections.emptyList());
         updateMediaPlayerViewBound();
         manageKeepScreenOn();
     }
@@ -1242,7 +1242,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 @Override
                 public void surfaceDestroyed(SurfaceHolder holder) {
                     Log.v(TAG, renderingView + "binding, surfaceDestroyed" + mediaPlayerView);
-                    //TODO if a delegate is bound to this surface, we need tu unbind it
                 }
             });
         } else if (renderingView instanceof TextureView) {
@@ -1268,7 +1267,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
                 @Override
                 public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
-                    // TODO
                 }
 
                 @Override
@@ -1777,7 +1775,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     /**
      * If track is null, no sound is playing during playback.
      *
-     * @param track
+     * @param track one track returned by {@link #getSubtitleTrackList()}
      */
     public void setAudioTrack(@Nullable AudioTrack track) {
         int rendererIndex = getAudioTrackRendererId();
@@ -2004,8 +2002,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Override
     public void onPositionDiscontinuity(int reason) {
-        // TODO Should handle/log reason info
         broadcastEvent(Event.Type.POSITION_DISCONTINUITY);
+        Log.w(TAG, "Position discontinuity " + reason);
     }
 
     @Override
