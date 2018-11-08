@@ -1895,9 +1895,13 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private SubtitleTrack getSubtitleTrackByTrackId(int i, int j) {
         MappingTrackSelector.MappedTrackInfo mappedTrackInfo = trackSelector.getCurrentMappedTrackInfo();
+        if (mappedTrackInfo != null) {
         TrackGroupArray trackGroups = mappedTrackInfo.getTrackGroups(getSubtitleRendererId());
         TrackGroup trackGroup = trackGroups.get(i);
         return getSubtitleTrack(trackGroup, i, j);
+        } else {
+            return null;
+        }
     }
 
     private int getSubtitleRendererId() {
