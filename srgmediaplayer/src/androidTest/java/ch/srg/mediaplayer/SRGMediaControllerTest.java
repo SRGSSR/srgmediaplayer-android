@@ -1,11 +1,8 @@
 package ch.srg.mediaplayer;
 
-import android.app.Instrumentation;
 import android.content.Context;
 import android.net.Uri;
-import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
-import android.test.InstrumentationTestCase;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -21,15 +18,18 @@ import java.util.concurrent.TimeUnit;
 
 import ch.srg.mediaplayer.utils.SRGMediaPlayerControllerQueueListener;
 
+import static android.support.test.InstrumentationRegistry.getInstrumentation;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 /**
- * Created by npietri on 12.06.15.
  * <p>
  * These tests work with a mock delegate and data provider, they do not do any playing or url decoding.
  * The goal is to test the player controller, its contract and robustness.
  */
 @RunWith(AndroidJUnit4.class)
-public class SRGMediaControllerTest extends InstrumentationTestCase {
-
+public class SRGMediaControllerTest {
     public static final int TIMEOUT_STATE_CHANGE = 10000;
     public static final String SPECIMEN_URL = "http://stream-i.rts.ch/i/specm/2014/specm_20141203_full_f_817794-,101,701,1201,k.mp4.csmil/master.m3u8";
     public static final Uri MEDIA_URI = Uri.parse(SPECIMEN_URL);
@@ -42,10 +42,6 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     @Before
     public void setUp() throws Exception {
-        super.setUp();
-        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
-        injectInstrumentation(instrumentation);
-
         // Init variables
         getInstrumentation().runOnMainSync(new Runnable() {
             @Override
@@ -97,26 +93,33 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     @Test
     public void testPreparingState() throws Exception {
-        controller.play(MEDIA_URI, SRGMediaPlayerController.STREAM_HLS);
+        playMainThread();
         waitForState(SRGMediaPlayerController.State.PREPARING);
+    }
+
+    private void playMainThread() {
+        getInstrumentation().runOnMainSync(() -> {
+            controller.play(MEDIA_URI, SRGMediaPlayerController.STREAM_HLS);
+        });
     }
 
     @Test
     public void testPlayReady() throws Exception {
-        controller.play(MEDIA_URI, SRGMediaPlayerController.STREAM_HLS);
+        playMainThread();
         waitForState(SRGMediaPlayerController.State.PREPARING);
         waitForState(SRGMediaPlayerController.State.BUFFERING);
         waitForState(SRGMediaPlayerController.State.READY);
     }
 
     @Test(expected = IllegalArgumentException.class)
+
     public void testNullUriError() throws Exception {
         controller.play(null, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
     }
 
     @Test
     public void testPlay() throws Exception {
-        controller.play(MEDIA_URI, SRGMediaPlayerController.STREAM_HLS);
+        playMainThread();
         waitForState(SRGMediaPlayerController.State.PREPARING);
         waitForState(SRGMediaPlayerController.State.BUFFERING);
         waitForState(SRGMediaPlayerController.State.READY);
@@ -127,7 +130,7 @@ public class SRGMediaControllerTest extends InstrumentationTestCase {
 
     @Test
     public void testPause() throws Exception {
-        controller.play(MEDIA_URI, SRGMediaPlayerController.STREAM_HLS);
+        playMainThread();
         waitForState(SRGMediaPlayerController.State.PREPARING);
         waitForState(SRGMediaPlayerController.State.BUFFERING);
         waitForState(SRGMediaPlayerController.State.READY);
