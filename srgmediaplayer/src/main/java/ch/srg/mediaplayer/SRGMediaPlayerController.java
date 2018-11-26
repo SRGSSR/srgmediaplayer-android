@@ -105,7 +105,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private static final String NAME = "SRGMediaPlayer";
     private boolean currentViewKeepScreenOn;
     private MonitoringDrmCallback monitoringDrmCallback;
-    /** Set to true first time player goes to READY. */
+    /**
+     * Set to true first time player goes to READY.
+     */
     private boolean playingOrBuffering;
 
     public enum ViewType {
@@ -1219,11 +1221,16 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
         if (renderingView instanceof SurfaceView) {
             ((SurfaceView) renderingView).getHolder().addCallback(new SurfaceHolder.Callback() {
+                // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
+                private boolean isCurrent(SurfaceHolder holder) {
+                    return renderingView instanceof SurfaceView && ((SurfaceView) renderingView).getHolder() == holder;
+                }
+
                 @Override
                 public void surfaceCreated(SurfaceHolder holder) {
                     Log.v(TAG, renderingView + "binding, surfaceCreated" + mediaPlayerView);
                     try {
-                        if (((SurfaceView) renderingView).getHolder() == holder) {
+                        if (isCurrent(holder)) {
                             bindRenderingViewInUiThread();
                         } else {
                             Log.d(TAG, "Surface created, but media player delegate retired");
