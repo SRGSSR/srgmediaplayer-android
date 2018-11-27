@@ -432,7 +432,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private final SimpleExoPlayer exoPlayer;
     private final AudioCapabilitiesReceiver audioCapabilitiesReceiver;
     private final DefaultTrackSelector trackSelector;
-    private final EventLogger eventLogger;
 
     @Nullable
     private MediaSessionCompat mediaSession;
@@ -526,7 +525,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 new AdaptiveTrackSelection.Factory(BANDWIDTH_METER);
 
         trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
-        eventLogger = new EventLogger(trackSelector);
+        EventLogger eventLogger = new EventLogger(trackSelector);
         DefaultDrmSessionManager<FrameworkMediaCrypto> drmSessionManager = null;
         UnsupportedDrmException unsupportedDrm = null;
         if (drmConfig != null && Util.SDK_INT >= 18) {
@@ -1027,6 +1026,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         broadcastEvent(new Event(this, type, null, segment));
     }
 
+    @SuppressWarnings("SameParameterValue")
     private void postBlockedSegmentEvent(Event.Type type, Segment segment) {
         broadcastEvent(new Event(this, type, null, segment, segment.getBlockingReason()));
     }
@@ -1090,6 +1090,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
     }
 
+    @SuppressWarnings("SameParameterValue")
     private void logE(String msg) {
         if (isDebugMode()) {
             Log.e(TAG, getControllerId() + " " + msg);
@@ -1205,6 +1206,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean canRenderInView(View view) {
         return view instanceof SurfaceView || view instanceof TextureView;
     }
