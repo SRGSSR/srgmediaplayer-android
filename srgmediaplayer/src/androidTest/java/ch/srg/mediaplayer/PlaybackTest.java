@@ -2,7 +2,7 @@ package ch.srg.mediaplayer;
 
 import android.content.Context;
 import android.net.Uri;
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.runner.AndroidJUnit4;
 import android.util.Log;
 
 import junit.framework.Assert;
@@ -19,7 +19,7 @@ import java.util.Random;
 import ch.srg.mediaplayer.segment.model.Segment;
 import ch.srg.mediaplayer.utils.SRGMediaPlayerControllerQueueListener;
 
-import static android.support.test.InstrumentationRegistry.getInstrumentation;
+import static androidx.test.InstrumentationRegistry.getInstrumentation;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

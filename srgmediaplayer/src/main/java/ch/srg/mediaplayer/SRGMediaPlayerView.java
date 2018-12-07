@@ -3,10 +3,9 @@ package ch.srg.mediaplayer;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
@@ -19,6 +18,7 @@ import android.widget.ScrollView;
 
 import com.google.android.exoplayer2.text.CaptionStyleCompat;
 import com.google.android.exoplayer2.text.Cue;
+import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.ui.SubtitleView;
 import com.google.android.exoplayer2.util.Util;
 
@@ -177,7 +177,7 @@ public class SRGMediaPlayerView extends RelativeLayout {
             videoRenderingViewHeight = -1;
             addView(videoRenderingView, 0);
         }
-
+        PlayerView playerView;
     }
 
     public View getVideoRenderingView() {

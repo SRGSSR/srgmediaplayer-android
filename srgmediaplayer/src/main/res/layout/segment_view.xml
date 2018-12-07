@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     tools:visibility="visible">
 
-    <android.support.v7.widget.RecyclerView
+    <androidx.appcompat.widget.RecyclerView
         android:id="@+id/segment_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

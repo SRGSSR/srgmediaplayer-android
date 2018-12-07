@@ -1,6 +1,6 @@
 package ch.srg.mediaplayer.segment.adapter;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 import ch.srg.mediaplayer.segment.model.Segment;
 

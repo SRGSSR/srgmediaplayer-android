@@ -24,13 +24,9 @@ allprojects {
 ext {
     // sdk and tools
     minSdkVersion = 16
-    targetSdkVersion = 27
-    compileSdkVersion = 27
+    targetSdkVersion = 28
+    compileSdkVersion = 28
 
     //libs
-    supportLibraryVersion = '27.1.1'
-    googlePlayServiceVersion = '15.0.1'
-    androidSupportTest = '1.0.2'
-    espressoVersion = '3.0.2'
     exoPlayerVersion = '2.8.2'
 }

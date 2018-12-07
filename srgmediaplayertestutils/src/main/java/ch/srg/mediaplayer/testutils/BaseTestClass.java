@@ -1,14 +1,14 @@
 package ch.srg.mediaplayer.testutils;
 
 import android.content.Context;
-import android.support.test.espresso.IdlingResource;
+import androidx.test.espresso.IdlingResource;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static android.support.test.InstrumentationRegistry.getInstrumentation;
-import static android.support.test.espresso.Espresso.registerIdlingResources;
-import static android.support.test.espresso.Espresso.unregisterIdlingResources;
+import static androidx.test.InstrumentationRegistry.getInstrumentation;
+import static androidx.test.espresso.Espresso.registerIdlingResources;
+import static androidx.test.espresso.Espresso.unregisterIdlingResources;
 
 /**
  * Created by npietri on 13.10.16.
