@@ -381,7 +381,7 @@ public class PlaybackTest extends MediaPlayerTest {
         seekToMainThread(70 * 1000);
         waitForEvent(SRGMediaPlayerController.Event.Type.DID_SEEK);
         waitForState(SRGMediaPlayerController.State.READY);
-        assertEquals(70, controller.getMediaPosition() / 1000);
+        assertEquals(70, controller.getMediaPosition() / 1000, 2);
         assertTrue(controller.isPlaying());
     }
 
