@@ -948,6 +948,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (isReleased() && mediaPosition != UNKNOWN_TIME) {
             return;
         }
+        // WARNING: This method is called from BG thread but all calls to public methods must be
+        // done in main handler!
         if (mediaPosition != -1) {
             Segment blockedSegment = getBlockedSegment(mediaPosition);
             Segment newSegment = getSegment(mediaPosition);
@@ -956,18 +958,18 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 if (blockedSegment != segmentBeingSkipped) {
                     Log.v("SegmentTest", "Skipping over " + blockedSegment.getIdentifier());
                     segmentBeingSkipped = blockedSegment;
-                    seekEndOfBlockedSegment(blockedSegment);
+                    mainHandler.post(() -> seekEndOfBlockedSegment(blockedSegment));
                 }
             } else {
                 segmentBeingSkipped = null;
                 if (currentSegment != newSegment) {
                     mainHandler.post(() -> {
                         if (currentSegment == null) {
-                            postSegmentEvent(Event.Type.SEGMENT_START, newSegment);
+                            broadcastSegmentEvent(Event.Type.SEGMENT_START, newSegment);
                         } else if (newSegment == null) {
-                            postSegmentEvent(Event.Type.SEGMENT_END, null);
+                            broadcastSegmentEvent(Event.Type.SEGMENT_END, null);
                         } else {
-                            postSegmentEvent(Event.Type.SEGMENT_SWITCH, newSegment);
+                            broadcastSegmentEvent(Event.Type.SEGMENT_SWITCH, newSegment);
                         }
                     });
                     currentSegment = newSegment;
@@ -982,7 +984,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void seekEndOfBlockedSegment(Segment segment) {
-        postBlockedSegmentEvent(Event.Type.SEGMENT_SKIPPED_BLOCKED, segment);
+        broadcastBlockedSegmentEvent(Event.Type.SEGMENT_SKIPPED_BLOCKED, segment);
         seekTo(segment.getMarkOut());
     }
 
@@ -1022,17 +1024,17 @@ public class SRGMediaPlayerController implements Handler.Callback,
         broadcastEvent(Event.Type.SEGMENT_LIST_CHANGE);
     }
 
-    private void postSegmentEvent(Event.Type type, Segment segment) {
+    private void broadcastSegmentEvent(Event.Type type, Segment segment) {
         broadcastEvent(new Event(this, type, null, segment));
     }
 
     @SuppressWarnings("SameParameterValue")
-    private void postBlockedSegmentEvent(Event.Type type, Segment segment) {
+    private void broadcastBlockedSegmentEvent(Event.Type type, Segment segment) {
         broadcastEvent(new Event(this, type, null, segment, segment.getBlockingReason()));
     }
 
     private void switchToSegment(Segment segment) {
-        postSegmentEvent(Event.Type.SEGMENT_SELECTED, segment);
+        broadcastSegmentEvent(Event.Type.SEGMENT_SELECTED, segment);
         seekTo(segment.getMarkIn());
     }
 
