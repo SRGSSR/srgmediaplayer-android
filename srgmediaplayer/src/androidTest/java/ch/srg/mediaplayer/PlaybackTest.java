@@ -12,7 +12,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -106,10 +108,15 @@ public class PlaybackTest extends MediaPlayerTest {
         assertFalse(controller.isPlaying());
     }
 
-    private static void playMainThread(SRGMediaPlayerController controller, Uri audioDvrLivestreamUri, int streamHls) {
+    private static void playMainThread(SRGMediaPlayerController controller, Uri uri, int streamType, final List<Segment> segmentList, final Segment segment) {
         getInstrumentation().runOnMainSync(() -> {
-            controller.play(audioDvrLivestreamUri, streamHls);
+            controller.prepare(uri, 0L, streamType, segmentList, segment);
+            controller.start();
         });
+    }
+
+    private static void playMainThread(SRGMediaPlayerController controller, Uri uri, int streamType) {
+        playMainThread(controller, uri, streamType, null, null);
     }
 
     private void pauseMainThread() {
@@ -293,15 +300,27 @@ public class PlaybackTest extends MediaPlayerTest {
                 3000L, 10000L, 7000L, true, false, false);
         Segment segment1 = new Segment("segmentId1", "Segment1", null, null, null,
                 12000L, 15000L, 3000L, true, false, false);
-        List<Segment> listSegment = Arrays.asList(segment0, segment1);
+        List<Segment> segmentList = Arrays.asList(segment0, segment1);
 
-        getInstrumentation().runOnMainSync(() -> {
-            controller.prepare(AUDIO_ON_DEMAND_URI, 0L, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE, listSegment, segment1);
-            controller.start();
-        });
+        playMainThread(controller, AUDIO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE, segmentList, segment1);
         waitForState(SRGMediaPlayerController.State.READY);
         assertTrue(controller.isPlaying());
         assertEquals(12, controller.getMediaPosition() / 1000);
+    }
+
+
+    @Test
+    public void testBlockedSegment() throws Exception {
+        Segment segment0 = new Segment("segmentId0", "Segment0", null, null, "COMMERCIAL",
+                1000L, 10000L, 7000L, true, false, false);
+        List<Segment> segmentList = Collections.singletonList(segment0);
+
+        playMainThread(controller, AUDIO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE, segmentList, null);
+
+        waitForState(SRGMediaPlayerController.State.READY);
+        assertTrue(controller.isPlaying());
+
+        waitForEvent(SRGMediaPlayerController.Event.Type.SEGMENT_SKIPPED_BLOCKED);
     }
 
     @Test
@@ -362,7 +381,7 @@ public class PlaybackTest extends MediaPlayerTest {
         seekToMainThread(70 * 1000);
         waitForEvent(SRGMediaPlayerController.Event.Type.DID_SEEK);
         waitForState(SRGMediaPlayerController.State.READY);
-        assertEquals(70, controller.getMediaPosition() / 1000);
+        assertEquals(70, controller.getMediaPosition() / 1000, 2);
         assertTrue(controller.isPlaying());
     }
 
@@ -499,10 +518,6 @@ public class PlaybackTest extends MediaPlayerTest {
         if (controller.getState() != state) {
             super.waitForState(state);
         }
-    }
-
-    private interface EventCondition {
-        boolean check(SRGMediaPlayerController.Event event);
     }
 
     private static class CreatePlayRelease implements Runnable {
