@@ -308,6 +308,21 @@ public class PlaybackTest extends MediaPlayerTest {
         assertEquals(12, controller.getMediaPosition() / 1000);
     }
 
+
+    @Test
+    public void testBlockedSegment() throws Exception {
+        Segment segment0 = new Segment("segmentId0", "Segment0", null, null, "COMMERCIAL",
+                1000L, 10000L, 7000L, true, false, false);
+        List<Segment> segmentList = Collections.singletonList(segment0);
+
+        playMainThread(controller, AUDIO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE, segmentList, null);
+
+        waitForState(SRGMediaPlayerController.State.READY);
+        assertTrue(controller.isPlaying());
+
+        waitForEvent(SRGMediaPlayerController.Event.Type.SEGMENT_SKIPPED_BLOCKED);
+    }
+
     @Test
     public void testPlayAfterStreamEnd() throws Exception {
         playMainThread(controller, AUDIO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
