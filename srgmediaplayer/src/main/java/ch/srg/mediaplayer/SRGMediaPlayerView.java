@@ -3,10 +3,10 @@ package ch.srg.mediaplayer;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.graphics.Matrix;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
@@ -28,7 +28,15 @@ import java.util.List;
  * This class is a placeholder for some video.
  * Place it in your layout, or create it programmatically and bind it to a SRGMediaPlayerController to play video
  */
-public class SRGMediaPlayerView extends RelativeLayout {
+public class SRGMediaPlayerView extends ViewGroup {
+
+    private Matrix layoutTransformMatrix = new Matrix();
+    private int childWidth;
+    private int childHeight;
+    private int childLeft;
+    private int childTop;
+    private int containerWidth;
+    private int containerHeight;
 
     public enum ScaleMode {
         CENTER_INSIDE,
@@ -76,6 +84,7 @@ public class SRGMediaPlayerView extends RelativeLayout {
 
     private ScaleMode scaleMode = null;
 
+    @Nullable
     private View videoRenderingView;
     private int videoRenderingViewWidth = -1;
     private int videoRenderingViewHeight = -1;
@@ -226,63 +235,78 @@ public class SRGMediaPlayerView extends RelativeLayout {
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        super.onLayout(changed, left, top, right, bottom);
+        if (right - left != containerWidth || bottom - top != containerHeight) {
+            containerWidth = right - left;
+            containerHeight = bottom - top;
+            // TODO This should never be necessary. Unexpected change of container dimension from what we requested in onMeasure
+            Log.v(TAG, "calculateChildPosition onLayout");
+            calculateChildPosition();
+        }
+//            videoRenderingView.setY(t);
+//            videoRenderingView.setX(l);
+        //check against last set values
+        videoRenderingViewWidth = childWidth;
+        videoRenderingViewHeight = childHeight;
+        //for surfaceView ensure setFixedSize. May be unnecessary
+        if (videoRenderingView instanceof SurfaceView) {
+            ((SurfaceView) videoRenderingView).getHolder().setFixedSize(childWidth, childHeight);
+        } else if (videoRenderingView instanceof TextureView) {
+            videoRenderingView.layout(0, 0, containerWidth, containerHeight);
+            float pivotX = (right - left) / 2;
+            float pivotY = (bottom - top) / 2;
+            layoutTransformMatrix.reset();
+            layoutTransformMatrix.postScale(
+                    1,
+                    1,
+                    pivotX,
+                    pivotY);
+            ((TextureView) videoRenderingView).setTransform(layoutTransformMatrix);
+        }
+        if (isDebugMode()) {
+            Log.d(TAG, "onLayout: Update videoRenderingView size " +
+                    "videoRenderingViewWidth=" + videoRenderingViewWidth +
+                    " videoRenderingViewHeight=" + videoRenderingViewHeight);
+        }
+        if (isDebugMode()) {
+            Log.d(TAG, "onLayout: l=" + childLeft + " t=" + childTop
+                    + " surfaceWidth=" + childWidth + " surfaceHeight=" + childHeight
+                    + " containerWidth=" + containerWidth + " videoContainerHeight=" + containerHeight);
+        }
+        int childCount = getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            View v = getChildAt(i);
+            if (v != videoRenderingView) {
+                v.layout(childLeft, childTop, childLeft + childWidth, childTop + childHeight);
+            }
+        }
+    }
 
+    private void calculateChildPosition() {
+        childLeft = 0;
+        childTop = 0;
+        childWidth = containerWidth;
+        childHeight = containerHeight;
         //Then we do some math to force actual size of the videoRenderingView
-        if (videoRenderingView != null) {
-            int l = 0, t = 0;
-            int videoContainerWidth = right - left;
-            int videoContainerHeight = bottom - top;
-            int surfaceWidth = videoContainerWidth;
-            int surfaceHeight = videoContainerHeight;
-            float videoContainerAspectRatio = videoContainerWidth / (float) videoContainerHeight;
-            switch (scaleMode) {
-                case CENTER_INSIDE:
-                case TOP_INSIDE:
-                    if (actualVideoAspectRatio > videoContainerAspectRatio) {
-                        surfaceHeight = (int) Math.ceil(surfaceWidth / actualVideoAspectRatio);
-                        if (scaleMode == ScaleMode.CENTER_INSIDE) {
-                            t = (videoContainerHeight - surfaceHeight) / 2;
-                        }
-                    } else if (actualVideoAspectRatio < videoContainerAspectRatio) {
-                        surfaceWidth = (int) Math.ceil(surfaceHeight * actualVideoAspectRatio);
-                        if (scaleMode == ScaleMode.CENTER_INSIDE) {
-                            l = (videoContainerWidth - surfaceWidth) / 2;
-                        }
+        float videoContainerAspectRatio = containerWidth / (float) containerHeight;
+        switch (scaleMode) {
+            case CENTER_INSIDE:
+            case TOP_INSIDE:
+                if (actualVideoAspectRatio > videoContainerAspectRatio) {
+                    childHeight = (int) Math.ceil(childWidth / actualVideoAspectRatio);
+                    if (scaleMode == ScaleMode.CENTER_INSIDE) {
+                        childTop = (containerHeight - childHeight) / 2;
                     }
-                    break;
-                case CENTER_CROP:
-                case FIT:
-                default:
-                    throw new IllegalStateException("Unsupported scale mode: " + scaleMode);
-            }
-
-            videoRenderingView.setY(t);
-            videoRenderingView.setX(l);
-            //check against last set values
-            if (videoRenderingViewWidth != surfaceWidth || videoRenderingViewHeight != surfaceHeight) {
-                videoRenderingViewWidth = surfaceWidth;
-                videoRenderingViewHeight = surfaceHeight;
-                //for surfaceView ensure setFixedSize. May be unnecessary
-                if (videoRenderingView instanceof SurfaceView) {
-                    ((SurfaceView) videoRenderingView).getHolder().setFixedSize(surfaceWidth, surfaceHeight);
-                } else if (videoRenderingView instanceof TextureView) {
-                    RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) videoRenderingView.getLayoutParams();
-                    lp.width = surfaceWidth;
-                    lp.height = surfaceHeight;
-                    videoRenderingView.setLayoutParams(lp);
+                } else if (actualVideoAspectRatio < videoContainerAspectRatio) {
+                    childWidth = (int) Math.ceil(childHeight * actualVideoAspectRatio);
+                    if (scaleMode == ScaleMode.CENTER_INSIDE) {
+                        childLeft = (containerWidth - childWidth) / 2;
+                    }
                 }
-                if (isDebugMode()) {
-                    Log.d(TAG, "onLayout: Update videoRenderingView size " +
-                            "videoRenderingViewWidth=" + videoRenderingViewWidth +
-                            " videoRenderingViewHeight=" + videoRenderingViewHeight);
-                }
-            }
-            if (isDebugMode()) {
-                Log.d(TAG, "onLayout: l=" + l + " t=" + t
-                        + " surfaceWidth=" + surfaceWidth + " surfaceHeight=" + surfaceHeight
-                        + " videoContainerWidth=" + videoContainerWidth + " videoContainerHeight=" + videoContainerHeight);
-            }
+                break;
+            case CENTER_CROP:
+            case FIT:
+            default:
+                throw new IllegalStateException("Unsupported scale mode: " + scaleMode);
         }
     }
 
@@ -292,14 +316,15 @@ public class SRGMediaPlayerView extends RelativeLayout {
         final int specWidthMode = MeasureSpec.getMode(widthMeasureSpec);
         final int specHeight = MeasureSpec.getSize(heightMeasureSpec);
         final int specHeightMode = MeasureSpec.getMode(heightMeasureSpec);
+        int width = specWidth;
+        int height = specHeight;
 
         if (specWidthMode == MeasureSpec.EXACTLY && specHeightMode == MeasureSpec.EXACTLY) {
             if (!autoAspect) {
                 Log.w(SRGMediaPlayerController.TAG, "Aspect ratio cannot be supported with these layout constraints");
             }
         } else if (specWidthMode == MeasureSpec.EXACTLY) {
-            int width = specWidth;
-            int height = (int) (width / containerAspectRatio);
+            height = (int) (width / containerAspectRatio);
 
             int maxHeight;
             maxHeight = specHeightMode == MeasureSpec.AT_MOST ? specHeight : MEASURED_SIZE_MASK;
@@ -314,8 +339,7 @@ public class SRGMediaPlayerView extends RelativeLayout {
             }
             heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
         } else if (specHeightMode == MeasureSpec.EXACTLY) {
-            int height = specHeight;
-            int width = (int) (height * containerAspectRatio);
+            width = (int) (height * containerAspectRatio);
 
             int maxWidth;
             maxWidth = specWidthMode == MeasureSpec.AT_MOST ? specWidth : MEASURED_SIZE_MASK;
@@ -335,7 +359,22 @@ public class SRGMediaPlayerView extends RelativeLayout {
                     specWidth, modeName(specWidthMode), specHeight, modeName(specHeightMode),
                     MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec)));
         }
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        if (width != containerWidth || height != containerHeight) {
+            containerWidth = width;
+            containerHeight = height;
+            calculateChildPosition();
+        }
+
+        int childSpecWidth = MeasureSpec.makeMeasureSpec(childWidth, MeasureSpec.EXACTLY);
+        int childSpecHeight = MeasureSpec.makeMeasureSpec(childHeight, MeasureSpec.EXACTLY);
+        int childCount = getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            View v = getChildAt(i);
+            if (v != videoRenderingView) {
+                v.measure(childSpecWidth, childSpecHeight);
+            }
+        }
+        setMeasuredDimension(widthMeasureSpec, heightMeasureSpec);
     }
 
     private int getParentScrollViewHeight() {
@@ -417,7 +456,7 @@ public class SRGMediaPlayerView extends RelativeLayout {
     }
 
     @Override
-    public RelativeLayout.LayoutParams generateLayoutParams(AttributeSet attrs) {
+    public LayoutParams generateLayoutParams(AttributeSet attrs) {
         return new SRGMediaPlayerView.LayoutParams(getContext(), attrs);
     }
 
@@ -471,6 +510,7 @@ public class SRGMediaPlayerView extends RelativeLayout {
         return CaptionStyleCompat.createFromCaptionStyle(captioningManager.getUserStyle());
     }
 
+    @TargetApi(19)
     private CaptioningManager getCaptioningManager() {
         return (CaptioningManager) getContext().getSystemService(Context.CAPTIONING_SERVICE);
     }
