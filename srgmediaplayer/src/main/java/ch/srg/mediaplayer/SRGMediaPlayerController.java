@@ -537,7 +537,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
                         FrameworkMediaDrm.newInstance(drmType),
                         monitoringDrmCallback, null);
                 drmSessionManager.addListener(mainHandler, this);
-                viewType = ViewType.TYPE_SURFACEVIEW;
             } catch (UnsupportedDrmException e) {
                 fatalError = e;
             }
