@@ -257,8 +257,22 @@ public class SRGMediaPlayerView extends ViewGroup {
                             0,
                             0);
                     break;
-                case CENTER_CROP:
-                    break;
+                case CENTER_CROP: {
+                    int videoWidth = containerWidth;
+                    int videoHeight = containerHeight;
+                    float videoContainerAspectRatio = containerWidth / (float) containerHeight;
+                    if (actualVideoAspectRatio < videoContainerAspectRatio) {
+                        videoHeight = (int) Math.ceil(videoWidth / actualVideoAspectRatio);
+                    } else if (actualVideoAspectRatio > videoContainerAspectRatio) {
+                        videoWidth = (int) Math.ceil(videoHeight * actualVideoAspectRatio);
+                    }
+                    layoutTransformMatrix.postScale(
+                            videoWidth / (float) containerWidth,
+                            videoHeight / (float) containerHeight,
+                            containerWidth / 2,
+                            containerHeight / 2);
+                }
+                break;
                 case FIT:
                     break;
             }
@@ -291,21 +305,21 @@ public class SRGMediaPlayerView extends ViewGroup {
         //Then we do some math to force actual size of the videoRenderingView
         float videoContainerAspectRatio = containerWidth / (float) containerHeight;
         switch (scaleMode) {
+            case CENTER_CROP:
             case CENTER_INSIDE:
             case TOP_INSIDE:
                 if (actualVideoAspectRatio > videoContainerAspectRatio) {
                     childHeight = (int) Math.ceil(childWidth / actualVideoAspectRatio);
-                    if (scaleMode == ScaleMode.CENTER_INSIDE) {
+                    if (scaleMode != ScaleMode.TOP_INSIDE) {
                         childTop = (containerHeight - childHeight) / 2;
                     }
                 } else if (actualVideoAspectRatio < videoContainerAspectRatio) {
                     childWidth = (int) Math.ceil(childHeight * actualVideoAspectRatio);
-                    if (scaleMode == ScaleMode.CENTER_INSIDE) {
+                    if (scaleMode != ScaleMode.TOP_INSIDE) {
                         childLeft = (containerWidth - childWidth) / 2;
                     }
                 }
                 break;
-            case CENTER_CROP:
             case FIT:
             default:
                 throw new IllegalStateException("Unsupported scale mode: " + scaleMode);
