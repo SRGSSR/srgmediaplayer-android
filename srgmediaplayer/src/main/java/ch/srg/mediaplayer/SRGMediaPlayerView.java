@@ -240,13 +240,10 @@ public class SRGMediaPlayerView extends ViewGroup {
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        if (right - left != containerWidth || bottom - top != containerHeight) {
-            containerWidth = right - left;
-            containerHeight = bottom - top;
-            // TODO This should never be necessary. Unexpected change of container dimension from what we requested in onMeasure
-            Log.v(TAG, "calculateChildPosition onLayout");
-            calculateChildPosition();
-        }
+        containerWidth = right - left;
+        containerHeight = bottom - top;
+        calculateChildPosition();
+
         //for surfaceView ensure setFixedSize. May be unnecessary
         if (videoRenderingView instanceof SurfaceView) {
             switch (scaleMode) {
