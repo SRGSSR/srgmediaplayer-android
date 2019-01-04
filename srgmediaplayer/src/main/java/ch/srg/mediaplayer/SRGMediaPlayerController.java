@@ -1183,8 +1183,26 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     + mediaPlayerView);
         }
         currentViewKeepScreenOn = mediaPlayerView.getKeepScreenOn();
-        pushSurface();
+        if (renderingView instanceof SurfaceView) {
+            exoPlayer.setVideoSurfaceView((SurfaceView) renderingView);
+            mediaPlayerView.setScaleModeListener(this::onScaleModeChanged);
+        } else if (renderingView instanceof TextureView) {
+            exoPlayer.setVideoTextureView((TextureView) renderingView);
+        }
         broadcastEvent(Event.Type.DID_BIND_TO_PLAYER_VIEW);
+    }
+
+    public void onScaleModeChanged(SRGMediaPlayerView mediaPlayerView, SRGMediaPlayerView.ScaleMode scaleMode) {
+        switch (scaleMode) {
+            case CENTER_INSIDE:
+            case TOP_INSIDE:
+                exoPlayer.setVideoScalingMode(C.VIDEO_SCALING_MODE_SCALE_TO_FIT);
+                break;
+            case CENTER_CROP:
+            case FIT:
+                exoPlayer.setVideoScalingMode(C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
+                break;
+        }
     }
 
     private void pushSurface() {
@@ -1203,6 +1221,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
     public void unbindFromMediaPlayerView(SRGMediaPlayerView playerView) {
         if (mediaPlayerView == playerView) {
             unbindRenderingView();
+            if (mediaPlayerView != null) {
+                playerView.setScaleModeListener(null);
+            }
             mediaPlayerView = null;
             broadcastEvent(Event.Type.DID_UNBIND_FROM_PLAYER_VIEW);
         }

@@ -38,6 +38,14 @@ public class SRGMediaPlayerView extends ViewGroup {
     private int containerWidth;
     private int containerHeight;
 
+    public interface ScaleModeListener {
+        void onScaleModeChanged(SRGMediaPlayerView mediaPlayerView, ScaleMode scaleMode);
+    }
+
+    public ScaleMode getScaleMode() {
+        return scaleMode;
+    }
+
     public enum ScaleMode {
         CENTER_INSIDE,
         TOP_INSIDE,
@@ -62,7 +70,6 @@ public class SRGMediaPlayerView extends ViewGroup {
     public static final int ASPECT_RATIO_AUTO = 0;
     private static final float ASPECT_RATIO_TOLERANCE = 0.01f;
 
-
     private boolean onTop;
     private boolean adjustToParentScrollView;
     private boolean debugMode;
@@ -86,6 +93,9 @@ public class SRGMediaPlayerView extends ViewGroup {
 
     @Nullable
     private View videoRenderingView;
+
+    @Nullable
+    private ScaleModeListener scaleModeListener;
 
     public SRGMediaPlayerView(Context context) {
         this(context, null, 0);
@@ -182,7 +192,6 @@ public class SRGMediaPlayerView extends ViewGroup {
             updateOnTopInternal(onTop);
             addView(videoRenderingView, 0);
         }
-
     }
 
     public View getVideoRenderingView() {
@@ -199,6 +208,9 @@ public class SRGMediaPlayerView extends ViewGroup {
 
     public void setScaleMode(ScaleMode scaleMode) {
         this.scaleMode = scaleMode;
+        if (scaleModeListener != null) {
+            scaleModeListener.onScaleModeChanged(this, scaleMode);
+        }
         requestLayout();
     }
 
@@ -238,7 +250,19 @@ public class SRGMediaPlayerView extends ViewGroup {
         }
         //for surfaceView ensure setFixedSize. May be unnecessary
         if (videoRenderingView instanceof SurfaceView) {
-            ((SurfaceView) videoRenderingView).getHolder().setFixedSize(childWidth, childHeight);
+            switch (scaleMode) {
+                case CENTER_INSIDE:
+                case TOP_INSIDE:
+                    videoRenderingView.layout(childLeft, childTop, childLeft + childWidth, childTop + childHeight);
+                    ((SurfaceView) videoRenderingView).getHolder().setFixedSize(childWidth, childHeight);
+                    break;
+                case CENTER_CROP:
+                case FIT:
+                    videoRenderingView.layout(0, 0, containerWidth, containerHeight);
+                    ((SurfaceView) videoRenderingView).getHolder().setFixedSize(containerWidth, containerHeight);
+                    break;
+            }
+
         } else if (videoRenderingView instanceof TextureView) {
             videoRenderingView.layout(0, 0, containerWidth, containerHeight);
             layoutTransformMatrix.reset();
@@ -274,6 +298,7 @@ public class SRGMediaPlayerView extends ViewGroup {
                 }
                 break;
                 case FIT:
+                    // TODO Not implemented
                     break;
             }
             ((TextureView) videoRenderingView).setTransform(layoutTransformMatrix);
@@ -454,24 +479,24 @@ public class SRGMediaPlayerView extends ViewGroup {
      * Returns a set of layout parameters with default AUTO_HIDE visibility.
      */
     @Override
-    protected ViewGroup.LayoutParams generateDefaultLayoutParams() {
+    protected LayoutParams generateDefaultLayoutParams() {
         return new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
     }
 
     // Override to allow type-checking of LayoutParams.
     @Override
-    protected boolean checkLayoutParams(ViewGroup.LayoutParams p) {
-        return p instanceof SRGMediaPlayerView.LayoutParams;
+    protected boolean checkLayoutParams(LayoutParams p) {
+        return p instanceof LayoutParams;
     }
 
     @Override
-    protected ViewGroup.LayoutParams generateLayoutParams(ViewGroup.LayoutParams p) {
+    protected LayoutParams generateLayoutParams(LayoutParams p) {
         return new LayoutParams(p);
     }
 
     @Override
     public LayoutParams generateLayoutParams(AttributeSet attrs) {
-        return new SRGMediaPlayerView.LayoutParams(getContext(), attrs);
+        return new LayoutParams(getContext(), attrs);
     }
 
     public void setAdjustToParentScrollView(boolean adjustToParentScrollView) {
@@ -533,5 +558,11 @@ public class SRGMediaPlayerView extends ViewGroup {
         this.debugMode = debugMode;
     }
 
+    public void setScaleModeListener(@Nullable ScaleModeListener scaleModeListener) {
+        this.scaleModeListener = scaleModeListener;
+        if (scaleModeListener != null) {
+            scaleModeListener.onScaleModeChanged(this, getScaleMode());
+        }
+    }
 }
 
