@@ -234,7 +234,6 @@ public class SRGMediaPlayerView extends ViewGroup {
     public void discardVideoRenderingView() {
         if (videoRenderingView != null) {
             removeView(videoRenderingView);
-            videoRenderingView.setOnTouchListener(null);
             videoRenderingView = null;
         }
     }
