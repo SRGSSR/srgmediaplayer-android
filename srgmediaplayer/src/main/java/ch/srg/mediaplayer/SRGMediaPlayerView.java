@@ -86,8 +86,6 @@ public class SRGMediaPlayerView extends ViewGroup {
 
     @Nullable
     private View videoRenderingView;
-    private int videoRenderingViewWidth = -1;
-    private int videoRenderingViewHeight = -1;
 
     public SRGMediaPlayerView(Context context) {
         this(context, null, 0);
@@ -182,8 +180,6 @@ public class SRGMediaPlayerView extends ViewGroup {
         if (newVideoRenderingView != null) {
             videoRenderingView = newVideoRenderingView;
             updateOnTopInternal(onTop);
-            videoRenderingViewWidth = -1;
-            videoRenderingViewHeight = -1;
             addView(videoRenderingView, 0);
         }
 
@@ -228,8 +224,6 @@ public class SRGMediaPlayerView extends ViewGroup {
             removeView(videoRenderingView);
             videoRenderingView.setOnTouchListener(null);
             videoRenderingView = null;
-            videoRenderingViewWidth = -1;
-            videoRenderingViewHeight = -1;
         }
     }
 
@@ -242,30 +236,38 @@ public class SRGMediaPlayerView extends ViewGroup {
             Log.v(TAG, "calculateChildPosition onLayout");
             calculateChildPosition();
         }
-//            videoRenderingView.setY(t);
-//            videoRenderingView.setX(l);
-        //check against last set values
-        videoRenderingViewWidth = childWidth;
-        videoRenderingViewHeight = childHeight;
         //for surfaceView ensure setFixedSize. May be unnecessary
         if (videoRenderingView instanceof SurfaceView) {
             ((SurfaceView) videoRenderingView).getHolder().setFixedSize(childWidth, childHeight);
         } else if (videoRenderingView instanceof TextureView) {
             videoRenderingView.layout(0, 0, containerWidth, containerHeight);
-            float pivotX = (right - left) / 2;
-            float pivotY = (bottom - top) / 2;
             layoutTransformMatrix.reset();
-            layoutTransformMatrix.postScale(
-                    1,
-                    1,
-                    pivotX,
-                    pivotY);
+            switch (scaleMode) {
+                case CENTER_INSIDE:
+                    layoutTransformMatrix.postScale(
+                            childWidth / (float) containerWidth,
+                            childHeight / (float) containerHeight,
+                            containerWidth / 2,
+                            containerHeight / 2);
+                    break;
+                case TOP_INSIDE:
+                    layoutTransformMatrix.postScale(
+                            childWidth / (float) containerWidth,
+                            childHeight / (float) containerHeight,
+                            0,
+                            0);
+                    break;
+                case CENTER_CROP:
+                    break;
+                case FIT:
+                    break;
+            }
             ((TextureView) videoRenderingView).setTransform(layoutTransformMatrix);
         }
         if (isDebugMode()) {
             Log.d(TAG, "onLayout: Update videoRenderingView size " +
-                    "videoRenderingViewWidth=" + videoRenderingViewWidth +
-                    " videoRenderingViewHeight=" + videoRenderingViewHeight);
+                    "videoRenderingViewWidth=" + childWidth +
+                    " videoRenderingViewHeight=" + childHeight);
         }
         if (isDebugMode()) {
             Log.d(TAG, "onLayout: l=" + childLeft + " t=" + childTop
@@ -424,8 +426,6 @@ public class SRGMediaPlayerView extends ViewGroup {
         sb.append(", width=").append(getWidth());
         sb.append(", height=").append(getHeight());
         sb.append(", videoRenderingView=").append(videoRenderingView);
-        sb.append(", videoRenderingViewWidth=").append(videoRenderingViewWidth);
-        sb.append(", videoRenderingViewHeight=").append(videoRenderingViewHeight);
         sb.append(", scaleMode=").append(scaleMode);
         sb.append(", containerAspectRatio=").append(containerAspectRatio);
         sb.append(", onTop=").append(onTop);
