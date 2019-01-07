@@ -38,6 +38,8 @@ public class SRGMediaPlayerView extends ViewGroup {
     private int containerWidth;
     private int containerHeight;
 
+    private float videoZoom = 1.0f;
+
     public interface ScaleModeListener {
         void onScaleModeChanged(SRGMediaPlayerView mediaPlayerView, ScaleMode scaleMode);
     }
@@ -248,15 +250,25 @@ public class SRGMediaPlayerView extends ViewGroup {
         if (videoRenderingView instanceof SurfaceView) {
             switch (scaleMode) {
                 case CENTER_INSIDE:
-                case TOP_INSIDE:
-                    videoRenderingView.layout(childLeft, childTop, childLeft + childWidth, childTop + childHeight);
+                case TOP_INSIDE: {
+                    int deltaWidth = (int) (containerWidth * (videoZoom - 1) / 2);
+                    int deltaHeight = (int) (containerHeight * (videoZoom - 1) / 2);
+                    videoRenderingView.layout(
+                            childLeft - deltaWidth / 2,
+                            childTop - deltaHeight / 2,
+                            childLeft + childWidth + deltaWidth,
+                            childTop + childHeight + deltaHeight);
                     ((SurfaceView) videoRenderingView).getHolder().setFixedSize(childWidth, childHeight);
-                    break;
+                }
+                break;
                 case CENTER_CROP:
-                case FIT:
-                    videoRenderingView.layout(0, 0, containerWidth, containerHeight);
-                    ((SurfaceView) videoRenderingView).getHolder().setFixedSize(containerWidth, containerHeight);
-                    break;
+                case FIT: {
+                    int deltaWidth = (int) (childWidth * (1 - videoZoom) / 2);
+                    int deltaHeight = (int) (childHeight * (1 - videoZoom) / 2);
+                    videoRenderingView.layout(deltaWidth / 2, deltaHeight / 2, containerWidth - deltaWidth, containerHeight - deltaHeight);
+                    ((SurfaceView) videoRenderingView).getHolder().setFixedSize(containerWidth - deltaWidth, containerHeight - deltaHeight);
+                }
+                break;
             }
 
         } else if (videoRenderingView instanceof TextureView) {
@@ -265,15 +277,15 @@ public class SRGMediaPlayerView extends ViewGroup {
             switch (scaleMode) {
                 case CENTER_INSIDE:
                     layoutTransformMatrix.postScale(
-                            childWidth / (float) containerWidth,
-                            childHeight / (float) containerHeight,
+                            (childWidth / (float) containerWidth) * videoZoom,
+                            (childHeight / (float) containerHeight) * videoZoom,
                             containerWidth / 2,
                             containerHeight / 2);
                     break;
                 case TOP_INSIDE:
                     layoutTransformMatrix.postScale(
-                            childWidth / (float) containerWidth,
-                            childHeight / (float) containerHeight,
+                            (childWidth / (float) containerWidth) * videoZoom,
+                            (childHeight / (float) containerHeight) * videoZoom,
                             0,
                             0);
                     break;
@@ -287,8 +299,8 @@ public class SRGMediaPlayerView extends ViewGroup {
                         videoWidth = (int) Math.ceil(videoHeight * actualVideoAspectRatio);
                     }
                     layoutTransformMatrix.postScale(
-                            videoWidth / (float) containerWidth,
-                            videoHeight / (float) containerHeight,
+                            (videoWidth / (float) containerWidth) * videoZoom,
+                            (videoHeight / (float) containerHeight) * videoZoom,
                             containerWidth / 2,
                             containerHeight / 2);
                 }
@@ -547,6 +559,15 @@ public class SRGMediaPlayerView extends ViewGroup {
         if (scaleModeListener != null) {
             scaleModeListener.onScaleModeChanged(this, getScaleMode());
         }
+    }
+
+    /**
+     * Video zoom applied on top of current scale mode. Zoom video in both direction, default to 1.
+     *
+     * @param scale > 1  to make the video bigger
+     */
+    public void setVideoZoom(float scale) {
+        this.videoZoom = scale;
     }
 }
 
