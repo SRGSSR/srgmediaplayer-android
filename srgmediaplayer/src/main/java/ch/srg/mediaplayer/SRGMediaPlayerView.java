@@ -306,13 +306,15 @@ public class SRGMediaPlayerView extends ViewGroup {
         }
         if (isDebugMode()) {
             Log.d(TAG, "onLayout: l=" + childLeft + " t=" + childTop
-                    + " surfaceWidth=" + childWidth + " surfaceHeight=" + childHeight
+                    + " childWidth=" + childWidth + " childHeight=" + childHeight
                     + " containerWidth=" + containerWidth + " videoContainerHeight=" + containerHeight);
         }
         int childCount = getChildCount();
         for (int i = 0; i < childCount; i++) {
             View v = getChildAt(i);
             if (v != videoRenderingView) {
+                v.measure(MeasureSpec.makeMeasureSpec(childWidth, MeasureSpec.EXACTLY),
+                        MeasureSpec.makeMeasureSpec(childHeight, MeasureSpec.EXACTLY));
                 v.layout(childLeft, childTop, childLeft + childWidth, childTop + childHeight);
             }
         }
@@ -323,12 +325,12 @@ public class SRGMediaPlayerView extends ViewGroup {
         childTop = 0;
         childWidth = containerWidth;
         childHeight = containerHeight;
-        //Then we do some math to force actual size of the videoRenderingView
-        float videoContainerAspectRatio = containerWidth / (float) containerHeight;
         switch (scaleMode) {
             case CENTER_CROP:
+                break;
             case CENTER_INSIDE:
             case TOP_INSIDE:
+                float videoContainerAspectRatio = containerWidth / (float) containerHeight;
                 if (actualVideoAspectRatio > videoContainerAspectRatio) {
                     childHeight = (int) Math.ceil(childWidth / actualVideoAspectRatio);
                     if (scaleMode != ScaleMode.TOP_INSIDE) {
@@ -396,21 +398,7 @@ public class SRGMediaPlayerView extends ViewGroup {
                     specWidth, modeName(specWidthMode), specHeight, modeName(specHeightMode),
                     MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec)));
         }
-        if (width != containerWidth || height != containerHeight) {
-            containerWidth = width;
-            containerHeight = height;
-            calculateChildPosition();
-        }
 
-        int childSpecWidth = MeasureSpec.makeMeasureSpec(childWidth, MeasureSpec.EXACTLY);
-        int childSpecHeight = MeasureSpec.makeMeasureSpec(childHeight, MeasureSpec.EXACTLY);
-        int childCount = getChildCount();
-        for (int i = 0; i < childCount; i++) {
-            View v = getChildAt(i);
-            if (v != videoRenderingView) {
-                v.measure(childSpecWidth, childSpecHeight);
-            }
-        }
         setMeasuredDimension(widthMeasureSpec, heightMeasureSpec);
     }
 
