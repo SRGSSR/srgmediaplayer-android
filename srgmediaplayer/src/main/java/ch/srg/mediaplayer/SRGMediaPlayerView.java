@@ -3,10 +3,10 @@ package ch.srg.mediaplayer;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.graphics.Matrix;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
@@ -28,7 +28,25 @@ import java.util.List;
  * This class is a placeholder for some video.
  * Place it in your layout, or create it programmatically and bind it to a SRGMediaPlayerController to play video
  */
-public class SRGMediaPlayerView extends RelativeLayout {
+public class SRGMediaPlayerView extends ViewGroup {
+
+    private Matrix layoutTransformMatrix = new Matrix();
+    private int childWidth;
+    private int childHeight;
+    private int childLeft;
+    private int childTop;
+    private int containerWidth;
+    private int containerHeight;
+
+    private float videoZoom = 1.0f;
+
+    public interface ScaleModeListener {
+        void onScaleModeChanged(SRGMediaPlayerView mediaPlayerView, ScaleMode scaleMode);
+    }
+
+    public ScaleMode getScaleMode() {
+        return scaleMode;
+    }
 
     public enum ScaleMode {
         CENTER_INSIDE,
@@ -54,7 +72,6 @@ public class SRGMediaPlayerView extends RelativeLayout {
     public static final int ASPECT_RATIO_AUTO = 0;
     private static final float ASPECT_RATIO_TOLERANCE = 0.01f;
 
-
     private boolean onTop;
     private boolean adjustToParentScrollView;
     private boolean debugMode;
@@ -76,9 +93,11 @@ public class SRGMediaPlayerView extends RelativeLayout {
 
     private ScaleMode scaleMode = null;
 
+    @Nullable
     private View videoRenderingView;
-    private int videoRenderingViewWidth = -1;
-    private int videoRenderingViewHeight = -1;
+
+    @Nullable
+    private ScaleModeListener scaleModeListener;
 
     public SRGMediaPlayerView(Context context) {
         this(context, null, 0);
@@ -173,11 +192,8 @@ public class SRGMediaPlayerView extends RelativeLayout {
         if (newVideoRenderingView != null) {
             videoRenderingView = newVideoRenderingView;
             updateOnTopInternal(onTop);
-            videoRenderingViewWidth = -1;
-            videoRenderingViewHeight = -1;
             addView(videoRenderingView, 0);
         }
-
     }
 
     public View getVideoRenderingView() {
@@ -194,6 +210,9 @@ public class SRGMediaPlayerView extends RelativeLayout {
 
     public void setScaleMode(ScaleMode scaleMode) {
         this.scaleMode = scaleMode;
+        if (scaleModeListener != null) {
+            scaleModeListener.onScaleModeChanged(this, scaleMode);
+        }
         requestLayout();
     }
 
@@ -217,72 +236,128 @@ public class SRGMediaPlayerView extends RelativeLayout {
     public void discardVideoRenderingView() {
         if (videoRenderingView != null) {
             removeView(videoRenderingView);
-            videoRenderingView.setOnTouchListener(null);
             videoRenderingView = null;
-            videoRenderingViewWidth = -1;
-            videoRenderingViewHeight = -1;
         }
     }
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        super.onLayout(changed, left, top, right, bottom);
+        containerWidth = right - left;
+        containerHeight = bottom - top;
+        calculateChildPosition();
 
-        //Then we do some math to force actual size of the videoRenderingView
-        if (videoRenderingView != null) {
-            int l = 0, t = 0;
-            int videoContainerWidth = right - left;
-            int videoContainerHeight = bottom - top;
-            int surfaceWidth = videoContainerWidth;
-            int surfaceHeight = videoContainerHeight;
-            float videoContainerAspectRatio = videoContainerWidth / (float) videoContainerHeight;
+        //for surfaceView ensure setFixedSize. May be unnecessary
+        if (videoRenderingView instanceof SurfaceView) {
             switch (scaleMode) {
                 case CENTER_INSIDE:
-                case TOP_INSIDE:
-                    if (actualVideoAspectRatio > videoContainerAspectRatio) {
-                        surfaceHeight = (int) Math.ceil(surfaceWidth / actualVideoAspectRatio);
-                        if (scaleMode == ScaleMode.CENTER_INSIDE) {
-                            t = (videoContainerHeight - surfaceHeight) / 2;
-                        }
-                    } else if (actualVideoAspectRatio < videoContainerAspectRatio) {
-                        surfaceWidth = (int) Math.ceil(surfaceHeight * actualVideoAspectRatio);
-                        if (scaleMode == ScaleMode.CENTER_INSIDE) {
-                            l = (videoContainerWidth - surfaceWidth) / 2;
-                        }
-                    }
-                    break;
+                case TOP_INSIDE: {
+                    int deltaWidth = (int) (containerWidth * (videoZoom - 1) / 2);
+                    int deltaHeight = (int) (containerHeight * (videoZoom - 1) / 2);
+                    videoRenderingView.layout(
+                            childLeft - deltaWidth / 2,
+                            childTop - deltaHeight / 2,
+                            childLeft + childWidth + deltaWidth,
+                            childTop + childHeight + deltaHeight);
+                    ((SurfaceView) videoRenderingView).getHolder().setFixedSize(childWidth, childHeight);
+                }
+                break;
                 case CENTER_CROP:
-                case FIT:
-                default:
-                    throw new IllegalStateException("Unsupported scale mode: " + scaleMode);
+                case FIT: {
+                    int deltaWidth = (int) (childWidth * (1 - videoZoom) / 2);
+                    int deltaHeight = (int) (childHeight * (1 - videoZoom) / 2);
+                    videoRenderingView.layout(deltaWidth / 2, deltaHeight / 2, containerWidth - deltaWidth, containerHeight - deltaHeight);
+                    ((SurfaceView) videoRenderingView).getHolder().setFixedSize(containerWidth - deltaWidth, containerHeight - deltaHeight);
+                }
+                break;
             }
 
-            videoRenderingView.setY(t);
-            videoRenderingView.setX(l);
-            //check against last set values
-            if (videoRenderingViewWidth != surfaceWidth || videoRenderingViewHeight != surfaceHeight) {
-                videoRenderingViewWidth = surfaceWidth;
-                videoRenderingViewHeight = surfaceHeight;
-                //for surfaceView ensure setFixedSize. May be unnecessary
-                if (videoRenderingView instanceof SurfaceView) {
-                    ((SurfaceView) videoRenderingView).getHolder().setFixedSize(surfaceWidth, surfaceHeight);
-                } else if (videoRenderingView instanceof TextureView) {
-                    RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) videoRenderingView.getLayoutParams();
-                    lp.width = surfaceWidth;
-                    lp.height = surfaceHeight;
-                    videoRenderingView.setLayoutParams(lp);
+        } else if (videoRenderingView instanceof TextureView) {
+            videoRenderingView.layout(0, 0, containerWidth, containerHeight);
+            layoutTransformMatrix.reset();
+            switch (scaleMode) {
+                case CENTER_INSIDE:
+                    layoutTransformMatrix.postScale(
+                            (childWidth / (float) containerWidth) * videoZoom,
+                            (childHeight / (float) containerHeight) * videoZoom,
+                            containerWidth / 2,
+                            containerHeight / 2);
+                    break;
+                case TOP_INSIDE:
+                    layoutTransformMatrix.postScale(
+                            (childWidth / (float) containerWidth) * videoZoom,
+                            (childHeight / (float) containerHeight) * videoZoom,
+                            0,
+                            0);
+                    break;
+                case CENTER_CROP: {
+                    int videoWidth = containerWidth;
+                    int videoHeight = containerHeight;
+                    float videoContainerAspectRatio = containerWidth / (float) containerHeight;
+                    if (actualVideoAspectRatio < videoContainerAspectRatio) {
+                        videoHeight = (int) Math.ceil(videoWidth / actualVideoAspectRatio);
+                    } else if (actualVideoAspectRatio > videoContainerAspectRatio) {
+                        videoWidth = (int) Math.ceil(videoHeight * actualVideoAspectRatio);
+                    }
+                    layoutTransformMatrix.postScale(
+                            (videoWidth / (float) containerWidth) * videoZoom,
+                            (videoHeight / (float) containerHeight) * videoZoom,
+                            containerWidth / 2,
+                            containerHeight / 2);
                 }
-                if (isDebugMode()) {
-                    Log.d(TAG, "onLayout: Update videoRenderingView size " +
-                            "videoRenderingViewWidth=" + videoRenderingViewWidth +
-                            " videoRenderingViewHeight=" + videoRenderingViewHeight);
+                break;
+                case FIT:
+                    // TODO Not implemented
+                    break;
+            }
+            ((TextureView) videoRenderingView).setTransform(layoutTransformMatrix);
+        }
+        if (isDebugMode()) {
+            Log.d(TAG, "onLayout: Update videoRenderingView size " +
+                    "videoRenderingViewWidth=" + childWidth +
+                    " videoRenderingViewHeight=" + childHeight);
+        }
+        if (isDebugMode()) {
+            Log.d(TAG, "onLayout: l=" + childLeft + " t=" + childTop
+                    + " childWidth=" + childWidth + " childHeight=" + childHeight
+                    + " containerWidth=" + containerWidth + " videoContainerHeight=" + containerHeight);
+        }
+        int childCount = getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            View v = getChildAt(i);
+            if (v != videoRenderingView) {
+                v.measure(MeasureSpec.makeMeasureSpec(childWidth, MeasureSpec.EXACTLY),
+                        MeasureSpec.makeMeasureSpec(childHeight, MeasureSpec.EXACTLY));
+                v.layout(childLeft, childTop, childLeft + childWidth, childTop + childHeight);
+            }
+        }
+    }
+
+    private void calculateChildPosition() {
+        childLeft = 0;
+        childTop = 0;
+        childWidth = containerWidth;
+        childHeight = containerHeight;
+        switch (scaleMode) {
+            case CENTER_CROP:
+                break;
+            case CENTER_INSIDE:
+            case TOP_INSIDE:
+                float videoContainerAspectRatio = containerWidth / (float) containerHeight;
+                if (actualVideoAspectRatio > videoContainerAspectRatio) {
+                    childHeight = (int) Math.ceil(childWidth / actualVideoAspectRatio);
+                    if (scaleMode != ScaleMode.TOP_INSIDE) {
+                        childTop = (containerHeight - childHeight) / 2;
+                    }
+                } else if (actualVideoAspectRatio < videoContainerAspectRatio) {
+                    childWidth = (int) Math.ceil(childHeight * actualVideoAspectRatio);
+                    if (scaleMode != ScaleMode.TOP_INSIDE) {
+                        childLeft = (containerWidth - childWidth) / 2;
+                    }
                 }
-            }
-            if (isDebugMode()) {
-                Log.d(TAG, "onLayout: l=" + l + " t=" + t
-                        + " surfaceWidth=" + surfaceWidth + " surfaceHeight=" + surfaceHeight
-                        + " videoContainerWidth=" + videoContainerWidth + " videoContainerHeight=" + videoContainerHeight);
-            }
+                break;
+            case FIT:
+            default:
+                throw new IllegalStateException("Unsupported scale mode: " + scaleMode);
         }
     }
 
@@ -292,14 +367,15 @@ public class SRGMediaPlayerView extends RelativeLayout {
         final int specWidthMode = MeasureSpec.getMode(widthMeasureSpec);
         final int specHeight = MeasureSpec.getSize(heightMeasureSpec);
         final int specHeightMode = MeasureSpec.getMode(heightMeasureSpec);
+        int width = specWidth;
+        int height = specHeight;
 
         if (specWidthMode == MeasureSpec.EXACTLY && specHeightMode == MeasureSpec.EXACTLY) {
             if (!autoAspect) {
                 Log.w(SRGMediaPlayerController.TAG, "Aspect ratio cannot be supported with these layout constraints");
             }
         } else if (specWidthMode == MeasureSpec.EXACTLY) {
-            int width = specWidth;
-            int height = (int) (width / containerAspectRatio);
+            height = (int) (width / containerAspectRatio);
 
             int maxHeight;
             maxHeight = specHeightMode == MeasureSpec.AT_MOST ? specHeight : MEASURED_SIZE_MASK;
@@ -314,8 +390,7 @@ public class SRGMediaPlayerView extends RelativeLayout {
             }
             heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
         } else if (specHeightMode == MeasureSpec.EXACTLY) {
-            int height = specHeight;
-            int width = (int) (height * containerAspectRatio);
+            width = (int) (height * containerAspectRatio);
 
             int maxWidth;
             maxWidth = specWidthMode == MeasureSpec.AT_MOST ? specWidth : MEASURED_SIZE_MASK;
@@ -335,7 +410,8 @@ public class SRGMediaPlayerView extends RelativeLayout {
                     specWidth, modeName(specWidthMode), specHeight, modeName(specHeightMode),
                     MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec)));
         }
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+
+        setMeasuredDimension(widthMeasureSpec, heightMeasureSpec);
     }
 
     private int getParentScrollViewHeight() {
@@ -385,8 +461,6 @@ public class SRGMediaPlayerView extends RelativeLayout {
         sb.append(", width=").append(getWidth());
         sb.append(", height=").append(getHeight());
         sb.append(", videoRenderingView=").append(videoRenderingView);
-        sb.append(", videoRenderingViewWidth=").append(videoRenderingViewWidth);
-        sb.append(", videoRenderingViewHeight=").append(videoRenderingViewHeight);
         sb.append(", scaleMode=").append(scaleMode);
         sb.append(", containerAspectRatio=").append(containerAspectRatio);
         sb.append(", onTop=").append(onTop);
@@ -401,24 +475,24 @@ public class SRGMediaPlayerView extends RelativeLayout {
      * Returns a set of layout parameters with default AUTO_HIDE visibility.
      */
     @Override
-    protected ViewGroup.LayoutParams generateDefaultLayoutParams() {
+    protected LayoutParams generateDefaultLayoutParams() {
         return new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
     }
 
     // Override to allow type-checking of LayoutParams.
     @Override
-    protected boolean checkLayoutParams(ViewGroup.LayoutParams p) {
-        return p instanceof SRGMediaPlayerView.LayoutParams;
+    protected boolean checkLayoutParams(LayoutParams p) {
+        return p instanceof LayoutParams;
     }
 
     @Override
-    protected ViewGroup.LayoutParams generateLayoutParams(ViewGroup.LayoutParams p) {
+    protected LayoutParams generateLayoutParams(LayoutParams p) {
         return new LayoutParams(p);
     }
 
     @Override
-    public RelativeLayout.LayoutParams generateLayoutParams(AttributeSet attrs) {
-        return new SRGMediaPlayerView.LayoutParams(getContext(), attrs);
+    public LayoutParams generateLayoutParams(AttributeSet attrs) {
+        return new LayoutParams(getContext(), attrs);
     }
 
     public void setAdjustToParentScrollView(boolean adjustToParentScrollView) {
@@ -471,6 +545,7 @@ public class SRGMediaPlayerView extends RelativeLayout {
         return CaptionStyleCompat.createFromCaptionStyle(captioningManager.getUserStyle());
     }
 
+    @TargetApi(19)
     private CaptioningManager getCaptioningManager() {
         return (CaptioningManager) getContext().getSystemService(Context.CAPTIONING_SERVICE);
     }
@@ -479,5 +554,20 @@ public class SRGMediaPlayerView extends RelativeLayout {
         this.debugMode = debugMode;
     }
 
+    public void setScaleModeListener(@Nullable ScaleModeListener scaleModeListener) {
+        this.scaleModeListener = scaleModeListener;
+        if (scaleModeListener != null) {
+            scaleModeListener.onScaleModeChanged(this, getScaleMode());
+        }
+    }
+
+    /**
+     * Video zoom applied on top of current scale mode. Zoom video in both direction, default to 1.
+     *
+     * @param scale > 1  to make the video bigger
+     */
+    public void setVideoZoom(float scale) {
+        this.videoZoom = scale;
+    }
 }
 
