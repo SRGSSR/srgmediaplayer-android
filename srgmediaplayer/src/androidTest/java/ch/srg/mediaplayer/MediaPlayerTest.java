@@ -1,5 +1,7 @@
 package ch.srg.mediaplayer;
 
+import org.junit.Rule;
+
 import ch.srg.mediaplayer.tests.ConditionWatcher;
 import ch.srg.mediaplayer.tests.EventInstruction;
 
@@ -7,6 +9,8 @@ import ch.srg.mediaplayer.tests.EventInstruction;
  * Abstract base class for media player tests.
  */
 public abstract class MediaPlayerTest {
+    @Rule
+    public RetryTestRule retry = new RetryTestRule(3);
 
     // Wait until an event of the specified type is received. Fails if no event is received for a given
     // timeout period.
