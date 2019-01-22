@@ -34,14 +34,14 @@ import static org.junit.Assert.assertTrue;
  */
 @RunWith(AndroidJUnit4.class)
 public class PlaybackTest extends MediaPlayerTest {
-    private static final Uri VIDEO_ON_DEMAND_URI = Uri.parse("http://stream-i.rts.ch/i/specm/2014/specm_20141203_full_f_817794-,101,701,1201,k.mp4.csmil/master.m3u8");
-    private static final Uri NON_STREAMED_VIDEO_URI = Uri.parse("http://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4");
-    private static final Uri VIDEO_LIVESTREAM_URI = Uri.parse("http://tagesschau-lh.akamaihd.net/i/tagesschau_1@119231/master.m3u8?dw=0");
-    private static final Uri VIDEO_DVR_LIVESTREAM_URI = Uri.parse("http://tagesschau-lh.akamaihd.net/i/tagesschau_1@119231/master.m3u8");
+    private static final Uri VIDEO_ON_DEMAND_URI = Uri.parse("https://rtsvodww-vh.akamaihd.net/i/specm/2014/specm_20141203_full_f_817794-,101,701,1201,k.mp4.csmil/master.m3u8");
+    private static final Uri NON_STREAMED_VIDEO_URI = Uri.parse("https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4");
+    private static final Uri VIDEO_LIVESTREAM_URI = Uri.parse("https://tagesschau-lh.akamaihd.net/i/tagesschau_1@119231/master.m3u8?dw=0");
+    private static final Uri VIDEO_DVR_LIVESTREAM_URI = Uri.parse("https://tagesschau-lh.akamaihd.net/i/tagesschau_1@119231/master.m3u8");
     private static final Uri AUDIO_ON_DEMAND_URI = Uri.parse("https://rtsww-a-d.rts.ch/la-1ere/programmes/c-est-pas-trop-tot/2017/c-est-pas-trop-tot_20170628_full_c-est-pas-trop-tot_007d77e7-61fb-4aef-9491-5e6b07f7f931-128k.mp3");
-    private static final Uri HTTP_403_URI = Uri.parse("http://httpbin.org/status/403");
-    private static final Uri HTTP_404_URI = Uri.parse("http://httpbin.org/status/404");
-    private static final Uri AUDIO_DVR_LIVESTREAM_URI = Uri.parse("http://lsaplus.swisstxt.ch/audio/drs1_96.stream/playlist.m3u8");
+    private static final Uri HTTP_403_URI = Uri.parse("https://httpbin.org/status/403");
+    private static final Uri HTTP_404_URI = Uri.parse("https://httpbin.org/status/404");
+    private static final Uri AUDIO_DVR_LIVESTREAM_URI = Uri.parse("https://lsaplus.swisstxt.ch/audio/drs1_96.stream/playlist.m3u8");
 
     private SRGMediaPlayerController controller;
 
