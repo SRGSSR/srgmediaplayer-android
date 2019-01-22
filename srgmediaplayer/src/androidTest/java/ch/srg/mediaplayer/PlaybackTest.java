@@ -353,7 +353,7 @@ public class PlaybackTest extends MediaPlayerTest {
         seekToMainThread(60 * 1000);
         waitForState(SRGMediaPlayerController.State.BUFFERING);
         waitForState(SRGMediaPlayerController.State.READY);
-        assertEquals(60, controller.getMediaPosition() / 1000);
+        assertEquals(60, controller.getMediaPosition() / 1000, 2);
         assertTrue(isPlayingOrLoading());
     }
 
@@ -367,7 +367,7 @@ public class PlaybackTest extends MediaPlayerTest {
         seekToMainThread(70 * 1000);
         waitForState(SRGMediaPlayerController.State.BUFFERING);
         waitForState(SRGMediaPlayerController.State.READY);
-        assertEquals(70, controller.getMediaPosition() / 1000);
+        assertEquals(70, controller.getMediaPosition() / 1000, 2);
         assertTrue(isPlayingOrLoading());
     }
 
@@ -395,10 +395,7 @@ public class PlaybackTest extends MediaPlayerTest {
         seekToMainThread(60 * 1000);
         assertTrue(isPlayingOrLoading());
         waitForState(SRGMediaPlayerController.State.READY);
-        assertEquals(60, controller.getMediaPosition() / 1000);
-        while (!isPlayingOrLoading()) {
-            Thread.sleep(100);
-        }
+        assertEquals(60, controller.getMediaPosition() / 1000, 2);
     }
 
     @Test
@@ -409,7 +406,7 @@ public class PlaybackTest extends MediaPlayerTest {
 
         seekToMainThread(60 * 1000);
         waitForState(SRGMediaPlayerController.State.READY);
-        assertEquals(60, controller.getMediaPosition() / 1000);
+        assertEquals(60, controller.getMediaPosition() / 1000, 2);
         assertTrue(isPlayingOrLoading());
     }
 
@@ -424,7 +421,7 @@ public class PlaybackTest extends MediaPlayerTest {
         assertEquals(0, controller.getMediaPosition() / 1000);
 
         seekToMainThread(60 * 1000);
-        // TODO: No BUFFERING?
+
         waitForState(SRGMediaPlayerController.State.READY);
         waitForEvent(SRGMediaPlayerController.Event.Type.DID_SEEK);
         assertEquals(60, controller.getMediaPosition() / 1000);
@@ -475,11 +472,6 @@ public class PlaybackTest extends MediaPlayerTest {
                 assertTrue(controller.isReleased());
             }
         });
-    }
-
-    @Test
-    public void testSeekWhileReleased() throws Exception {
-
     }
 
     @Test
