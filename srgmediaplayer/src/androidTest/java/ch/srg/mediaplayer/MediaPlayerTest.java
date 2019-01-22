@@ -10,7 +10,7 @@ import ch.srg.mediaplayer.tests.EventInstruction;
  */
 public abstract class MediaPlayerTest {
     @Rule
-    public RetryTestRule retry = new RetryTestRule(3);
+    public RetryTestRule retry = new RetryTestRule(5);
 
     // Wait until an event of the specified type is received. Fails if no event is received for a given
     // timeout period.
