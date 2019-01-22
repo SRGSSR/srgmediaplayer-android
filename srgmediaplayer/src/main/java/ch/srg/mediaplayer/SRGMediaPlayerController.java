@@ -1604,7 +1604,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     public boolean isPlaying() {
-        return state == State.READY && exoPlayer.getPlaybackState() == Player.STATE_READY && exoPlayer.getPlayWhenReady();
+        return state == State.READY && exoPlayer.getPlayWhenReady();
     }
 
     public boolean getPlayWhenReady() {
