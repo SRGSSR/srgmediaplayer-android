@@ -27,10 +27,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Created by npietri on 12.06.15.
- * <p>
- * These tests work with a mock delegate and data provider, they do not do any playing or url decoding.
- * The goal is to test the player controller, its contract and robustness.
+ * Test playback with SRG streams.
  */
 @RunWith(AndroidJUnit4.class)
 public class PlaybackTest extends MediaPlayerTest {

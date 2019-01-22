@@ -88,6 +88,9 @@ import ch.srg.mediaplayer.segment.model.Segment;
  * Handle the playback of media.
  * if used along with a SRGMediaPlayerView can handle Video playback base on delegation on
  * actual players, like android.MediaPlayer or ExoPlayer
+ * <p>
+ * Threading: all calls to public method must be made from main thread. An exception will be
+ * thrown in debug mode.
  */
 @SuppressWarnings({"unused", "unchecked", "UnusedReturnValue", "WeakerAccess", "PointlessBitwiseExpression"})
 @MainThread

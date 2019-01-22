@@ -30,10 +30,10 @@ public class RetryTestRule implements TestRule {
                         return;
                     } catch (Throwable t) {
                         caughtThrowable = t;
-                        Log.e("Test", (description.getDisplayName() + ": run " + (i + 1) + " failed"));
+                        Log.e("RetryTestRule", (description.getDisplayName() + ": run " + (i + 1) + " failed"));
                     }
                 }
-                Log.e("Test", description.getDisplayName() + ": giving up after " + tryCount + " failures");
+                Log.e("RetryTestRule", description.getDisplayName() + ": giving up after " + tryCount + " failures");
                 throw caughtThrowable;
             }
         };
