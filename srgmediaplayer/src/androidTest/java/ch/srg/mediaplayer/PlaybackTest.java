@@ -324,6 +324,10 @@ public class PlaybackTest extends MediaPlayerTest {
         return controller.isPlaying() || controller.isLoading();
     }
 
+    private boolean isPlaying() {
+        return controller.isPlaying();
+    }
+
     @Test
     public void testPlayAfterStreamEnd() throws Exception {
         playMainThread(controller, AUDIO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
@@ -389,7 +393,7 @@ public class PlaybackTest extends MediaPlayerTest {
     @Test
     public void testSeekWhilePreparing() throws Exception {
         playMainThread(controller, VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
-        assertFalse(isPlayingOrLoading());
+        assertFalse(isPlaying());
 
         seekToMainThread(60 * 1000);
         assertTrue(isPlayingOrLoading());
@@ -404,7 +408,7 @@ public class PlaybackTest extends MediaPlayerTest {
     public void testSeekWhileBuffering() throws Exception {
         playMainThread(controller, VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
         waitForState(SRGMediaPlayerController.State.BUFFERING);
-        assertFalse(isPlayingOrLoading());
+        assertFalse(isPlaying());
 
         seekToMainThread(60 * 1000);
         waitForState(SRGMediaPlayerController.State.READY);
@@ -419,7 +423,7 @@ public class PlaybackTest extends MediaPlayerTest {
         assertTrue(isPlayingOrLoading());
         pauseMainThread();
         Thread.sleep(100); // Need to wait
-        assertFalse(isPlayingOrLoading());
+        assertFalse(isPlaying());
         assertEquals(0, controller.getMediaPosition() / 1000);
 
         seekToMainThread(60 * 1000);
@@ -427,7 +431,7 @@ public class PlaybackTest extends MediaPlayerTest {
         waitForState(SRGMediaPlayerController.State.READY);
         waitForEvent(SRGMediaPlayerController.Event.Type.DID_SEEK);
         assertEquals(60, controller.getMediaPosition() / 1000);
-        assertFalse(isPlayingOrLoading());
+        assertFalse(isPlaying());
     }
 
     @Test
