@@ -436,8 +436,10 @@ public class PlaybackTest extends MediaPlayerTest {
         seekToMainThread(60 * 1000);
         waitForEvent(SRGMediaPlayerController.Event.Type.DID_SEEK);
         pauseMainThread();
-        Thread.sleep(100); // Need to wait
-        assertFalse(isPlayingOrLoading());
+        while (controller.isLoading()) {
+            Thread.sleep(100); // Need to wait
+        }
+        assertFalse(isPlaying());
         assertEquals(60, controller.getMediaPosition() / 1000);
 
         getInstrumentation().runOnMainSync(() -> {
