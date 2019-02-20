@@ -508,7 +508,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(this.context);
         renderersFactory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
-        exoPlayer = ExoPlayerFactory.newSimpleInstance(context, renderersFactory, trackSelector, new DefaultLoadControl(), drmSessionManager, BANDWIDTH_METER); //Use
+        exoPlayer = ExoPlayerFactory.newSimpleInstance(context, renderersFactory, trackSelector, new DefaultLoadControl(), drmSessionManager, BANDWIDTH_METER);
         exoPlayer.addListener(this);
         exoPlayer.addVideoListener(this);
         exoPlayer.addTextOutput(this);
@@ -521,7 +521,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         try {
             mediaSession = new MediaSessionCompat(context, context.getPackageName());
-            mediaSessionConnector = new MediaSessionConnector(mediaSession,null); //FIXME Use DefaultMetaDataProvider is it good?
+            mediaSessionConnector = new MediaSessionConnector(mediaSession, null);
             mediaSessionConnector.setPlayer(exoPlayer, null, (MediaSessionConnector.CustomActionProvider[]) null);
             mediaSession.setActive(true);
         } catch (Throwable exception) {
@@ -2052,7 +2052,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Override
     public void onSurfaceSizeChanged(int width, int height) {
-
+        //Nothing
     }
 
     @Override
@@ -2064,12 +2064,12 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Override
     public void onDrmSessionAcquired() {
-        // TODO use this infromation for snitch or not
+        // already handled by eventLogger
     }
 
     @Override
     public void onDrmSessionReleased() {
-        // TODO use this infromation for snitch or not
+        // already handled by eventLogger
     }
 
     @Override
