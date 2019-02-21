@@ -4,9 +4,13 @@ import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
 import android.net.Uri;
-import android.os.*;
-import android.os.Process;
-import android.support.annotation.*;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+import android.support.annotation.IntDef;
+import android.support.annotation.MainThread;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.text.TextUtils;
 import android.util.Log;
@@ -505,7 +509,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(this.context);
         renderersFactory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
-        exoPlayer = ExoPlayerFactory.newSimpleInstance(context, renderersFactory, trackSelector, new DefaultLoadControl(), drmSessionManager, BANDWIDTH_METER);
+        exoPlayer = ExoPlayerFactory.newSimpleInstance(context, renderersFactory, trackSelector, new DefaultLoadControl(), drmSessionManager, mainHandler.getLooper());
         exoPlayer.addListener(this);
         exoPlayer.addVideoListener(this);
         exoPlayer.addTextOutput(this);
@@ -792,7 +796,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             abandonAudioFocus();
             releaseExoplayer();
             unregisterAllEventListeners();
-            stopBackgroundThread();
+            stopPeriodicUpdate();
         }
     }
 
@@ -843,35 +847,21 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     //region period update
     @Nullable
-    private HandlerThread periodicUpdateHandlerThread;
-    @Nullable
-    private Handler periodicUpdateHandler;
-    @Nullable
     private Long lastPeriodicUpdate;
 
-    private synchronized void startPeriodicUpdateThreadIfNecessary() {
-        if (periodicUpdateHandlerThread == null) {
-            periodicUpdateHandlerThread = new HandlerThread(getClass().getSimpleName() + ":PeriodicUpdateHandler", Process.THREAD_PRIORITY_DEFAULT);
-            periodicUpdateHandlerThread.start();
-            logV("Started periodic update thread: " + periodicUpdateHandlerThread);
-            periodicUpdateHandler = new Handler(periodicUpdateHandlerThread.getLooper(), this);
-            schedulePeriodUpdate();
-        }
+    private void startPeriodicUpdateThreadIfNecessary() {
+        schedulePeriodUpdate();
     }
 
-    private synchronized void stopBackgroundThread() {
-        logV("Stopping periodic update thread: " + periodicUpdateHandlerThread);
-        if (periodicUpdateHandlerThread != null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                periodicUpdateHandlerThread.quitSafely();
-            } else {
-                periodicUpdateHandlerThread.quit();
-            }
+    private void stopPeriodicUpdate() {
+        logV("Stopping periodic update thread: " + mainHandler);
+        if (mainHandler != null) {
+            mainHandler.removeMessages(MSG_PERIODIC_UPDATE);
         }
     }
 
     private void schedulePeriodUpdate() {
-        Handler handler = this.periodicUpdateHandler;
+        Handler handler = this.mainHandler;
         if (handler != null) {
             handler.removeMessages(MSG_PERIODIC_UPDATE);
             handler.sendMessageDelayed(handler.obtainMessage(MSG_PERIODIC_UPDATE), UPDATE_PERIOD);
@@ -881,19 +871,19 @@ public class SRGMediaPlayerController implements Handler.Callback,
     @Override
     public boolean handleMessage(final Message msg) {
         if (!isReleased()) {
-            periodicUpdateInternal();
+            periodicUpdate();
             schedulePeriodUpdate();
         }
         return false;
     }
 
-    private void periodicUpdateInternal() {
+    private void periodicUpdate() {
         long currentPosition = exoPlayer.getCurrentPosition();
         if (lastPeriodicUpdate == null || currentPosition != lastPeriodicUpdate) {
             if (lastPeriodicUpdate != null) {
                 if (!playbackActuallyStarted) {
                     playbackActuallyStarted = true;
-                    mainHandler.post(() -> broadcastEvent(Event.Type.PLAYBACK_ACTUALLY_STARTED));
+                    broadcastEvent(Event.Type.PLAYBACK_ACTUALLY_STARTED);
                 }
             }
             if (!segments.isEmpty()) {
@@ -909,8 +899,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (isReleased() && mediaPosition != UNKNOWN_TIME) {
             return;
         }
-        // WARNING: This method is called from BG thread but all calls to public methods must be
-        // done in main handler!
+
         if (mediaPosition != -1) {
             Segment blockedSegment = getBlockedSegment(mediaPosition);
             Segment newSegment = getSegment(mediaPosition);
@@ -919,20 +908,18 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 if (blockedSegment != segmentBeingSkipped) {
                     Log.v("SegmentTest", "Skipping over " + blockedSegment.getIdentifier());
                     segmentBeingSkipped = blockedSegment;
-                    mainHandler.post(() -> seekEndOfBlockedSegment(blockedSegment));
+                    seekEndOfBlockedSegment(blockedSegment);
                 }
             } else {
                 segmentBeingSkipped = null;
                 if (currentSegment != newSegment) {
-                    mainHandler.post(() -> {
-                        if (currentSegment == null) {
-                            broadcastSegmentEvent(Event.Type.SEGMENT_START, newSegment);
-                        } else if (newSegment == null) {
-                            broadcastSegmentEvent(Event.Type.SEGMENT_END, null);
-                        } else {
-                            broadcastSegmentEvent(Event.Type.SEGMENT_SWITCH, newSegment);
-                        }
-                    });
+                    if (currentSegment == null) {
+                        broadcastSegmentEvent(Event.Type.SEGMENT_START, newSegment);
+                    } else if (newSegment == null) {
+                        broadcastSegmentEvent(Event.Type.SEGMENT_END, null);
+                    } else {
+                        broadcastSegmentEvent(Event.Type.SEGMENT_SWITCH, newSegment);
+                    }
                     currentSegment = newSegment;
                 }
             }
