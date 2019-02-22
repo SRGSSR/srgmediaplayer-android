@@ -20,7 +20,9 @@ import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
 import ch.srg.mediaplayer.segment.model.Segment;
-import com.akamai.android.exoplayer2loader.AkamaiExoPlayerLoader;
+import com.akamai.android.analytics.AkamaiMediaAnalytics;
+import com.akamai.android.analytics.EndReasonCodes;
+import com.akamai.android.analytics.PluginCallBacks;
 import com.google.android.exoplayer2.*;
 import com.google.android.exoplayer2.audio.AudioCapabilities;
 import com.google.android.exoplayer2.audio.AudioCapabilitiesReceiver;
@@ -435,8 +437,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private static Set<Listener> globalEventListeners = Collections.newSetFromMap(new WeakHashMap<>());
 
+    /**
+     * Akamai analytics class.
+     */
     @Nullable
-    private AkamaiExoPlayerLoader akamaiExoPlayerLoader;
+    private AkamaiMediaAnalytics akamaiMediaAnalytics;
 
     @Nullable
     private AkamaiMediaAnalyticsConfiguration akamaiMediaAnalyticsConfiguration;
@@ -760,13 +765,26 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private void setupAkamaiQos(@NonNull Uri videoUri) {
         if (akamaiMediaAnalyticsConfiguration != null) {
-            akamaiExoPlayerLoader = new AkamaiExoPlayerLoader(getContext(), akamaiMediaAnalyticsConfiguration.getAkamaiMediaAnalyticsConfigUrl(), isDebugMode());
-            akamaiExoPlayerLoader.setViewerId(akamaiMediaAnalyticsConfiguration.getAkamaiMediaAnalyticsViewerId());
-            for (Pair<String, String> keyValue : akamaiMediaAnalyticsConfiguration.getAkamaiMediaAnalyticsDataSet()) {
-                akamaiExoPlayerLoader.setData(keyValue.first, keyValue.second);
-            }
-            akamaiExoPlayerLoader.initializeLoader(exoPlayer, videoUri.toString());
-            exoPlayer.addAnalyticsListener(akamaiExoPlayerLoader);
+            akamaiMediaAnalytics = new AkamaiMediaAnalytics(context, akamaiMediaAnalyticsConfiguration.getAkamaiMediaAnalyticsConfigUrl());
+            akamaiMediaAnalytics.disableLocationSupport();
+            akamaiMediaAnalytics.setStreamURL(videoUri.toString(), true);
+            akamaiMediaAnalytics.handleSessionInit(new PluginCallBacks() {
+                @Override
+                public float streamHeadPosition() {
+                    // Use last known position to workaround threading issues
+                    return lastPeriodicUpdate != null ? lastPeriodicUpdate / 1000f : 0;
+                }
+
+                @Override
+                public long bytesLoaded() {
+                    return 0;
+                }
+
+                @Override
+                public int droppedFrames() {
+                    return 0;
+                }
+            });
         }
     }
 
@@ -782,7 +800,24 @@ public class SRGMediaPlayerController implements Handler.Callback,
      */
     public void release() {
         broadcastEvent(Event.Type.MEDIA_STOPPED);
+        doAkamaiAnalytics((ma) -> {
+            ma.handleVisit();
+            ma.handleSessionCleanup();
+        });
         doRelease();
+    }
+
+    private interface AnalyticsRunner {
+        void run(AkamaiMediaAnalytics ma);
+    }
+
+    private void doAkamaiAnalytics(AnalyticsRunner runner) {
+        if (akamaiMediaAnalytics != null) {
+            try {
+                runner.run(akamaiMediaAnalytics);
+            } catch (Throwable ignored) {
+            }
+        }
     }
 
     /**
@@ -802,9 +837,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void releaseExoplayer() {
-        if (akamaiExoPlayerLoader != null) {
-            akamaiExoPlayerLoader.releaseLoader();
-        }
         exoPlayer.stop();
         // Done after stop to be sure that no event listener are called.
         if (mediaSessionConnector != null) {
@@ -1951,6 +1983,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     break;
                 case Player.STATE_BUFFERING:
                     setState(State.BUFFERING);
+                    doAkamaiAnalytics((ma) -> {
+                        if (this.playbackState == Player.STATE_READY) {
+                            ma.handleBufferStart();
+                        }
+                    });
                     break;
                 case Player.STATE_READY:
                     if (!playingOrBuffering) {
@@ -1959,11 +1996,19 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     }
                     setState(State.READY);
                     startPeriodicUpdateThreadIfNecessary();
+                    doAkamaiAnalytics((ma) -> {
+                        if (this.playbackState == Player.STATE_BUFFERING) {
+                            ma.handleBufferEnd();
+                        } else {
+                            ma.handlePlaying();
+                        }
+                    });
                     break;
                 case Player.STATE_ENDED:
                     setState(State.READY);
                     broadcastEvent(Event.Type.MEDIA_COMPLETED);
                     doRelease(); // Business decision, but we could set position to default and not releasing exoplayer.
+                    doAkamaiAnalytics((ma) -> ma.handlePlayEnd(EndReasonCodes.Play_End_Detected.toString()));
                     break;
             }
             this.playbackState = playbackState;
@@ -1991,6 +2036,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 exception = new SRGMediaPlayerForbiddenException(error);
             }
         }
+        doAkamaiAnalytics((ma) -> ma.handleError("PLAYER.ERROR"));
+
         handlePlayerException(exception);
     }
 
@@ -2065,9 +2112,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
     @Override
     public void onDrmSessionManagerError(Exception e) {
         broadcastFatalError(new SRGDrmMediaPlayerException(e), true);
-        if (akamaiExoPlayerLoader != null) {
-            akamaiExoPlayerLoader.onDrmSessionManagerError(e);
-        }
     }
 
     @Override
