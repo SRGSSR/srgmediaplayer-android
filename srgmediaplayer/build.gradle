@@ -32,8 +32,7 @@ dependencies {
     androidTestImplementation "com.android.support.test:runner:$rootProject.androidSupportTest"
     androidTestImplementation "com.android.support.test:rules:$rootProject.androidSupportTest"
 
-    implementation files('libs/libAndroidMediaAnalytics.jar')
-    implementation files('libs/libAkamaiExoPlayerLoader.jar')
+    implementation files('libs/android_malibrary.aar')
 
     implementation "com.android.support:appcompat-v7:$rootProject.supportLibraryVersion"
     implementation "com.android.support:support-annotations:$rootProject.supportLibraryVersion"
