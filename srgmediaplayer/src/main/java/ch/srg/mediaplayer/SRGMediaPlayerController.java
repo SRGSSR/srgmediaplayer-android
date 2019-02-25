@@ -767,6 +767,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
             akamaiMediaAnalytics = new AkamaiMediaAnalytics(context, akamaiMediaAnalyticsConfiguration.getAkamaiMediaAnalyticsConfigUrl());
             akamaiMediaAnalytics.disableLocationSupport();
             akamaiMediaAnalytics.setStreamURL(videoUri.toString(), true);
+            if (debugMode) {
+                akamaiMediaAnalytics.enableDebugLogging();
+            }
             akamaiMediaAnalytics.handleSessionInit(new PluginCallBacks() {
                 @Override
                 public float streamHeadPosition() {
