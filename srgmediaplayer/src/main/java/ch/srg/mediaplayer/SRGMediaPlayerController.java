@@ -10,10 +10,7 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Process;
-import android.support.annotation.IntDef;
-import android.support.annotation.MainThread;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import android.support.annotation.*;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.text.TextUtils;
 import android.util.Log;
@@ -1786,6 +1783,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return false;
     }
 
+    @AnyThread
     public Throwable getFatalError() {
         return fatalError;
     }
