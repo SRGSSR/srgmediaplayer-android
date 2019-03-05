@@ -15,30 +15,16 @@
  */
 package ch.srg.mediaplayer;
 
-import android.net.NetworkInfo;
-import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.Surface;
-
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.ExoPlaybackException;
-import com.google.android.exoplayer2.Format;
-import com.google.android.exoplayer2.PlaybackParameters;
-import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.RendererCapabilities;
-import com.google.android.exoplayer2.Timeline;
+import com.google.android.exoplayer2.*;
 import com.google.android.exoplayer2.analytics.AnalyticsListener;
+import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.decoder.DecoderCounters;
 import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.metadata.MetadataOutput;
 import com.google.android.exoplayer2.metadata.emsg.EventMessage;
-import com.google.android.exoplayer2.metadata.id3.ApicFrame;
-import com.google.android.exoplayer2.metadata.id3.CommentFrame;
-import com.google.android.exoplayer2.metadata.id3.GeobFrame;
-import com.google.android.exoplayer2.metadata.id3.Id3Frame;
-import com.google.android.exoplayer2.metadata.id3.PrivFrame;
-import com.google.android.exoplayer2.metadata.id3.TextInformationFrame;
-import com.google.android.exoplayer2.metadata.id3.UrlLinkFrame;
+import com.google.android.exoplayer2.metadata.id3.*;
 import com.google.android.exoplayer2.source.MediaSourceEventListener;
 import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.TrackGroupArray;
@@ -217,6 +203,7 @@ import java.util.Locale;
         Log.d(TAG, "]");
     }
 
+
     @Override
     public void onMediaPeriodCreated(EventTime eventTime) {
         Log.d(TAG, "onMediaPeriodCreated [" + eventTime.realtimeMs + "]");
@@ -238,14 +225,18 @@ import java.util.Locale;
     }
 
     @Override
-    public void onViewportSizeChange(EventTime eventTime, int width, int height) {
-        Log.d(TAG, "onViewportSizeChange [" + eventTime.realtimeMs + ", " + width + ", " + height + "]");
+    public void onSurfaceSizeChanged(EventTime eventTime, int width, int height) {
+        Log.d(TAG, "onSurfaceSizeChanged [" + eventTime.realtimeMs + ", " + width + ", " + height + "]");
     }
 
     @Override
-    public void onNetworkTypeChanged(EventTime eventTime, @Nullable NetworkInfo networkInfo) {
-        String networkInfoString = networkInfo != null ? networkInfo.toString() : "";
-        Log.d(TAG, "onNetworkTypeChanged [" + eventTime.realtimeMs + ", " + networkInfoString + "]");
+    public void onAudioAttributesChanged(EventTime eventTime, AudioAttributes audioAttributes) {
+        Log.d(TAG, "onAudioAttributesChanged [" + eventTime.realtimeMs + "]");
+    }
+
+    @Override
+    public void onVolumeChanged(EventTime eventTime, float volume) {
+        Log.d(TAG, "onVolumeChanged [" + eventTime.realtimeMs + "] volume=" + volume);
     }
 
     @Override
@@ -313,6 +304,17 @@ import java.util.Locale;
     @Override
     public void onDrmSessionManagerError(EventTime eventTime, Exception e) {
         printInternalError(eventTime, "drmSessionManagerError", e);
+    }
+
+
+    @Override
+    public void onDrmSessionAcquired(EventTime eventTime) {
+        Log.d(TAG, "onDrmSessionAcquired [" + eventTime.realtimeMs + "]");
+    }
+
+    @Override
+    public void onDrmSessionReleased(EventTime eventTime) {
+        Log.d(TAG, "onDrmSessionReleased [" + eventTime.realtimeMs + "]");
     }
 
     @Override
