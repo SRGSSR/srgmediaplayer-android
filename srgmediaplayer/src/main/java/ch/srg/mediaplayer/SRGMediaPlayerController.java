@@ -764,6 +764,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
             akamaiMediaAnalytics = new AkamaiMediaAnalytics(context, akamaiMediaAnalyticsConfiguration.getAkamaiMediaAnalyticsConfigUrl());
             akamaiMediaAnalytics.disableLocationSupport();
             akamaiMediaAnalytics.setStreamURL(videoUri.toString(), true);
+            Iterable<? extends Pair<String, String>> akamaiMediaAnalyticsDataSet = akamaiMediaAnalyticsConfiguration.getAkamaiMediaAnalyticsDataSet();
+            for(Pair<String, String> dataPair : akamaiMediaAnalyticsDataSet) {
+                akamaiMediaAnalytics.setData(dataPair.first, dataPair.second);
+            }
+            akamaiMediaAnalytics.setData("viewerid", akamaiMediaAnalyticsConfiguration.getAkamaiMediaAnalyticsViewerId());
             if (debugMode) {
                 akamaiMediaAnalytics.enableDebugLogging();
             }
