@@ -420,8 +420,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private Uri currentMediaUri = null;
 
     private String tag;
-    //Main player property to handle multiple player view
-    private boolean mainPlayer = true;
 
     private int audioFocusBehaviorFlag = AUDIO_FOCUS_FLAG_PAUSE;
 
@@ -765,7 +763,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             akamaiMediaAnalytics.disableLocationSupport();
             akamaiMediaAnalytics.setStreamURL(videoUri.toString(), true);
             Iterable<? extends Pair<String, String>> akamaiMediaAnalyticsDataSet = akamaiMediaAnalyticsConfiguration.getAkamaiMediaAnalyticsDataSet();
-            for(Pair<String, String> dataPair : akamaiMediaAnalyticsDataSet) {
+            for (Pair<String, String> dataPair : akamaiMediaAnalyticsDataSet) {
                 akamaiMediaAnalytics.setData(dataPair.first, dataPair.second);
             }
             akamaiMediaAnalytics.setData("viewerid", akamaiMediaAnalyticsConfiguration.getAkamaiMediaAnalyticsViewerId());
@@ -1651,10 +1649,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return mediaPlayerView != null;
     }
 
-    public boolean isMainPlayer() {
-        return mainPlayer;
-    }
-
     public boolean isRemote() {
         return false;
     }
@@ -1700,13 +1694,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     //region setter
 
-    public void setMainPlayer(boolean mainPlayer) {
-        if (this.mainPlayer != mainPlayer) {
-            this.mainPlayer = mainPlayer;
-            forceBroadcastStateChange();
-        }
-    }
-
     /**
      * Force use specific quality (when supported). Represented by bandwidth.
      * Can be 0 to force lowest quality or Integer.MAX for highest for instance.
@@ -1742,10 +1729,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     //endregion
-
-    private void forceBroadcastStateChange() {
-        broadcastEvent(Event.buildStateEvent(this));
-    }
 
     //region audio/subtitle track management
 
