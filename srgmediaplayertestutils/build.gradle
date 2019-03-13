@@ -56,7 +56,6 @@ dependencies {
     implementation "com.android.support.test.espresso:espresso-core:$rootProject.espressoVersion"
     implementation "com.android.support.test.espresso:espresso-contrib:$rootProject.espressoVersion"
     implementation "com.android.support.test.espresso:espresso-idling-resource:$rootProject.espressoVersion"
-    implementation 'com.jakewharton.espresso:okhttp3-idling-resource:1.0.0'
 
     implementation project(':srgmediaplayer')
 }

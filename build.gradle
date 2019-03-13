@@ -8,7 +8,7 @@ allprojects {
             google()
         }
         dependencies {
-            classpath 'com.android.tools.build:gradle:3.2.1'
+            classpath 'com.android.tools.build:gradle:3.3.1'
             classpath 'de.felixschulze.gradle:gradle-hockeyapp-plugin:3.5'
         }
     }
@@ -24,13 +24,12 @@ allprojects {
 ext {
     // sdk and tools
     minSdkVersion = 16
-    targetSdkVersion = 27
-    compileSdkVersion = 27
+    targetSdkVersion = 28
+    compileSdkVersion = 28
 
     //libs
-    supportLibraryVersion = '27.1.1'
-    googlePlayServiceVersion = '15.0.1'
+    supportLibraryVersion = '28.0.0'
     androidSupportTest = '1.0.2'
     espressoVersion = '3.0.2'
-    exoPlayerVersion = '2.8.2'
+    exoPlayerVersion = '2.9.5'
 }
