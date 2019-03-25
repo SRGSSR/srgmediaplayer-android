@@ -40,6 +40,7 @@ import com.google.android.exoplayer2.upstream.*;
 import com.google.android.exoplayer2.util.Util;
 import com.google.android.exoplayer2.video.VideoListener;
 
+import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
@@ -274,10 +275,13 @@ public class SRGMediaPlayerController implements Handler.Callback,
         public final ScreenType screenType;
         public final State state;
 
+        @Nullable
         public Segment segment;
+        @Nullable
         public String blockingReason;
         public Event.Type segmentEventType;
 
+        @Nullable
         public final SRGMediaPlayerException exception;
 
         private static Event buildTestEvent(SRGMediaPlayerController controller) {
@@ -296,7 +300,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             return new Event(controller, Type.STATE_CHANGE, null);
         }
 
-        private Event(SRGMediaPlayerController controller, Type eventType, SRGMediaPlayerException eventException, Segment segment, String blockingReason) {
+        private Event(SRGMediaPlayerController controller, Type eventType, @Nullable SRGMediaPlayerException eventException, @Nullable Segment segment, @Nullable String blockingReason) {
             type = eventType;
             tag = controller.tag;
             state = controller.state;
@@ -505,7 +509,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                         monitoringDrmCallback, null);
                 drmSessionManager.addListener(mainHandler, this);
             } catch (UnsupportedDrmException e) {
-                fatalError = e;
+                fatalError = new SRGMediaPlayerException(null, e, SRGMediaPlayerException.Reason.DRM);
             }
         }
 
@@ -755,7 +759,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             playbackActuallyStarted = false;
         } catch (Exception e) {
             release();
-            throw new SRGMediaPlayerException(e);
+            throw new SRGMediaPlayerException(null, e, SRGMediaPlayerException.Reason.EXOPLAYER);
         }
     }
 
@@ -765,7 +769,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             akamaiMediaAnalytics.disableLocationSupport();
             akamaiMediaAnalytics.setStreamURL(videoUri.toString(), true);
             Iterable<? extends Pair<String, String>> akamaiMediaAnalyticsDataSet = akamaiMediaAnalyticsConfiguration.getAkamaiMediaAnalyticsDataSet();
-            for(Pair<String, String> dataPair : akamaiMediaAnalyticsDataSet) {
+            for (Pair<String, String> dataPair : akamaiMediaAnalyticsDataSet) {
                 akamaiMediaAnalytics.setData(dataPair.first, dataPair.second);
             }
             akamaiMediaAnalytics.setData("viewerid", akamaiMediaAnalyticsConfiguration.getAkamaiMediaAnalyticsViewerId());
@@ -1165,7 +1169,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (mediaPlayerView == null ||
                 !canRenderInView(mediaPlayerView.getVideoRenderingView())) {
             throw new SRGMediaPlayerException("ExoPlayer cannot render video in a "
-                    + mediaPlayerView);
+                    + mediaPlayerView, null, SRGMediaPlayerException.Reason.VIEW);
         }
         currentViewKeepScreenOn = mediaPlayerView.getKeepScreenOn();
         if (renderingView instanceof SurfaceView) {
@@ -2035,12 +2039,19 @@ public class SRGMediaPlayerController implements Handler.Callback,
     public void onPlayerError(ExoPlaybackException error) {
         manageKeepScreenOn();
         Throwable cause = error.getCause();
-        SRGMediaPlayerException exception = new SRGMediaPlayerException(error);
-        if (cause instanceof HttpDataSource.InvalidResponseCodeException) {
-            if (((HttpDataSource.InvalidResponseCodeException) cause).responseCode == 403) {
-                exception = new SRGMediaPlayerForbiddenException(error);
+        SRGMediaPlayerException.Reason reason = SRGMediaPlayerException.Reason.EXOPLAYER;
+        if (error.type == ExoPlaybackException.TYPE_RENDERER) {
+            reason = SRGMediaPlayerException.Reason.RENDERER;
+        } else if (cause instanceof IOException) {
+            if (cause instanceof HttpDataSource.InvalidResponseCodeException) {
+                if (((HttpDataSource.InvalidResponseCodeException) cause).responseCode == 403) {
+                    reason = SRGMediaPlayerException.Reason.FORBIDDEN;
+                }
+            } else {
+                reason = SRGMediaPlayerException.Reason.NETWORK;
             }
         }
+        SRGMediaPlayerException exception = new SRGMediaPlayerException(null, error, reason);
         doAkamaiAnalytics((ma) -> ma.handleError("PLAYER.ERROR"));
 
         handlePlayerException(exception);
@@ -2116,7 +2127,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Override
     public void onDrmSessionManagerError(Exception e) {
-        broadcastFatalError(new SRGDrmMediaPlayerException(e), true);
+        broadcastFatalError(new SRGMediaPlayerException(null, e, SRGMediaPlayerException.Reason.DRM), true);
     }
 
     @Override
