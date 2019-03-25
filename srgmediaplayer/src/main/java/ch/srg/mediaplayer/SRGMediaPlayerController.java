@@ -275,10 +275,13 @@ public class SRGMediaPlayerController implements Handler.Callback,
         public final ScreenType screenType;
         public final State state;
 
+        @Nullable
         public Segment segment;
+        @Nullable
         public String blockingReason;
         public Event.Type segmentEventType;
 
+        @Nullable
         public final SRGMediaPlayerException exception;
 
         private static Event buildTestEvent(SRGMediaPlayerController controller) {
@@ -297,7 +300,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             return new Event(controller, Type.STATE_CHANGE, null);
         }
 
-        private Event(SRGMediaPlayerController controller, Type eventType, SRGMediaPlayerException eventException, Segment segment, String blockingReason) {
+        private Event(SRGMediaPlayerController controller, Type eventType, @Nullable SRGMediaPlayerException eventException, @Nullable Segment segment, @Nullable String blockingReason) {
             type = eventType;
             tag = controller.tag;
             state = controller.state;
