@@ -12,7 +12,7 @@ public class SRGMediaPlayerException extends Exception {
         FORBIDDEN,
         VIEW,
         RENDERER,
-        IL,
+        DATASOURCE,
         EXOPLAYER,
         TOKEN
     }
