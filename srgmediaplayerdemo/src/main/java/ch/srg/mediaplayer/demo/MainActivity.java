@@ -3,12 +3,12 @@ package ch.srg.mediaplayer.demo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
-import ch.srg.mediaplayer.SRGMediaPlayerException;
 import ch.srg.mediaplayer.SRGMediaPlayerView;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SRGMediaPlayerController.Listener {
 
     private SRGMediaPlayerView mediaPlayerView;
     private SRGMediaPlayerController mediaPlayerController;
@@ -28,8 +28,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        mediaPlayerController.registerEventListener(this);
         mediaPlayerController.bindToMediaPlayerView(mediaPlayerView);
         mediaPlayerController.play(Uri.parse(URL), streamType);
+
     }
 
     @Override
@@ -37,6 +39,11 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         mediaPlayerController.unbindFromMediaPlayerView(mediaPlayerView);
         mediaPlayerController.release();
+        mediaPlayerController.unregisterEventListener(this);
     }
 
+    @Override
+    public void onMediaPlayerEvent(SRGMediaPlayerController mp, SRGMediaPlayerController.Event event) {
+        Log.d("MediaPlayerEvent", " " + event.type + " " + event.state);
+    }
 }
