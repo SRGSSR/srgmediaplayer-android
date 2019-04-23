@@ -1797,10 +1797,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
         if (debugMode && (result.isEmpty())) {
             return Arrays.asList(
-                    new AudioTrack(0, 0, "English", null),
-                    new AudioTrack(0, 1, "French", null),
-                    new AudioTrack(0, 2, "عربي", null),
-                    new AudioTrack(0, 3, "中文", null));
+                    new AudioTrack(0, 0, "en", null, "English"),
+                    new AudioTrack(0, 1, "fr", null, "French"),
+                    new AudioTrack(0, 2, "ar", null, "عربي"),
+                    new AudioTrack(0, 3, "ch", null, "中文"));
         } else {
             return result;
         }
@@ -1866,10 +1866,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
         if (debugMode && (result.isEmpty())) {
             return Arrays.asList(
-                    new SubtitleTrack(0, "English", null),
-                    new SubtitleTrack(0, "French", null),
-                    new SubtitleTrack(0, "عربي", null),
-                    new SubtitleTrack(0, "中文", null));
+                    new SubtitleTrack(0, "en", null, "English"),
+                    new SubtitleTrack(0, "fr", null, "French"),
+                    new SubtitleTrack(0, "ar", null, "عربي"),
+                    new SubtitleTrack(0, "ch", null, "中文"));
         } else {
             return result;
         }
@@ -1917,7 +1917,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private SubtitleTrack getSubtitleTrack(TrackGroup trackGroup, int i, int j) {
         Format format = trackGroup.getFormat(j);
         if (format.id != null && format.language != null) {
-            return new SubtitleTrack(new Pair<>(i, j), format.id, format.language);
+            return new SubtitleTrack(new Pair<>(i, j), format.id, format.language, format.label);
         } else {
             return null;
         }
