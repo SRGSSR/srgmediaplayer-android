@@ -1860,6 +1860,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     SubtitleTrack subtitleTrack = getSubtitleTrack(trackGroup, i, j);
                     if (subtitleTrack != null) {
                         result.add(subtitleTrack);
+                        break;
                     }
                 }
             }
