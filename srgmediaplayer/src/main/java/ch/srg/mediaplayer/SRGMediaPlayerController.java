@@ -1791,6 +1791,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     AudioTrack audioTrack = AudioTrack.createFrom(trackGroup, trackGroupIndex, trackIndex);
                     if (audioTrack != null) {
                         result.add(audioTrack);
+                        break;
                     }
                 }
             }
