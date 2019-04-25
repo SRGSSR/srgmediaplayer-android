@@ -1919,7 +1919,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private SubtitleTrack getSubtitleTrack(TrackGroup trackGroup, int i, int j) {
         Format format = trackGroup.getFormat(j);
         if (format.id != null && format.language != null) {
-            return new SubtitleTrack(new Pair<>(i, j), format.id, format.language, format.label);
+            String label = format.label != null ? format.label : format.language;
+            return new SubtitleTrack(new Pair<>(i, j), format.id, format.language, label);
         } else {
             return null;
         }

@@ -27,7 +27,8 @@ public class AudioTrack {
     public static AudioTrack createFrom(TrackGroup trackGroup, int groupIndex, int trackIndex) {
         Format format = trackGroup.getFormat(trackIndex);
         if (format.id != null && format.language != null) {
-            return new AudioTrack(groupIndex, trackIndex, format.id, format.language, format.label);
+            String label = format.label != null ? format.label : format.language;
+            return new AudioTrack(groupIndex, trackIndex, format.id, format.language, label);
         } else {
             return null;
         }
