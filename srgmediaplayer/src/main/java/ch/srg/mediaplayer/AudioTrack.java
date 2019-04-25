@@ -13,20 +13,22 @@ public class AudioTrack {
     public final int trackIndex;
     public final String trackId;
     public final String language;
+    public final String label;
 
-
-    public AudioTrack(int groupIndex, int trackIndex, String trackId, String language) {
+    public AudioTrack(int groupIndex, int trackIndex, String trackId, String language, String label) {
         this.groupIndex = groupIndex;
         this.trackIndex = trackIndex;
         this.trackId = trackId;
         this.language = language;
+        this.label = label;
     }
 
     @Nullable
     public static AudioTrack createFrom(TrackGroup trackGroup, int groupIndex, int trackIndex) {
         Format format = trackGroup.getFormat(trackIndex);
         if (format.id != null && format.language != null) {
-            return new AudioTrack(groupIndex, trackIndex, format.id, format.language);
+            String label = format.label != null ? format.label : format.language;
+            return new AudioTrack(groupIndex, trackIndex, format.id, format.language, label);
         } else {
             return null;
         }
