@@ -4,11 +4,13 @@ public class SubtitleTrack {
     public Object tag;
     public String trackId;
     public String language;
+    public String label;
 
-    public SubtitleTrack(Object tag, String trackId, String language) {
+    public SubtitleTrack(Object tag, String trackId, String language, String label) {
         this.tag = tag;
         this.trackId = trackId;
         this.language = language;
+        this.label = label;
     }
 
     @Override

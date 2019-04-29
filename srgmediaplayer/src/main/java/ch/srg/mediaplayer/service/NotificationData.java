@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 /**
  * Created by seb on 20/07/16.
  */
+@Deprecated
 public class NotificationData {
     // TODO Remove live from here and handle pause capability in another way
 
