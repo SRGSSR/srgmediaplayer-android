@@ -196,7 +196,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
             TRANSIENT_ERROR, /* To be removed ? */
 
             MEDIA_READY_TO_PLAY,
+            /** Sent when media has reached end of stream. Media stopped will not be sent. */
             MEDIA_COMPLETED,
+            /** Sent when media has been stopped externally. This player will then released. */
             MEDIA_STOPPED,
 
             PLAYING_STATE_CHANGE,
