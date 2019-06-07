@@ -47,7 +47,7 @@ dependencies {
     //noinspection GradleDependency
     implementation "androidx.appcompat:appcompat:$rootProject.appcompatVersion"
     //noinspection GradleDependency
-    implementation "androidx.recyclerview:recyclerview:$rootProject.recyclerviewVersion"
+    implementation "androidx.recyclerview:recyclerview:$rootProject.recyclerViewVersion"
 
     // Here we use implementation instead of androidTestImplementation as srgmediaplayertestutils is used only in test builds
     implementation "androidx.test:rules:$rootProject.androidTestVersion"

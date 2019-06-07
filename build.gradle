@@ -36,6 +36,6 @@ ext {
     exoPlayerVersion = '2.9.5'
     appcompatVersion = '1.0.2'
     annotationVersion = '1.1.0'
-    recyclerviewVersion = '1.0.0'
-    constraintlayoutVersion = '1.1.3'
+    recyclerViewVersion = '1.0.0'
+    constraintLayoutVersion = '1.1.3'
 }
