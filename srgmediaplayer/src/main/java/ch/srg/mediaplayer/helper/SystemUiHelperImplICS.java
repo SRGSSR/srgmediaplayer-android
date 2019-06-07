@@ -18,7 +18,7 @@ package ch.srg.mediaplayer.helper;
 
 import android.annotation.TargetApi;
 import android.os.Build;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 import android.view.View;
 
 @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)

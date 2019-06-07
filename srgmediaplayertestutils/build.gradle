@@ -29,7 +29,7 @@ android {
         versionName VERSION_BASE + "." + buildNumber
         versionNameSuffix release != null ? (release.equalsIgnoreCase("true") ? "" : "-SNAPSHOT") : "-SNAPSHOT"
 
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
         release {
@@ -42,20 +42,20 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    implementation 'junit:junit:4.12'
+    implementation "junit:junit:$rootProject.junitVersion"
 
     //noinspection GradleDependency
-    implementation "com.android.support:appcompat-v7:$rootProject.supportLibraryVersion"
+    implementation "androidx.appcompat:appcompat:$rootProject.appcompatVersion"
     //noinspection GradleDependency
-    implementation "com.android.support:recyclerview-v7:$rootProject.supportLibraryVersion"
+    implementation "androidx.recyclerview:recyclerview:$rootProject.recyclerviewVersion"
 
     // Here we use implementation instead of androidTestImplementation as srgmediaplayertestutils is used only in test builds
-    implementation "com.android.support.test:rules:$rootProject.androidSupportTest"
-    implementation "com.android.support.test:runner:$rootProject.androidSupportTest"
+    implementation "androidx.test:rules:$rootProject.androidTestVersion"
+    implementation "androidx.test:runner:$rootProject.androidTestVersion"
     implementation 'org.hamcrest:hamcrest-library:1.3'
-    implementation "com.android.support.test.espresso:espresso-core:$rootProject.espressoVersion"
-    implementation "com.android.support.test.espresso:espresso-contrib:$rootProject.espressoVersion"
-    implementation "com.android.support.test.espresso:espresso-idling-resource:$rootProject.espressoVersion"
+    implementation "androidx.test.espresso:espresso-core:$rootProject.espressoVersion"
+    implementation "androidx.test.espresso:espresso-contrib:$rootProject.espressoVersion"
+    implementation "androidx.test.espresso:espresso-idling-resource:$rootProject.espressoVersion"
 
     implementation project(':srgmediaplayer')
 }
@@ -65,7 +65,7 @@ Resolves dependency versions across test and production APKs, specifically, tran
 dependencies. This is required since Espresso internally has a dependency on support-annotations.
 */
 configurations.all {
-    resolutionStrategy.force "com.android.support:support-annotations:$rootProject.supportLibraryVersion"
+    //resolutionStrategy.force "com.android.support:support-annotations:$rootProject.supportLibraryVersion"
 }
 
 configurations.all {
