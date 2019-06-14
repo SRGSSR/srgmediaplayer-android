@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -31,6 +32,8 @@ import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.dash.DashMediaSource;
+import com.google.android.exoplayer2.source.dash.DashUtil;
+import com.google.android.exoplayer2.source.dash.manifest.DashManifest;
 import com.google.android.exoplayer2.source.hls.DefaultHlsDataSourceFactory;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.text.Cue;
@@ -68,6 +71,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private static final long[] EMPTY_TIME_RANGE = new long[2];
     private static final long UPDATE_PERIOD = 100;
     private static final long SEGMENT_HYSTERESIS_MS = 5000;
+    private static byte[] offlineLicenseKeySetId;
     private Long userTrackingProgress;
     private static final String NAME = "SRGMediaPlayer";
     private boolean currentViewKeepScreenOn;
@@ -76,6 +80,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * Set to true first time player goes to READY.
      */
     private boolean playingOrBuffering;
+    @Nullable
+    private DefaultDrmSessionManager<FrameworkMediaCrypto> drmSessionManager;
+    private DefaultHttpDataSourceFactory httpDataSourceFactory;
 
     public enum ViewType {
         TYPE_SURFACEVIEW,
@@ -196,9 +203,13 @@ public class SRGMediaPlayerController implements Handler.Callback,
             TRANSIENT_ERROR, /* To be removed ? */
 
             MEDIA_READY_TO_PLAY,
-            /** Sent when media has reached end of stream. Media stopped will not be sent. */
+            /**
+             * Sent when media has reached end of stream. Media stopped will not be sent.
+             */
             MEDIA_COMPLETED,
-            /** Sent when media has been stopped externally. This player will then released. */
+            /**
+             * Sent when media has been stopped externally. This player will then released.
+             */
             MEDIA_STOPPED,
 
             PLAYING_STATE_CHANGE,
@@ -495,9 +506,16 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         TrackSelection.Factory videoTrackSelectionFactory = new AdaptiveTrackSelection.Factory();
 
+        httpDataSourceFactory = new DefaultHttpDataSourceFactory(
+                userAgent,
+                BANDWIDTH_METER,
+                DefaultHttpDataSource.DEFAULT_CONNECT_TIMEOUT_MILLIS,
+                DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS,
+                true);
+
         trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
         EventLogger eventLogger = new EventLogger(trackSelector);
-        DefaultDrmSessionManager<FrameworkMediaCrypto> drmSessionManager = null;
+        drmSessionManager = null;
         UnsupportedDrmException unsupportedDrm = null;
         if (drmConfig != null && Util.SDK_INT >= 18) {
             this.drmConfig = drmConfig;
@@ -508,6 +526,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
                         FrameworkMediaDrm.newInstance(drmType),
                         monitoringDrmCallback, null);
                 drmSessionManager.addListener(mainHandler, this);
+                if (offlineLicenseKeySetId != null) {
+                    drmSessionManager.setMode(DefaultDrmSessionManager.MODE_PLAYBACK, offlineLicenseKeySetId);
+                }
             } catch (UnsupportedDrmException e) {
                 fatalError = new SRGMediaPlayerException(null, e, SRGMediaPlayerException.Reason.DRM);
             }
@@ -606,6 +627,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         Long playbackStartPosition = startPositionMs;
         this.segments.clear();
         this.currentSegment = null;
+
         if (segments != null) {
             this.segments.addAll(segments);
             if (segment != null) {
@@ -613,7 +635,34 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 playbackStartPosition = (startPositionMs != null ? startPositionMs : 0) + segment.getMarkIn();
             }
         }
+
+        Long finalPlaybackStartPosition = playbackStartPosition;
+        if (drmConfig != null && offlineLicenseKeySetId == null) {
+            AsyncTask.execute(() -> {
+                try {
+                    DataSource dataSource = httpDataSourceFactory.createDataSource();
+                    DashManifest dashManifest = DashUtil.loadManifest(dataSource, uri);
+                    DrmInitData drmInitData = DashUtil.loadDrmInitData(dataSource, dashManifest.getPeriod(0));
+                    OfflineLicenseHelper<FrameworkMediaCrypto> offlineLicenseHelper;
+                    offlineLicenseHelper = OfflineLicenseHelper.newWidevineInstance(drmConfig.getLicenceUrl(),
+                            httpDataSourceFactory);
+                    setOfflineLicenseKeySetId(offlineLicenseHelper.downloadLicense(drmInitData));
+
+                    mainHandler.post(() -> {
+                        prepareViewAndPlayer(uri, streamType, finalPlaybackStartPosition);
+                    });
+                } catch (IOException | InterruptedException | DrmSession.DrmSessionException | UnsupportedDrmException e) {
+                    Log.e(TAG, "License Download", e);
+                }
+            });
+        } else {
+            prepareViewAndPlayer(uri, streamType, finalPlaybackStartPosition);
+        }
         broadcastEvent(Event.Type.SEGMENT_LIST_CHANGE);
+//        prepareViewAndPlayer(uri, streamType, playbackStartPosition);
+    }
+
+    private void prepareViewAndPlayer(@NonNull Uri uri, @SRGStreamType int streamType, Long playbackStartPosition) {
         try {
             if (mediaPlayerView != null) {
                 updateMediaPlayerViewBound();
@@ -708,13 +757,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
             }
             this.currentMediaUri = videoUri;
 
-
-            DefaultHttpDataSourceFactory httpDataSourceFactory = new DefaultHttpDataSourceFactory(
-                    userAgent,
-                    BANDWIDTH_METER,
-                    DefaultHttpDataSource.DEFAULT_CONNECT_TIMEOUT_MILLIS,
-                    DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS,
-                    true);
 
             DefaultDataSourceFactory dataSourceFactory = new DefaultDataSourceFactory(context, BANDWIDTH_METER, httpDataSourceFactory);
 
@@ -2098,6 +2140,13 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
     }
 
+    public void setOfflineLicenseKeySetId(byte[] offlineLicenseKeySetId) {
+        SRGMediaPlayerController.offlineLicenseKeySetId = offlineLicenseKeySetId;
+        if (drmSessionManager != null) {
+            drmSessionManager.setMode(DefaultDrmSessionManager.MODE_PLAYBACK, offlineLicenseKeySetId);
+        }
+    }
+
     @Override
     public void onDrmSessionAcquired() {
         // already handled by eventLogger
@@ -2151,6 +2200,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         @Override
         public byte[] executeProvisionRequest(UUID uuid, ExoMediaDrm.ProvisionRequest request) throws Exception {
+            Log.v(TAG, "DRM: executeProvisionRequest");
             long now = System.currentTimeMillis();
             byte[] result = callback.executeProvisionRequest(uuid, request);
             drmRequestDuration += System.currentTimeMillis() - now;
@@ -2159,6 +2209,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         @Override
         public byte[] executeKeyRequest(UUID uuid, ExoMediaDrm.KeyRequest request) throws Exception {
+            Log.v(TAG, "DRM: executeKeyRequest");
             long now = System.currentTimeMillis();
             byte[] result = callback.executeKeyRequest(uuid, request);
             drmRequestDuration += System.currentTimeMillis() - now;
