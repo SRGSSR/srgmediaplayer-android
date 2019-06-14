@@ -20,6 +20,7 @@ import android.widget.ScrollView;
 import com.google.android.exoplayer2.text.CaptionStyleCompat;
 import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.ui.SubtitleView;
+import com.google.android.exoplayer2.ui.spherical.SphericalSurfaceView;
 import com.google.android.exoplayer2.util.Util;
 
 import java.util.List;
@@ -247,7 +248,7 @@ public class SRGMediaPlayerView extends ViewGroup {
         calculateChildPosition();
 
         //for surfaceView ensure setFixedSize. May be unnecessary
-        if (videoRenderingView instanceof SurfaceView) {
+        if (videoRenderingView instanceof SurfaceView || videoRenderingView instanceof SphericalSurfaceView) {
             switch (scaleMode) {
                 case CENTER_INSIDE:
                 case TOP_INSIDE: {

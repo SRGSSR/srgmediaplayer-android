@@ -15,15 +15,36 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
-import androidx.annotation.*;
-import ch.srg.mediaplayer.segment.model.Segment;
+
+import androidx.annotation.AnyThread;
+import androidx.annotation.IntDef;
+import androidx.annotation.MainThread;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.akamai.android.analytics.AkamaiMediaAnalytics;
 import com.akamai.android.analytics.EndReasonCodes;
 import com.akamai.android.analytics.PluginCallBacks;
-import com.google.android.exoplayer2.*;
+import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.DefaultLoadControl;
+import com.google.android.exoplayer2.DefaultRenderersFactory;
+import com.google.android.exoplayer2.ExoPlaybackException;
+import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.PlaybackParameters;
+import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.audio.AudioCapabilities;
 import com.google.android.exoplayer2.audio.AudioCapabilitiesReceiver;
-import com.google.android.exoplayer2.drm.*;
+import com.google.android.exoplayer2.drm.DefaultDrmSessionEventListener;
+import com.google.android.exoplayer2.drm.DefaultDrmSessionManager;
+import com.google.android.exoplayer2.drm.ExoMediaDrm;
+import com.google.android.exoplayer2.drm.FrameworkMediaCrypto;
+import com.google.android.exoplayer2.drm.FrameworkMediaDrm;
+import com.google.android.exoplayer2.drm.HttpMediaDrmCallback;
+import com.google.android.exoplayer2.drm.MediaDrmCallback;
+import com.google.android.exoplayer2.drm.UnsupportedDrmException;
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
@@ -35,8 +56,18 @@ import com.google.android.exoplayer2.source.hls.DefaultHlsDataSourceFactory;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.text.TextOutput;
-import com.google.android.exoplayer2.trackselection.*;
-import com.google.android.exoplayer2.upstream.*;
+import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.trackselection.MappingTrackSelector;
+import com.google.android.exoplayer2.trackselection.TrackSelection;
+import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
+import com.google.android.exoplayer2.ui.spherical.SphericalSurfaceView;
+import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
+import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
+import com.google.android.exoplayer2.upstream.HttpDataSource;
 import com.google.android.exoplayer2.util.Util;
 import com.google.android.exoplayer2.video.VideoListener;
 
@@ -44,7 +75,16 @@ import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.WeakHashMap;
+
+import ch.srg.mediaplayer.segment.model.Segment;
 
 import ch.srg.mediaplayer.segment.model.Segment;
 
@@ -81,7 +121,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     public enum ViewType {
         TYPE_SURFACEVIEW,
-        TYPE_TEXTUREVIEW
+        TYPE_TEXTUREVIEW,
+        TYPE_SPHERICALVIEW
     }
 
     /**
@@ -1217,7 +1258,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     + mediaPlayerView, null, SRGMediaPlayerException.Reason.VIEW);
         }
         currentViewKeepScreenOn = mediaPlayerView.getKeepScreenOn();
-        if (renderingView instanceof SurfaceView) {
+        if (renderingView instanceof SphericalSurfaceView) {
+            SphericalSurfaceView sphericalSurfaceView = (SphericalSurfaceView) renderingView;
+            sphericalSurfaceView.setVideoComponent(exoPlayer.getVideoComponent());
+        } else if (renderingView instanceof SurfaceView) {
             exoPlayer.setVideoSurfaceView((SurfaceView) renderingView);
             mediaPlayerView.setScaleModeListener(this::onScaleModeChanged);
         } else if (renderingView instanceof TextureView) {
@@ -1239,13 +1283,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
     }
 
-    private void pushSurface() {
-        if (renderingView instanceof SurfaceView) {
-            exoPlayer.setVideoSurfaceView((SurfaceView) renderingView);
-        } else if (renderingView instanceof TextureView) {
-            exoPlayer.setVideoTextureView((TextureView) renderingView);
-        }
-    }
 
     /**
      * Clear the current mediaPlayer, unbind the delegate and the overlayController
@@ -1265,22 +1302,39 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean canRenderInView(View view) {
-        return view instanceof SurfaceView || view instanceof TextureView;
+        return view instanceof SphericalSurfaceView || view instanceof SurfaceView || view instanceof TextureView;
     }
 
     private void createRenderingView(final Context parentContext) {
-        if (viewType == ViewType.TYPE_SURFACEVIEW) {
-            renderingView = new SurfaceView(parentContext);
-        } else if (viewType == ViewType.TYPE_TEXTUREVIEW) {
-            renderingView = new TextureView(parentContext);
-        } else {
-            throw new IllegalStateException("Unsupported view type: " + viewType);
+        switch (viewType) {
+            case TYPE_SURFACEVIEW:
+                renderingView = new SurfaceView(parentContext);
+                break;
+            case TYPE_TEXTUREVIEW:
+                renderingView = new TextureView(parentContext);
+                break;
+            case TYPE_SPHERICALVIEW:
+                SphericalSurfaceView sphericalSurfaceView = new SphericalSurfaceView(parentContext);
+                sphericalSurfaceView.setDefaultStereoMode(C.STEREO_MODE_MONO);
+                renderingView = sphericalSurfaceView;
+                break;
+            default:
+                throw new IllegalStateException("Unsupported view type: " + viewType);
         }
         if (mediaPlayerView != null) {
             Log.v(TAG, "binding, setVideoRenderingView " + mediaPlayerView);
             mediaPlayerView.setVideoRenderingView(renderingView);
         }
-        if (renderingView instanceof SurfaceView) {
+        if (renderingView instanceof SphericalSurfaceView) {
+            SphericalSurfaceView sphericalSurfaceView = (SphericalSurfaceView) renderingView;
+            sphericalSurfaceView.setVideoComponent(getExoPlayer().getVideoComponent());
+            sphericalSurfaceView.setSurfaceListener(surface -> {
+                Player.VideoComponent videoComponent = exoPlayer.getVideoComponent();
+                if (videoComponent != null) {
+                    videoComponent.setVideoSurface(surface);
+                }
+            });
+        } else if (renderingView instanceof SurfaceView) {
             ((SurfaceView) renderingView).getHolder().addCallback(new SurfaceHolder.Callback() {
                 // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
                 private boolean isCurrent(SurfaceHolder holder) {
@@ -1349,6 +1403,15 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
     }
 
+    private void unbindRenderingView() {
+        if (renderingView instanceof SurfaceView) {
+            exoPlayer.clearVideoSurfaceView((SurfaceView) renderingView);
+        } else if (renderingView instanceof TextureView) {
+            exoPlayer.clearVideoTextureView((TextureView) renderingView);
+        }
+        renderingView = null;
+    }
+
     /**
      * Warning texture view not supported to play DRM content.
      *
@@ -1359,15 +1422,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
             Log.w(TAG, "Texture view does not support DRM");
         }
         this.viewType = viewType;
-    }
-
-    private void unbindRenderingView() {
-        if (renderingView instanceof SurfaceView) {
-            exoPlayer.clearVideoSurfaceView((SurfaceView) renderingView);
-        } else if (renderingView instanceof TextureView) {
-            exoPlayer.clearVideoTextureView((TextureView) renderingView);
-        }
-        renderingView = null;
     }
 
     private void setState(State state) {
