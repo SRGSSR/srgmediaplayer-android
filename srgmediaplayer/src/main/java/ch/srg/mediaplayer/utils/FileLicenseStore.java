@@ -1,5 +1,6 @@
 package ch.srg.mediaplayer.utils;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.WorkerThread;
@@ -48,6 +49,7 @@ public class FileLicenseStore implements SRGMediaPlayerController.LicenseStoreDe
         return new File(context.getCacheDir(), getClass().getName());
     }
 
+    @SuppressLint("UseSparseArrays")
     @WorkerThread
     private void readFile() {
         try {
