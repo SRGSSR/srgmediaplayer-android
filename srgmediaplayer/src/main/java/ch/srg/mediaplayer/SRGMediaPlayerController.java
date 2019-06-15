@@ -675,7 +675,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private void downloadOrApplyOfflineLicense(@NonNull Uri uri, @NonNull Runnable prepareViewAndPlayer, @NonNull DrmConfig drmConfig) {
         AsyncTask.execute(() -> {
             try {
-                Log.v(TAG, "Downloading DRM");
                 DataSource dataSource = httpDataSourceFactory.createDataSource();
                 DashManifest dashManifest = DashUtil.loadManifest(dataSource, uri);
                 DrmInitData drmInitData = DashUtil.loadDrmInitData(dataSource, dashManifest.getPeriod(0));
@@ -684,6 +683,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     applyOfflineLicense(offlineLicenseKeySetId);
                     mainHandler.post(prepareViewAndPlayer);
                 } else {
+                    Log.v(TAG, "Downloading DRM");
                     long start = SystemClock.elapsedRealtime();
                     OfflineLicenseHelper<FrameworkMediaCrypto> offlineLicenseHelper;
                     offlineLicenseHelper = OfflineLicenseHelper.newWidevineInstance(drmConfig.getLicenceUrl(),
