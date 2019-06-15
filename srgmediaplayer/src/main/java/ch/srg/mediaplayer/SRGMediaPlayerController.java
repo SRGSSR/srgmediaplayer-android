@@ -18,6 +18,7 @@ import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
 import ch.srg.mediaplayer.segment.model.Segment;
+import ch.srg.mediaplayer.utils.MonitorTransferListener;
 import com.akamai.android.analytics.AkamaiMediaAnalytics;
 import com.akamai.android.analytics.EndReasonCodes;
 import com.akamai.android.analytics.PluginCallBacks;
@@ -506,9 +507,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         TrackSelection.Factory videoTrackSelectionFactory = new AdaptiveTrackSelection.Factory();
 
+        TransferListener listener = debugMode ? new MonitorTransferListener(BANDWIDTH_METER) : BANDWIDTH_METER;
         httpDataSourceFactory = new DefaultHttpDataSourceFactory(
                 userAgent,
-                BANDWIDTH_METER,
+                listener,
                 DefaultHttpDataSource.DEFAULT_CONNECT_TIMEOUT_MILLIS,
                 DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS,
                 true);
