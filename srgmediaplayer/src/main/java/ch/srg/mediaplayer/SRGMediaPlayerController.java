@@ -2073,10 +2073,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (error.type == ExoPlaybackException.TYPE_RENDERER) {
             reason = SRGMediaPlayerException.Reason.RENDERER;
         } else if (cause instanceof IOException) {
-            if (cause instanceof HttpDataSource.InvalidResponseCodeException) {
-                if (((HttpDataSource.InvalidResponseCodeException) cause).responseCode == 403) {
+            if (cause instanceof HttpDataSource.InvalidResponseCodeException
+                    && ((HttpDataSource.InvalidResponseCodeException) cause).responseCode == 403) {
                     reason = SRGMediaPlayerException.Reason.FORBIDDEN;
-                }
             } else {
                 reason = SRGMediaPlayerException.Reason.NETWORK;
             }
