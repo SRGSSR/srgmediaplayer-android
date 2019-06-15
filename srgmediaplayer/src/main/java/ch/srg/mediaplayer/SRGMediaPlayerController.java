@@ -506,6 +506,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private static final String userAgent = "curl/Letterbox_2.0"; // temporarily using curl/ user agent to force subtitles with Akamai beta
     @Nullable
     private DrmConfig drmConfig;
+    private int drmRequestDuration;
 
     public static String getName() {
         return NAME;
@@ -1846,7 +1847,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     public int getDrmRequestDuration() {
-        return monitoringDrmCallback != null ? monitoringDrmCallback.drmRequestDuration : 0;
+        return drmRequestDuration;
     }
 
     /**
@@ -2318,7 +2319,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private class MonitoringDrmCallback implements MediaDrmCallback {
         private final MediaDrmCallback callback;
-        private int drmRequestDuration;
 
         public MonitoringDrmCallback(MediaDrmCallback mediaDrmCallback) {
             this.callback = mediaDrmCallback;
@@ -2327,18 +2327,18 @@ public class SRGMediaPlayerController implements Handler.Callback,
         @Override
         public byte[] executeProvisionRequest(UUID uuid, ExoMediaDrm.ProvisionRequest request) throws Exception {
             Log.v(TAG, "DRM: executeProvisionRequest");
-            long now = System.currentTimeMillis();
+            long now = SystemClock.elapsedRealtime();
             byte[] result = callback.executeProvisionRequest(uuid, request);
-            drmRequestDuration += System.currentTimeMillis() - now;
+            drmRequestDuration += SystemClock.elapsedRealtime() - now;
             return result;
         }
 
         @Override
         public byte[] executeKeyRequest(UUID uuid, ExoMediaDrm.KeyRequest request) throws Exception {
             Log.v(TAG, "DRM: executeKeyRequest");
-            long now = System.currentTimeMillis();
+            long now = SystemClock.elapsedRealtime();
             byte[] result = callback.executeKeyRequest(uuid, request);
-            drmRequestDuration += System.currentTimeMillis() - now;
+            drmRequestDuration += SystemClock.elapsedRealtime() - now;
             return result;
         }
     }
