@@ -19,6 +19,7 @@ import android.view.TextureView;
 import android.view.View;
 import androidx.annotation.*;
 import ch.srg.mediaplayer.segment.model.Segment;
+import ch.srg.mediaplayer.utils.MonitorTransferListener;
 import com.akamai.android.analytics.AkamaiMediaAnalytics;
 import com.akamai.android.analytics.EndReasonCodes;
 import com.akamai.android.analytics.PluginCallBacks;
