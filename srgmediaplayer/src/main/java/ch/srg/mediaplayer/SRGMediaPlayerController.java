@@ -20,7 +20,7 @@ import android.view.TextureView;
 import android.view.View;
 import androidx.annotation.*;
 import ch.srg.mediaplayer.segment.model.Segment;
-import ch.srg.mediaplayer.utils.MemoryLicenseStore;
+import ch.srg.mediaplayer.utils.FileLicenseStore;
 import ch.srg.mediaplayer.utils.MonitorTransferListener;
 import com.akamai.android.analytics.AkamaiMediaAnalytics;
 import com.akamai.android.analytics.EndReasonCodes;
@@ -444,15 +444,29 @@ public class SRGMediaPlayerController implements Handler.Callback,
          */
         void onMediaPlayerEvent(SRGMediaPlayerController mp, Event event);
 
-    }
 
+    }
     public interface LicenseStoreDelegate {
-        void store(DrmInitData drmInitData, byte[] keySet);
-
+        /**
+         * Fetch keyset for the given init data.
+         *
+         * @param drmInitData drm init data
+         * @return key set or null if not available.
+         */
+        @WorkerThread
         byte[] fetch(DrmInitData drmInitData);
+
+        /**
+         * Store keyset for the given init data.
+         *
+         * @param drmInitData drm init data
+         * @param keySet associated keyset or null to discard
+         */
+        @WorkerThread
+        void store(DrmInitData drmInitData, byte[] keySet);
     }
 
-    private LicenseStoreDelegate licenseStoreDelegate = new MemoryLicenseStore();
+    private LicenseStoreDelegate licenseStoreDelegate;
 
     private Context context;
 
@@ -622,6 +636,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 // See https://github.com/SRGSSR/SRGMediaPlayer-Android/issues/25
             }
         }
+
+        licenseStoreDelegate = new FileLicenseStore(context);
     }
 
     private void applyOfflineLicense(byte[] offlineLicenseKeySetId) {
