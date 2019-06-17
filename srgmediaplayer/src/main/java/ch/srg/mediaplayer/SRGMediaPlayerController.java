@@ -482,6 +482,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     @Nullable
     private DrmConfig drmConfig;
     private int drmRequestDuration;
+    private boolean drmRequestOffline;
 
     public static String getName() {
         return NAME;
@@ -715,6 +716,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 byte[] offlineLicenseKeySetId = licenseStoreDelegate.fetch(drmInitData);
                 if (offlineLicenseKeySetId != null) {
                     applyOfflineLicense(offlineLicenseKeySetId);
+                    drmRequestOffline = true;
                     mainHandler.post(prepareViewAndPlayer);
                 } else {
                     Log.v(TAG, "Downloading DRM");
@@ -1796,6 +1798,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return drmRequestDuration;
     }
 
+    public boolean isDrmRequestOffline() {
+        return drmRequestOffline;
+    }
+
     /**
      * Get Total bandwidth of currently playing stream.
      *
@@ -2267,6 +2273,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             long now = SystemClock.elapsedRealtime();
             byte[] result = callback.executeProvisionRequest(uuid, request);
             drmRequestDuration += SystemClock.elapsedRealtime() - now;
+            drmRequestOffline = false;
             return result;
         }
 
@@ -2276,6 +2283,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             long now = SystemClock.elapsedRealtime();
             byte[] result = callback.executeKeyRequest(uuid, request);
             drmRequestDuration += SystemClock.elapsedRealtime() - now;
+            drmRequestOffline = false;
             return result;
         }
     }
