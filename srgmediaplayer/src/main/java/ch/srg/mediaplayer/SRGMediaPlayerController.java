@@ -446,6 +446,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
 
     }
+
     public interface LicenseStoreDelegate {
         /**
          * Fetch keyset for the given init data.
@@ -460,7 +461,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
          * Store keyset for the given init data.
          *
          * @param drmInitData drm init data
-         * @param keySet associated keyset or null to discard
+         * @param keySet      associated keyset or null to discard
          */
         @WorkerThread
         void store(DrmInitData drmInitData, byte[] keySet);
@@ -553,7 +554,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     /**
      * Create a new SRGMediaPlayerController with the current context, a mediaPlayerDataProvider, and a TAG
-     * if you need to retrieve a controller
+     * if you need to retrieve a controller.
      *
      * @param context   context
      * @param tag       tag to identify this controller
