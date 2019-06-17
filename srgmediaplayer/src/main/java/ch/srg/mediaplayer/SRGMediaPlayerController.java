@@ -471,13 +471,26 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     /**
      * Create a new SRGMediaPlayerController with the current context, a mediaPlayerDataProvider, and a TAG
-     * if you need to retrieve a controller
+     * if you need to retrieve a controller.
      *
      * @param context   context
      * @param tag       tag to identify this controller
      * @param drmConfig drm configuration null for no DRM support
      */
     public SRGMediaPlayerController(Context context, String tag, @Nullable DrmConfig drmConfig) {
+        this(context, tag, drmConfig, null);
+    }
+
+    /**
+     * Create a new SRGMediaPlayerController with the current context, a mediaPlayerDataProvider, and a TAG
+     * if you need to retrieve a controller.
+     *
+     * @param context      context
+     * @param tag          tag to identify this controller
+     * @param drmConfig    drm configuration null for no DRM support
+     * @param mediaSession MediaSession to connect this player to
+     */
+    public SRGMediaPlayerController(Context context, String tag, @Nullable DrmConfig drmConfig, @Nullable MediaSessionCompat mediaSession) {
         this.context = context;
         Looper looper = Looper.myLooper();
         if (looper != Looper.getMainLooper()) {
@@ -527,7 +540,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
         audioFocusGranted = false;
 
         try {
-            mediaSession = new MediaSessionCompat(context, context.getPackageName());
+            if (mediaSession != null) {
+                this.mediaSession = mediaSession;
+            } else {
+                mediaSession = new MediaSessionCompat(context, context.getPackageName());
+            }
             mediaSessionConnector = new MediaSessionConnector(mediaSession, null);
             mediaSessionConnector.setPlayer(exoPlayer, null, (MediaSessionConnector.CustomActionProvider[]) null);
             mediaSession.setActive(true);
