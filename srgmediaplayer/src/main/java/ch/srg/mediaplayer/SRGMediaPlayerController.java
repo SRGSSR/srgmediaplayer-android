@@ -25,9 +25,8 @@ import com.google.android.exoplayer2.audio.AudioCapabilities;
 import com.google.android.exoplayer2.audio.AudioCapabilitiesReceiver;
 import com.google.android.exoplayer2.drm.*;
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
-import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
-import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.dash.DashMediaSource;
@@ -459,9 +458,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private MediaSessionCompat mediaSession;
     @Nullable
     private MediaSessionConnector mediaSessionConnector;
-
-    // FIXME fix use depreciated methods
-    private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
     private AudioCapabilities audioCapabilities;
     @NonNull
     private ViewType viewType = ViewType.TYPE_TEXTUREVIEW;
@@ -502,6 +498,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private static final String userAgent = "curl/Letterbox_2.0"; // temporarily using curl/ user agent to force subtitles with Akamai beta
     @Nullable
     private DrmConfig drmConfig;
+    @NonNull
+    private DefaultBandwidthMeter bandwidthMeter;
 
     public static String getName() {
         return NAME;
@@ -538,6 +536,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
         this.mainHandler = new Handler(looper, this);
         this.tag = tag;
+
+        bandwidthMeter = new DefaultBandwidthMeter.Builder(context).build();
 
         audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
 
@@ -764,12 +764,12 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
             DefaultHttpDataSourceFactory httpDataSourceFactory = new DefaultHttpDataSourceFactory(
                     userAgent,
-                    BANDWIDTH_METER,
+                    bandwidthMeter,
                     DefaultHttpDataSource.DEFAULT_CONNECT_TIMEOUT_MILLIS,
                     DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS,
                     true);
 
-            DefaultDataSourceFactory dataSourceFactory = new DefaultDataSourceFactory(context, BANDWIDTH_METER, httpDataSourceFactory);
+            DefaultDataSourceFactory dataSourceFactory = new DefaultDataSourceFactory(context, bandwidthMeter, httpDataSourceFactory);
 
             MediaSource mediaSource;
 
@@ -785,16 +785,12 @@ public class SRGMediaPlayerController implements Handler.Callback,
                             .createMediaSource(videoUri);
                     break;
                 case STREAM_HTTP_PROGRESSIVE:
-                    // FIXME fix use depreciated methods
-                    mediaSource = new ExtractorMediaSource.Factory(dataSourceFactory)
-                            .setExtractorsFactory(new DefaultExtractorsFactory())
+                    mediaSource = new ProgressiveMediaSource.Factory(dataSourceFactory)
                             .createMediaSource(videoUri);
                     break;
                 case STREAM_LOCAL_FILE:
                     FileDataSourceFactory fileDataSourceFactory = new FileDataSourceFactory();
-                    // FIXME fix use depreciated methods
-                    mediaSource = new ExtractorMediaSource.Factory(fileDataSourceFactory)
-                            .setExtractorsFactory(new DefaultExtractorsFactory())
+                    mediaSource = new ProgressiveMediaSource.Factory(fileDataSourceFactory)
                             .createMediaSource(videoUri);
                     break;
                 default:
