@@ -85,8 +85,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     public enum SurfaceType {
-        SURFACE,
-        SPHERICAL_SURFACE
+        FLAT,
+        SPHERICAL
     }
 
     /**
@@ -461,7 +461,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private AudioCapabilities audioCapabilities;
     @NonNull
     private ViewType viewType = ViewType.TYPE_TEXTUREVIEW;
-    private SurfaceType surfaceType = SurfaceType.SURFACE;
+    private SurfaceType surfaceType = SurfaceType.FLAT;
     private View renderingView;
     private Integer playbackState;
     private List<Segment> segments = new ArrayList<>();
@@ -1267,7 +1267,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean canRenderInView(View view) {
-        if (surfaceType == SurfaceType.SPHERICAL_SURFACE) {
+        if (surfaceType == SurfaceType.SPHERICAL) {
             return view instanceof SphericalSurfaceView;
         }
         return (view instanceof SurfaceView || view instanceof TextureView);
@@ -1275,9 +1275,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private void createRenderingView(final Context parentContext) {
         Log.d(TAG, "createRenderingView " + viewType + " " + surfaceType);
-        if (viewType == ViewType.TYPE_SURFACEVIEW && surfaceType == SurfaceType.SURFACE) {
+        if (viewType == ViewType.TYPE_SURFACEVIEW && surfaceType == SurfaceType.FLAT) {
             renderingView = new SurfaceView(parentContext);
-        } else if (viewType == ViewType.TYPE_SURFACEVIEW && surfaceType == SurfaceType.SPHERICAL_SURFACE) {
+        } else if (viewType == ViewType.TYPE_SURFACEVIEW && surfaceType == SurfaceType.SPHERICAL) {
             SphericalSurfaceView sphericalSurfaceView = new SphericalSurfaceView(parentContext);
             sphericalSurfaceView.setDefaultStereoMode(C.STEREO_MODE_MONO);
             renderingView = sphericalSurfaceView;
