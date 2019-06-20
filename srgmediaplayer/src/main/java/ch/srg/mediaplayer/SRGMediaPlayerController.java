@@ -1275,16 +1275,30 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private void createRenderingView(final Context parentContext) {
         Log.d(TAG, "createRenderingView " + viewType + " " + surfaceType);
-        if (viewType == ViewType.TYPE_SURFACEVIEW && surfaceType == SurfaceType.FLAT) {
-            renderingView = new SurfaceView(parentContext);
-        } else if (viewType == ViewType.TYPE_SURFACEVIEW && surfaceType == SurfaceType.SPHERICAL) {
-            SphericalSurfaceView sphericalSurfaceView = new SphericalSurfaceView(parentContext);
-            sphericalSurfaceView.setDefaultStereoMode(C.STEREO_MODE_MONO);
-            renderingView = sphericalSurfaceView;
-        } else if (viewType == ViewType.TYPE_TEXTUREVIEW) {
-            renderingView = new TextureView(parentContext);
-        } else {
-            throw new IllegalStateException("Unsupported view type: " + viewType);
+        switch (surfaceType) {
+            case SPHERICAL:
+                if (viewType == ViewType.TYPE_SURFACEVIEW) {
+                    SphericalSurfaceView sphericalSurfaceView = new SphericalSurfaceView(parentContext);
+                    sphericalSurfaceView.setDefaultStereoMode(C.STEREO_MODE_MONO);
+                    renderingView = sphericalSurfaceView;
+                    break;
+                }
+                release();
+                broadcastFatalError(new SRGMediaPlayerException(
+                        "Can't render spherical surface in texture view type", null, SRGMediaPlayerException.Reason.VIEW), true);
+                break;
+            case FLAT:
+                if (viewType == ViewType.TYPE_SURFACEVIEW) {
+                    renderingView = new SurfaceView(parentContext);
+                } else if (viewType == ViewType.TYPE_TEXTUREVIEW) {
+                    renderingView = new TextureView(parentContext);
+                } else {
+                    throw new IllegalStateException("Unsupported view type: " + viewType);
+                }
+                break;
+            default:
+                throw new IllegalStateException("Unsupported surface type: " + surfaceType);
+
         }
         if (mediaPlayerView != null) {
             Log.v(TAG, "binding, setVideoRenderingView " + mediaPlayerView);
