@@ -1,6 +1,5 @@
 package ch.srg.mediaplayer.utils;
 
-import ch.srg.mediaplayer.SRGMediaPlayerController;
 import com.google.android.exoplayer2.drm.DrmInitData;
 
 import java.util.HashMap;
@@ -10,7 +9,7 @@ import java.util.HashMap;
  * <p>
  * License information is available from the LICENSE file.
  */
-public class MemoryLicenseStore implements SRGMediaPlayerController.LicenseStoreDelegate {
+public class MemoryLicenseStore implements LicenseStoreDelegate {
     private HashMap<DrmInitData, byte[]> map = new HashMap<>();
 
     @Override
