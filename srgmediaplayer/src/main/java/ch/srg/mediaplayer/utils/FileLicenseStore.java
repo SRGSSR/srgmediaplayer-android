@@ -5,7 +5,6 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.WorkerThread;
 import android.util.Log;
-import ch.srg.mediaplayer.SRGMediaPlayerController;
 import com.google.android.exoplayer2.drm.DrmInitData;
 
 import java.io.*;
@@ -17,7 +16,7 @@ import java.util.HashMap;
  * <p>
  * License information is available from the LICENSE file.
  */
-public class FileLicenseStore implements SRGMediaPlayerController.LicenseStoreDelegate, Serializable {
+public class FileLicenseStore implements LicenseStoreDelegate, Serializable {
     private static final String TAG = "FileLicenseStore";
     private HashMap<Integer, byte[]> map;
     private Context context;
