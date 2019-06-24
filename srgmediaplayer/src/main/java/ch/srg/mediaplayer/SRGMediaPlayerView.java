@@ -7,16 +7,11 @@ import android.graphics.Matrix;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.SurfaceView;
-import android.view.TextureView;
-import android.view.View;
-import android.view.ViewGroup;
-import android.view.ViewParent;
+import android.view.*;
 import android.view.accessibility.CaptioningManager;
 import android.widget.HorizontalScrollView;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
-
 import com.google.android.exoplayer2.text.CaptionStyleCompat;
 import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.ui.SubtitleView;
@@ -72,7 +67,6 @@ public class SRGMediaPlayerView extends ViewGroup {
     public static final int ASPECT_RATIO_AUTO = 0;
     private static final float ASPECT_RATIO_TOLERANCE = 0.01f;
 
-    private boolean onTop;
     private boolean adjustToParentScrollView;
     private boolean debugMode;
     private boolean subtitleViewConfigured;
@@ -191,7 +185,6 @@ public class SRGMediaPlayerView extends ViewGroup {
         }
         if (newVideoRenderingView != null) {
             videoRenderingView = newVideoRenderingView;
-            updateOnTopInternal(onTop);
             addView(videoRenderingView, 0);
         }
     }
@@ -216,22 +209,9 @@ public class SRGMediaPlayerView extends ViewGroup {
         requestLayout();
     }
 
-    public void setOnTop(boolean onTop) {
-        this.onTop = onTop;
-        updateOnTopInternal(onTop);
-    }
-
     public boolean isDebugMode() {
         return debugMode;
     }
-
-    private void updateOnTopInternal(boolean onTop) {
-        if (videoRenderingView != null && videoRenderingView instanceof SurfaceView) {
-            //((SurfaceView) videoRenderingView).setZOrderMediaOverlay(onTop);
-            ((SurfaceView) videoRenderingView).setZOrderOnTop(onTop);
-        }
-    }
-
 
     public void discardVideoRenderingView() {
         if (videoRenderingView != null) {
@@ -463,7 +443,6 @@ public class SRGMediaPlayerView extends ViewGroup {
         sb.append(", videoRenderingView=").append(videoRenderingView);
         sb.append(", scaleMode=").append(scaleMode);
         sb.append(", containerAspectRatio=").append(containerAspectRatio);
-        sb.append(", onTop=").append(onTop);
         sb.append(", autoAspect=").append(autoAspect);
         sb.append(", actualVideoAspectRatio=").append(actualVideoAspectRatio);
         sb.append(", context=").append(getContext());
