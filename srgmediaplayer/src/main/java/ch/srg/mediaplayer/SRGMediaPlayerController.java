@@ -90,6 +90,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private boolean playingOrBuffering;
     @Nullable
     private DefaultDrmSessionManager<FrameworkMediaCrypto> drmSessionManager;
+    @Nullable
+    OfflineLicenseHelper<FrameworkMediaCrypto> offlineLicenseHelper;
     private DefaultHttpDataSourceFactory httpDataSourceFactory;
 
     public enum ViewType {
@@ -586,8 +588,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 monitoringDrmCallback = new MonitoringDrmCallback(new HttpMediaDrmCallback(drmConfig.getLicenceUrl(), httpDataSourceFactory));
                 drmSessionManager = new DefaultDrmSessionManager<>(drmType,
                         FrameworkMediaDrm.newInstance(drmType),
-                        monitoringDrmCallback, null);
+                        monitoringDrmCallback, null, true);
                 drmSessionManager.addListener(mainHandler, this);
+                offlineLicenseHelper = OfflineLicenseHelper.newWidevineInstance(this.drmConfig.getLicenceUrl(),
+                        httpDataSourceFactory);
             } catch (UnsupportedDrmException e) {
                 fatalError = new SRGMediaPlayerException(null, e, SRGMediaPlayerException.Reason.DRM);
             }
@@ -602,7 +606,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         exoPlayer.addAnalyticsListener(eventLogger);
         exoPlayer.addMetadataOutput(eventLogger);
         exoPlayerCurrentPlayWhenReady = exoPlayer.getPlayWhenReady();
-
         audioFocusChangeListener = new OnAudioFocusChangeListener(new WeakReference<>(this));
         audioFocusGranted = false;
 
@@ -633,14 +636,26 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
     }
 
-    private void debugPrintLicenseDurationRemaining(byte[] offlineLicenseKeySetId) {
-        if (drmConfig != null) {
+    private boolean isOfflineLicenseExpired(byte[] offlineLicenseKeySetId) {
+        if (offlineLicenseHelper != null) {
             try {
-                OfflineLicenseHelper offlineLicenseHelper = OfflineLicenseHelper.newWidevineInstance(this.drmConfig.getLicenceUrl(),
-                        httpDataSourceFactory);
-                Log.v(TAG, "Drm validity: " + offlineLicenseHelper.getLicenseDurationRemainingSec(offlineLicenseKeySetId).first + "," + offlineLicenseHelper.getLicenseDurationRemainingSec(offlineLicenseKeySetId).second);
-            } catch (DrmSession.DrmSessionException | UnsupportedDrmException e) {
-                Log.v(TAG, "drm validity check", e);
+                Pair<Long, Long> validity = offlineLicenseHelper.getLicenseDurationRemainingSec(offlineLicenseKeySetId);
+                return validity.first == 0 && validity.second == 0;
+            } catch (DrmSession.DrmSessionException e) {
+                e.printStackTrace();
+                return true;
+            }
+        }
+        return true;
+    }
+
+    private void debugPrintLicenseDurationRemaining(byte[] offlineLicenseKeySetId) {
+        if (drmConfig != null && offlineLicenseHelper != null) {
+            try {
+                Pair<Long, Long> validity = offlineLicenseHelper.getLicenseDurationRemainingSec(offlineLicenseKeySetId);
+                Log.v(TAG, "Drm validity: license=" + validity.first + "s, playback=" + validity.second + " s");
+            } catch (DrmSession.DrmSessionException e) {
+                Log.v(TAG, "Drm validity: error", e);
             }
         }
     }
@@ -985,6 +1000,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
             releaseExoplayer();
             unregisterAllEventListeners();
             stopPeriodicUpdate();
+            if (offlineLicenseHelper != null) {
+                offlineLicenseHelper.release();
+            }
         }
     }
 
