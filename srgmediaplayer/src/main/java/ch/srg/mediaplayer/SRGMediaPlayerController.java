@@ -752,24 +752,23 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 DashManifest dashManifest = DashUtil.loadManifest(dataSource, uri);
                 DrmInitData drmInitData = DashUtil.loadDrmInitData(dataSource, dashManifest.getPeriod(0));
                 byte[] offlineLicenseKeySetId = licenseStoreDelegate.fetch(drmInitData);
-                if (offlineLicenseKeySetId != null) {
+                if (offlineLicenseKeySetId != null && !isOfflineLicenseExpired(offlineLicenseKeySetId)) {
                     applyOfflineLicense(offlineLicenseKeySetId);
                     drmRequestOffline = true;
-                    mainHandler.post(prepareViewAndPlayer);
                 } else {
                     Log.v(TAG, "Downloading DRM");
+                    drmRequestOffline = false;
                     long start = SystemClock.elapsedRealtime();
-                    OfflineLicenseHelper<FrameworkMediaCrypto> offlineLicenseHelper;
-                    offlineLicenseHelper = OfflineLicenseHelper.newWidevineInstance(drmConfig.getLicenceUrl(),
-                            httpDataSourceFactory);
+                    assert offlineLicenseHelper != null;
                     byte[] keySet = offlineLicenseHelper.downloadLicense(drmInitData);
                     licenseStoreDelegate.store(drmInitData, keySet);
                     applyOfflineLicense(keySet);
                     drmRequestDuration += SystemClock.elapsedRealtime() - start;
-                    mainHandler.post(prepareViewAndPlayer);
                 }
-            } catch (IOException | InterruptedException | DrmSession.DrmSessionException | UnsupportedDrmException e) {
+            } catch (IOException | InterruptedException | DrmSession.DrmSessionException e) {
                 Log.e(TAG, "License Download", e);
+            } finally {
+                mainHandler.post(prepareViewAndPlayer);
             }
         });
     }
