@@ -1272,117 +1272,138 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean canRenderInView(View view) {
-        if (surfaceType == SurfaceType.SPHERICAL) {
-            return view instanceof SphericalSurfaceView;
-        } else {
-            return view instanceof SurfaceView || view instanceof TextureView;
+        switch (viewType) {
+            case TYPE_TEXTUREVIEW:
+                return view instanceof TextureView;
+            case TYPE_SURFACEVIEW:
+                return surfaceType == SurfaceType.SPHERICAL ?
+                        view instanceof SphericalSurfaceView :
+                        !(view instanceof SphericalSurfaceView) && view instanceof SurfaceView;
+            default:
+                return false;
         }
     }
 
-    private void createRenderingView(final Context parentContext) {
-        Log.d(TAG, "createRenderingView " + viewType + " " + surfaceType);
+    private void createSurfaceView(final Context parentContext) {
         switch (surfaceType) {
-            case SPHERICAL:
-                if (viewType == ViewType.TYPE_SURFACEVIEW) {
-                    SphericalSurfaceView sphericalSurfaceView = new SphericalSurfaceView(parentContext);
-                    sphericalSurfaceView.setDefaultStereoMode(C.STEREO_MODE_MONO);
-                    renderingView = sphericalSurfaceView;
-                } else {
-                    release();
-                    broadcastFatalError(new SRGMediaPlayerException(
-                            "Can't render spherical surface in texture view type",
-                            null, SRGMediaPlayerException.Reason.VIEW), true);
-                }
-                break;
             case FLAT:
-                if (viewType == ViewType.TYPE_SURFACEVIEW) {
-                    renderingView = new SurfaceView(parentContext);
-                } else if (viewType == ViewType.TYPE_TEXTUREVIEW) {
-                    renderingView = new TextureView(parentContext);
-                } else {
-                    throw new IllegalStateException("Unsupported view type: " + viewType);
-                }
+                createFlatSurfaceView(parentContext);
+                break;
+            case SPHERICAL:
+                createSphericalSurfaceView(parentContext);
                 break;
             default:
                 throw new IllegalStateException("Unsupported surface type: " + surfaceType);
-
         }
+    }
+
+    private void createFlatSurfaceView(final Context parentContext) {
+        SurfaceView surfaceView = new SurfaceView(parentContext);
+        renderingView = surfaceView;
+        if (mediaPlayerView != null) {
+            mediaPlayerView.setVideoRenderingView(surfaceView);
+        }
+        surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
+            // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
+            private boolean isCurrent(SurfaceHolder holder) {
+                return renderingView instanceof SurfaceView && ((SurfaceView) renderingView).getHolder() == holder;
+            }
+
+            @Override
+            public void surfaceCreated(SurfaceHolder holder) {
+                Log.v(TAG, renderingView + "binding, surfaceCreated" + mediaPlayerView);
+                try {
+                    if (isCurrent(holder)) {
+                        bindRenderingViewInUiThread();
+                    } else {
+                        Log.d(TAG, "Surface created, but media player delegate retired");
+                    }
+                } catch (SRGMediaPlayerException e) {
+                    Log.d(TAG, "Error binding view", e);
+                }
+            }
+
+            @Override
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+                Log.v(TAG, renderingView + "binding, surfaceChanged" + mediaPlayerView);
+            }
+
+            @Override
+            public void surfaceDestroyed(SurfaceHolder holder) {
+                Log.v(TAG, renderingView + "binding, surfaceDestroyed" + mediaPlayerView);
+            }
+        });
+    }
+
+    private void createSphericalSurfaceView(final Context parentContext) {
+        SphericalSurfaceView sphericalSurfaceView = new SphericalSurfaceView(parentContext);
+        sphericalSurfaceView.setDefaultStereoMode(C.STEREO_MODE_MONO);
+        renderingView = sphericalSurfaceView;
         if (mediaPlayerView != null) {
             Log.v(TAG, "binding, setVideoRenderingView " + mediaPlayerView);
-            mediaPlayerView.setVideoRenderingView(renderingView);
+            mediaPlayerView.setVideoRenderingView(sphericalSurfaceView);
         }
-        if (renderingView instanceof SphericalSurfaceView) {
-            try {
-                bindRenderingViewInUiThread();
-            } catch (SRGMediaPlayerException e) {
-                Log.e(TAG, "SphericalSurfaceView binding", e);
-            }
-        } else if (renderingView instanceof SurfaceView) {
-            ((SurfaceView) renderingView).getHolder().addCallback(new SurfaceHolder.Callback() {
-                // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
-                private boolean isCurrent(SurfaceHolder holder) {
-                    return renderingView instanceof SurfaceView && ((SurfaceView) renderingView).getHolder() == holder;
-                }
+        try {
+            bindRenderingViewInUiThread();
+        } catch (SRGMediaPlayerException e) {
+            Log.e(TAG, "SphericalSurfaceView binding", e);
+        }
+    }
 
-                @Override
-                public void surfaceCreated(SurfaceHolder holder) {
-                    Log.v(TAG, renderingView + "binding, surfaceCreated" + mediaPlayerView);
+    private void createTextureView(final Context parentContext) {
+        TextureView textureView = new TextureView(parentContext);
+        renderingView = textureView;
+        if (mediaPlayerView != null) {
+            Log.v(TAG, "binding, setVideoRenderingView " + mediaPlayerView);
+            mediaPlayerView.setVideoRenderingView(textureView);
+        }
+
+        textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+            @SuppressWarnings("ConstantConditions")
+                // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
+            boolean isCurrent(SurfaceTexture surfaceTexture) {
+                return renderingView instanceof TextureView && ((TextureView) renderingView).getSurfaceTexture() == surfaceTexture;
+            }
+
+            @Override
+            public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
+                Log.v(TAG, renderingView + "binding, surfaceTextureAvailable" + mediaPlayerView);
+                if (isCurrent(surfaceTexture)) {
                     try {
-                        if (isCurrent(holder)) {
-                            bindRenderingViewInUiThread();
-                        } else {
-                            Log.d(TAG, "Surface created, but media player delegate retired");
-                        }
+                        bindRenderingViewInUiThread();
                     } catch (SRGMediaPlayerException e) {
                         Log.d(TAG, "Error binding view", e);
                     }
                 }
+            }
 
-                @Override
-                public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-                    Log.v(TAG, renderingView + "binding, surfaceChanged" + mediaPlayerView);
-                }
+            @Override
+            public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
+            }
 
-                @Override
-                public void surfaceDestroyed(SurfaceHolder holder) {
-                    Log.v(TAG, renderingView + "binding, surfaceDestroyed" + mediaPlayerView);
-                }
-            });
-        } else if (renderingView instanceof TextureView) {
-            TextureView textureView = (TextureView) renderingView;
-            textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
-                @SuppressWarnings("ConstantConditions")
-                    // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
-                boolean isCurrent(SurfaceTexture surfaceTexture) {
-                    return renderingView instanceof TextureView && ((TextureView) renderingView).getSurfaceTexture() == surfaceTexture;
-                }
+            @Override
+            public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
+                return false;
+            }
 
-                @Override
-                public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
-                    Log.v(TAG, renderingView + "binding, surfaceTextureAvailable" + mediaPlayerView);
-                    if (isCurrent(surfaceTexture)) {
-                        try {
-                            bindRenderingViewInUiThread();
-                        } catch (SRGMediaPlayerException e) {
-                            Log.d(TAG, "Error binding view", e);
-                        }
-                    }
-                }
+            @Override
+            public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
 
-                @Override
-                public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
-                }
+            }
+        });
+    }
 
-                @Override
-                public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
-                    return false;
-                }
-
-                @Override
-                public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-
-                }
-            });
+    private void createRenderingView(final Context parentContext) {
+        Log.d(TAG, "createRenderingView " + viewType + " " + surfaceType);
+        switch (viewType) {
+            case TYPE_TEXTUREVIEW:
+                createTextureView(parentContext);
+                break;
+            case TYPE_SURFACEVIEW:
+                createSurfaceView(parentContext);
+                break;
+            default:
+                throw new IllegalStateException("Unsupported view type: " + viewType);
         }
     }
 
