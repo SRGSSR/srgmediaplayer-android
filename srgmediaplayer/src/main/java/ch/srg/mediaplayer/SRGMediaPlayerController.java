@@ -559,7 +559,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
             mediaSessionConnector.setPlayer(exoPlayer, null, (MediaSessionConnector.CustomActionProvider[]) null);
             mediaSession.setActive(true);
         } catch (Throwable exception) {
-            exception.printStackTrace();
             Log.d(TAG, "Unable to create MediaSession", exception);
             // Seems an
             // See https://github.com/SRGSSR/SRGMediaPlayer-Android/issues/25
