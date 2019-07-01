@@ -585,9 +585,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
             mediaSessionConnector.setPlayer(exoPlayer);
             mediaSession.setActive(true);
         } catch (Throwable exception) {
-            exception.printStackTrace();
             Log.d(TAG, "Unable to create MediaSession", exception);
-            // Seems an
+            // Seems to happen on older devices (Old Google Play Service version?)
             // See https://github.com/SRGSSR/SRGMediaPlayer-Android/issues/25
         }
     }
@@ -1225,7 +1224,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         currentViewKeepScreenOn = mediaPlayerView.getKeepScreenOn();
         if (renderingView instanceof SphericalSurfaceView) {
             SphericalSurfaceView sphericalSurfaceView = (SphericalSurfaceView) renderingView;
-            sphericalSurfaceView.setVideoComponent(getExoPlayer().getVideoComponent());
+            sphericalSurfaceView.setVideoComponent(exoPlayer.getVideoComponent());
             sphericalSurfaceView.setSurfaceListener(surface -> {
                 Player.VideoComponent videoComponent = exoPlayer.getVideoComponent();
                 if (videoComponent != null) {
@@ -1275,8 +1274,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private boolean canRenderInView(View view) {
         if (surfaceType == SurfaceType.SPHERICAL) {
             return view instanceof SphericalSurfaceView;
+        } else {
+            return view instanceof SurfaceView || view instanceof TextureView;
         }
-        return (view instanceof SurfaceView || view instanceof TextureView);
     }
 
     private void createRenderingView(final Context parentContext) {
@@ -1287,11 +1287,12 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     SphericalSurfaceView sphericalSurfaceView = new SphericalSurfaceView(parentContext);
                     sphericalSurfaceView.setDefaultStereoMode(C.STEREO_MODE_MONO);
                     renderingView = sphericalSurfaceView;
-                    break;
+                } else {
+                    release();
+                    broadcastFatalError(new SRGMediaPlayerException(
+                            "Can't render spherical surface in texture view type",
+                            null, SRGMediaPlayerException.Reason.VIEW), true);
                 }
-                release();
-                broadcastFatalError(new SRGMediaPlayerException(
-                        "Can't render spherical surface in texture view type", null, SRGMediaPlayerException.Reason.VIEW), true);
                 break;
             case FLAT:
                 if (viewType == ViewType.TYPE_SURFACEVIEW) {
@@ -1314,7 +1315,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             try {
                 bindRenderingViewInUiThread();
             } catch (SRGMediaPlayerException e) {
-                e.printStackTrace();
+                Log.e(TAG, "SphericalSurfaceView binding", e);
             }
         } else if (renderingView instanceof SurfaceView) {
             ((SurfaceView) renderingView).getHolder().addCallback(new SurfaceHolder.Callback() {
@@ -1390,8 +1391,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             SphericalSurfaceView surfaceView = (SphericalSurfaceView) renderingView;
             surfaceView.setVideoComponent(null);
             surfaceView.setSurfaceListener(null);
-        }
-        if (renderingView instanceof SurfaceView) {
+        } else if (renderingView instanceof SurfaceView) {
             exoPlayer.clearVideoSurfaceView((SurfaceView) renderingView);
         } else if (renderingView instanceof TextureView) {
             exoPlayer.clearVideoTextureView((TextureView) renderingView);
@@ -1412,7 +1412,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     /**
-     * Set surface type to spherical when playing 360° content
+     * Change surface type to SPHERICAL to play 360° content or FLAT for regular content
      *
      * @param surfaceType surface type
      */
