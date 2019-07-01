@@ -759,13 +759,16 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     Log.v(TAG, "Downloading DRM");
                     drmRequestOffline = false;
                     long start = SystemClock.elapsedRealtime();
-                    assert offlineLicenseHelper != null;
-                    byte[] keySet = offlineLicenseHelper.downloadLicense(drmInitData);
-                    licenseStoreDelegate.store(drmInitData, keySet);
-                    applyOfflineLicense(keySet);
-                    drmRequestDuration += SystemClock.elapsedRealtime() - start;
+                    if (offlineLicenseHelper == null) {
+                        throw new IllegalStateException("No license helper when trying to download license");
+                    } else {
+                        byte[] keySet = offlineLicenseHelper.downloadLicense(drmInitData);
+                        licenseStoreDelegate.store(drmInitData, keySet);
+                        applyOfflineLicense(keySet);
+                        drmRequestDuration += SystemClock.elapsedRealtime() - start;
+                    }
                 }
-            } catch (IOException | InterruptedException | DrmSession.DrmSessionException e) {
+            } catch (Exception e) {
                 Log.e(TAG, "License Download", e);
             } finally {
                 mainHandler.post(prepareViewAndPlayer);
