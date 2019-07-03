@@ -191,32 +191,74 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
 
         public enum Type {
+            /**
+             * Player state has changed. New state in {@link #state}.
+             */
             STATE_CHANGE,
+            /**
+             * Fatal error.
+             */
             FATAL_ERROR,
-            TRANSIENT_ERROR, /* To be removed ? */
-
+            /**
+             * When a non fatal error occured. Never sent currently.
+             */
+            TRANSIENT_ERROR,
+            /**
+             * Media will either play or will now be able to be played as soon as {@link #start()} is called.
+             */
             MEDIA_READY_TO_PLAY,
-            /** Sent when media has reached end of stream. Media stopped will not be sent. */
+            /**
+             * Sent when media has reached end of stream. Media stopped will not be sent.
+             */
             MEDIA_COMPLETED,
-            /** Sent when media has been stopped externally. This player will then released. */
+            /**
+             * Sent when media has been stopped externally. This player will then be released.
+             */
             MEDIA_STOPPED,
-
+            /**
+             * Exoplayer ready to play state changed.
+             */
             PLAYING_STATE_CHANGE,
-            WILL_SEEK, // SEEK_STARTED
-            DID_SEEK, // SEEK_STOPPED
-
+            /**
+             * Start seeking.
+             */
+            WILL_SEEK,
+            /**
+             * Seeking is done.
+             */
+            DID_SEEK,
+            /**
+             * External plugin called. No longer used.
+             */
             EXTERNAL_EVENT,
-
+            /**
+             * A player view is connected to this player.
+             */
             DID_BIND_TO_PLAYER_VIEW,
+            /**
+             * The player view has been disconnected to this player.
+             */
             DID_UNBIND_FROM_PLAYER_VIEW,
-
+            /**
+             * Subtitle track has changed.
+             */
             SUBTITLE_DID_CHANGE,
+            /**
+             * Audio track has changed.
+             */
             AUDIO_TRACK_DID_CHANGE,
-
+            /**
+             * The first video frame has been rendered. See also {@link #PLAYBACK_ACTUALLY_STARTED}.
+             */
             FIRST_FRAME_RENDERED,
-
+            /**
+             * A position jump has occurred in the stream. Can happen because of network or stream error.
+             */
             POSITION_DISCONTINUITY,
 
+            /**
+             * The value of {@link #isLoading()} has changed. Any player buffering start / end will trigger this event.
+             */
             LOADING_STATE_CHANGED,
 
             /**
@@ -256,7 +298,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
              */
             STREAM_TIMELINE_CHANGED,
             /**
-             * Playback actually started: media stream position is changing after playback.
+             * Playback actually started: media stream position is changing after playback. This event is also sent
+             * for audio only media. It Can be used to monitor "perceived" performance.
              */
             PLAYBACK_ACTUALLY_STARTED
         }
