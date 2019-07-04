@@ -76,6 +76,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
 import java.util.*;
 
+import ch.srg.mediaplayer.segment.model.Segment;
+
 /**
  * Handle the playback of media.
  * if used along with a SRGMediaPlayerView can handle Video playback base on delegation on
