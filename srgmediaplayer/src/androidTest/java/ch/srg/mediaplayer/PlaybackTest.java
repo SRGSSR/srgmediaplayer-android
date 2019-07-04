@@ -2,17 +2,16 @@ package ch.srg.mediaplayer;
 
 import android.content.Context;
 import android.net.Uri;
-import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
 
-import junit.framework.Assert;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -21,10 +20,11 @@ import java.util.Random;
 import ch.srg.mediaplayer.segment.model.Segment;
 import ch.srg.mediaplayer.utils.SRGMediaPlayerControllerQueueListener;
 
-import static android.support.test.InstrumentationRegistry.getInstrumentation;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Test playback with SRG streams.
@@ -49,8 +49,8 @@ public class PlaybackTest extends MediaPlayerTest {
     @Before
     public void setUp() {
         // Init variables
-        getInstrumentation().runOnMainSync(() -> {
-            controller = new SRGMediaPlayerController(getInstrumentation().getContext(), "test");
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+            controller = new SRGMediaPlayerController(InstrumentationRegistry.getInstrumentation().getContext(), "test");
             controller.setDebugMode(true);
         });
         controller.setDebugMode(true);
@@ -75,12 +75,8 @@ public class PlaybackTest extends MediaPlayerTest {
     public void release() {
         controller.unregisterEventListener(queue);
         queue.clear();
-        getInstrumentation().runOnMainSync(new Runnable() {
-            @Override
-            public void run() {
-                controller.release();
-            }
-        });
+
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> controller.release());
     }
 
     @Test
@@ -103,7 +99,7 @@ public class PlaybackTest extends MediaPlayerTest {
     }
 
     private static void playMainThread(SRGMediaPlayerController controller, Uri uri, int streamType, final List<Segment> segmentList, final Segment segment) {
-        getInstrumentation().runOnMainSync(() -> {
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
             controller.prepare(uri, 0L, streamType, segmentList, segment);
             controller.start();
         });
@@ -114,16 +110,14 @@ public class PlaybackTest extends MediaPlayerTest {
     }
 
     private void pauseMainThread() {
-        getInstrumentation().runOnMainSync(() -> {
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
             controller.pause();
         });
     }
 
 
     private void seekToMainThread(int positionMs) {
-        getInstrumentation().runOnMainSync(() -> {
-            controller.seekTo(positionMs);
-        });
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> controller.seekTo(positionMs));
     }
 
 
@@ -145,32 +139,31 @@ public class PlaybackTest extends MediaPlayerTest {
         playMainThread(controller, HTTP_403_URI, SRGMediaPlayerController.STREAM_HLS);
         waitForEvent(SRGMediaPlayerController.Event.Type.FATAL_ERROR);
         waitForState(SRGMediaPlayerController.State.RELEASED);
-        Assert.assertTrue(controller.isReleased());
-//        Assert.assertNotNull(lastError);
+        assertTrue(controller.isReleased());
     }
 
     @Test
     public void testHTTP403Progressive() throws Exception {
         playMainThread(controller, HTTP_403_URI, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
         waitForState(SRGMediaPlayerController.State.RELEASED);
-        Assert.assertTrue(controller.isReleased());
-        Assert.assertNotNull(lastError);
+        assertTrue(controller.isReleased());
+        assertNotNull(lastError);
     }
 
     @Test
     public void TestHTTP404() throws Exception {
         playMainThread(controller, HTTP_404_URI, SRGMediaPlayerController.STREAM_HLS);
         waitForState(SRGMediaPlayerController.State.RELEASED);
-        Assert.assertTrue(controller.isReleased());
-        Assert.assertNotNull(lastError);
+        assertTrue(controller.isReleased());
+        assertNotNull(lastError);
     }
 
     @Test
     public void TestHTTP404Progressive() throws Exception {
         playMainThread(controller, HTTP_404_URI, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
         waitForState(SRGMediaPlayerController.State.RELEASED);
-        Assert.assertTrue(controller.isReleased());
-        Assert.assertNotNull(lastError);
+        assertTrue(controller.isReleased());
+        assertNotNull(lastError);
     }
 
     @Test
@@ -247,9 +240,7 @@ public class PlaybackTest extends MediaPlayerTest {
         // Start near the end of the stream
         playMainThread(controller, AUDIO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
         waitForState(SRGMediaPlayerController.State.READY);
-        getInstrumentation().runOnMainSync(() -> {
-            controller.seekTo((long) 3230783);
-        });
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> controller.seekTo((long) 3230783));
         waitForEvent(SRGMediaPlayerController.Event.Type.MEDIA_COMPLETED);
     }
 
@@ -258,9 +249,7 @@ public class PlaybackTest extends MediaPlayerTest {
         playMainThread(controller, AUDIO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
         waitForState(SRGMediaPlayerController.State.READY);
         assertTrue("is playing", isPlayingOrLoading());
-        getInstrumentation().runOnMainSync(() -> {
-            controller.seekTo((long) 30000);
-        });
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> controller.seekTo((long) 30000));
         assertTrue("still playing after seek", isPlayingOrLoading());
         waitForEvent(SRGMediaPlayerController.Event.Type.DID_SEEK);
         assertEquals(30, controller.getMediaPosition() / 1000);
@@ -269,9 +258,7 @@ public class PlaybackTest extends MediaPlayerTest {
     @Test
     public void testPlayAtStartingPosition() throws Exception {
         Long position = 3000L;
-        getInstrumentation().runOnMainSync(() -> {
-            controller.play(AUDIO_ON_DEMAND_URI, position, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
-        });
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> controller.play(AUDIO_ON_DEMAND_URI, position, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE));
         waitForState(SRGMediaPlayerController.State.READY);
         assertTrue(isPlayingOrLoading());
         assertEquals(3, controller.getMediaPosition() / 1000);
@@ -280,9 +267,7 @@ public class PlaybackTest extends MediaPlayerTest {
     @Test
     public void testPlayAtStartingPositionNull() throws Exception {
         Long position = null;
-        getInstrumentation().runOnMainSync(() -> {
-            controller.play(AUDIO_ON_DEMAND_URI, position, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE);
-        });
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> controller.play(AUDIO_ON_DEMAND_URI, position, SRGMediaPlayerController.STREAM_HTTP_PROGRESSIVE));
         waitForState(SRGMediaPlayerController.State.READY);
         assertTrue(isPlayingOrLoading());
         assertEquals(0, controller.getMediaPosition() / 1000);
@@ -442,9 +427,7 @@ public class PlaybackTest extends MediaPlayerTest {
         assertFalse(isPlaying());
         assertEquals(60, controller.getMediaPosition() / 1000);
 
-        getInstrumentation().runOnMainSync(() -> {
-            controller.start();
-        });
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> controller.start());
         waitForState(SRGMediaPlayerController.State.READY); // pause or play, the player is ready
         assertTrue(isPlayingOrLoading());
 
@@ -458,21 +441,18 @@ public class PlaybackTest extends MediaPlayerTest {
         waitForState(SRGMediaPlayerController.State.READY);
         assertFalse(controller.isReleased());
 
-        getInstrumentation().runOnMainSync(new Runnable() {
-            @Override
-            public void run() {
-                // Trigger a release. The controller immediately set to released but the exoplayer release operation is asynchronous
-                controller.release();
-                assertTrue(controller.isReleased());
-                controller.seekTo(60 * 1000);
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+            // Trigger a release. The controller immediately set to released but the exoplayer release operation is asynchronous
+            controller.release();
+            assertTrue(controller.isReleased());
+            controller.seekTo(60 * 1000);
 
-                try {
-                    waitForState(SRGMediaPlayerController.State.RELEASED);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                assertTrue(controller.isReleased());
+            try {
+                waitForState(SRGMediaPlayerController.State.RELEASED);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
+            assertTrue(controller.isReleased());
         });
     }
 
@@ -482,31 +462,28 @@ public class PlaybackTest extends MediaPlayerTest {
         waitForState(SRGMediaPlayerController.State.READY);
         assertFalse(controller.isReleased());
 
-        getInstrumentation().runOnMainSync(new Runnable() {
-            @Override
-            public void run() {
-                controller.release();
-                assertTrue(controller.isReleased());
-                try {
-                    waitForEvent(SRGMediaPlayerController.Event.Type.MEDIA_COMPLETED);
-                    waitForState(SRGMediaPlayerController.State.RELEASED);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                assertTrue(controller.isReleased());
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+            controller.release();
+            assertTrue(controller.isReleased());
+            try {
+                waitForEvent(SRGMediaPlayerController.Event.Type.MEDIA_COMPLETED);
+                waitForState(SRGMediaPlayerController.State.RELEASED);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
+            assertTrue(controller.isReleased());
         });
     }
 
     @Test
     public void playReleaseRobustness() {
-        final Context context = getInstrumentation().getContext();
+        final Context context = InstrumentationRegistry.getInstrumentation().getContext();
         int testCount = 100;
 
         for (int i = 0; i < testCount; i++) {
             Log.v("MediaCtrlerTest", "create/play/release " + i + " / " + testCount);
             Runnable runnable = new CreatePlayRelease(context);
-            getInstrumentation().runOnMainSync(runnable);
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(runnable);
         }
     }
 
@@ -530,10 +507,8 @@ public class PlaybackTest extends MediaPlayerTest {
 
             try {
                 test();
-            } catch (SRGMediaPlayerException e) {
-                Assert.fail("SRGMediaPlayerException" + e.getMessage());
             } catch (InterruptedException e) {
-                Assert.fail();
+                fail();
             }
         }
 
@@ -542,7 +517,7 @@ public class PlaybackTest extends MediaPlayerTest {
             controller.setDebugMode(true);
         }
 
-        private void test() throws SRGMediaPlayerException, InterruptedException {
+        private void test() throws InterruptedException {
             controller.play(VIDEO_ON_DEMAND_URI, SRGMediaPlayerController.STREAM_HLS);
             potentialSleep();
             controller.release();

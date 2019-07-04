@@ -1,9 +1,8 @@
 package ch.srg.mediaplayer.testutils.idling;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.test.espresso.IdlingResource;
-import android.text.TextUtils;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.test.espresso.IdlingResource;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 

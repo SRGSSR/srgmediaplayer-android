@@ -1,6 +1,6 @@
 package ch.srg.mediaplayer.testutils.idling;
 
-import android.support.test.espresso.IdlingResource;
+import androidx.test.espresso.IdlingResource;
 
 /**
  * Created by npietri on 30.06.16.
