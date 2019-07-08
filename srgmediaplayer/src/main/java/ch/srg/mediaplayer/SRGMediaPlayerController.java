@@ -1,5 +1,6 @@
 package ch.srg.mediaplayer;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
@@ -46,8 +47,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
 import java.util.*;
 
-import ch.srg.mediaplayer.segment.model.Segment;
-
 /**
  * Handle the playback of media.
  * if used along with a SRGMediaPlayerView can handle Video playback base on delegation on
@@ -70,6 +69,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private static final long[] EMPTY_TIME_RANGE = new long[2];
     private static final long UPDATE_PERIOD = 100;
     private static final long SEGMENT_HYSTERESIS_MS = 5000;
+    // Bandwidth meter uses application context which is fine
+    @SuppressLint("StaticFieldLeak")
+    private static DefaultBandwidthMeter singletonBandwidthMeter;
     private Long userTrackingProgress;
     private static final String NAME = "SRGMediaPlayer";
     private boolean currentViewKeepScreenOn;
@@ -498,8 +500,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private static final String userAgent = "curl/Letterbox_2.0"; // temporarily using curl/ user agent to force subtitles with Akamai beta
     @Nullable
     private DrmConfig drmConfig;
-    @NonNull
-    private DefaultBandwidthMeter bandwidthMeter;
 
     public static String getName() {
         return NAME;
@@ -536,8 +536,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
         this.mainHandler = new Handler(looper, this);
         this.tag = tag;
-
-        bandwidthMeter = new DefaultBandwidthMeter.Builder(context).build();
 
         audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
 
@@ -751,7 +749,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     //region initialisation
 
-    private void prepareExoplayer(@NonNull Uri videoUri, @Nullable Long playbackStartPosition, int streamType) throws SRGMediaPlayerException {
+    private void prepareExoplayer(@NonNull Uri videoUri, @Nullable Long playbackStartPosition, int streamType) throws
+            SRGMediaPlayerException {
         Log.v(TAG, "Preparing " + videoUri + " (" + streamType + ")");
         setupAkamaiQos(videoUri);
         try {
@@ -763,12 +762,12 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
             DefaultHttpDataSourceFactory httpDataSourceFactory = new DefaultHttpDataSourceFactory(
                     userAgent,
-                    bandwidthMeter,
+                    getDefaultBandwidthMeter(context),
                     DefaultHttpDataSource.DEFAULT_CONNECT_TIMEOUT_MILLIS,
                     DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS,
                     true);
 
-            DefaultDataSourceFactory dataSourceFactory = new DefaultDataSourceFactory(context, bandwidthMeter, httpDataSourceFactory);
+            DefaultDataSourceFactory dataSourceFactory = new DefaultDataSourceFactory(context, getDefaultBandwidthMeter(context), httpDataSourceFactory);
 
             MediaSource mediaSource;
 
@@ -1653,7 +1652,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     /*package*/
-    static Event createTestEvent(Event.Type eventType, SRGMediaPlayerController controller, SRGMediaPlayerException eventException) {
+    static Event createTestEvent(Event.Type eventType, SRGMediaPlayerController controller, SRGMediaPlayerException
+            eventException) {
         return new Event(controller, eventType, eventException);
     }
 
@@ -2180,7 +2180,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     @Override
-    public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
+    public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees,
+                                   float pixelWidthHeightRatio) {
         float aspectRatio = ((float) width / (float) height) * pixelWidthHeightRatio;
         if ((aspectRatio / 90) % 2 == 1) {
             aspectRatio = 1 / aspectRatio;
@@ -2249,7 +2250,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @param akamaiMediaAnalyticsConfiguration akamai qos configuration to enable QOS monitoring. null to disable
      *                                          akamai qos.
      */
-    public void setAkamaiMediaAnalyticsConfiguration(@Nullable AkamaiMediaAnalyticsConfiguration akamaiMediaAnalyticsConfiguration) {
+    public void setAkamaiMediaAnalyticsConfiguration(@Nullable AkamaiMediaAnalyticsConfiguration
+                                                             akamaiMediaAnalyticsConfiguration) {
         this.akamaiMediaAnalyticsConfiguration = akamaiMediaAnalyticsConfiguration;
     }
 
@@ -2276,5 +2278,12 @@ public class SRGMediaPlayerController implements Handler.Callback,
             drmRequestDuration += System.currentTimeMillis() - now;
             return result;
         }
+    }
+
+    private static synchronized DefaultBandwidthMeter getDefaultBandwidthMeter(Context context) {
+        if (singletonBandwidthMeter == null) {
+            singletonBandwidthMeter = new DefaultBandwidthMeter.Builder(context.getApplicationContext()).build();
+        }
+        return singletonBandwidthMeter;
     }
 }
