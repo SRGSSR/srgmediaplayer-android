@@ -517,18 +517,31 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @param tag     tag to identify this controller
      */
     public SRGMediaPlayerController(Context context, String tag) {
-        this(context, tag, null);
+        this(context, tag, null, null);
     }
 
     /**
      * Create a new SRGMediaPlayerController with the current context, a mediaPlayerDataProvider, and a TAG
      * if you need to retrieve a controller
      *
-     * @param context   context
-     * @param tag       tag to identify this controller
-     * @param drmConfig drm configuration null for no DRM support
+     * @param context      context
+     * @param tag          tag to identify this controller
+     * @param drmConfig    drm configuration null for no DRM support
      */
     public SRGMediaPlayerController(Context context, String tag, @Nullable DrmConfig drmConfig) {
+        this(context, tag, drmConfig, null);
+    }
+
+    /**
+     * Create a new SRGMediaPlayerController with the current context, a mediaPlayerDataProvider, and a TAG
+     * if you need to retrieve a controller
+     *
+     * @param context      context
+     * @param tag          tag to identify this controller
+     * @param drmConfig    drm configuration null for no DRM support
+     * @param mediaSession optional mediaSession
+     */
+    public SRGMediaPlayerController(Context context, String tag, @Nullable DrmConfig drmConfig, @Nullable MediaSessionCompat mediaSession) {
         this.context = context;
         Looper looper = Looper.myLooper();
         if (looper != Looper.getMainLooper()) {
@@ -577,15 +590,19 @@ public class SRGMediaPlayerController implements Handler.Callback,
         audioFocusChangeListener = new OnAudioFocusChangeListener(new WeakReference<>(this));
         audioFocusGranted = false;
 
-        try {
-            mediaSession = new MediaSessionCompat(context, context.getPackageName());
-            mediaSessionConnector = new MediaSessionConnector(mediaSession);
-            mediaSessionConnector.setPlayer(exoPlayer);
-            mediaSession.setActive(true);
-        } catch (Throwable exception) {
-            Log.d(TAG, "Unable to create MediaSession", exception);
-            // Seems to happen on older devices (Old Google Play Service version?)
-            // See https://github.com/SRGSSR/SRGMediaPlayer-Android/issues/25
+        if (mediaSession != null) {
+            this.mediaSession = mediaSession;
+        } else {
+            try {
+                this.mediaSession = new MediaSessionCompat(context, context.getPackageName());
+                mediaSessionConnector = new MediaSessionConnector(this.mediaSession);
+                mediaSessionConnector.setPlayer(exoPlayer);
+                this.mediaSession.setActive(true);
+            } catch (Throwable exception) {
+                Log.d(TAG, "Unable to create MediaSession", exception);
+                // Seems to happen on older devices (Old Google Play Service version?)
+                // See https://github.com/SRGSSR/SRGMediaPlayer-Android/issues/25
+            }
         }
     }
 
