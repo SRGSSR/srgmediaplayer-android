@@ -1225,12 +1225,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (renderingView instanceof SphericalSurfaceView) {
             SphericalSurfaceView sphericalSurfaceView = (SphericalSurfaceView) renderingView;
             sphericalSurfaceView.setVideoComponent(exoPlayer.getVideoComponent());
-            sphericalSurfaceView.setSurfaceListener(surface -> {
-                Player.VideoComponent videoComponent = exoPlayer.getVideoComponent();
-                if (videoComponent != null) {
-                    videoComponent.setVideoSurface(surface);
-                }
-            });
         } else if (renderingView instanceof SurfaceView) {
             exoPlayer.setVideoSurfaceView((SurfaceView) renderingView);
             mediaPlayerView.setScaleModeListener(this::onScaleModeChanged);
@@ -1411,7 +1405,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (renderingView instanceof SphericalSurfaceView) {
             SphericalSurfaceView surfaceView = (SphericalSurfaceView) renderingView;
             surfaceView.setVideoComponent(null);
-            surfaceView.setSurfaceListener(null);
         } else if (renderingView instanceof SurfaceView) {
             exoPlayer.clearVideoSurfaceView((SurfaceView) renderingView);
         } else if (renderingView instanceof TextureView) {

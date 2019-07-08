@@ -33,7 +33,7 @@ ext {
     junitVersion = '4.12'
     mediaVersion = '1.0.1'
     mediarouterVersion = '1.0.0'
-	exoPlayerVersion = '2.10.1'
+	exoPlayerVersion = '2.10.2'
     appcompatVersion = '1.0.2'
     annotationVersion = '1.1.0'
     recyclerViewVersion = '1.0.0'
