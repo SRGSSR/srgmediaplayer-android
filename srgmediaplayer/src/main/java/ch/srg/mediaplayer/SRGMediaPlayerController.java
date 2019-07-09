@@ -80,6 +80,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * Set to true first time player goes to READY.
      */
     private boolean playingOrBuffering;
+    private boolean externalMediaSession;
 
     public enum ViewType {
         TYPE_SURFACEVIEW,
@@ -592,6 +593,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         if (mediaSession != null) {
             this.mediaSession = mediaSession;
+            externalMediaSession = true;
         } else {
             try {
                 this.mediaSession = new MediaSessionCompat(context, context.getPackageName());
@@ -917,7 +919,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             // Sets the player to be connected to the media session. Must be called on the same thread that is used to access the player.
             mediaSessionConnector.setPlayer(null);
         }
-        if (mediaSession != null) {
+        if (!externalMediaSession && mediaSession != null) {
             mediaSession.setActive(false);
             mediaSession.release();
         }
