@@ -80,7 +80,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * Set to true first time player goes to READY.
      */
     private boolean playingOrBuffering;
-    private boolean externalMediaSession;
 
     public enum ViewType {
         TYPE_SURFACEVIEW,
@@ -458,8 +457,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private final DefaultTrackSelector trackSelector;
 
     @Nullable
-    private MediaSessionCompat mediaSession;
-    @Nullable
     private MediaSessionConnector mediaSessionConnector;
     private AudioCapabilities audioCapabilities;
     @NonNull
@@ -525,9 +522,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * Create a new SRGMediaPlayerController with the current context, a mediaPlayerDataProvider, and a TAG
      * if you need to retrieve a controller
      *
-     * @param context      context
-     * @param tag          tag to identify this controller
-     * @param drmConfig    drm configuration null for no DRM support
+     * @param context   context
+     * @param tag       tag to identify this controller
+     * @param drmConfig drm configuration null for no DRM support
      */
     public SRGMediaPlayerController(Context context, String tag, @Nullable DrmConfig drmConfig) {
         this(context, tag, drmConfig, null);
@@ -540,7 +537,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @param context      context
      * @param tag          tag to identify this controller
      * @param drmConfig    drm configuration null for no DRM support
-     * @param mediaSession optional mediaSession
+     * @param mediaSession optional mediaSession When set, the caller is responsible for the mediasession lifecycle, when
+     *                     null, a media session will be created and connected to the exoplayer
      */
     public SRGMediaPlayerController(Context context, String tag, @Nullable DrmConfig drmConfig, @Nullable MediaSessionCompat mediaSession) {
         this.context = context;
@@ -592,14 +590,13 @@ public class SRGMediaPlayerController implements Handler.Callback,
         audioFocusGranted = false;
 
         if (mediaSession != null) {
-            this.mediaSession = mediaSession;
-            externalMediaSession = true;
+            mediaSessionConnector = null;
         } else {
             try {
-                this.mediaSession = new MediaSessionCompat(context, context.getPackageName());
-                mediaSessionConnector = new MediaSessionConnector(this.mediaSession);
+                mediaSession = new MediaSessionCompat(context, context.getPackageName());
+                mediaSessionConnector = new MediaSessionConnector(mediaSession);
                 mediaSessionConnector.setPlayer(exoPlayer);
-                this.mediaSession.setActive(true);
+                mediaSession.setActive(true);
             } catch (Throwable exception) {
                 Log.d(TAG, "Unable to create MediaSession", exception);
                 // Seems to happen on older devices (Old Google Play Service version?)
@@ -658,13 +655,13 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @param segment         segment to play, must be in segments list. This is considered a user selected segment (SEGMENT_SELECTED is sent)
      * @throws IllegalArgumentException if segment is not in segment list or uri is null
      */
-    @SuppressWarnings("ConstantConditions")
     public void prepare(@NonNull Uri uri,
                         Long startPositionMs,
                         @SRGStreamType int streamType,
                         List<Segment> segments,
                         Segment segment) {
         // TODO prepare need to be called when player is in idle or release state only?
+        //noinspection ConstantConditions
         if (uri == null) {
             throw new IllegalArgumentException("Invalid argument: null uri");
         }
@@ -708,7 +705,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @throws IllegalArgumentException if segment is not in segment list or uri is null
      * @ player exception
      */
-    @SuppressWarnings("ConstantConditions")
     public void prepare(@NonNull Uri uri,
                         Long startPositionMs,
                         @SRGStreamType int streamType,
@@ -918,10 +914,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (mediaSessionConnector != null) {
             // Sets the player to be connected to the media session. Must be called on the same thread that is used to access the player.
             mediaSessionConnector.setPlayer(null);
-        }
-        if (!externalMediaSession && mediaSession != null) {
-            mediaSession.setActive(false);
-            mediaSession.release();
+            mediaSessionConnector.mediaSession.setActive(false);
+            mediaSessionConnector.mediaSession.release();
         }
 
         exoPlayer.release();
@@ -1180,15 +1174,16 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Nullable
     public MediaSessionCompat.Token getMediaSessionToken() {
-        if (mediaSession != null) {
-            return mediaSession.getSessionToken();
+        if (mediaSessionConnector != null) {
+            return mediaSessionConnector.mediaSession.getSessionToken();
         }
         return null;
     }
 
     @Nullable
+    @Deprecated
     public MediaSessionCompat getMediaSession() {
-        return mediaSession;
+        return mediaSessionConnector != null ? mediaSessionConnector.mediaSession : null;
     }
 
 
@@ -1375,7 +1370,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
 
         textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
-            @SuppressWarnings("ConstantConditions")
                 // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
             boolean isCurrent(SurfaceTexture surfaceTexture) {
                 return renderingView instanceof TextureView && ((TextureView) renderingView).getSurfaceTexture() == surfaceTexture;
