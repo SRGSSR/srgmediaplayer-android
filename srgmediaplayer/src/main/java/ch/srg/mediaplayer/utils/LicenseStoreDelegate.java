@@ -1,6 +1,6 @@
 package ch.srg.mediaplayer.utils;
 
-import android.support.annotation.WorkerThread;
+import androidx.annotation.WorkerThread;
 import com.google.android.exoplayer2.drm.DrmInitData;
 
 /**
