@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
+import android.media.MediaCodec;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Handler;
@@ -2314,7 +2315,16 @@ public class SRGMediaPlayerController implements Handler.Callback,
         manageKeepScreenOn();
         Throwable cause = error.getCause();
         SRGMediaPlayerException.Reason reason = SRGMediaPlayerException.Reason.EXOPLAYER;
-        if (error.type == ExoPlaybackException.TYPE_RENDERER) {
+        if(cause instanceof MediaCodec.CryptoException){
+            MediaCodec.CryptoException cryptoException=(MediaCodec.CryptoException)cause;
+            if(cryptoException.getErrorCode()== MediaCodec.CryptoException.ERROR_KEY_EXPIRED
+            || cryptoException.getErrorCode()== MediaCodec.CryptoException.ERROR_NO_KEY){
+                Log.w(TAG,"Drm expired key during playback");
+                reason= SRGMediaPlayerException.Reason.DRM_KEY_EXPIRED;  //TODO test with not compatible device
+            }else{
+                reason= SRGMediaPlayerException.Reason.DRM;
+            }
+        } else if (error.type == ExoPlaybackException.TYPE_RENDERER) {
             reason = SRGMediaPlayerException.Reason.RENDERER;
         } else if (cause instanceof IOException) {
             if (cause instanceof HttpDataSource.InvalidResponseCodeException
