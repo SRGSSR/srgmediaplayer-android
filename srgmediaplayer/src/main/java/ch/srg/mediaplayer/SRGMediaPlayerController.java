@@ -562,6 +562,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private DrmConfig drmConfig;
     private int drmRequestDuration;
     private boolean drmRequestOffline;
+    private @SRGStreamType int currentStreamType;
+    private int numberOfDrmRetry=0;
 
     public static String getName() {
         return NAME;
@@ -781,6 +783,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         Long playbackStartPosition = startPositionMs;
         this.segments.clear();
         this.currentSegment = null;
+        currentStreamType=streamType;
         if (segments != null) {
             this.segments.addAll(segments);
             if (segment != null) {
@@ -924,7 +927,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 return;
             }
             this.currentMediaUri = videoUri;
-
+            this.currentStreamType=streamType;
 
             DefaultHttpDataSourceFactory httpDataSourceFactory = new DefaultHttpDataSourceFactory(
                     userAgent,
@@ -1048,6 +1051,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      */
     private void doRelease() {
         if (this.state != State.RELEASED) {
+            numberOfDrmRetry=0;
             if (mediaPlayerView != null) {
                 unbindFromMediaPlayerView(mediaPlayerView);
             }
@@ -2274,6 +2278,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     });
                     break;
                 case Player.STATE_READY:
+                    numberOfDrmRetry=0;
                     if (!playingOrBuffering) {
                         broadcastEvent(Event.Type.MEDIA_READY_TO_PLAY);
                         playingOrBuffering = true;
@@ -2321,6 +2326,17 @@ public class SRGMediaPlayerController implements Handler.Callback,
             || cryptoException.getErrorCode()== MediaCodec.CryptoException.ERROR_NO_KEY){
                 Log.w(TAG,"Drm expired key during playback");
                 reason= SRGMediaPlayerException.Reason.DRM_KEY_EXPIRED;  //TODO test with not compatible device
+                // Experimental
+                if(getMediaUri()!=null && numberOfDrmRetry<1){
+                    numberOfDrmRetry++;
+                    Log.d(TAG,"Try to restart the playback by downloading a new license");
+                    Uri uri=getMediaUri();
+                    currentMediaUri=null;
+                    doRelease();
+                    prepare(uri,getMediaPosition(),currentStreamType,segments);
+                    return;
+                }
+
             }else{
                 reason= SRGMediaPlayerException.Reason.DRM;
             }
