@@ -649,7 +649,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (offlineLicenseHelper != null) {
             try {
                 Pair<Long, Long> validity = offlineLicenseHelper.getLicenseDurationRemainingSec(offlineLicenseKeySetId);
-                return validity.first == 0 && validity.second == 0;
+                return validity.first == 0 && validity.second == 0 || validity.first <= 2 * 60;
             } catch (DrmSession.DrmSessionException e) {
                 e.printStackTrace();
                 return true;
