@@ -2268,30 +2268,35 @@ public class SRGMediaPlayerController implements Handler.Callback,
         // Ignore
     }
 
+    public void retry() {
+        Runnable prepareViewAndPlayer = exoPlayer::retry;
+        if (drmConfig != null && licenseStoreDelegate != null) {
+            downloadOrApplyOfflineLicense(currentMediaUri, prepareViewAndPlayer, drmConfig);
+        } else {
+            prepareViewAndPlayer.run();
+        }
+    }
+
     @Override
     public void onPlayerError(ExoPlaybackException error) {
         manageKeepScreenOn();
         Throwable cause = error.getCause();
         SRGMediaPlayerException.Reason reason = SRGMediaPlayerException.Reason.EXOPLAYER;
-        if(cause instanceof MediaCodec.CryptoException){
-            MediaCodec.CryptoException cryptoException=(MediaCodec.CryptoException)cause;
-            if(cryptoException.getErrorCode()== MediaCodec.CryptoException.ERROR_KEY_EXPIRED
-            || cryptoException.getErrorCode()== MediaCodec.CryptoException.ERROR_NO_KEY){
-                Log.w(TAG,"Drm expired key during playback");
-                reason= SRGMediaPlayerException.Reason.DRM_KEY_EXPIRED;  //TODO test with not compatible device
+        if (cause instanceof MediaCodec.CryptoException) {
+            MediaCodec.CryptoException cryptoException = (MediaCodec.CryptoException) cause;
+            if (cryptoException.getErrorCode() == MediaCodec.CryptoException.ERROR_KEY_EXPIRED
+                    || cryptoException.getErrorCode() == MediaCodec.CryptoException.ERROR_NO_KEY) {
+                Log.w(TAG, "Drm expired key during playback");
+                reason = SRGMediaPlayerException.Reason.DRM_KEY_EXPIRED;  //TODO test with not compatible device
                 // Experimental
-                if(getMediaUri()!=null && numberOfDrmRetry<1){
+                if (getMediaUri() != null && numberOfDrmRetry < 1) {
                     numberOfDrmRetry++;
-                    Log.d(TAG,"Try to restart the playback by downloading a new license");
-                    Uri uri=getMediaUri();
-                    currentMediaUri=null;
-                    doRelease();
-                    prepare(uri,getMediaPosition(),currentStreamType,segments);
+                    retry();
                     return;
                 }
 
-            }else{
-                reason= SRGMediaPlayerException.Reason.DRM;
+            } else {
+                reason = SRGMediaPlayerException.Reason.DRM;
             }
         } else if (error.type == ExoPlaybackException.TYPE_RENDERER) {
             reason = SRGMediaPlayerException.Reason.RENDERER;
