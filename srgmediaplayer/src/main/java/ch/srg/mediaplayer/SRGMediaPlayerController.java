@@ -73,6 +73,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private static final long[] EMPTY_TIME_RANGE = new long[2];
     private static final long UPDATE_PERIOD = 100;
     private static final long SEGMENT_HYSTERESIS_MS = 5000;
+    private static final int MINIMUM_DRM_LICENSE_DURATION_SECONDS = 2 * 60;
     // Bandwidth meter uses application context which is fine
     @SuppressLint("StaticFieldLeak")
     private static DefaultBandwidthMeter singletonBandwidthMeter;
@@ -649,9 +650,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (offlineLicenseHelper != null) {
             try {
                 Pair<Long, Long> validity = offlineLicenseHelper.getLicenseDurationRemainingSec(offlineLicenseKeySetId);
-                return validity.first == 0 && validity.second == 0 || validity.first <= 2 * 60;
+                return validity.first <= MINIMUM_DRM_LICENSE_DURATION_SECONDS;
             } catch (DrmSession.DrmSessionException e) {
-                e.printStackTrace();
+                Log.e(TAG, "offline license test", e);
                 return true;
             }
         }
@@ -2268,12 +2269,15 @@ public class SRGMediaPlayerController implements Handler.Callback,
         // Ignore
     }
 
+    /**
+     * Retry exoplayer playback after an error.
+     */
     public void retry() {
-        Runnable prepareViewAndPlayer = exoPlayer::retry;
+        Runnable retry = exoPlayer::retry;
         if (drmConfig != null && licenseStoreDelegate != null) {
-            downloadOrApplyOfflineLicense(currentMediaUri, prepareViewAndPlayer, drmConfig);
+            downloadOrApplyOfflineLicense(currentMediaUri, retry, drmConfig);
         } else {
-            prepareViewAndPlayer.run();
+            retry.run();
         }
     }
 
