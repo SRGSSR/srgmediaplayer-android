@@ -973,13 +973,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
             Log.w(TAG, "Force EoF due to longer subtitle or audio track");
             onPlayerStateChanged(false, ExoPlayer.STATE_ENDED);
         }
-        if (lastPeriodicUpdate == null || currentPosition != lastPeriodicUpdate) {
-            if (lastPeriodicUpdate != null) {
-                if (!playbackActuallyStarted) {
+            if (lastPeriodicUpdate != null && !playbackActuallyStarted && exoPlayer.getPlayWhenReady()) {
                     playbackActuallyStarted = true;
                     broadcastEvent(Event.Type.PLAYBACK_ACTUALLY_STARTED);
                 }
-            }
             if (!segments.isEmpty()) {
                 checkSegmentChange(currentPosition);
             }
