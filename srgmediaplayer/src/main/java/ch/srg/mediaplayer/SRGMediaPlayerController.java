@@ -973,7 +973,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (lastPeriodicUpdate == null || currentPosition != lastPeriodicUpdate) {
             if (!isLive() && mediaDuration != C.TIME_UNSET && currentPosition > mediaDuration) {
                 Log.w(TAG,
-                        "Force EoF due to longer subtitle or audio track. position (" + currentPosition + " + ms) > duration (" + mediaDuration + "ms).");
+                        "Force EoF due to longer subtitle or audio track. position (" + currentPosition + " ms) > duration (" + mediaDuration + " ms).");
                 onPlayerStateChanged(false, ExoPlayer.STATE_ENDED);
             }
             if (lastPeriodicUpdate != null && !playbackActuallyStarted && exoPlayer.getPlayWhenReady()) {
