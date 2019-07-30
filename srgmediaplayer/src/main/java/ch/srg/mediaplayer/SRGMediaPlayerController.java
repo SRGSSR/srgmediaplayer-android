@@ -457,8 +457,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private final DefaultTrackSelector trackSelector;
 
     @Nullable
-    private MediaSessionCompat mediaSession;
-    @Nullable
     private MediaSessionConnector mediaSessionConnector;
     private AudioCapabilities audioCapabilities;
     @NonNull
@@ -517,7 +515,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @param tag     tag to identify this controller
      */
     public SRGMediaPlayerController(Context context, String tag) {
-        this(context, tag, null);
+        this(context, tag, null, null);
     }
 
     /**
@@ -529,6 +527,20 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @param drmConfig drm configuration null for no DRM support
      */
     public SRGMediaPlayerController(Context context, String tag, @Nullable DrmConfig drmConfig) {
+        this(context, tag, drmConfig, null);
+    }
+
+    /**
+     * Create a new SRGMediaPlayerController with the current context, a mediaPlayerDataProvider, and a TAG
+     * if you need to retrieve a controller
+     *
+     * @param context      context
+     * @param tag          tag to identify this controller
+     * @param drmConfig    drm configuration null for no DRM support
+     * @param mediaSession optional mediaSession When set, the caller is responsible for the mediasession lifecycle, when
+     *                     null, a media session will be created and connected to the exoplayer
+     */
+    public SRGMediaPlayerController(Context context, String tag, @Nullable DrmConfig drmConfig, @Nullable MediaSessionCompat mediaSession) {
         this.context = context;
         Looper looper = Looper.myLooper();
         if (looper != Looper.getMainLooper()) {
@@ -577,15 +589,19 @@ public class SRGMediaPlayerController implements Handler.Callback,
         audioFocusChangeListener = new OnAudioFocusChangeListener(new WeakReference<>(this));
         audioFocusGranted = false;
 
-        try {
-            mediaSession = new MediaSessionCompat(context, context.getPackageName());
-            mediaSessionConnector = new MediaSessionConnector(mediaSession);
-            mediaSessionConnector.setPlayer(exoPlayer);
-            mediaSession.setActive(true);
-        } catch (Throwable exception) {
-            Log.d(TAG, "Unable to create MediaSession", exception);
-            // Seems to happen on older devices (Old Google Play Service version?)
-            // See https://github.com/SRGSSR/SRGMediaPlayer-Android/issues/25
+        if (mediaSession != null) {
+            mediaSessionConnector = null;
+        } else {
+            try {
+                mediaSession = new MediaSessionCompat(context, context.getPackageName());
+                mediaSessionConnector = new MediaSessionConnector(mediaSession);
+                mediaSessionConnector.setPlayer(exoPlayer);
+                mediaSession.setActive(true);
+            } catch (Throwable exception) {
+                Log.d(TAG, "Unable to create MediaSession", exception);
+                // Seems to happen on older devices (Old Google Play Service version?)
+                // See https://github.com/SRGSSR/SRGMediaPlayer-Android/issues/25
+            }
         }
     }
 
@@ -639,13 +655,13 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @param segment         segment to play, must be in segments list. This is considered a user selected segment (SEGMENT_SELECTED is sent)
      * @throws IllegalArgumentException if segment is not in segment list or uri is null
      */
-    @SuppressWarnings("ConstantConditions")
     public void prepare(@NonNull Uri uri,
                         Long startPositionMs,
                         @SRGStreamType int streamType,
                         List<Segment> segments,
                         Segment segment) {
         // TODO prepare need to be called when player is in idle or release state only?
+        //noinspection ConstantConditions
         if (uri == null) {
             throw new IllegalArgumentException("Invalid argument: null uri");
         }
@@ -689,7 +705,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @throws IllegalArgumentException if segment is not in segment list or uri is null
      * @ player exception
      */
-    @SuppressWarnings("ConstantConditions")
     public void prepare(@NonNull Uri uri,
                         Long startPositionMs,
                         @SRGStreamType int streamType,
@@ -899,10 +914,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (mediaSessionConnector != null) {
             // Sets the player to be connected to the media session. Must be called on the same thread that is used to access the player.
             mediaSessionConnector.setPlayer(null);
-        }
-        if (mediaSession != null) {
-            mediaSession.setActive(false);
-            mediaSession.release();
+            mediaSessionConnector.mediaSession.setActive(false);
+            mediaSessionConnector.mediaSession.release();
         }
 
         exoPlayer.release();
@@ -1161,15 +1174,16 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Nullable
     public MediaSessionCompat.Token getMediaSessionToken() {
-        if (mediaSession != null) {
-            return mediaSession.getSessionToken();
+        if (mediaSessionConnector != null) {
+            return mediaSessionConnector.mediaSession.getSessionToken();
         }
         return null;
     }
 
     @Nullable
+    @Deprecated
     public MediaSessionCompat getMediaSession() {
-        return mediaSession;
+        return mediaSessionConnector != null ? mediaSessionConnector.mediaSession : null;
     }
 
 
@@ -1356,7 +1370,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
 
         textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
-            @SuppressWarnings("ConstantConditions")
                 // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
             boolean isCurrent(SurfaceTexture surfaceTexture) {
                 return renderingView instanceof TextureView && ((TextureView) renderingView).getSurfaceTexture() == surfaceTexture;
