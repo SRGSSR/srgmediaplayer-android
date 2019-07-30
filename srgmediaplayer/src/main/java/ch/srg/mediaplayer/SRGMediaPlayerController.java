@@ -969,12 +969,16 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private void periodicUpdate() {
         long currentPosition = exoPlayer.getCurrentPosition();
+        long mediaDuration = getMediaDuration();
         if (lastPeriodicUpdate == null || currentPosition != lastPeriodicUpdate) {
-            if (lastPeriodicUpdate != null) {
-                if (!playbackActuallyStarted) {
-                    playbackActuallyStarted = true;
-                    broadcastEvent(Event.Type.PLAYBACK_ACTUALLY_STARTED);
-                }
+            if (!isLive() && mediaDuration != C.TIME_UNSET && currentPosition > mediaDuration) {
+                Log.w(TAG,
+                        "Force EoF due to longer subtitle or audio track. position (" + currentPosition + " + ms) > duration (" + mediaDuration + "ms).");
+                onPlayerStateChanged(false, ExoPlayer.STATE_ENDED);
+            }
+            if (lastPeriodicUpdate != null && !playbackActuallyStarted && exoPlayer.getPlayWhenReady()) {
+                playbackActuallyStarted = true;
+                broadcastEvent(Event.Type.PLAYBACK_ACTUALLY_STARTED);
             }
             if (!segments.isEmpty()) {
                 checkSegmentChange(currentPosition);
@@ -1729,7 +1733,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     /**
-     * @return Media duration relative to 0.
+     * @return Media duration in milliseconds, {@link C#TIME_UNSET} if unknown
      */
     public long getMediaDuration() {
         return exoPlayer.getDuration();
