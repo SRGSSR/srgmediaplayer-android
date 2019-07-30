@@ -1,6 +1,6 @@
 package ch.srg.mediaplayer.segment.model;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 /**
  * Copyright (c) SRG SSR. All rights reserved.

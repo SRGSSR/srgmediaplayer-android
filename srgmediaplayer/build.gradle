@@ -17,7 +17,7 @@ android {
         versionName VERSION_BASE + "." + buildNumber
         versionNameSuffix release != null ? (release.equalsIgnoreCase("true") ? "" : "-SNAPSHOT") : "-SNAPSHOT"
 
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
         release {
@@ -29,15 +29,15 @@ android {
 
 dependencies {
     // Testing-only dependencies
-    androidTestImplementation "com.android.support.test:runner:$rootProject.androidSupportTest"
-    androidTestImplementation "com.android.support.test:rules:$rootProject.androidSupportTest"
+    androidTestImplementation "androidx.test:runner:$rootProject.androidTestVersion"
+    androidTestImplementation "androidx.test:rules:$rootProject.androidTestVersion"
 
     implementation files('libs/android_malibrary.jar')
 
-    implementation "com.android.support:appcompat-v7:$rootProject.supportLibraryVersion"
-    implementation "com.android.support:support-annotations:$rootProject.supportLibraryVersion"
-    implementation "com.android.support:mediarouter-v7:$rootProject.supportLibraryVersion"
-    implementation "com.android.support:support-media-compat:$rootProject.supportLibraryVersion"
+    implementation "androidx.appcompat:appcompat:$rootProject.appcompatVersion"
+    implementation "androidx.annotation:annotation:$rootProject.annotationVersion"
+    implementation "androidx.mediarouter:mediarouter:$rootProject.mediarouterVersion"
+    implementation "androidx.media:media:$rootProject.mediaVersion"
 
     api "com.google.android.exoplayer:exoplayer-core:$rootProject.exoPlayerVersion"
     implementation "com.google.android.exoplayer:exoplayer-hls:$rootProject.exoPlayerVersion"

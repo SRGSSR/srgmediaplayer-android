@@ -1,5 +1,6 @@
 package ch.srg.mediaplayer;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
@@ -7,7 +8,6 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.support.annotation.*;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.text.TextUtils;
 import android.util.Log;
@@ -16,6 +16,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
+import androidx.annotation.*;
 import ch.srg.mediaplayer.segment.model.Segment;
 import com.akamai.android.analytics.AkamaiMediaAnalytics;
 import com.akamai.android.analytics.EndReasonCodes;
@@ -25,9 +26,8 @@ import com.google.android.exoplayer2.audio.AudioCapabilities;
 import com.google.android.exoplayer2.audio.AudioCapabilitiesReceiver;
 import com.google.android.exoplayer2.drm.*;
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
-import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
-import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.dash.DashMediaSource;
@@ -36,6 +36,7 @@ import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.text.TextOutput;
 import com.google.android.exoplayer2.trackselection.*;
+import com.google.android.exoplayer2.ui.spherical.SphericalSurfaceView;
 import com.google.android.exoplayer2.upstream.*;
 import com.google.android.exoplayer2.util.Util;
 import com.google.android.exoplayer2.video.VideoListener;
@@ -68,6 +69,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private static final long[] EMPTY_TIME_RANGE = new long[2];
     private static final long UPDATE_PERIOD = 100;
     private static final long SEGMENT_HYSTERESIS_MS = 5000;
+    // Bandwidth meter uses application context which is fine
+    @SuppressLint("StaticFieldLeak")
+    private static DefaultBandwidthMeter singletonBandwidthMeter;
     private Long userTrackingProgress;
     private static final String NAME = "SRGMediaPlayer";
     private boolean currentViewKeepScreenOn;
@@ -80,6 +84,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
     public enum ViewType {
         TYPE_SURFACEVIEW,
         TYPE_TEXTUREVIEW
+    }
+
+    public enum SurfaceType {
+        FLAT,
+        SPHERICAL
     }
 
     /**
@@ -451,11 +460,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private MediaSessionCompat mediaSession;
     @Nullable
     private MediaSessionConnector mediaSessionConnector;
-
-    private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
     private AudioCapabilities audioCapabilities;
     @NonNull
     private ViewType viewType = ViewType.TYPE_TEXTUREVIEW;
+    private SurfaceType surfaceType = SurfaceType.FLAT;
     private View renderingView;
     private Integer playbackState;
     private List<Segment> segments = new ArrayList<>();
@@ -571,13 +579,12 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         try {
             mediaSession = new MediaSessionCompat(context, context.getPackageName());
-            mediaSessionConnector = new MediaSessionConnector(mediaSession, null);
-            mediaSessionConnector.setPlayer(exoPlayer, null, (MediaSessionConnector.CustomActionProvider[]) null);
+            mediaSessionConnector = new MediaSessionConnector(mediaSession);
+            mediaSessionConnector.setPlayer(exoPlayer);
             mediaSession.setActive(true);
         } catch (Throwable exception) {
-            exception.printStackTrace();
             Log.d(TAG, "Unable to create MediaSession", exception);
-            // Seems an
+            // Seems to happen on older devices (Old Google Play Service version?)
             // See https://github.com/SRGSSR/SRGMediaPlayer-Android/issues/25
         }
     }
@@ -742,7 +749,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     //region initialisation
 
-    private void prepareExoplayer(@NonNull Uri videoUri, @Nullable Long playbackStartPosition, int streamType) throws SRGMediaPlayerException {
+    private void prepareExoplayer(@NonNull Uri videoUri, @Nullable Long playbackStartPosition, int streamType) throws
+            SRGMediaPlayerException {
         Log.v(TAG, "Preparing " + videoUri + " (" + streamType + ")");
         setupAkamaiQos(videoUri);
         try {
@@ -754,12 +762,12 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
             DefaultHttpDataSourceFactory httpDataSourceFactory = new DefaultHttpDataSourceFactory(
                     userAgent,
-                    BANDWIDTH_METER,
+                    getDefaultBandwidthMeter(context),
                     DefaultHttpDataSource.DEFAULT_CONNECT_TIMEOUT_MILLIS,
                     DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS,
                     true);
 
-            DefaultDataSourceFactory dataSourceFactory = new DefaultDataSourceFactory(context, BANDWIDTH_METER, httpDataSourceFactory);
+            DefaultDataSourceFactory dataSourceFactory = new DefaultDataSourceFactory(context, getDefaultBandwidthMeter(context), httpDataSourceFactory);
 
             MediaSource mediaSource;
 
@@ -775,14 +783,12 @@ public class SRGMediaPlayerController implements Handler.Callback,
                             .createMediaSource(videoUri);
                     break;
                 case STREAM_HTTP_PROGRESSIVE:
-                    mediaSource = new ExtractorMediaSource.Factory(dataSourceFactory)
-                            .setExtractorsFactory(new DefaultExtractorsFactory())
+                    mediaSource = new ProgressiveMediaSource.Factory(dataSourceFactory)
                             .createMediaSource(videoUri);
                     break;
                 case STREAM_LOCAL_FILE:
                     FileDataSourceFactory fileDataSourceFactory = new FileDataSourceFactory();
-                    mediaSource = new ExtractorMediaSource.Factory(fileDataSourceFactory)
-                            .setExtractorsFactory(new DefaultExtractorsFactory())
+                    mediaSource = new ProgressiveMediaSource.Factory(fileDataSourceFactory)
                             .createMediaSource(videoUri);
                     break;
                 default:
@@ -892,7 +898,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         // Done after stop to be sure that no event listener are called.
         if (mediaSessionConnector != null) {
             // Sets the player to be connected to the media session. Must be called on the same thread that is used to access the player.
-            mediaSessionConnector.setPlayer(null, null, (MediaSessionConnector.CustomActionProvider[]) null);
+            mediaSessionConnector.setPlayer(null);
         }
         if (mediaSession != null) {
             mediaSession.setActive(false);
@@ -963,12 +969,16 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private void periodicUpdate() {
         long currentPosition = exoPlayer.getCurrentPosition();
+        long mediaDuration = getMediaDuration();
         if (lastPeriodicUpdate == null || currentPosition != lastPeriodicUpdate) {
-            if (lastPeriodicUpdate != null) {
-                if (!playbackActuallyStarted) {
-                    playbackActuallyStarted = true;
-                    broadcastEvent(Event.Type.PLAYBACK_ACTUALLY_STARTED);
-                }
+            if (!isLive() && mediaDuration != C.TIME_UNSET && currentPosition > mediaDuration) {
+                Log.w(TAG,
+                        "Force EoF due to longer subtitle or audio track. position (" + currentPosition + " ms) > duration (" + mediaDuration + " ms).");
+                onPlayerStateChanged(false, ExoPlayer.STATE_ENDED);
+            }
+            if (lastPeriodicUpdate != null && !playbackActuallyStarted && exoPlayer.getPlayWhenReady()) {
+                playbackActuallyStarted = true;
+                broadcastEvent(Event.Type.PLAYBACK_ACTUALLY_STARTED);
             }
             if (!segments.isEmpty()) {
                 checkSegmentChange(currentPosition);
@@ -1215,7 +1225,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     + mediaPlayerView, null, SRGMediaPlayerException.Reason.VIEW);
         }
         currentViewKeepScreenOn = mediaPlayerView.getKeepScreenOn();
-        if (renderingView instanceof SurfaceView) {
+        if (renderingView instanceof SphericalSurfaceView) {
+            SphericalSurfaceView sphericalSurfaceView = (SphericalSurfaceView) renderingView;
+            sphericalSurfaceView.setVideoComponent(exoPlayer.getVideoComponent());
+        } else if (renderingView instanceof SurfaceView) {
             exoPlayer.setVideoSurfaceView((SurfaceView) renderingView);
             mediaPlayerView.setScaleModeListener(this::onScaleModeChanged);
         } else if (renderingView instanceof TextureView) {
@@ -1237,13 +1250,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
     }
 
-    private void pushSurface() {
-        if (renderingView instanceof SurfaceView) {
-            exoPlayer.setVideoSurfaceView((SurfaceView) renderingView);
-        } else if (renderingView instanceof TextureView) {
-            exoPlayer.setVideoTextureView((TextureView) renderingView);
-        }
-    }
 
     /**
      * Clear the current mediaPlayer, unbind the delegate and the overlayController
@@ -1263,88 +1269,151 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean canRenderInView(View view) {
-        return view instanceof SurfaceView || view instanceof TextureView;
+        switch (viewType) {
+            case TYPE_TEXTUREVIEW:
+                return view instanceof TextureView;
+            case TYPE_SURFACEVIEW:
+                return surfaceType == SurfaceType.SPHERICAL ?
+                        view instanceof SphericalSurfaceView :
+                        !(view instanceof SphericalSurfaceView) && view instanceof SurfaceView;
+            default:
+                return false;
+        }
     }
 
-    private void createRenderingView(final Context parentContext) {
-        if (viewType == ViewType.TYPE_SURFACEVIEW) {
-            renderingView = new SurfaceView(parentContext);
-        } else if (viewType == ViewType.TYPE_TEXTUREVIEW) {
-            renderingView = new TextureView(parentContext);
-        } else {
-            throw new IllegalStateException("Unsupported view type: " + viewType);
+    private void createSurfaceView(final Context parentContext) {
+        switch (surfaceType) {
+            case FLAT:
+                createFlatSurfaceView(parentContext);
+                break;
+            case SPHERICAL:
+                createSphericalSurfaceView(parentContext);
+                break;
+            default:
+                throw new IllegalStateException("Unsupported surface type: " + surfaceType);
         }
+    }
+
+    private void createFlatSurfaceView(final Context parentContext) {
+        SurfaceView surfaceView = new SurfaceView(parentContext);
+        renderingView = surfaceView;
+        if (mediaPlayerView != null) {
+            mediaPlayerView.setVideoRenderingView(surfaceView);
+        }
+        surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
+            // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
+            private boolean isCurrent(SurfaceHolder holder) {
+                return renderingView instanceof SurfaceView && ((SurfaceView) renderingView).getHolder() == holder;
+            }
+
+            @Override
+            public void surfaceCreated(SurfaceHolder holder) {
+                Log.v(TAG, renderingView + "binding, surfaceCreated" + mediaPlayerView);
+                try {
+                    if (isCurrent(holder)) {
+                        bindRenderingViewInUiThread();
+                    } else {
+                        Log.d(TAG, "Surface created, but media player delegate retired");
+                    }
+                } catch (SRGMediaPlayerException e) {
+                    Log.d(TAG, "Error binding view", e);
+                }
+            }
+
+            @Override
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+                Log.v(TAG, renderingView + "binding, surfaceChanged" + mediaPlayerView);
+            }
+
+            @Override
+            public void surfaceDestroyed(SurfaceHolder holder) {
+                Log.v(TAG, renderingView + "binding, surfaceDestroyed" + mediaPlayerView);
+            }
+        });
+    }
+
+    private void createSphericalSurfaceView(final Context parentContext) {
+        SphericalSurfaceView sphericalSurfaceView = new SphericalSurfaceView(parentContext);
+        sphericalSurfaceView.setDefaultStereoMode(C.STEREO_MODE_MONO);
+        renderingView = sphericalSurfaceView;
         if (mediaPlayerView != null) {
             Log.v(TAG, "binding, setVideoRenderingView " + mediaPlayerView);
-            mediaPlayerView.setVideoRenderingView(renderingView);
+            mediaPlayerView.setVideoRenderingView(sphericalSurfaceView);
         }
-        if (renderingView instanceof SurfaceView) {
-            ((SurfaceView) renderingView).getHolder().addCallback(new SurfaceHolder.Callback() {
-                // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
-                private boolean isCurrent(SurfaceHolder holder) {
-                    return renderingView instanceof SurfaceView && ((SurfaceView) renderingView).getHolder() == holder;
-                }
+        try {
+            bindRenderingViewInUiThread();
+        } catch (SRGMediaPlayerException e) {
+            Log.e(TAG, "SphericalSurfaceView binding", e);
+        }
+    }
 
-                @Override
-                public void surfaceCreated(SurfaceHolder holder) {
-                    Log.v(TAG, renderingView + "binding, surfaceCreated" + mediaPlayerView);
+    private void createTextureView(final Context parentContext) {
+        TextureView textureView = new TextureView(parentContext);
+        renderingView = textureView;
+        if (mediaPlayerView != null) {
+            Log.v(TAG, "binding, setVideoRenderingView " + mediaPlayerView);
+            mediaPlayerView.setVideoRenderingView(textureView);
+        }
+
+        textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+            @SuppressWarnings("ConstantConditions")
+                // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
+            boolean isCurrent(SurfaceTexture surfaceTexture) {
+                return renderingView instanceof TextureView && ((TextureView) renderingView).getSurfaceTexture() == surfaceTexture;
+            }
+
+            @Override
+            public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
+                Log.v(TAG, renderingView + "binding, surfaceTextureAvailable" + mediaPlayerView);
+                if (isCurrent(surfaceTexture)) {
                     try {
-                        if (isCurrent(holder)) {
-                            bindRenderingViewInUiThread();
-                        } else {
-                            Log.d(TAG, "Surface created, but media player delegate retired");
-                        }
+                        bindRenderingViewInUiThread();
                     } catch (SRGMediaPlayerException e) {
                         Log.d(TAG, "Error binding view", e);
                     }
                 }
+            }
 
-                @Override
-                public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-                    Log.v(TAG, renderingView + "binding, surfaceChanged" + mediaPlayerView);
-                }
+            @Override
+            public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
+            }
 
-                @Override
-                public void surfaceDestroyed(SurfaceHolder holder) {
-                    Log.v(TAG, renderingView + "binding, surfaceDestroyed" + mediaPlayerView);
-                }
-            });
-        } else if (renderingView instanceof TextureView) {
-            TextureView textureView = (TextureView) renderingView;
-            textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
-                @SuppressWarnings("ConstantConditions")
-                    // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
-                boolean isCurrent(SurfaceTexture surfaceTexture) {
-                    return renderingView instanceof TextureView && ((TextureView) renderingView).getSurfaceTexture() == surfaceTexture;
-                }
+            @Override
+            public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
+                return false;
+            }
 
-                @Override
-                public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
-                    Log.v(TAG, renderingView + "binding, surfaceTextureAvailable" + mediaPlayerView);
-                    if (isCurrent(surfaceTexture)) {
-                        try {
-                            bindRenderingViewInUiThread();
-                        } catch (SRGMediaPlayerException e) {
-                            Log.d(TAG, "Error binding view", e);
-                        }
-                    }
-                }
+            @Override
+            public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
 
-                @Override
-                public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
-                }
+            }
+        });
+    }
 
-                @Override
-                public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
-                    return false;
-                }
-
-                @Override
-                public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-
-                }
-            });
+    private void createRenderingView(final Context parentContext) {
+        Log.d(TAG, "createRenderingView " + viewType + " " + surfaceType);
+        switch (viewType) {
+            case TYPE_TEXTUREVIEW:
+                createTextureView(parentContext);
+                break;
+            case TYPE_SURFACEVIEW:
+                createSurfaceView(parentContext);
+                break;
+            default:
+                throw new IllegalStateException("Unsupported view type: " + viewType);
         }
+    }
+
+    private void unbindRenderingView() {
+        if (renderingView instanceof SphericalSurfaceView) {
+            SphericalSurfaceView surfaceView = (SphericalSurfaceView) renderingView;
+            surfaceView.setVideoComponent(null);
+        } else if (renderingView instanceof SurfaceView) {
+            exoPlayer.clearVideoSurfaceView((SurfaceView) renderingView);
+        } else if (renderingView instanceof TextureView) {
+            exoPlayer.clearVideoTextureView((TextureView) renderingView);
+        }
+        renderingView = null;
     }
 
     /**
@@ -1359,13 +1428,16 @@ public class SRGMediaPlayerController implements Handler.Callback,
         this.viewType = viewType;
     }
 
-    private void unbindRenderingView() {
-        if (renderingView instanceof SurfaceView) {
-            exoPlayer.clearVideoSurfaceView((SurfaceView) renderingView);
-        } else if (renderingView instanceof TextureView) {
-            exoPlayer.clearVideoTextureView((TextureView) renderingView);
+    /**
+     * Change surface type to SPHERICAL to play 360° content or FLAT for regular content
+     *
+     * @param surfaceType surface type
+     */
+    public void setSurfaceType(@NonNull SurfaceType surfaceType) {
+        if (debugMode && viewType == ViewType.TYPE_TEXTUREVIEW) {
+            Log.w(TAG, "Surface type is only available for Surface view");
         }
-        renderingView = null;
+        this.surfaceType = surfaceType;
     }
 
     private void setState(State state) {
@@ -1584,7 +1656,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     /*package*/
-    static Event createTestEvent(Event.Type eventType, SRGMediaPlayerController controller, SRGMediaPlayerException eventException) {
+    static Event createTestEvent(Event.Type eventType, SRGMediaPlayerController controller, SRGMediaPlayerException
+            eventException) {
         return new Event(controller, eventType, eventException);
     }
 
@@ -1660,7 +1733,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     /**
-     * @return Media duration relative to 0.
+     * @return Media duration in milliseconds, {@link C#TIME_UNSET} if unknown
      */
     public long getMediaDuration() {
         return exoPlayer.getDuration();
@@ -2111,7 +2184,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     @Override
-    public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
+    public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees,
+                                   float pixelWidthHeightRatio) {
         float aspectRatio = ((float) width / (float) height) * pixelWidthHeightRatio;
         if ((aspectRatio / 90) % 2 == 1) {
             aspectRatio = 1 / aspectRatio;
@@ -2180,7 +2254,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @param akamaiMediaAnalyticsConfiguration akamai qos configuration to enable QOS monitoring. null to disable
      *                                          akamai qos.
      */
-    public void setAkamaiMediaAnalyticsConfiguration(@Nullable AkamaiMediaAnalyticsConfiguration akamaiMediaAnalyticsConfiguration) {
+    public void setAkamaiMediaAnalyticsConfiguration(@Nullable AkamaiMediaAnalyticsConfiguration
+                                                             akamaiMediaAnalyticsConfiguration) {
         this.akamaiMediaAnalyticsConfiguration = akamaiMediaAnalyticsConfiguration;
     }
 
@@ -2207,5 +2282,12 @@ public class SRGMediaPlayerController implements Handler.Callback,
             drmRequestDuration += System.currentTimeMillis() - now;
             return result;
         }
+    }
+
+    private static synchronized DefaultBandwidthMeter getDefaultBandwidthMeter(Context context) {
+        if (singletonBandwidthMeter == null) {
+            singletonBandwidthMeter = new DefaultBandwidthMeter.Builder(context.getApplicationContext()).build();
+        }
+        return singletonBandwidthMeter;
     }
 }
