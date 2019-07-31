@@ -646,7 +646,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
     }
 
-    private boolean isOfflineLicenseExpired(byte[] offlineLicenseKeySetId) {
+    private boolean isOfflineLicenseExpired(@NonNull byte[] offlineLicenseKeySetId) {
         if (offlineLicenseHelper != null) {
             try {
                 Pair<Long, Long> validity = offlineLicenseHelper.getLicenseDurationRemainingSec(offlineLicenseKeySetId);
@@ -663,9 +663,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (drmConfig != null && offlineLicenseHelper != null) {
             try {
                 Pair<Long, Long> validity = offlineLicenseHelper.getLicenseDurationRemainingSec(offlineLicenseKeySetId);
-                Log.v(TAG, "Drm validity: license=" + validity.first + "s, playback=" + validity.second + " s");
+                Log.v(TAG, "DRM validity: license=" + validity.first + "s, playback=" + validity.second + " s");
             } catch (DrmSession.DrmSessionException e) {
-                Log.v(TAG, "Drm validity: error", e);
+                Log.v(TAG, "DRM validity: error", e);
             }
         }
     }
@@ -764,6 +764,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 DrmInitData drmInitData = DashUtil.loadDrmInitData(dataSource, dashManifest.getPeriod(0));
                 byte[] offlineLicenseKeySetId = licenseStoreDelegate.fetch(drmInitData);
                 if (offlineLicenseKeySetId != null && !isOfflineLicenseExpired(offlineLicenseKeySetId)) {
+                    Log.v(TAG, "DRM Restored");
                     applyOfflineLicense(offlineLicenseKeySetId);
                     drmRequestOffline = true;
                 } else {
@@ -1482,7 +1483,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
 
         textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
-                // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
+            // It is very important to check renderingView type as it may have changed (do not listen to lint here!)
             boolean isCurrent(SurfaceTexture surfaceTexture) {
                 return renderingView instanceof TextureView && ((TextureView) renderingView).getSurfaceTexture() == surfaceTexture;
             }
@@ -2290,15 +2291,15 @@ public class SRGMediaPlayerController implements Handler.Callback,
             MediaCodec.CryptoException cryptoException = (MediaCodec.CryptoException) cause;
             if (cryptoException.getErrorCode() == MediaCodec.CryptoException.ERROR_KEY_EXPIRED
                     || cryptoException.getErrorCode() == MediaCodec.CryptoException.ERROR_NO_KEY) {
-                Log.w(TAG, "Drm expired key during playback");
-                reason = SRGMediaPlayerException.Reason.DRM_KEY_EXPIRED;  //TODO test with not compatible device
-                // Experimental
-                if (getMediaUri() != null && numberOfDrmRetry < 1) {
+                if (currentMediaUri != null && numberOfDrmRetry < 1) {
+                    Log.w(TAG, "DRM expired key during playback, retrying");
                     numberOfDrmRetry++;
                     retry();
                     return;
+                } else {
+                    Log.w(TAG, "DRM expired key during playback. Failing (retry count: " + numberOfDrmRetry + ")");
+                    reason = SRGMediaPlayerException.Reason.DRM_KEY_EXPIRED;
                 }
-
             } else {
                 reason = SRGMediaPlayerException.Reason.DRM;
             }
