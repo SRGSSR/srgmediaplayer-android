@@ -9,6 +9,7 @@ public class SRGMediaPlayerException extends Exception {
     public enum Reason {
         NETWORK,
         DRM,
+        DRM_KEY_EXPIRED,
         FORBIDDEN,
         VIEW,
         RENDERER,
