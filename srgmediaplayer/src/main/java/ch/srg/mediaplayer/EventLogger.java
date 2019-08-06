@@ -40,7 +40,9 @@ import java.util.Locale;
 /**
  * Logs player events using {@link Log}.
  */
-/* package */ final class EventLogger implements AnalyticsListener, MetadataOutput {
+/* package */
+@SuppressWarnings("StringConcatenationInsideStringBufferAppend")
+final class EventLogger implements AnalyticsListener, MetadataOutput {
 
     private static final String TAG = "EventLogger";
     private static final int MAX_TIMELINE_ITEM_LINES = 3;
@@ -144,63 +146,65 @@ import java.util.Locale;
             Log.d(TAG, "Tracks []");
             return;
         }
-        Log.d(TAG, "Tracks [");
+        StringBuffer sb = new StringBuffer();
+        sb.append("Tracks [" + "\n");
         // Log tracks associated to renderers.
         for (int rendererIndex = 0; rendererIndex < mappedTrackInfo.length; rendererIndex++) {
             TrackGroupArray rendererTrackGroups = mappedTrackInfo.getTrackGroups(rendererIndex);
             TrackSelection trackSelection = trackSelections.get(rendererIndex);
             if (rendererTrackGroups.length > 0) {
-                Log.d(TAG, "  Renderer:" + rendererIndex + " [");
+                sb.append("  Renderer:" + rendererIndex + " [" + "\n");
                 for (int groupIndex = 0; groupIndex < rendererTrackGroups.length; groupIndex++) {
                     TrackGroup trackGroup = rendererTrackGroups.get(groupIndex);
                     String adaptiveSupport = getAdaptiveSupportString(trackGroup.length,
                             mappedTrackInfo.getAdaptiveSupport(rendererIndex, groupIndex, false));
-                    Log.d(TAG, "    Group:" + groupIndex + ", adaptive_supported=" + adaptiveSupport + " [");
+                    sb.append("    Group:" + groupIndex + ", adaptive_supported=" + adaptiveSupport + " [" + "\n");
                     for (int trackIndex = 0; trackIndex < trackGroup.length; trackIndex++) {
                         String status = getTrackStatusString(trackSelection, trackGroup, trackIndex);
                         String formatSupport = getFormatSupportString(
                                 mappedTrackInfo.getTrackFormatSupport(rendererIndex, groupIndex, trackIndex));
-                        Log.d(TAG, "      " + status + " Track:" + trackIndex + ", "
+                        sb.append("      " + status + " Track:" + trackIndex + ", "
                                 + Format.toLogString(trackGroup.getFormat(trackIndex))
-                                + ", supported=" + formatSupport);
+                                + ", supported=" + formatSupport + "\n");
                     }
-                    Log.d(TAG, "    ]");
+                    sb.append("    ]" + "\n");
                 }
                 // Log metadata for at most one of the tracks selected for the renderer.
                 if (trackSelection != null) {
                     for (int selectionIndex = 0; selectionIndex < trackSelection.length(); selectionIndex++) {
                         Metadata metadata = trackSelection.getFormat(selectionIndex).metadata;
                         if (metadata != null) {
-                            Log.d(TAG, "    Metadata [");
-                            printMetadata(metadata, "      ");
-                            Log.d(TAG, "    ]");
+                            sb.append("    Metadata [" + "\n");
+                            printMetadata(sb, metadata, "      ");
+                            sb.append("    ]" + "\n");
                             break;
                         }
                     }
                 }
-                Log.d(TAG, "  ]");
+                sb.append("  ]" + "\n");
             }
         }
         // Log tracks not associated with a renderer.
         TrackGroupArray unassociatedTrackGroups = mappedTrackInfo.getUnassociatedTrackGroups();
         if (unassociatedTrackGroups.length > 0) {
-            Log.d(TAG, "  Renderer:None [");
+            sb.append("  Renderer:None [" + "\n");
             for (int groupIndex = 0; groupIndex < unassociatedTrackGroups.length; groupIndex++) {
-                Log.d(TAG, "    Group:" + groupIndex + " [");
+                sb.append("    Group:" + groupIndex + " [" + "\n");
                 TrackGroup trackGroup = unassociatedTrackGroups.get(groupIndex);
                 for (int trackIndex = 0; trackIndex < trackGroup.length; trackIndex++) {
                     String status = getTrackStatusString(false);
                     String formatSupport = getFormatSupportString(
                             RendererCapabilities.FORMAT_UNSUPPORTED_TYPE);
-                    Log.d(TAG, "      " + status + " Track:" + trackIndex + ", "
+                    sb.append("      " + status + " Track:" + trackIndex + ", + "
                             + Format.toLogString(trackGroup.getFormat(trackIndex))
-                            + ", supported=" + formatSupport);
+                            + ", supported=" + formatSupport + "\n");
                 }
-                Log.d(TAG, "    ]");
+                sb.append("    ]" + "\n");
             }
-            Log.d(TAG, "  ]");
+            sb.append("  ]" + "\n");
         }
-        Log.d(TAG, "]");
+        sb.append("]" + "\n");
+        Log.v(TAG, sb.toString());
     }
 
 
@@ -370,37 +374,37 @@ import java.util.Locale;
         Log.e(TAG, "internalError [" + eventTime.realtimeMs + ", " + type + "]", e);
     }
 
-    private void printMetadata(Metadata metadata, String prefix) {
+    private void printMetadata(StringBuffer sb, Metadata metadata, String prefix) {
         for (int i = 0; i < metadata.length(); i++) {
             Metadata.Entry entry = metadata.get(i);
             if (entry instanceof TextInformationFrame) {
                 TextInformationFrame textInformationFrame = (TextInformationFrame) entry;
-                Log.d(TAG, prefix + String.format("%s: value=%s", textInformationFrame.id,
+                sb.append(prefix + String.format("%s: value=%s", textInformationFrame.id,
                         textInformationFrame.value));
             } else if (entry instanceof UrlLinkFrame) {
                 UrlLinkFrame urlLinkFrame = (UrlLinkFrame) entry;
-                Log.d(TAG, prefix + String.format("%s: url=%s", urlLinkFrame.id, urlLinkFrame.url));
+                sb.append(prefix + String.format("%s: url=%s", urlLinkFrame.id, urlLinkFrame.url));
             } else if (entry instanceof PrivFrame) {
                 PrivFrame privFrame = (PrivFrame) entry;
-                Log.d(TAG, prefix + String.format("%s: owner=%s", privFrame.id, privFrame.owner));
+                sb.append(prefix + String.format("%s: owner=%s", privFrame.id, privFrame.owner));
             } else if (entry instanceof GeobFrame) {
                 GeobFrame geobFrame = (GeobFrame) entry;
-                Log.d(TAG, prefix + String.format("%s: mimeType=%s, filename=%s, description=%s",
+                sb.append(prefix + String.format("%s: mimeType=%s, filename=%s, description=%s",
                         geobFrame.id, geobFrame.mimeType, geobFrame.filename, geobFrame.description));
             } else if (entry instanceof ApicFrame) {
                 ApicFrame apicFrame = (ApicFrame) entry;
-                Log.d(TAG, prefix + String.format("%s: mimeType=%s, description=%s",
+                sb.append(prefix + String.format("%s: mimeType=%s, description=%s",
                         apicFrame.id, apicFrame.mimeType, apicFrame.description));
             } else if (entry instanceof CommentFrame) {
                 CommentFrame commentFrame = (CommentFrame) entry;
-                Log.d(TAG, prefix + String.format("%s: language=%s, description=%s", commentFrame.id,
+                sb.append(prefix + String.format("%s: language=%s, description=%s", commentFrame.id,
                         commentFrame.language, commentFrame.description));
             } else if (entry instanceof Id3Frame) {
                 Id3Frame id3Frame = (Id3Frame) entry;
-                Log.d(TAG, prefix + String.format("%s", id3Frame.id));
+                sb.append(prefix + String.format("%s", id3Frame.id));
             } else if (entry instanceof EventMessage) {
                 EventMessage eventMessage = (EventMessage) entry;
-                Log.d(TAG, prefix + String.format("EMSG: scheme=%s, id=%d, value=%s",
+                sb.append(prefix + String.format("EMSG: scheme=%s, id=%d, value=%s",
                         eventMessage.schemeIdUri, eventMessage.id, eventMessage.value));
             }
         }
@@ -479,8 +483,10 @@ import java.util.Locale;
 
     @Override
     public void onMetadata(Metadata metadata) {
-        Log.d(TAG, "onMetadata [");
-        printMetadata(metadata, "  ");
-        Log.d(TAG, "]");
+        StringBuffer sb = new StringBuffer();
+        sb.append("onMetadata [");
+        printMetadata(sb, metadata, "  ");
+        sb.append("]");
+        Log.v(TAG, sb.toString());
     }
 }
