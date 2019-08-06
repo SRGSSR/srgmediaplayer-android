@@ -891,8 +891,27 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS,
                     true);
 
-            DefaultDataSourceFactory dataSourceFactory = new DefaultDataSourceFactory(context, getDefaultBandwidthMeter(context), httpDataSourceFactory);
+            DefaultDataSourceFactory dataSourceFactory = new DefaultDataSourceFactory(context, new TransferListener() {
+                @Override
+                public void onTransferInitializing(DataSource source, DataSpec dataSpec, boolean isNetwork) {
+                    Log.v(TAG, "Transfer: " + dataSpec.uri);
+                }
 
+                @Override
+                public void onTransferStart(DataSource source, DataSpec dataSpec, boolean isNetwork) {
+
+                }
+
+                @Override
+                public void onBytesTransferred(DataSource source, DataSpec dataSpec, boolean isNetwork, int bytesTransferred) {
+
+                }
+
+                @Override
+                public void onTransferEnd(DataSource source, DataSpec dataSpec, boolean isNetwork) {
+
+                }
+            }, httpDataSourceFactory);
             MediaSource mediaSource;
 
             switch (streamType) {
