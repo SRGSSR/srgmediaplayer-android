@@ -52,9 +52,14 @@ import java.lang.ref.WeakReference;
 import java.util.*;
 
 /**
- * Handle the playback of media.
- * if used along with a SRGMediaPlayerView can handle Video playback base on delegation on
- * actual players, like android.MediaPlayer or ExoPlayer
+ * Handles the playback of media.
+ * <li> Encapsulate exoplayer
+ * <li> Handles "logical segments"
+ * <li> Handles DRM Configuration
+ * <li> Audio focus
+ * <li> Supports TextureView and SurfaceView
+ * <li> Supports 360 playback with ExoPlayer view
+ *
  * <p>
  * Threading: all calls to public method must be made from main thread. An exception will be
  * thrown in debug mode.
@@ -81,6 +86,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private Long userTrackingProgress;
     private static final String NAME = "SRGMediaPlayer";
     private boolean currentViewKeepScreenOn;
+    @SuppressWarnings("FieldCanBeLocal")
     private MonitoringDrmCallback monitoringDrmCallback;
     /**
      * Set to true first time player goes to READY.
@@ -1213,7 +1219,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * This does not affect playing state.
      *
      * @param identifier segment identifier
-     * @return true if segment found and switch occured
+     * @return true if segment found and switch occurred
      */
     public boolean switchToSegment(String identifier) {
         for (Segment segment : segments) {
