@@ -35,7 +35,7 @@ dependencies {
     implementation files('libs/android_malibrary.jar')
 
     implementation "androidx.appcompat:appcompat:$rootProject.appcompatVersion"
-    implementation "androidx.annotation:annotation:$rootProject.annotationVersion"
+    api "androidx.annotation:annotation:$rootProject.annotationVersion"
     implementation "androidx.mediarouter:mediarouter:$rootProject.mediarouterVersion"
     implementation "androidx.media:media:$rootProject.mediaVersion"
 
