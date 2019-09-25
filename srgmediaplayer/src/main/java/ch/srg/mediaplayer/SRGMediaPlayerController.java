@@ -6,7 +6,11 @@ import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
 import android.media.MediaCodec;
 import android.net.Uri;
-import android.os.*;
+import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+import android.os.SystemClock;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.text.TextUtils;
 import android.util.Log;
@@ -15,18 +19,43 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
-import androidx.annotation.*;
-import ch.srg.mediaplayer.segment.model.Segment;
-import ch.srg.mediaplayer.utils.FileLicenseStore;
-import ch.srg.mediaplayer.utils.LicenseStoreDelegate;
-import ch.srg.mediaplayer.utils.MonitorTransferListener;
+
+import androidx.annotation.AnyThread;
+import androidx.annotation.IntDef;
+import androidx.annotation.MainThread;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.media.AudioAttributesCompat;
+import androidx.media.AudioFocusRequestCompat;
+import androidx.media.AudioManagerCompat;
+
 import com.akamai.android.analytics.AkamaiMediaAnalytics;
 import com.akamai.android.analytics.EndReasonCodes;
 import com.akamai.android.analytics.PluginCallBacks;
-import com.google.android.exoplayer2.*;
+import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.DefaultLoadControl;
+import com.google.android.exoplayer2.DefaultRenderersFactory;
+import com.google.android.exoplayer2.ExoPlaybackException;
+import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.PlaybackParameters;
+import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.audio.AudioCapabilities;
 import com.google.android.exoplayer2.audio.AudioCapabilitiesReceiver;
-import com.google.android.exoplayer2.drm.*;
+import com.google.android.exoplayer2.drm.DefaultDrmSessionEventListener;
+import com.google.android.exoplayer2.drm.DefaultDrmSessionManager;
+import com.google.android.exoplayer2.drm.DrmInitData;
+import com.google.android.exoplayer2.drm.DrmSession;
+import com.google.android.exoplayer2.drm.ExoMediaDrm;
+import com.google.android.exoplayer2.drm.FrameworkMediaCrypto;
+import com.google.android.exoplayer2.drm.FrameworkMediaDrm;
+import com.google.android.exoplayer2.drm.HttpMediaDrmCallback;
+import com.google.android.exoplayer2.drm.MediaDrmCallback;
+import com.google.android.exoplayer2.drm.OfflineLicenseHelper;
+import com.google.android.exoplayer2.drm.UnsupportedDrmException;
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
@@ -39,9 +68,20 @@ import com.google.android.exoplayer2.source.hls.DefaultHlsDataSourceFactory;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.text.TextOutput;
-import com.google.android.exoplayer2.trackselection.*;
+import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.trackselection.MappingTrackSelector;
+import com.google.android.exoplayer2.trackselection.TrackSelection;
+import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.ui.spherical.SphericalSurfaceView;
-import com.google.android.exoplayer2.upstream.*;
+import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
+import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
+import com.google.android.exoplayer2.upstream.HttpDataSource;
+import com.google.android.exoplayer2.upstream.TransferListener;
 import com.google.android.exoplayer2.util.Util;
 import com.google.android.exoplayer2.video.VideoListener;
 
@@ -49,7 +89,19 @@ import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.WeakHashMap;
+
+import ch.srg.mediaplayer.segment.model.Segment;
+import ch.srg.mediaplayer.utils.FileLicenseStore;
+import ch.srg.mediaplayer.utils.LicenseStoreDelegate;
+import ch.srg.mediaplayer.utils.MonitorTransferListener;
 
 /**
  * Handles the playback of media.
@@ -500,6 +552,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private int audioFocusBehaviorFlag = AUDIO_FOCUS_FLAG_PAUSE;
 
     private OnAudioFocusChangeListener audioFocusChangeListener;
+    private AudioFocusRequestCompat audioFocusRequest;
 
     /**
      * Listeners registered to this player
@@ -1725,17 +1778,26 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
     }
 
+
+    /**
+     * From Android O, if another app request audio focus with AUDIOFOCUS_GAIN, the audio focus never gain automatically.
+     * If the focus is transient lost, for example by a phone call, the audio focus can be gain automatically at the end of the call.
+     */
     private boolean requestAudioFocus() {
         if (audioFocusBehaviorFlag == 0 || audioFocusGranted) {
             return true;
         } else {
-            Log.d(TAG, "Request audio focus");
-            //final WeakReference<SRGMediaPlayerController> selfReference = new WeakReference<>(this);
-            int result = audioManager.requestAudioFocus(
-                    audioFocusChangeListener,
-                    AudioManager.STREAM_MUSIC,
-                    AudioManager.AUDIOFOCUS_GAIN);
-
+            if (audioFocusRequest == null) {
+                AudioAttributesCompat audioAttributes = new AudioAttributesCompat.Builder()
+                        .setUsage(AudioAttributesCompat.USAGE_MEDIA)
+                        .setContentType(AudioAttributesCompat.CONTENT_TYPE_MUSIC).build();
+                audioFocusRequest = new AudioFocusRequestCompat.Builder(AudioManagerCompat.AUDIOFOCUS_GAIN)
+                        .setAudioAttributes(audioAttributes)
+                        .setWillPauseWhenDucked(false)
+                        .setOnAudioFocusChangeListener(audioFocusChangeListener)
+                        .build();
+            }
+            int result = AudioManagerCompat.requestAudioFocus(audioManager, audioFocusRequest);
             if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
                 audioFocusGranted = true;
                 return true;
@@ -1748,9 +1810,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private void abandonAudioFocus() {
         if (audioFocusBehaviorFlag != 0) {
-            Log.d(TAG, "Abandon audio focus");
-
-            audioManager.abandonAudioFocus(audioFocusChangeListener);
+            Log.d(TAG, "audiofocus Abandon audio focus");
+            AudioManagerCompat.abandonAudioFocusRequest(audioManager, audioFocusRequest);
             audioFocusGranted = false;
         }
     }
