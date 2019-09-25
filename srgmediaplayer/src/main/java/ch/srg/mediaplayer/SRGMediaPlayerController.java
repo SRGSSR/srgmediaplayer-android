@@ -890,7 +890,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             exoPlayer.setPlayWhenReady(true);
             return true;
         } else {
-            Log.v(TAG, "Audio focus request failed");
+            logV("Audio focus audioFocusRequest failed");
             return false;
         }
     }
@@ -1387,14 +1387,14 @@ public class SRGMediaPlayerController implements Handler.Callback,
             if (!canRenderInView(mediaPlayerView.getVideoRenderingView())) {
                 // We need to create a new rendering view.
                 createRenderingView(mediaPlayerView.getContext());
-                Log.v(TAG, renderingView + "binding, creating rendering view" + mediaPlayerView);
+                logV(renderingView + "binding, creating rendering view" + mediaPlayerView);
             } else {
                 renderingView = mediaPlayerView.getVideoRenderingView();
                 try {
-                    Log.v(TAG, "binding, bindRenderingViewInUiThread " + mediaPlayerView);
+                    logV("binding, bindRenderingViewInUiThread " + mediaPlayerView);
                     bindRenderingViewInUiThread();
                 } catch (SRGMediaPlayerException e) {
-                    Log.d(TAG, "Error binding view", e);
+                    logE("Error binding view", e);
                 }
             }
         } else {
