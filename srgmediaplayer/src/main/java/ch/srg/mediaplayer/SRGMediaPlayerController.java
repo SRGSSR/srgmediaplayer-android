@@ -1787,6 +1787,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (audioFocusBehaviorFlag == 0 || audioFocusGranted) {
             return true;
         } else {
+            logV("Request audio focus");
             if (audioFocusRequest == null) {
                 AudioAttributesCompat audioAttributes = new AudioAttributesCompat.Builder()
                         .setUsage(AudioAttributesCompat.USAGE_MEDIA)
@@ -1810,7 +1811,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private void abandonAudioFocus() {
         if (audioFocusBehaviorFlag != 0) {
-            Log.d(TAG, "audiofocus Abandon audio focus");
+            logV("Abandon audio focus");
             AudioManagerCompat.abandonAudioFocusRequest(audioManager, audioFocusRequest);
             audioFocusGranted = false;
         }
@@ -1825,10 +1826,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         @Override
         public void onAudioFocusChange(int focusChange) {
-            Log.d(TAG, "audio focus changed: " + focusChange);
-
             SRGMediaPlayerController player = playerReference.get();
             if (player != null) {
+                player.logV("audio focus changed: " + focusChange);
                 player.handleAudioFocusChange(focusChange);
             }
         }
