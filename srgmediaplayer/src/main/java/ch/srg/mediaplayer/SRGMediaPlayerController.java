@@ -577,6 +577,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private @SRGStreamType
     int currentStreamType;
     private int numberOfDrmRetry = 0;
+    @Nullable
+    private FrameworkMediaDrm mediaDrm;
 
     public static String getName() {
         return NAME;
@@ -655,8 +657,14 @@ public class SRGMediaPlayerController implements Handler.Callback,
             try {
                 UUID drmType = drmConfig.getDrmType();
                 monitoringDrmCallback = new MonitoringDrmCallback(new HttpMediaDrmCallback(drmConfig.getLicenceUrl(), httpDataSourceFactory));
+                mediaDrm = FrameworkMediaDrm.newInstance(drmType);
+                if (drmType == C.WIDEVINE_UUID && TextUtils.equals(mediaDrm.getPropertyString("securityLevel"), "L3")) {
+                    trackSelector.setParameters(new DefaultTrackSelector.ParametersBuilder()
+                            //.setMaxVideoSizeSd() //TODO if we use standard size (720p)
+                            .setMaxVideoSize(959, 543)); // Min HD 540P Patrizio streams
+                }
                 drmSessionManager = new DefaultDrmSessionManager<>(drmType,
-                        FrameworkMediaDrm.newInstance(drmType),
+                        mediaDrm,
                         monitoringDrmCallback, null, true);
                 drmSessionManager.addListener(mainHandler, this);
                 offlineLicenseHelper = OfflineLicenseHelper.newWidevineInstance(this.drmConfig.getLicenceUrl(),
@@ -807,11 +815,13 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
         Long finalPlaybackStartPosition = playbackStartPosition;
         Runnable prepareViewAndPlayer = () -> prepareViewAndPlayer(uri, streamType, finalPlaybackStartPosition);
-        if (drmConfig != null && licenseStoreDelegate != null) {
-            downloadOrApplyOfflineLicense(uri, prepareViewAndPlayer, drmConfig);
-        } else {
-            prepareViewAndPlayer.run();
-        }
+        prepareViewAndPlayer.run();
+        // FIXME disable offline license because it is not possible when server doesn't respond with all key.
+//        if (drmConfig != null && licenseStoreDelegate != null) {
+//            downloadOrApplyOfflineLicense(uri, prepareViewAndPlayer, drmConfig);
+//        } else {
+//            prepareViewAndPlayer.run();
+//        }
         broadcastEvent(Event.Type.SEGMENT_LIST_CHANGE);
     }
 
@@ -1093,6 +1103,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
         exoPlayer.release();
         currentMediaUri = null;
         audioCapabilitiesReceiver.unregister();
+        if (mediaDrm != null) {
+            mediaDrm.release();
+            mediaDrm = null;
+        }
     }
 
     //endregion
