@@ -93,6 +93,7 @@ import java.util.UUID;
 import java.util.WeakHashMap;
 
 import ch.srg.mediaplayer.segment.model.Segment;
+import ch.srg.mediaplayer.utils.DrmUtils;
 import ch.srg.mediaplayer.utils.MonitorTransferListener;
 
 /**
@@ -645,10 +646,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 UUID drmType = drmConfig.getDrmType();
                 monitoringDrmCallback = new MonitoringDrmCallback(new HttpMediaDrmCallback(drmConfig.getLicenceUrl(), httpDataSourceFactory));
                 mediaDrm = FrameworkMediaDrm.newInstance(drmType);
-                if (drmType == C.WIDEVINE_UUID && TextUtils.equals(mediaDrm.getPropertyString("securityLevel"), "L3")) {
+                if (drmType == C.WIDEVINE_UUID && DrmUtils.isWidevineL3(mediaDrm)) {
                     trackSelector.setParameters(new DefaultTrackSelector.ParametersBuilder()
-                            //.setMaxVideoSizeSd() //TODO if we use standard size (720p)
-                            .setMaxVideoSize(959, 543)); // Min HD 540P Patrizio streams
+                            .setMaxVideoSizeSd());
                 }
                 drmSessionManager = new DefaultDrmSessionManager<>(drmType,
                         mediaDrm,
