@@ -24,17 +24,17 @@ allprojects {
 ext {
     // sdk and tools
     minSdkVersion = 16
-    targetSdkVersion = 28
-    compileSdkVersion = 28
+    targetSdkVersion = 29
+    compileSdkVersion = 29
 
     //libs
     androidTestVersion = '1.2.0'
     espressoVersion = '3.2.0'
     junitVersion = '4.12'
-    mediaVersion = '1.0.1'
-    mediarouterVersion = '1.0.0'
+    mediaVersion = '1.1.0'
+    mediarouterVersion = '1.1.0'
 	exoPlayerVersion = '2.10.2'
-    appcompatVersion = '1.0.2'
+    appcompatVersion = '1.1.0'
     annotationVersion = '1.1.0'
     recyclerViewVersion = '1.0.0'
     constraintLayoutVersion = '1.1.3'
