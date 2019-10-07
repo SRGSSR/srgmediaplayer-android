@@ -93,7 +93,6 @@ import java.util.UUID;
 import java.util.WeakHashMap;
 
 import ch.srg.mediaplayer.segment.model.Segment;
-import ch.srg.mediaplayer.utils.DrmUtils;
 import ch.srg.mediaplayer.utils.MonitorTransferListener;
 
 /**
@@ -646,10 +645,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 UUID drmType = drmConfig.getDrmType();
                 monitoringDrmCallback = new MonitoringDrmCallback(new HttpMediaDrmCallback(drmConfig.getLicenceUrl(), httpDataSourceFactory));
                 mediaDrm = FrameworkMediaDrm.newInstance(drmType);
-                if (drmType == C.WIDEVINE_UUID && DrmUtils.isWidevineL3(mediaDrm)) {
-                    trackSelector.setParameters(new DefaultTrackSelector.ParametersBuilder()
-                            .setMaxVideoSizeSd());
-                }
                 drmSessionManager = new DefaultDrmSessionManager<>(drmType,
                         mediaDrm,
                         monitoringDrmCallback, null, true);
@@ -2284,6 +2279,12 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     Log.w(TAG, "DRM expired key during playback. Failing (retry count: " + numberOfDrmRetry + ")");
                     reason = SRGMediaPlayerException.Reason.DRM_KEY_EXPIRED;
                 }
+            } else if (cryptoException.getErrorCode() == MediaCodec.CryptoException.ERROR_INSUFFICIENT_OUTPUT_PROTECTION) {
+                if (handleInsufficientOutputProtectionError()) {
+                    exoPlayer.retry();
+                    return;
+                }
+                reason = SRGMediaPlayerException.Reason.DRM;
             } else {
                 reason = SRGMediaPlayerException.Reason.DRM;
             }
@@ -2301,6 +2302,37 @@ public class SRGMediaPlayerController implements Handler.Callback,
         doAkamaiAnalytics((ma) -> ma.handleError("PLAYER.ERROR"));
 
         handlePlayerException(exception);
+    }
+
+    /**
+     * Handle insufficient output protection when player get an error
+     * @see MediaCodec.CryptoException#ERROR_INSUFFICIENT_OUTPUT_PROTECTION
+     *
+     * @return true if something has been changed
+     */
+    public boolean handleInsufficientOutputProtectionError() {
+        TrackSelectionArray trackSelections = exoPlayer.getCurrentTrackSelections();
+        if (trackSelections == null) {
+            return false;
+        }
+        for (int i = 0; i < trackSelections.length; i++) {
+            TrackSelection trackSelection = trackSelections.get(i);
+            if (trackSelection != null) {
+                Format format = trackSelection.getSelectedFormat();
+                if (format != null && TextUtils.equals(format.containerMimeType, "video/mp4")) {
+                    logV("Blacklist Track[" + format.id + "] " + format.containerMimeType + " " + format.bitrate + " " + format.width + "X" + format.height);
+                    setMinimalVideoSizeSupported(format.width - 1, format.height - 1);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private void setMinimalVideoSizeSupported(int maxVideoWidth, int maxVideoHeight) {
+        DefaultTrackSelector.ParametersBuilder builder = trackSelector.buildUponParameters();
+        builder.setMaxVideoSize(Math.min(trackSelector.getParameters().maxVideoWidth, maxVideoWidth), Math.min(trackSelector.getParameters().maxVideoHeight, maxVideoWidth));
+        trackSelector.setParameters(builder);
     }
 
     @Override
