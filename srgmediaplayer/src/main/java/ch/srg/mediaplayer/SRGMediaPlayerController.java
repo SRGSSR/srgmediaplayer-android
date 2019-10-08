@@ -514,7 +514,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     @NonNull
     private final SimpleExoPlayer exoPlayer;
     private final AudioCapabilitiesReceiver audioCapabilitiesReceiver;
-    private final DefaultTrackSelector trackSelector;
+    private final SRGDefaultTrackSelector trackSelector;
 
     @Nullable
     private MediaSessionConnector mediaSessionConnector;
@@ -635,7 +635,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS,
                 true);
 
-        trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
+        trackSelector = new SRGDefaultTrackSelector(videoTrackSelectionFactory);
         EventLogger eventLogger = new EventLogger(trackSelector);
         drmSessionManager = null;
         UnsupportedDrmException unsupportedDrm = null;
@@ -2280,7 +2280,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     reason = SRGMediaPlayerException.Reason.DRM_KEY_EXPIRED;
                 }
             } else if (cryptoException.getErrorCode() == MediaCodec.CryptoException.ERROR_INSUFFICIENT_OUTPUT_PROTECTION) {
-                if (handleInsufficientOutputProtectionError()) {
+                if (trackSelector.blacklistCurrentTrackSelection(exoPlayer.getCurrentTrackSelections())) {
                     exoPlayer.retry();
                     return;
                 }
@@ -2302,31 +2302,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         doAkamaiAnalytics((ma) -> ma.handleError("PLAYER.ERROR"));
 
         handlePlayerException(exception);
-    }
-
-    /**
-     * Handle insufficient output protection when player get an error
-     * @see MediaCodec.CryptoException#ERROR_INSUFFICIENT_OUTPUT_PROTECTION
-     *
-     * @return true if something has been changed
-     */
-    public boolean handleInsufficientOutputProtectionError() {
-        TrackSelectionArray trackSelections = exoPlayer.getCurrentTrackSelections();
-        if (trackSelections == null) {
-            return false;
-        }
-        for (int i = 0; i < trackSelections.length; i++) {
-            TrackSelection trackSelection = trackSelections.get(i);
-            if (trackSelection != null) {
-                Format format = trackSelection.getSelectedFormat();
-                if (format != null && TextUtils.equals(format.containerMimeType, "video/mp4")) {
-                    logV("Blacklist Track[" + format.id + "] " + format.containerMimeType + " " + format.bitrate + " " + format.width + "X" + format.height);
-                    setMinimalVideoSizeSupported(format.width - 1, format.height - 1);
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     private void setMinimalVideoSizeSupported(int maxVideoWidth, int maxVideoHeight) {
