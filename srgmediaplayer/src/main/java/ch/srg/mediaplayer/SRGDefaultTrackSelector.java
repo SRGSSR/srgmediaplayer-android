@@ -1,6 +1,5 @@
 package ch.srg.mediaplayer;
 
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.google.android.exoplayer2.C;
@@ -28,6 +27,7 @@ public final class SRGDefaultTrackSelector extends DefaultTrackSelector {
         super(trackSelectionFactory);
     }
 
+
     public boolean blacklistCurrentTrackSelection(TrackSelectionArray trackSelections) {
         MappedTrackInfo mappedTrackInfo = getCurrentMappedTrackInfo();
         if (trackSelections == null || mappedTrackInfo == null) {
@@ -35,9 +35,9 @@ public final class SRGDefaultTrackSelector extends DefaultTrackSelector {
         }
         for (int renderId = 0; renderId < trackSelections.length; renderId++) {
             TrackSelection trackSelection = trackSelections.get(renderId);
-            if (trackSelection != null) {
+            if (trackSelection != null && mappedTrackInfo.getRendererType(renderId) == C.TRACK_TYPE_VIDEO) {
                 Format format = trackSelection.getSelectedFormat();
-                if (format != null && TextUtils.equals(format.containerMimeType, "video/mp4")) {
+                if (format != null) {
                     if (blackListVideoTracks.add(format)) {
                         Log.d(TAG, "Black list Track[" + format.containerMimeType + "] " + format.id + " " + format.bitrate + " " + format.width + "X" + format.height);
                         List<Integer> listPlayableTracks = new ArrayList<>();
@@ -63,4 +63,40 @@ public final class SRGDefaultTrackSelector extends DefaultTrackSelector {
         }
         return false;
     }
+    
+    /**
+     * <pre>
+     * Clear previously video track selection override and try with quality constrains.
+     * This constrain can be override by {@link SRGDefaultTrackSelector#blacklistCurrentTrackSelection}
+     * @param quality bandwidth quality in bits/sec or null to disable
+     * </pre>
+     */
+    public void setQualityOverride(Long quality) {
+        MappedTrackInfo mappedTrackInfo = getCurrentMappedTrackInfo();
+        if (mappedTrackInfo == null) {
+            return;
+        }
+        DefaultTrackSelector.ParametersBuilder parameters = buildUponParameters();
+        for (int renderId = 0; renderId < mappedTrackInfo.getRendererCount(); renderId++) {
+            if (mappedTrackInfo.getRendererType(renderId) == C.TRACK_TYPE_VIDEO) {
+                parameters.clearSelectionOverrides(renderId);
+                clearBlacklistItem();
+                break;
+            }
+        }
+        if (quality == null) {
+            setParameters(parameters.setMaxVideoBitrate(Integer.MAX_VALUE).setForceLowestBitrate(false));
+        } else {
+            if (quality == 0) {
+                setParameters(parameters.setForceLowestBitrate(true));
+            } else {
+                setParameters(parameters.setMaxVideoBitrate(quality.intValue()).setForceLowestBitrate(false));
+            }
+        }
+    }
+
+    private void clearBlacklistItem() {
+        blackListVideoTracks.clear();
+    }
+
 }

@@ -1940,16 +1940,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @param quality bandwidth quality in bits/sec or null to disable
      */
     public void setQualityOverride(Long quality) {
-        DefaultTrackSelector.ParametersBuilder parameters = trackSelector.buildUponParameters();
-        if (quality == null) {
-            trackSelector.setParameters(parameters.setMaxVideoBitrate(Integer.MAX_VALUE).setForceLowestBitrate(false));
-        } else {
-            if (quality == 0) {
-                trackSelector.setParameters(parameters.setForceLowestBitrate(true));
-            } else {
-                trackSelector.setParameters(parameters.setMaxVideoBitrate(quality.intValue()).setForceLowestBitrate(false));
-            }
-        }
+        trackSelector.setQualityOverride(quality);
     }
 
     /**
@@ -2302,12 +2293,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         doAkamaiAnalytics((ma) -> ma.handleError("PLAYER.ERROR"));
 
         handlePlayerException(exception);
-    }
-
-    private void setMinimalVideoSizeSupported(int maxVideoWidth, int maxVideoHeight) {
-        DefaultTrackSelector.ParametersBuilder builder = trackSelector.buildUponParameters();
-        builder.setMaxVideoSize(Math.min(trackSelector.getParameters().maxVideoWidth, maxVideoWidth), Math.min(trackSelector.getParameters().maxVideoHeight, maxVideoWidth));
-        trackSelector.setParameters(builder);
     }
 
     @Override
