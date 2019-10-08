@@ -1810,7 +1810,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     private void abandonAudioFocus() {
-        if (audioFocusBehaviorFlag != 0) {
+        if (audioFocusBehaviorFlag != 0 && audioFocusRequest != null) {
             logV("Abandon audio focus");
             AudioManagerCompat.abandonAudioFocusRequest(audioManager, audioFocusRequest);
             audioFocusGranted = false;
