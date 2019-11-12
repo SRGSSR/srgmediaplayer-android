@@ -82,7 +82,6 @@ import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
 import com.google.android.exoplayer2.upstream.HttpDataSource;
 import com.google.android.exoplayer2.upstream.TransferListener;
-import com.google.android.exoplayer2.util.Util;
 import com.google.android.exoplayer2.video.VideoListener;
 
 import java.io.IOException;
@@ -650,7 +649,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         EventLogger eventLogger = new EventLogger(trackSelector);
         drmSessionManager = null;
         UnsupportedDrmException unsupportedDrm = null;
-        if (drmConfig != null && Util.SDK_INT >= 18) {
+        if (drmConfig != null) {
             this.drmConfig = drmConfig;
             try {
                 UUID drmType = drmConfig.getDrmType();
@@ -1984,7 +1983,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     public static boolean isDrmSupported() {
-        return Util.SDK_INT >= 18;
+        return true;
     }
 
     public int getDrmRequestDuration() {
