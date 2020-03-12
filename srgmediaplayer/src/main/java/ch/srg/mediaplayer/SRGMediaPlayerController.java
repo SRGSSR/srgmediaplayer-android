@@ -928,6 +928,13 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
     }
 
+    public void seekToTime(long dateMs) {
+        if (isLive()) {
+            long position = getMediaDuration() - (getLiveTime() - dateMs);
+            seekTo(Math.max(position, 0));
+        }
+    }
+
     //endregion
 
     //region initialisation
@@ -1262,7 +1269,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private void switchToSegment(Segment segment) {
         broadcastSegmentEvent(Event.Type.SEGMENT_SELECTED, segment);
-        seekTo(segment.getMarkIn());
+        if (segment.getReferenceDate() != 0) {
+            seekToTime(segment.getReferenceDate() + segment.getMarkIn());
+        } else {
+            seekTo(segment.getMarkIn());
+        }
     }
 
     /**
