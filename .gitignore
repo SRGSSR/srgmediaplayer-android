@@ -30,3 +30,5 @@ local.properties
 .idea/inspectionProfiles/profiles_settings.xml
 .idea/inspectionProfiles/Project_Default.xml
 .idea/caches/
+.idea/markdown-navigator.xml
+.idea/markdown-navigator-enh.xml
