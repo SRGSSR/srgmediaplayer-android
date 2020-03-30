@@ -48,6 +48,10 @@ public class SRGMediaPlayerView extends ViewGroup {
         void onScaleModeChanged(SRGMediaPlayerView mediaPlayerView, ScaleMode scaleMode);
     }
 
+    public interface AspectRatioListener {
+        void onAspectRatioChanged(float videoAspectRatio, float containerAspectRatio, boolean autoContainerAspectMode);
+    }
+
     public ScaleMode getScaleMode() {
         return scaleMode;
     }
@@ -96,6 +100,8 @@ public class SRGMediaPlayerView extends ViewGroup {
 
     @Nullable
     private ScaleModeListener scaleModeListener;
+    @Nullable
+    private AspectRatioListener aspectRatioListener;
 
     public SRGMediaPlayerView(Context context) {
         this(context, null, 0);
@@ -141,24 +147,36 @@ public class SRGMediaPlayerView extends ViewGroup {
         setContainerAspectRatio(containerAspectRatio);
     }
 
+    public void setAspectRatioListener(@Nullable AspectRatioListener aspectRatioListener) {
+        this.aspectRatioListener = aspectRatioListener;
+        if (this.aspectRatioListener != null) {
+            aspectRatioListener.onAspectRatioChanged(actualVideoAspectRatio, containerAspectRatio, autoAspect);
+        }
+    }
 
     /**
      * @param rational is null or invalid aspect ratio, the container will fit the video aspect ratio
      */
     public void setContainerAspectRatio(@Nullable Rational rational) {
         if (rational == null || rational.isInfinite() || rational.isNaN() || rational.isZero()) {
-            autoAspect = true;
-            requestLayout();
+            setContainerAspectRatio(actualVideoAspectRatio, true);
         } else {
-            autoAspect = false;
-            if (areTheSame(containerAspectRatio, rational.floatValue())) {
-                containerAspectRatio = rational.floatValue();
-                requestLayout();
-            }
+            setContainerAspectRatio(rational.floatValue(), false);
         }
     }
 
-    private static boolean areTheSame(float f1, float f2) {
+    private void setContainerAspectRatio(float aspectRatio, boolean isAutoAspect) {
+        autoAspect = isAutoAspect;
+        if (notEqual(containerAspectRatio, aspectRatio)) {
+            containerAspectRatio = aspectRatio;
+            if (aspectRatioListener != null) {
+                aspectRatioListener.onAspectRatioChanged(actualVideoAspectRatio, containerAspectRatio, autoAspect);
+            }
+            requestLayout();
+        }
+    }
+
+    private static boolean notEqual(float f1, float f2) {
         return Math.abs(f1 - f2) > ASPECT_RATIO_TOLERANCE;
     }
 
@@ -168,10 +186,13 @@ public class SRGMediaPlayerView extends ViewGroup {
      * @param videoAspect the video aspect ratio
      */
     public void setVideoAspectRatio(float videoAspect) {
-        if (Math.abs(actualVideoAspectRatio - videoAspect) > ASPECT_RATIO_TOLERANCE) {
+        if (notEqual(actualVideoAspectRatio, videoAspect)) {
             actualVideoAspectRatio = videoAspect;
             if (autoAspect) {
                 this.containerAspectRatio = videoAspect;
+            }
+            if (aspectRatioListener != null) {
+                aspectRatioListener.onAspectRatioChanged(actualVideoAspectRatio, containerAspectRatio, autoAspect);
             }
             requestLayout();
         }
@@ -202,6 +223,18 @@ public class SRGMediaPlayerView extends ViewGroup {
         } else {
             return UNKNOWN_DIMENSION;
         }
+    }
+
+    public boolean isAutoAspect() {
+        return autoAspect;
+    }
+
+    public float getContainerAspectRatio() {
+        return containerAspectRatio;
+    }
+
+    public float getActualVideoAspectRatio() {
+        return actualVideoAspectRatio;
     }
 
     public void setScaleMode(ScaleMode scaleMode) {
