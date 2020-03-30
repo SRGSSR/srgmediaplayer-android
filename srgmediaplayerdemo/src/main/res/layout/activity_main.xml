@@ -5,12 +5,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity">
-
+    <!--don't set containerAspectRatio to fit video size !-->
     <ch.srg.mediaplayer.SRGMediaPlayerView
         android:id="@+id/media_player_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:videoScale="center_inside"
-        app:containerAspectRatio="auto" />
+        android:background="@color/black"
+        app:containerAspectRatio="4:3"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:videoScale="center_inside" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
