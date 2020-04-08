@@ -2,8 +2,9 @@ package ch.srg.mediaplayer.demo;
 
 import android.net.Uri;
 import android.os.Bundle;
-import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import ch.srg.mediaplayer.SRGMediaPlayerController;
 import ch.srg.mediaplayer.SRGMediaPlayerView;
@@ -23,6 +24,12 @@ public class MainActivity extends AppCompatActivity implements SRGMediaPlayerCon
         mediaPlayerView = findViewById(R.id.media_player_view);
 
         mediaPlayerController = new SRGMediaPlayerController(this, "demo_player");
+        mediaPlayerView.setAspectRatioListener(new SRGMediaPlayerView.AspectRatioListener() {
+            @Override
+            public void onAspectRatioChanged(float videoAspectRatio, float containerAspectRatio, boolean autoContainerAspectMode) {
+                Log.d("Demo", "videoRatio = " + videoAspectRatio + " containerRatio = " + containerAspectRatio + " auto = " + autoContainerAspectMode);
+            }
+        });
     }
 
     @Override
