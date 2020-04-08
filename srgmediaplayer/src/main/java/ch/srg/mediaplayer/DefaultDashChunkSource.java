@@ -18,8 +18,10 @@ package ch.srg.mediaplayer;
 import android.net.Uri;
 import android.os.SystemClock;
 import android.util.Log;
+
 import androidx.annotation.CheckResult;
 import androidx.annotation.Nullable;
+
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.SeekParameters;
@@ -31,7 +33,15 @@ import com.google.android.exoplayer2.extractor.mkv.MatroskaExtractor;
 import com.google.android.exoplayer2.extractor.mp4.FragmentedMp4Extractor;
 import com.google.android.exoplayer2.extractor.rawcc.RawCcExtractor;
 import com.google.android.exoplayer2.source.BehindLiveWindowException;
-import com.google.android.exoplayer2.source.chunk.*;
+import com.google.android.exoplayer2.source.chunk.BaseMediaChunkIterator;
+import com.google.android.exoplayer2.source.chunk.Chunk;
+import com.google.android.exoplayer2.source.chunk.ChunkExtractorWrapper;
+import com.google.android.exoplayer2.source.chunk.ChunkHolder;
+import com.google.android.exoplayer2.source.chunk.ContainerMediaChunk;
+import com.google.android.exoplayer2.source.chunk.InitializationChunk;
+import com.google.android.exoplayer2.source.chunk.MediaChunk;
+import com.google.android.exoplayer2.source.chunk.MediaChunkIterator;
+import com.google.android.exoplayer2.source.chunk.SingleSampleMediaChunk;
 import com.google.android.exoplayer2.source.dash.DashChunkSource;
 import com.google.android.exoplayer2.source.dash.DashSegmentIndex;
 import com.google.android.exoplayer2.source.dash.DashWrappingSegmentIndex;
@@ -54,7 +64,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A default {@link com.google.android.exoplayer2.source.dash.DashChunkSource} implementation.
+ * A default {@link DashChunkSource} implementation.
+ * Original : https://raw.githubusercontent.com/google/ExoPlayer/r2.10.8/library/dash/src/main/java/com/google/android/exoplayer2/source/dash/DefaultDashChunkSource.java
  */
 public class DefaultDashChunkSource implements DashChunkSource {
 
@@ -108,7 +119,6 @@ public class DefaultDashChunkSource implements DashChunkSource {
 
     private final LoaderErrorThrower manifestLoaderErrorThrower;
     private final int[] adaptationSetIndices;
-    private final TrackSelection trackSelection;
     private final int trackType;
     private final DataSource dataSource;
     private final long elapsedRealtimeOffsetMs;
@@ -118,6 +128,7 @@ public class DefaultDashChunkSource implements DashChunkSource {
 
     protected final RepresentationHolder[] representationHolders;
 
+    private TrackSelection trackSelection;
     private DashManifest manifest;
     private int periodIndex;
     private IOException fatalError;
@@ -203,15 +214,16 @@ public class DefaultDashChunkSource implements DashChunkSource {
         return positionUs;
     }
 
-    @Override
-    public void updateManifest(DashManifest newManifest, int newPeriodIndex) {
+    /**
+     * Workaround to avoid index out of bound exception when receiving invalid manifest
+     */
+    private void updateManifestWorkaround(DashManifest newManifest, int newPeriodIndex) {
         try {
             manifest = newManifest;
             periodIndex = newPeriodIndex;
             long periodDurationUs = manifest.getPeriodDurationUs(periodIndex);
             List<Representation> representations = getRepresentations();
             for (int i = 0; i < representationHolders.length; i++) {
-                // Workaround to avoid index out of bound exception when receiving invalid manifest
                 int indexInTrackGroup = trackSelection.getIndexInTrackGroup(i);
                 if (indexInTrackGroup >= representations.size()) {
                     Log.e("DefaultDashChunkSource", "invalid track index " + indexInTrackGroup + " (" + representations.size() + ") ");
@@ -224,6 +236,29 @@ public class DefaultDashChunkSource implements DashChunkSource {
         } catch (BehindLiveWindowException e) {
             fatalError = e;
         }
+    }
+
+    @Override
+    public void updateManifest(DashManifest newManifest, int newPeriodIndex) {
+        updateManifestWorkaround(newManifest, newPeriodIndex);
+//        try {
+//            manifest = newManifest;
+//            periodIndex = newPeriodIndex;
+//            long periodDurationUs = manifest.getPeriodDurationUs(periodIndex);
+//            List<Representation> representations = getRepresentations();
+//            for (int i = 0; i < representationHolders.length; i++) {
+//                Representation representation = representations.get(trackSelection.getIndexInTrackGroup(i));
+//                representationHolders[i] =
+//                        representationHolders[i].copyWithNewRepresentation(periodDurationUs, representation);
+//            }
+//        } catch (BehindLiveWindowException e) {
+//            fatalError = e;
+//        }
+    }
+
+    @Override
+    public void updateTrackSelection(TrackSelection trackSelection) {
+        this.trackSelection = trackSelection;
     }
 
     @Override
@@ -691,7 +726,9 @@ public class DefaultDashChunkSource implements DashChunkSource {
                         newPeriodDurationUs, newRepresentation, extractorWrapper, segmentNumShift, newIndex);
             }
 
-            long oldIndexLastSegmentNum = oldIndex.getFirstSegmentNum() + oldIndexSegmentCount - 1;
+            long oldIndexFirstSegmentNum = oldIndex.getFirstSegmentNum();
+            long oldIndexStartTimeUs = oldIndex.getTimeUs(oldIndexFirstSegmentNum);
+            long oldIndexLastSegmentNum = oldIndexFirstSegmentNum + oldIndexSegmentCount - 1;
             long oldIndexEndTimeUs =
                     oldIndex.getTimeUs(oldIndexLastSegmentNum)
                             + oldIndex.getDurationUs(oldIndexLastSegmentNum, newPeriodDurationUs);
@@ -705,8 +742,14 @@ public class DefaultDashChunkSource implements DashChunkSource {
                 // There's a gap between the old index and the new one which means we've slipped behind the
                 // live window and can't proceed.
                 throw new BehindLiveWindowException();
+            } else if (newIndexStartTimeUs < oldIndexStartTimeUs) {
+                // The new index overlaps with (but does not have a start position contained within) the old
+                // index. This can only happen if extra segments have been added to the start of the index.
+                newSegmentNumShift -=
+                        newIndex.getSegmentNum(oldIndexStartTimeUs, newPeriodDurationUs)
+                                - oldIndexFirstSegmentNum;
             } else {
-                // The new index overlaps with the old one.
+                // The new index overlaps with (and has a start position contained within) the old index.
                 newSegmentNumShift +=
                         oldIndex.getSegmentNum(newIndexStartTimeUs, newPeriodDurationUs)
                                 - newIndexFirstSegmentNum;
