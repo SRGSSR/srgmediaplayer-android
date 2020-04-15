@@ -4,9 +4,10 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Matrix;
-import androidx.annotation.Nullable;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.Rational;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
@@ -16,6 +17,8 @@ import android.view.accessibility.CaptioningManager;
 import android.widget.HorizontalScrollView;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
+
+import androidx.annotation.Nullable;
 
 import com.google.android.exoplayer2.text.CaptionStyleCompat;
 import com.google.android.exoplayer2.text.Cue;
@@ -45,6 +48,10 @@ public class SRGMediaPlayerView extends ViewGroup {
         void onScaleModeChanged(SRGMediaPlayerView mediaPlayerView, ScaleMode scaleMode);
     }
 
+    public interface AspectRatioListener {
+        void onAspectRatioChanged(float videoAspectRatio, float containerAspectRatio, boolean autoContainerAspectMode);
+    }
+
     public ScaleMode getScaleMode() {
         return scaleMode;
     }
@@ -65,12 +72,6 @@ public class SRGMediaPlayerView extends ViewGroup {
     public static final String TAG = "SRGMediaPlayerView";
     public static final float DEFAULT_ASPECT_RATIO = 16 / 9f;
     public static final String UNKNOWN_DIMENSION = "0x0";
-    public static final int ASPECT_RATIO_SQUARE = 1;
-    public static final int ASPECT_RATIO_4_3 = 2;
-    public static final int ASPECT_RATIO_16_10 = 3;
-    public static final int ASPECT_RATIO_16_9 = 4;
-    public static final int ASPECT_RATIO_21_9 = 5;
-    public static final int ASPECT_RATIO_AUTO = 0;
     private static final float ASPECT_RATIO_TOLERANCE = 0.01f;
 
     private boolean onTop;
@@ -99,6 +100,8 @@ public class SRGMediaPlayerView extends ViewGroup {
 
     @Nullable
     private ScaleModeListener scaleModeListener;
+    @Nullable
+    private AspectRatioListener aspectRatioListener;
 
     public SRGMediaPlayerView(Context context) {
         this(context, null, 0);
@@ -110,57 +113,71 @@ public class SRGMediaPlayerView extends ViewGroup {
 
     public SRGMediaPlayerView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-        TypedArray a = context.getTheme().obtainStyledAttributes(attrs, R.styleable.SRGMediaPlayerView, 0, 0);
 
-        int scaleVal = a.getInteger(R.styleable.SRGMediaPlayerView_videoScale, 0);
-        switch (scaleVal) {
-            case 1:
-                scaleMode = ScaleMode.TOP_INSIDE;
-                break;
-            case 2:
-                scaleMode = ScaleMode.CENTER_CROP;
-                break;
-            case 3:
-                scaleMode = ScaleMode.FIT;
-                break;
-            case 0:
-            default:
-                scaleMode = ScaleMode.CENTER_INSIDE;
-                break;
+        Rational containerAspectRatio = Rational.ZERO;
+        ScaleMode scaleMode = ScaleMode.CENTER_INSIDE;
+        TypedArray a = context.getTheme().obtainStyledAttributes(attrs, R.styleable.SRGMediaPlayerView, 0, 0);
+        try {
+            adjustToParentScrollView = a.getBoolean(R.styleable.SRGMediaPlayerView_adjustToParentScrollView, true);
+            int scaleVal = a.getInteger(R.styleable.SRGMediaPlayerView_videoScale, 0);
+            switch (scaleVal) {
+                case 1:
+                    scaleMode = ScaleMode.TOP_INSIDE;
+                    break;
+                case 2:
+                    scaleMode = ScaleMode.CENTER_CROP;
+                    break;
+                case 3:
+                    scaleMode = ScaleMode.FIT;
+                    break;
+                case 0:
+                default:
+                    scaleMode = ScaleMode.CENTER_INSIDE;
+                    break;
+            }
+            String aspectVal = a.getString(R.styleable.SRGMediaPlayerView_containerAspectRatio);
+            if (!TextUtils.isEmpty(aspectVal)) {
+                containerAspectRatio = Rational.parseRational(aspectVal);
+            }
+
+        } finally {
+            a.recycle();
         }
-        int aspectVal = a.getInteger(R.styleable.SRGMediaPlayerView_containerAspectRatio, 0);
-        updateAspectRatio(aspectVal);
-        adjustToParentScrollView = a.getBoolean(R.styleable.SRGMediaPlayerView_adjustToParentScrollView, true);
-        a.recycle();
+        this.scaleMode = scaleMode;
+        setContainerAspectRatio(containerAspectRatio);
     }
 
-    private void updateAspectRatio(int aspectMode) {
-        switch (aspectMode) {
-            case ASPECT_RATIO_SQUARE: // square
-                containerAspectRatio = 1f;
-                autoAspect = false;
-                break;
-            case ASPECT_RATIO_4_3: // standard_4_3
-                containerAspectRatio = 4 / 3f;
-                autoAspect = false;
-                break;
-            case ASPECT_RATIO_16_10: // wide_16_10
-                containerAspectRatio = 16 / 10f;
-                autoAspect = false;
-                break;
-            case ASPECT_RATIO_16_9: // hdvideo_16_9
-                containerAspectRatio = 16 / 9f;
-                autoAspect = false;
-                break;
-            case ASPECT_RATIO_21_9: // movie_21_9
-                containerAspectRatio = 21 / 9f;
-                autoAspect = false;
-                break;
-            case ASPECT_RATIO_AUTO:
-            default:
-                autoAspect = true;
-                break;
+    public void setAspectRatioListener(@Nullable AspectRatioListener aspectRatioListener) {
+        this.aspectRatioListener = aspectRatioListener;
+        if (this.aspectRatioListener != null) {
+            aspectRatioListener.onAspectRatioChanged(actualVideoAspectRatio, containerAspectRatio, autoAspect);
         }
+    }
+
+    /**
+     * @param rational is null or invalid aspect ratio, the container will fit the video aspect ratio
+     */
+    public void setContainerAspectRatio(@Nullable Rational rational) {
+        if (rational == null || rational.isInfinite() || rational.isNaN() || rational.isZero()) {
+            setContainerAspectRatio(actualVideoAspectRatio, true);
+        } else {
+            setContainerAspectRatio(rational.floatValue(), false);
+        }
+    }
+
+    private void setContainerAspectRatio(float aspectRatio, boolean isAutoAspect) {
+        autoAspect = isAutoAspect;
+        if (notEqual(containerAspectRatio, aspectRatio)) {
+            containerAspectRatio = aspectRatio;
+            if (aspectRatioListener != null) {
+                aspectRatioListener.onAspectRatioChanged(actualVideoAspectRatio, containerAspectRatio, autoAspect);
+            }
+            requestLayout();
+        }
+    }
+
+    private static boolean notEqual(float f1, float f2) {
+        return Math.abs(f1 - f2) > ASPECT_RATIO_TOLERANCE;
     }
 
     /**
@@ -169,17 +186,16 @@ public class SRGMediaPlayerView extends ViewGroup {
      * @param videoAspect the video aspect ratio
      */
     public void setVideoAspectRatio(float videoAspect) {
-        if (Math.abs(actualVideoAspectRatio - videoAspect) > ASPECT_RATIO_TOLERANCE) {
+        if (notEqual(actualVideoAspectRatio, videoAspect)) {
             actualVideoAspectRatio = videoAspect;
             if (autoAspect) {
                 this.containerAspectRatio = videoAspect;
             }
+            if (aspectRatioListener != null) {
+                aspectRatioListener.onAspectRatioChanged(actualVideoAspectRatio, containerAspectRatio, autoAspect);
+            }
             requestLayout();
         }
-    }
-
-    public void setVideoAspectMode(int aspectMode) {
-        updateAspectRatio(aspectMode);
     }
 
     public void setVideoRenderingView(View newVideoRenderingView) {
@@ -207,6 +223,18 @@ public class SRGMediaPlayerView extends ViewGroup {
         } else {
             return UNKNOWN_DIMENSION;
         }
+    }
+
+    public boolean isAutoAspect() {
+        return autoAspect;
+    }
+
+    public float getContainerAspectRatio() {
+        return containerAspectRatio;
+    }
+
+    public float getActualVideoAspectRatio() {
+        return actualVideoAspectRatio;
     }
 
     public void setScaleMode(ScaleMode scaleMode) {
