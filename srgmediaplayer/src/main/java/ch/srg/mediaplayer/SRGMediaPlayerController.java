@@ -621,7 +621,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     public SRGMediaPlayerController(Context context, String tag, @Nullable DrmConfig drmConfig, @Nullable MediaSessionCompat mediaSession) {
         this.context = context;
         Looper looper = Looper.myLooper();
-        if (looper != Looper.getMainLooper()) {
+        if (looper==null || looper != Looper.getMainLooper()) {
             throw new IllegalStateException("Constructor must be run in main thread");
         }
         this.mainHandler = new Handler(looper, this);
