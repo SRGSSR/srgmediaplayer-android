@@ -20,10 +20,11 @@ public class Segment implements Comparable<Segment> {
     private boolean displayable;
     private boolean isLive;
     private boolean is360;
+    private long referenceDate;
 
     public Segment(String identifier, String title, String description, String imageUrl,
                    String blockingReason, long markIn, long markOut, long duration,
-                   boolean displayable, boolean isLive, boolean is360) {
+                   boolean displayable, boolean isLive, boolean is360, long referenceDate) {
         this.identifier = identifier;
         this.title = title;
         this.description = description;
@@ -35,6 +36,13 @@ public class Segment implements Comparable<Segment> {
         this.displayable = displayable;
         this.isLive = isLive;
         this.is360 = is360;
+        this.referenceDate = referenceDate;
+    }
+
+    public Segment(String identifier, String title, String description, String imageUrl,
+                   String blockingReason, long markIn, long markOut, long duration,
+                   boolean displayable, boolean isLive, boolean is360) {
+        this(identifier, title, description, imageUrl, blockingReason, markIn, markOut, duration, displayable, isLive, is360, 0);
     }
 
     public String getTitle() {
@@ -92,6 +100,14 @@ public class Segment implements Comparable<Segment> {
 
     public boolean is360() {
         return is360;
+    }
+
+    public long getReferenceDate() {
+        return referenceDate;
+    }
+
+    public void setReferenceDate(long referenceDate) {
+        this.referenceDate = referenceDate;
     }
 
     @Override
