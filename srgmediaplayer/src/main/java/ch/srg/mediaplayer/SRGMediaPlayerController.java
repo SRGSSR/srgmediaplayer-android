@@ -576,6 +576,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private @SRGStreamType
     int currentStreamType;
     private int numberOfDrmRetry = 0;
+    private Timeline.Window window;
 
     public static String getName() {
         return NAME;
@@ -620,8 +621,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
      */
     public SRGMediaPlayerController(Context context, String tag, @Nullable DrmConfig drmConfig, @Nullable MediaSessionCompat mediaSession) {
         this.context = context;
+        this.window = new Timeline.Window();
         Looper looper = Looper.myLooper();
-        if (looper==null || looper != Looper.getMainLooper()) {
+        if (looper == null || looper != Looper.getMainLooper()) {
             throw new IllegalStateException("Constructor must be run in main thread");
         }
         this.mainHandler = new Handler(looper, this);
@@ -924,6 +926,16 @@ public class SRGMediaPlayerController implements Handler.Callback,
         } else {
             broadcastEvent(Event.Type.WILL_SEEK);
             exoPlayer.seekTo(positionMs);
+        }
+    }
+
+    public void seekToTime(long dateMs) {
+        if (isLive()) {
+            long windowStart = getDvrStartTime();
+            long positionInsideWindow = dateMs - windowStart;
+            seekTo(Math.min(window.getDurationMs(), Math.max(positionInsideWindow, 0)));
+        } else {
+            throw new IllegalStateException("Can't seekToTime on non live stream");
         }
     }
 
@@ -1261,7 +1273,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     private void switchToSegment(Segment segment) {
         broadcastSegmentEvent(Event.Type.SEGMENT_SELECTED, segment);
-        seekTo(segment.getMarkIn());
+        if (segment.getReferenceDate() != 0) {
+            seekToTime(segment.getReferenceDate() + segment.getMarkIn());
+        } else {
+            seekTo(segment.getMarkIn());
+        }
     }
 
     /**
@@ -1932,6 +1948,17 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     /**
+     * @return C#TIME_UNSET when not a live.
+     */
+    public long getDvrStartTime() {
+        if (isLive()) {
+            return window.windowStartTimeMs == C.TIME_UNSET ? getLiveTime() - window.getDurationMs() : window.windowStartTimeMs;
+        } else {
+            return window.windowStartTimeMs;
+        }
+    }
+
+    /**
      * Live time, (time of the last playlist load).
      * <pre>
      *     getPosition() - getDuration() + getLiveTime() = wall clock time
@@ -2271,6 +2298,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     @Override
     public void onTimelineChanged(Timeline timeline, Object manifest, int reason) {
         broadcastEvent(Event.Type.STREAM_TIMELINE_CHANGED);
+        timeline.getWindow(exoPlayer.getCurrentWindowIndex(), this.window);
     }
 
     @Override
