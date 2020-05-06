@@ -52,5 +52,11 @@ public class MainActivity extends AppCompatActivity implements SRGMediaPlayerCon
     @Override
     public void onMediaPlayerEvent(SRGMediaPlayerController mp, SRGMediaPlayerController.Event event) {
         Log.d("MediaPlayerEvent", " " + event.type + " " + event.state);
+        if (event.type == SRGMediaPlayerController.Event.Type.STREAM_TIMELINE_CHANGED) {
+            Log.d("COUCOU", "" + mp.getPlayerTimeLine());
+        }
+        Log.d("COUCOU", "player position = " + mp.getMediaPosition());
+        Log.d("COUCOU", "buffer position = " + mp.getBufferPosition());
+        Log.d("COUCOU", "buffer % = " + mp.getBufferPercentage());
     }
 }

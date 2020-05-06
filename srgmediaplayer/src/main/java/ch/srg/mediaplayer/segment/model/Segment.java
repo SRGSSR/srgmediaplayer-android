@@ -1,5 +1,7 @@
 package ch.srg.mediaplayer.segment.model;
 
+import android.text.TextUtils;
+
 import androidx.annotation.NonNull;
 
 /**
@@ -16,11 +18,9 @@ public class Segment implements Comparable<Segment> {
     private long markIn;
     private long markOut;
     private long duration;
-    private int progress;
     private boolean displayable;
     private boolean isLive;
     private boolean is360;
-    private long referenceDate;
 
     public Segment(String identifier, String title, String description, String imageUrl,
                    String blockingReason, long markIn, long markOut, long duration,
@@ -30,19 +30,22 @@ public class Segment implements Comparable<Segment> {
         this.description = description;
         this.imageUrl = imageUrl;
         this.blockingReason = blockingReason;
-        this.markIn = markIn;
-        this.markOut = markOut;
+        this.markIn = referenceDate+markIn;
+        this.markOut = referenceDate+markOut;
         this.duration = duration;
         this.displayable = displayable;
         this.isLive = isLive;
         this.is360 = is360;
-        this.referenceDate = referenceDate;
     }
 
     public Segment(String identifier, String title, String description, String imageUrl,
                    String blockingReason, long markIn, long markOut, long duration,
                    boolean displayable, boolean isLive, boolean is360) {
         this(identifier, title, description, imageUrl, blockingReason, markIn, markOut, duration, displayable, isLive, is360, 0);
+    }
+
+    public Segment(String identifier, String title, long markIn, long marOut, long duration, boolean displayable, String blockingReason) {
+        this(identifier, title, null, null, blockingReason, markIn, marOut, duration, displayable, false, false, 0);
     }
 
     public String getTitle() {
@@ -69,20 +72,12 @@ public class Segment implements Comparable<Segment> {
         return duration;
     }
 
-    public void setProgress(int value) {
-        progress = value;
-    }
-
-    public int getProgress() {
-        return progress;
-    }
-
     public String getBlockingReason() {
         return blockingReason;
     }
 
     public boolean isBlocked() {
-        return blockingReason != null;
+        return !TextUtils.isEmpty(blockingReason);
     }
 
     public String getIdentifier() {
@@ -102,14 +97,6 @@ public class Segment implements Comparable<Segment> {
         return is360;
     }
 
-    public long getReferenceDate() {
-        return referenceDate;
-    }
-
-    public void setReferenceDate(long referenceDate) {
-        this.referenceDate = referenceDate;
-    }
-
     @Override
     public int compareTo(@NonNull Segment another) {
         return ((int) (markIn - another.getMarkIn()));
@@ -125,7 +112,6 @@ public class Segment implements Comparable<Segment> {
         if (markIn != segment.markIn) return false;
         if (markOut != segment.markOut) return false;
         if (duration != segment.duration) return false;
-        if (progress != segment.progress) return false;
         if (displayable != segment.displayable) return false;
         if (isLive != segment.isLive) return false;
         if (is360 != segment.is360) return false;
@@ -149,29 +135,9 @@ public class Segment implements Comparable<Segment> {
         result = 31 * result + (int) (markIn ^ (markIn >>> 32));
         result = 31 * result + (int) (markOut ^ (markOut >>> 32));
         result = 31 * result + (int) (duration ^ (duration >>> 32));
-        result = 31 * result + progress;
         result = 31 * result + (displayable ? 1 : 0);
         result = 31 * result + (isLive ? 1 : 0);
         result = 31 * result + (is360 ? 1 : 0);
         return result;
     }
-
-    @Override
-    public String toString() {
-        return "Segment{" +
-                "identifier='" + identifier + '\'' +
-                ", title='" + title + '\'' +
-                ", description='" + description + '\'' +
-                ", imageUrl='" + imageUrl + '\'' +
-                ", blockingReason='" + blockingReason + '\'' +
-                ", markIn=" + markIn +
-                ", markOut=" + markOut +
-                ", duration=" + duration +
-                ", progress=" + progress +
-                ", displayable=" + displayable +
-                ", isLive=" + isLive +
-                ", is360=" + is360 +
-                '}';
-    }
-
 }
