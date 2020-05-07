@@ -4,7 +4,6 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     tools:parentTag="LinearLayout"
-    tools:background="@color/black"
     tools:orientation="horizontal">
 
     <FrameLayout
