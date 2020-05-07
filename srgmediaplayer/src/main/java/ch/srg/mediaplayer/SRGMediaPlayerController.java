@@ -392,7 +392,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         public final boolean mediaMuted;
         public final String videoViewDimension;
         public final String tag;
-        public final long mediaPlaylistStartTime;
         public final boolean mediaLive;
         public final ScreenType screenType;
         public final State state;
@@ -434,7 +433,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
             mediaPlaying = controller.isPlaying();
             mediaMuted = controller.muted;
             mediaLive = controller.isLive();
-            mediaPlaylistStartTime = controller.getPlaylistStartTime();
             SRGMediaPlayerView mediaPlayerView = controller.mediaPlayerView;
             videoViewDimension = mediaPlayerView != null ? mediaPlayerView.getVideoRenderingViewSizeString() : SRGMediaPlayerView.UNKNOWN_DIMENSION;
             screenType = controller.getScreenType();
@@ -471,7 +469,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     ", mediaMuted=" + mediaMuted +
                     ", videoViewDimension='" + videoViewDimension + '\'' +
                     ", tag='" + tag + '\'' +
-                    ", mediaPlaylistStartTime=" + mediaPlaylistStartTime +
                     ", mediaLive=" + mediaLive +
                     ", screenType=" + screenType +
                     ", state=" + state +
@@ -1903,14 +1900,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return getControllerId();
     }
 
-    private long getPlaylistStartTime() {
-        long res = UNKNOWN_TIME;
-        if (isLive()) {
-            res = System.currentTimeMillis();
-        }
-        return res;
-    }
-
     @NonNull
     public MediaPlayerTimeLine getPlayerTimeLine() {
         return playerTimeLine;
@@ -1985,18 +1974,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
      */
     public long getMediaDuration() {
         return playerTimeLine.getDurationMs();
-    }
-
-    /**
-     * Live time, (time of the last playlist load).
-     * <pre>
-     *     getPosition() - getDuration() + getLiveTime() = wall clock time
-     * </pre>
-     *
-     * @return reference wall clock time in ms
-     */
-    public long getLiveTime() {
-        return getPlaylistStartTime();
     }
 
     /**
