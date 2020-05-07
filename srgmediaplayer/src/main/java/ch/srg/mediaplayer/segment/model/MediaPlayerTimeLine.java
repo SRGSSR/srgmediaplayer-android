@@ -8,7 +8,7 @@ import com.google.android.exoplayer2.C;
  * License information is available from the LICENSE file.
  */
 public class MediaPlayerTimeLine {
-    public static final long LIVE_EDGE_DURATION = 30000;
+    public static final long LIVE_EDGE_DURATION = 45000;
     private long startTimeMs;
     private long durationMs;
     private boolean dynamicWindow;
