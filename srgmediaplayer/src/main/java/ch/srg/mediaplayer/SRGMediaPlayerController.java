@@ -1256,6 +1256,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     @Nullable
+    public Segment getCurrentSegment() {
+        return currentSegment;
+    }
+
+    @Nullable
     private Segment getBlockedSegment(long time) {
         SegmentList localSubDivision = getPlayerSegmentList();
         return localSubDivision.findBlockedSegmentAtPosition(time);
