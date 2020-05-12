@@ -910,9 +910,16 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     /**
-     * TODO add some documentation
+     * <pre>
+     * Try to seek to the provided Mark.
      *
-     * @param mark
+     * If mark has a non null date, it would try to seek at the date time position.
+     * The date time position would be more precise if the stream has a start time value.
+     *
+     * Otherwise it would seek to the mark position.
+     *  </pre>
+     *
+     * @param mark with a date or position to seek to
      */
     public void seekTo(@NonNull Mark mark) {
         long position = mark.getPosition();
@@ -949,7 +956,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     /**
      * Seek to the live edge if a live stream, otherwise at the start of the stream
-     * TODO to be verified
      */
     public void seekToDefaultPosition() {
         exoPlayer.seekToDefaultPosition(exoPlayer.getCurrentWindowIndex());
