@@ -7,6 +7,8 @@ import android.util.Log;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.google.android.exoplayer2.C;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,6 +56,7 @@ public class PlaybackTest extends MediaPlayerTest {
             controller.setDebugMode(true);
         });
         controller.setDebugMode(true);
+        controller.setMute(true);
 
         lastError = null;
         controller.registerEventListener((mp, event) -> {
@@ -86,8 +89,8 @@ public class PlaybackTest extends MediaPlayerTest {
         assertFalse(controller.isPlaying());
         assertFalse(controller.isLoading());
         assertFalse(controller.isLive());
-        assertEquals(SRGMediaPlayerController.UNKNOWN_TIME, controller.getLiveTime());
-        assertEquals(SRGMediaPlayerController.TIME_LIVE, controller.getMediaDuration());
+        assertEquals(0, controller.getMediaPosition());
+        assertEquals(C.TIME_UNSET, controller.getMediaDuration());
         assertFalse(controller.hasVideoTrack());
     }
 
@@ -179,7 +182,7 @@ public class PlaybackTest extends MediaPlayerTest {
         assertTrue(controller.hasVideoTrack());
         assertFalse(controller.isLive());
         assertTrue(SRGMediaPlayerController.UNKNOWN_TIME != controller.getMediaDuration());
-        assertTrue(SRGMediaPlayerController.TIME_LIVE != controller.getLiveTime());
+        assertTrue(C.TIME_UNSET != controller.getMediaPosition());
     }
 
     @Test
@@ -189,7 +192,7 @@ public class PlaybackTest extends MediaPlayerTest {
         assertTrue(controller.hasVideoTrack());
         assertTrue(controller.isLive());
         assertTrue(SRGMediaPlayerController.UNKNOWN_TIME != controller.getMediaDuration());
-        assertTrue(SRGMediaPlayerController.TIME_LIVE != controller.getLiveTime());
+        assertTrue(C.TIME_UNSET != controller.getMediaPosition());
     }
 
     @Test
@@ -199,7 +202,7 @@ public class PlaybackTest extends MediaPlayerTest {
         assertTrue(controller.hasVideoTrack());
         assertTrue(controller.isLive());
         assertTrue(SRGMediaPlayerController.UNKNOWN_TIME != controller.getMediaDuration());
-        assertTrue(SRGMediaPlayerController.TIME_LIVE != controller.getLiveTime());
+        assertTrue(C.TIME_UNSET != controller.getMediaPosition());
     }
 
     @Test
@@ -232,7 +235,7 @@ public class PlaybackTest extends MediaPlayerTest {
         assertFalse(controller.hasVideoTrack());
         assertTrue(controller.isLive());
         assertTrue(SRGMediaPlayerController.UNKNOWN_TIME != controller.getMediaDuration());
-        assertTrue(SRGMediaPlayerController.UNKNOWN_TIME != controller.getLiveTime());
+        assertTrue(C.TIME_UNSET != controller.getMediaPosition());
     }
 
     @Test

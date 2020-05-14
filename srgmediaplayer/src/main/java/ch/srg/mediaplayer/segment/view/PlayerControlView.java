@@ -3,7 +3,6 @@ package ch.srg.mediaplayer.segment.view;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Configuration;
-import androidx.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -15,10 +14,13 @@ import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
+
 import java.util.Locale;
 
 import ch.srg.mediaplayer.R;
 import ch.srg.mediaplayer.SRGMediaPlayerController;
+import ch.srg.mediaplayer.segment.model.Mark;
 
 /**
  * Copyright (c) SRG SSR. All rights reserved.
@@ -151,7 +153,7 @@ public class PlayerControlView extends LinearLayout implements View.OnClickListe
     public void onStopTrackingTouch(SeekBar seekBar) {
         if (controller != null) {
             if (seekBarSeekToMs >= 0) {
-                controller.seekTo(seekBarSeekToMs);
+                controller.seekTo(new Mark(seekBarSeekToMs));
                 seekBarSeekToMs = -1;
             }
         }
