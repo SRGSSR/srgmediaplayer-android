@@ -23,7 +23,9 @@ public class Segment implements Comparable<Segment> {
     private boolean isLive;
     private boolean is360;
 
-    public Segment(String identifier, String title, String description, String imageUrl, String blockingReason, MarkRange markRange, long duration, boolean displayable, boolean isLive, boolean is360) {
+    public Segment(String identifier, String title, String description, String imageUrl, String blockingReason,
+                   MarkRange markRange, long duration,
+                   boolean displayable, boolean isLive, boolean is360) {
         this.identifier = identifier;
         this.title = title;
         this.description = description;
@@ -36,16 +38,16 @@ public class Segment implements Comparable<Segment> {
         this.is360 = is360;
     }
 
-    public Segment(String identifier, String title, String description, String imageUrl,
-                   String blockingReason, long markIn, long markOut, long duration,
+    public Segment(String identifier, String title, String description, String imageUrl, String blockingReason,
+                   long markIn, long markOut, long duration,
                    boolean displayable, boolean isLive, boolean is360, long referenceDate) {
         this(identifier, title, description, imageUrl, blockingReason,
                 new MarkRange(new Date(referenceDate + markIn), new Date(referenceDate + markOut)), duration,
                 displayable, isLive, is360);
     }
 
-    public Segment(String identifier, String title, String description, String imageUrl,
-                   String blockingReason, long markIn, long markOut, long duration,
+    public Segment(String identifier, String title, String description, String imageUrl, String blockingReason,
+                   long markIn, long markOut, long duration,
                    boolean displayable, boolean isLive, boolean is360) {
         this(identifier, title, description, imageUrl, blockingReason, new MarkRange(markIn, markOut), duration, displayable, isLive, is360);
     }
