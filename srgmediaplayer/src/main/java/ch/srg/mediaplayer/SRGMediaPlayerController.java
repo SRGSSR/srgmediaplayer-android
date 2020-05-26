@@ -804,7 +804,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         Long playbackStartPosition = startPositionMs;
         this.currentSegment = null;
         currentStreamType = streamType;
-        if (segment != null) {
+        if (segment != null && segment.getMarkIn().getDate() == null) {
             broadcastEvent(new Event(this, Event.Type.SEGMENT_SELECTED, null, segment));
             playbackStartPosition = (startPositionMs != null ? startPositionMs : 0) + segment.getMarkIn().getPosition();
         }
@@ -1305,11 +1305,17 @@ public class SRGMediaPlayerController implements Handler.Callback,
         broadcastEvent(new Event(this, type, null, segment, segment.getBlockingReason()));
     }
 
-    private void switchToSegment(Segment segment) {
+    private boolean switchToSegment(Segment segment) {
+        if (segment.getMarkIn().getDate() != null) {
+            long markInTime = segment.getMarkIn().getDate().getTime();
+            if (markInTime > playerTimeLine.getStartTimeMs() + playerTimeLine.getDurationMs())
+                return false;
+        }
         broadcastSegmentEvent(Event.Type.SEGMENT_SELECTED, segment);
         seekTo(segment.getMarkIn());
+        return true;
     }
-
+    
     /**
      * Start playing a segment in the segment list. This is considered a user request.
      * This will seek to the beginning of the segment whether or not we are currently in this
@@ -1322,8 +1328,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     public boolean switchToSegment(String identifier) {
         Segment segment = userSegmentList.findSegmentById(identifier);
         if (segment != null) {
-            switchToSegment(segment);
-            return true;
+            return switchToSegment(segment);
         }
         return false;
     }

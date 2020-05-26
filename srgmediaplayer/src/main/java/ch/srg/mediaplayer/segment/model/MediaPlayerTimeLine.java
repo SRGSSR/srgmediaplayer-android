@@ -64,10 +64,10 @@ public class MediaPlayerTimeLine {
 
     /**
      * @param time
-     * @return relative position in the window [0,durationMs]
+     * @return relative position in the window [0,durationMs[
      */
     public long getPosition(long time) {
-        return time == C.TIME_UNSET ? time : Math.min(Math.max(time - startTimeMs, 0), durationMs);
+        return time == C.TIME_UNSET ? time : Math.min(Math.max(time - startTimeMs, 0), durationMs-1);
     }
 
     public long getTime(long position) {
