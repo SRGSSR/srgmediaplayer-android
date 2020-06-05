@@ -13,16 +13,26 @@ public class MediaPlayerTimeLine {
     private long durationMs;
     private boolean dynamicWindow;
     private boolean isSeekable;
+    /**
+     * Offset in ms between live and stream position
+     */
+    private long liveTimeOffsetMs;
 
-    public MediaPlayerTimeLine(long startTimeMs, long durationMs, boolean dynamicWindow) {
+    public MediaPlayerTimeLine(long startTimeMs, long durationMs, boolean dynamicWindow, long liveTimeOffsetMs) {
+        this.liveTimeOffsetMs = liveTimeOffsetMs;
         update(startTimeMs, durationMs, dynamicWindow);
     }
 
+    public MediaPlayerTimeLine(long liveTimeOffsetMs) {
+        this(C.TIME_UNSET, C.TIME_UNSET, false, liveTimeOffsetMs);
+    }
+
     public MediaPlayerTimeLine() {
-        this(C.TIME_UNSET, C.TIME_UNSET, false);
+        this(0L);
     }
 
     public MediaPlayerTimeLine(MediaPlayerTimeLine source) {
+        this.liveTimeOffsetMs = source.liveTimeOffsetMs;
         this.startTimeMs = source.startTimeMs;
         this.dynamicWindow = source.dynamicWindow;
         this.durationMs = source.durationMs;
@@ -39,7 +49,7 @@ public class MediaPlayerTimeLine {
         if (!dynamicWindow) {
             startTimeMs = 0;
         } else if (startTimeMs == C.TIME_UNSET && durationMs != C.TIME_UNSET) {
-            startTimeMs = System.currentTimeMillis() - durationMs;
+            startTimeMs = System.currentTimeMillis() - liveTimeOffsetMs - durationMs;
         }
         boolean changed = false;
         if (startTimeMs != this.startTimeMs) {
@@ -67,7 +77,7 @@ public class MediaPlayerTimeLine {
      * @return relative position in the window [0,durationMs[
      */
     public long getPosition(long time) {
-        return time == C.TIME_UNSET ? time : Math.min(Math.max(time - startTimeMs, 0), durationMs-1);
+        return time == C.TIME_UNSET ? time : Math.min(Math.max(time - startTimeMs, 0), durationMs - 1);
     }
 
     public long getTime(long position) {
