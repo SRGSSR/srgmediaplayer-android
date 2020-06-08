@@ -31,6 +31,7 @@ dependencies {
     // Testing-only dependencies
     androidTestImplementation "androidx.test:runner:$rootProject.androidTestVersion"
     androidTestImplementation "androidx.test:rules:$rootProject.androidTestVersion"
+    testImplementation "junit:junit:$rootProject.junitVersion"
 
     implementation files('libs/android_malibrary.jar')
 
