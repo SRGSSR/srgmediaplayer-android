@@ -593,7 +593,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @param tag     tag to identify this controller
      */
     public SRGMediaPlayerController(Context context, String tag) {
-        this(context, tag, null, null);
+        this(context, tag, null, null, 0L);
     }
 
     /**
@@ -605,7 +605,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @param drmConfig drm configuration null for no DRM support
      */
     public SRGMediaPlayerController(Context context, String tag, @Nullable DrmConfig drmConfig) {
-        this(context, tag, drmConfig, null);
+        this(context, tag, drmConfig, null, 0L);
     }
 
     /**
@@ -618,10 +618,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @param mediaSession optional mediaSession When set, the caller is responsible for the mediasession lifecycle, when
      *                     null, a media session will be created and connected to the exoplayer
      */
-    public SRGMediaPlayerController(Context context, String tag, @Nullable DrmConfig drmConfig, @Nullable MediaSessionCompat mediaSession) {
+    public SRGMediaPlayerController(Context context, String tag, @Nullable DrmConfig drmConfig, @Nullable MediaSessionCompat mediaSession, long windowOffsetMs) {
         this.context = context;
         this.window = new Timeline.Window();
-        this.playerTimeLine = new MediaPlayerTimeLine();
+        this.playerTimeLine = new MediaPlayerTimeLine(windowOffsetMs);
         Looper looper = Looper.myLooper();
         if (looper == null || looper != Looper.getMainLooper()) {
             throw new IllegalStateException("Constructor must be run in main thread");
@@ -1315,7 +1315,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         seekTo(segment.getMarkIn());
         return true;
     }
-    
+
     /**
      * Start playing a segment in the segment list. This is considered a user request.
      * This will seek to the beginning of the segment whether or not we are currently in this
