@@ -38,6 +38,9 @@ public class MediaPlayerTimeLineTest {
         mediaPlayerTimeLine = new MediaPlayerTimeLine();
         Assert.assertTrue(mediaPlayerTimeLine.update(C.TIME_UNSET, C.TIME_UNSET, true));
         Assert.assertTrue(mediaPlayerTimeLine.update(System.currentTimeMillis(), 80000L, true));
+
+        mediaPlayerTimeLine = new MediaPlayerTimeLine();
+        Assert.assertFalse(mediaPlayerTimeLine.update(0L, C.TIME_UNSET, false));
     }
 
     @Test
@@ -68,6 +71,7 @@ public class MediaPlayerTimeLineTest {
         Assert.assertTrue(mediaPlayerTimeLine.isAtLivePosition(0));
         Assert.assertTrue(mediaPlayerTimeLine.isAtLivePosition(durationMs - 1));
         Assert.assertTrue(mediaPlayerTimeLine.isAtLivePosition(durationMs - MediaPlayerTimeLine.LIVE_EDGE_DURATION));
+        Assert.assertFalse(mediaPlayerTimeLine.isAtLivePosition(durationMs - MediaPlayerTimeLine.LIVE_EDGE_DURATION - 1));
         Assert.assertFalse(mediaPlayerTimeLine.isSeekable());
 
 
@@ -87,6 +91,7 @@ public class MediaPlayerTimeLineTest {
         Assert.assertFalse(mediaPlayerTimeLine.isAtLivePosition(0));
         Assert.assertTrue(mediaPlayerTimeLine.isAtLivePosition(durationMs - 1));
         Assert.assertTrue(mediaPlayerTimeLine.isAtLivePosition(durationMs - MediaPlayerTimeLine.LIVE_EDGE_DURATION));
+        Assert.assertFalse(mediaPlayerTimeLine.isAtLivePosition(durationMs - MediaPlayerTimeLine.LIVE_EDGE_DURATION - 1));
         Assert.assertTrue(mediaPlayerTimeLine.isSeekable());
 
 
