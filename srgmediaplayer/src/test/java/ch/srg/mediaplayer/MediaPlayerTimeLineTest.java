@@ -102,10 +102,8 @@ public class MediaPlayerTimeLineTest {
         long startTimeMs = C.TIME_UNSET;
         long durationMs = 120000L;
         long offset = 26000L;
-        long realStartTime = System.currentTimeMillis() - offset - durationMs;
         MediaPlayerTimeLine mediaPlayerTimeLine = new MediaPlayerTimeLine(startTimeMs, durationMs, true, offset);
         Assert.assertNotEquals(startTimeMs, mediaPlayerTimeLine.getStartTimeMs());
-        Assert.assertEquals(realStartTime, mediaPlayerTimeLine.getStartTimeMs());
         Assert.assertFalse(mediaPlayerTimeLine.isAtLivePosition(0));
         Assert.assertTrue(mediaPlayerTimeLine.isAtLivePosition(durationMs - 1));
         Assert.assertTrue(mediaPlayerTimeLine.isAtLivePosition(durationMs - MediaPlayerTimeLine.LIVE_EDGE_DURATION));
