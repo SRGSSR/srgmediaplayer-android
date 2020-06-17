@@ -123,6 +123,5 @@ public class MediaPlayerTimeLineTest {
         }
 
         Assert.assertEquals(C.TIME_UNSET, mediaPlayerTimeLine.getPosition(C.TIME_UNSET));
-        Assert.assertEquals(C.TIME_UNSET, mediaPlayerTimeLine.getTime(C.TIME_UNSET));
     }
 }
