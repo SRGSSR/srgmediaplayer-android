@@ -20,7 +20,7 @@ public class MediaPlayerTimeLine {
 
     public MediaPlayerTimeLine(long startTimeMs, long durationMs, boolean dynamicWindow, long liveTimeOffsetMs) {
         this.liveTimeOffsetMs = liveTimeOffsetMs;
-        update(startTimeMs, durationMs, dynamicWindow);
+        update(startTimeMs, durationMs, dynamicWindow, 0L);
     }
 
     public MediaPlayerTimeLine(long liveTimeOffsetMs) {
@@ -43,13 +43,14 @@ public class MediaPlayerTimeLine {
      * @param startTimeMs
      * @param durationMs
      * @param dynamicWindow
+     * @param liveEdgeDuration offset of the live stream added in duration (for hls 3 chunk of 10s)
      * @return true is something has changed
      */
-    public boolean update(long startTimeMs, long durationMs, boolean dynamicWindow) {
+    public boolean update(long startTimeMs, long durationMs, boolean dynamicWindow, long liveEdgeDuration) {
         if (!dynamicWindow) {
             startTimeMs = 0;
         } else if (startTimeMs == C.TIME_UNSET && durationMs != C.TIME_UNSET) {
-            startTimeMs = System.currentTimeMillis() - liveTimeOffsetMs - durationMs;
+            startTimeMs = (System.currentTimeMillis() - liveTimeOffsetMs) - (durationMs - liveEdgeDuration);
         }
         boolean changed = false;
         if (startTimeMs != this.startTimeMs) {
@@ -66,6 +67,10 @@ public class MediaPlayerTimeLine {
         }
         this.isSeekable = durationMs != C.TIME_UNSET && !(durationMs <= LIVE_EDGE_DURATION && dynamicWindow);
         return changed;
+    }
+
+    public boolean update(long startTimeMs, long durationMs, boolean dynamicWindow) {
+        return update(startTimeMs, durationMs, dynamicWindow, 0L);
     }
 
     public boolean isAtLivePosition(long position) {

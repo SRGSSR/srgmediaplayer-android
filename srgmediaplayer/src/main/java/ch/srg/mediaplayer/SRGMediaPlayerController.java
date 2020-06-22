@@ -64,6 +64,7 @@ import com.google.android.exoplayer2.source.dash.DashMediaSource;
 import com.google.android.exoplayer2.source.dash.DashUtil;
 import com.google.android.exoplayer2.source.dash.manifest.DashManifest;
 import com.google.android.exoplayer2.source.hls.DefaultHlsDataSourceFactory;
+import com.google.android.exoplayer2.source.hls.HlsManifest;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.text.TextOutput;
@@ -792,7 +793,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
         }
 
         this.userSegmentList.clear();
-        playerTimeLine.update(C.TIME_UNSET, C.TIME_UNSET, false);
+        playerTimeLine.update(C.TIME_UNSET, C.TIME_UNSET, false, 0L);
         if (segments != null) {
             this.userSegmentList.addAll(segments);
         }
@@ -2315,10 +2316,14 @@ public class SRGMediaPlayerController implements Handler.Callback,
     @Override
     public void onTimelineChanged(Timeline timeline, Object manifest, int reason) {
         timeline.getWindow(exoPlayer.getCurrentWindowIndex(), this.window);
-        playerTimeLine.update(window.windowStartTimeMs, window.getDurationMs(), window.isDynamic);
+        long liveEdgeDuration = 0L;
+        if (window.isDynamic && manifest instanceof HlsManifest) {
+            liveEdgeDuration = 30000;
+        }
+        playerTimeLine.update(window.windowStartTimeMs, window.getDurationMs(), window.isDynamic, liveEdgeDuration);
         broadcastEvent(Event.Type.STREAM_TIMELINE_CHANGED);
-
     }
+
 
     @Override
     public void onTracksChanged(TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {
