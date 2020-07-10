@@ -12,7 +12,6 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
 import android.support.v4.media.session.MediaSessionCompat;
-import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 import android.view.SurfaceHolder;
@@ -65,6 +64,7 @@ import com.google.android.exoplayer2.source.dash.DashMediaSource;
 import com.google.android.exoplayer2.source.dash.DashUtil;
 import com.google.android.exoplayer2.source.dash.manifest.DashManifest;
 import com.google.android.exoplayer2.source.hls.DefaultHlsDataSourceFactory;
+import com.google.android.exoplayer2.source.hls.HlsManifest;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.text.TextOutput;
@@ -97,7 +97,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.WeakHashMap;
 
+import ch.srg.mediaplayer.segment.model.Mark;
+import ch.srg.mediaplayer.segment.model.MediaPlayerTimeLine;
 import ch.srg.mediaplayer.segment.model.Segment;
+import ch.srg.mediaplayer.segment.model.SegmentList;
 import ch.srg.mediaplayer.utils.FileLicenseStore;
 import ch.srg.mediaplayer.utils.LicenseStoreDelegate;
 import ch.srg.mediaplayer.utils.MonitorTransferListener;
@@ -176,8 +179,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private boolean playbackActuallyStarted;
 
     public static final long UNKNOWN_TIME = -1;
-
-    public static final long TIME_LIVE = C.TIME_UNSET;
 
     /**
      * Disable audio focus handling. Always play audio.
@@ -392,7 +393,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
         public final boolean mediaMuted;
         public final String videoViewDimension;
         public final String tag;
-        public final long mediaPlaylistStartTime;
         public final boolean mediaLive;
         public final ScreenType screenType;
         public final State state;
@@ -434,7 +434,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
             mediaPlaying = controller.isPlaying();
             mediaMuted = controller.muted;
             mediaLive = controller.isLive();
-            mediaPlaylistStartTime = controller.getPlaylistStartTime();
             SRGMediaPlayerView mediaPlayerView = controller.mediaPlayerView;
             videoViewDimension = mediaPlayerView != null ? mediaPlayerView.getVideoRenderingViewSizeString() : SRGMediaPlayerView.UNKNOWN_DIMENSION;
             screenType = controller.getScreenType();
@@ -471,7 +470,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
                     ", mediaMuted=" + mediaMuted +
                     ", videoViewDimension='" + videoViewDimension + '\'' +
                     ", tag='" + tag + '\'' +
-                    ", mediaPlaylistStartTime=" + mediaPlaylistStartTime +
                     ", mediaLive=" + mediaLive +
                     ", screenType=" + screenType +
                     ", state=" + state +
@@ -536,7 +534,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private SurfaceType surfaceType = SurfaceType.FLAT;
     private View renderingView;
     private Integer playbackState;
-    private List<Segment> segments = new ArrayList<>();
+    private SegmentList userSegmentList = new SegmentList();
 
     private Segment segmentBeingSkipped;
     @Nullable
@@ -576,6 +574,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private @SRGStreamType
     int currentStreamType;
     private int numberOfDrmRetry = 0;
+    private final Timeline.Window window;
+    @NonNull
+    private final MediaPlayerTimeLine playerTimeLine;
 
     public static String getName() {
         return NAME;
@@ -593,7 +594,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @param tag     tag to identify this controller
      */
     public SRGMediaPlayerController(Context context, String tag) {
-        this(context, tag, null, null);
+        this(context, tag, null, null, 0L);
     }
 
     /**
@@ -605,7 +606,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @param drmConfig drm configuration null for no DRM support
      */
     public SRGMediaPlayerController(Context context, String tag, @Nullable DrmConfig drmConfig) {
-        this(context, tag, drmConfig, null);
+        this(context, tag, drmConfig, null, 0L);
     }
 
     /**
@@ -618,10 +619,12 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @param mediaSession optional mediaSession When set, the caller is responsible for the mediasession lifecycle, when
      *                     null, a media session will be created and connected to the exoplayer
      */
-    public SRGMediaPlayerController(Context context, String tag, @Nullable DrmConfig drmConfig, @Nullable MediaSessionCompat mediaSession) {
+    public SRGMediaPlayerController(Context context, String tag, @Nullable DrmConfig drmConfig, @Nullable MediaSessionCompat mediaSession, long windowOffsetMs) {
         this.context = context;
+        this.window = new Timeline.Window();
+        this.playerTimeLine = new MediaPlayerTimeLine(windowOffsetMs);
         Looper looper = Looper.myLooper();
-        if (looper != Looper.getMainLooper()) {
+        if (looper == null || looper != Looper.getMainLooper()) {
             throw new IllegalStateException("Constructor must be run in main thread");
         }
         this.mainHandler = new Handler(looper, this);
@@ -788,21 +791,25 @@ public class SRGMediaPlayerController implements Handler.Callback,
         if (uri == null) {
             throw new IllegalArgumentException("Invalid argument: null uri");
         }
-        if (segment != null && !segments.contains(segment)) {
+
+        this.userSegmentList.clear();
+        playerTimeLine.update(C.TIME_UNSET, C.TIME_UNSET, false, 0L);
+        if (segments != null) {
+            this.userSegmentList.addAll(segments);
+        }
+        if (segment != null && this.userSegmentList.findSegmentById(segment.getIdentifier()) == null) {
             throw new IllegalArgumentException("Unknown segment: " + segment);
         }
         setState(State.PREPARING);
+
         Long playbackStartPosition = startPositionMs;
-        this.segments.clear();
         this.currentSegment = null;
         currentStreamType = streamType;
-        if (segments != null) {
-            this.segments.addAll(segments);
-            if (segment != null) {
-                broadcastEvent(new Event(this, Event.Type.SEGMENT_SELECTED, null, segment));
-                playbackStartPosition = (startPositionMs != null ? startPositionMs : 0) + segment.getMarkIn();
-            }
+        if (segment != null && segment.getMarkIn().getDate() == null) {
+            broadcastEvent(new Event(this, Event.Type.SEGMENT_SELECTED, null, segment));
+            playbackStartPosition = (startPositionMs != null ? startPositionMs : 0) + segment.getMarkIn().getPosition();
         }
+
 
         Long finalPlaybackStartPosition = playbackStartPosition;
         Runnable prepareViewAndPlayer = () -> prepareViewAndPlayer(uri, streamType, finalPlaybackStartPosition);
@@ -904,6 +911,27 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     /**
+     * <pre>
+     * Try to seek to the provided Mark.
+     *
+     * If mark has a non null date, it would try to seek at the date time position.
+     * The date time position would be more precise if the stream has a start time value.
+     *
+     * Otherwise it would seek to the mark position.
+     *  </pre>
+     *
+     * @param mark with a date or position to seek to
+     */
+    public void seekTo(@NonNull Mark mark) {
+        long position = mark.getPosition();
+        if (mark.getDate() != null) {
+            // Convert to a player position
+            position = playerTimeLine.getPosition(mark.getDate().getTime());
+        }
+        seekTo(position);
+    }
+
+    /**
      * <p>
      * Try to seek to the provided position, if this position is not reachable
      * will throw an exception.
@@ -911,11 +939,11 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * </p>
      * <h2>Live stream</h2>
      * <p>
-     * When playing a live stream, a value of 0 represents the live most position.
-     * A value of 1..duration represents the relative position in the live stream.
+     * When playing a live stream, to seek at live position use {@link SRGMediaPlayerController#seekToDefaultPosition()}
+     * A value of 0..duration represents the relative position in the live stream.
      * </p>
      *
-     * @param positionMs position in ms
+     * @param positionMs
      */
     public void seekTo(long positionMs) {
         Segment blockedSegment = getBlockedSegment(positionMs);
@@ -925,6 +953,13 @@ public class SRGMediaPlayerController implements Handler.Callback,
             broadcastEvent(Event.Type.WILL_SEEK);
             exoPlayer.seekTo(positionMs);
         }
+    }
+
+    /**
+     * Seek to the live edge if a live stream, otherwise at the start of the stream
+     */
+    public void seekToDefaultPosition() {
+        exoPlayer.seekToDefaultPosition(exoPlayer.getCurrentWindowIndex());
     }
 
     //endregion
@@ -980,7 +1015,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
             if (playbackStartPosition != null) {
                 try {
                     seekTo(playbackStartPosition);
-                    exoPlayer.seekTo(playbackStartPosition);
                     checkSegmentChange(playbackStartPosition);
                 } catch (IllegalStateException exception) {
                     Log.w(TAG, "Invalid initial playback position", exception);
@@ -1164,7 +1198,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
                 playbackActuallyStarted = true;
                 broadcastEvent(Event.Type.PLAYBACK_ACTUALLY_STARTED);
             }
-            if (!segments.isEmpty()) {
+            if (!userSegmentList.isEmpty()) {
                 checkSegmentChange(currentPosition);
             }
             lastPeriodicUpdate = currentPosition;
@@ -1178,7 +1212,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
             return;
         }
 
-        if (mediaPosition != -1) {
+        if (mediaPosition != UNKNOWN_TIME) {
             Segment blockedSegment = getBlockedSegment(mediaPosition);
             Segment newSegment = getSegment(mediaPosition);
 
@@ -1205,8 +1239,8 @@ public class SRGMediaPlayerController implements Handler.Callback,
     }
 
     @NonNull
-    public List<Segment> getSegments() {
-        return segments;
+    public SegmentList getSegments() {
+        return getPlayerSegmentList();
     }
 
     private void seekEndOfBlockedSegment(Segment segment) {
@@ -1216,38 +1250,51 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Nullable
     public Segment getSegment(long time) {
-        if (currentSegment != null && segments.contains(currentSegment)
-                && time >= currentSegment.getMarkIn() - SEGMENT_HYSTERESIS_MS
-                && time < currentSegment.getMarkOut()) {
+        SegmentList localSubDivision = getPlayerSegmentList();
+        if (currentSegment != null && localSubDivision.findSegmentById(currentSegment.getIdentifier()) != null
+                && time >= currentSegment.getMarkIn().getPosition() - SEGMENT_HYSTERESIS_MS
+                && time < currentSegment.getMarkOut().getPosition()) {
             return currentSegment;
         }
-        for (Segment segment : segments) {
-            if (time >= segment.getMarkIn() && time < segment.getMarkOut()) {
-                return segment;
-            }
-        }
-        return null;
+        return localSubDivision.findSegmentAtPosition(time);
+    }
+
+    @Nullable
+    public Segment getCurrentSegment() {
+        return currentSegment;
     }
 
     @Nullable
     private Segment getBlockedSegment(long time) {
-        for (Segment segment : segments) {
-            if (!TextUtils.isEmpty(segment.getBlockingReason())) {
-                if (time >= segment.getMarkIn() && time < segment.getMarkOut()) {
-                    return segment;
-                }
-            }
-        }
-        return null;
+        SegmentList localSubDivision = getPlayerSegmentList();
+        return localSubDivision.findBlockedSegmentAtPosition(time);
     }
 
-    public void setSegmentList(List<Segment> segmentList) {
-        segments.clear();
-        if (segmentList != null) {
-            segments.addAll(segmentList);
-        }
+    public void setSegmentList(@NonNull List<Segment> segmentList) {
+        userSegmentList.clear();
+        userSegmentList.addAll(segmentList);
         checkSegmentChange(getMediaPosition());
         broadcastEvent(Event.Type.SEGMENT_LIST_CHANGE);
+    }
+
+    /**
+     * Convert user definition segment to a Player time reference segment markIn and markOut
+     */
+    private SegmentList getPlayerSegmentList() {
+        SegmentList playerTimeSegmentList = new SegmentList(userSegmentList.size());
+        for (Segment segment : userSegmentList) {
+            if (segment.getMarkIn().getDate() != null && segment.getMarkOut().getDate() != null) {
+                long markIn = playerTimeLine.getPosition(segment.getMarkIn().getDate().getTime());
+                long markOut = playerTimeLine.getPosition(segment.getMarkOut().getDate().getTime());
+                Segment segmentPlayer = new Segment(
+                        segment.getIdentifier(),
+                        segment.getTitle(), segment.getDescription(), segment.getImageUrl(), segment.getBlockingReason(), markIn, markOut, segment.getDuration(), segment.isDisplayable(), segment.isLive(), segment.is360());
+                playerTimeSegmentList.add(segmentPlayer);
+            } else {
+                playerTimeSegmentList.add(segment);
+            }
+        }
+        return playerTimeSegmentList;
     }
 
     private void broadcastSegmentEvent(Event.Type type, Segment segment) {
@@ -1259,9 +1306,15 @@ public class SRGMediaPlayerController implements Handler.Callback,
         broadcastEvent(new Event(this, type, null, segment, segment.getBlockingReason()));
     }
 
-    private void switchToSegment(Segment segment) {
+    private boolean switchToSegment(Segment segment) {
+        if (segment.getMarkIn().getDate() != null) {
+            long markInTime = segment.getMarkIn().getDate().getTime();
+            if (markInTime > playerTimeLine.getStartTimeMs() + playerTimeLine.getDurationMs())
+                return false;
+        }
         broadcastSegmentEvent(Event.Type.SEGMENT_SELECTED, segment);
         seekTo(segment.getMarkIn());
+        return true;
     }
 
     /**
@@ -1274,11 +1327,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @return true if segment found and switch occurred
      */
     public boolean switchToSegment(String identifier) {
-        for (Segment segment : segments) {
-            if (TextUtils.equals(segment.getIdentifier(), identifier)) {
-                switchToSegment(segment);
-                return true;
-            }
+        Segment segment = userSegmentList.findSegmentById(identifier);
+        if (segment != null) {
+            return switchToSegment(segment);
         }
         return false;
     }
@@ -1861,12 +1912,9 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return getControllerId();
     }
 
-    private long getPlaylistStartTime() {
-        long res = UNKNOWN_TIME;
-        if (isLive()) {
-            res = System.currentTimeMillis();
-        }
-        return res;
+    @NonNull
+    public MediaPlayerTimeLine getPlayerTimeLine() {
+        return playerTimeLine;
     }
 
     //region player values
@@ -1917,30 +1965,27 @@ public class SRGMediaPlayerController implements Handler.Callback,
         return currentMediaUri;
     }
 
-    /**
-     * @return media position
-     */
+
     public long getMediaPosition() {
         return exoPlayer.getCurrentPosition();
+    }
+
+    /**
+     * Media time position
+     * Live stream [startTime,startTime+duration]
+     * Stream [0,duration]
+     *
+     * @return media time position.
+     */
+    public long getCurrentTimePosition() {
+        return playerTimeLine.getTime(exoPlayer.getCurrentPosition());
     }
 
     /**
      * @return Media duration in milliseconds, {@link C#TIME_UNSET} if unknown
      */
     public long getMediaDuration() {
-        return exoPlayer.getDuration();
-    }
-
-    /**
-     * Live time, (time of the last playlist load).
-     * <pre>
-     *     getPosition() - getDuration() + getLiveTime() = wall clock time
-     * </pre>
-     *
-     * @return reference wall clock time in ms
-     */
-    public long getLiveTime() {
-        return getPlaylistStartTime();
+        return playerTimeLine.getDurationMs();
     }
 
     /**
@@ -2270,8 +2315,15 @@ public class SRGMediaPlayerController implements Handler.Callback,
 
     @Override
     public void onTimelineChanged(Timeline timeline, Object manifest, int reason) {
+        timeline.getWindow(exoPlayer.getCurrentWindowIndex(), this.window);
+        long liveEdgeDuration = 0L;
+        if (window.isDynamic && manifest instanceof HlsManifest) {
+            liveEdgeDuration = 30000;
+        }
+        playerTimeLine.update(window.windowStartTimeMs, window.getDurationMs(), window.isDynamic, liveEdgeDuration);
         broadcastEvent(Event.Type.STREAM_TIMELINE_CHANGED);
     }
+
 
     @Override
     public void onTracksChanged(TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {
