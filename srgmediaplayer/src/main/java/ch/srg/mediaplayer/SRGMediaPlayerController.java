@@ -958,6 +958,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * Seek to the live edge if a live stream, otherwise at the start of the stream
      */
     public void seekToDefaultPosition() {
+        broadcastEvent(Event.Type.WILL_SEEK);
         exoPlayer.seekToDefaultPosition(exoPlayer.getCurrentWindowIndex());
     }
 
