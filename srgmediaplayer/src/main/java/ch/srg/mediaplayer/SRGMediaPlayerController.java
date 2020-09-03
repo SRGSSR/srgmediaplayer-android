@@ -535,7 +535,6 @@ public class SRGMediaPlayerController implements Handler.Callback,
     private View renderingView;
     private Integer playbackState;
     private SegmentList userSegmentList = new SegmentList();
-
     private Segment segmentBeingSkipped;
     @Nullable
     private Segment currentSegment = null;
@@ -959,6 +958,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * Seek to the live edge if a live stream, otherwise at the start of the stream
      */
     public void seekToDefaultPosition() {
+        broadcastEvent(Event.Type.WILL_SEEK);
         exoPlayer.seekToDefaultPosition(exoPlayer.getCurrentWindowIndex());
     }
 
@@ -1207,24 +1207,31 @@ public class SRGMediaPlayerController implements Handler.Callback,
     //endregion
 
     //region segments
+
+    /**
+     * CurrentSegment and  block segment MarkRange will change during playback
+     *
+     * @param mediaPosition
+     */
     private void checkSegmentChange(long mediaPosition) {
         if (isReleased() && mediaPosition != UNKNOWN_TIME) {
             return;
         }
 
         if (mediaPosition != UNKNOWN_TIME) {
+            // Player relative segment
             Segment blockedSegment = getBlockedSegment(mediaPosition);
             Segment newSegment = getSegment(mediaPosition);
 
             if (blockedSegment != null) {
-                if (blockedSegment != segmentBeingSkipped) {
+                if (!Segment.equalIdentifier(blockedSegment, segmentBeingSkipped)) {
                     Log.v("SegmentTest", "Skipping over " + blockedSegment.getIdentifier());
                     segmentBeingSkipped = blockedSegment;
                     seekEndOfBlockedSegment(blockedSegment);
                 }
             } else {
                 segmentBeingSkipped = null;
-                if (currentSegment != newSegment) {
+                if (!Segment.equalIdentifier(currentSegment, newSegment)) {
                     if (currentSegment == null) {
                         broadcastSegmentEvent(Event.Type.SEGMENT_START, newSegment);
                     } else if (newSegment == null) {
@@ -1306,6 +1313,10 @@ public class SRGMediaPlayerController implements Handler.Callback,
         broadcastEvent(new Event(this, type, null, segment, segment.getBlockingReason()));
     }
 
+    /**
+     * @param segment a player segment {@link SRGMediaPlayerController#getPlayerSegmentList()}
+     * @return true if it changed segment
+     */
     private boolean switchToSegment(Segment segment) {
         if (segment.getMarkIn().getDate() != null) {
             long markInTime = segment.getMarkIn().getDate().getTime();
@@ -1327,7 +1338,7 @@ public class SRGMediaPlayerController implements Handler.Callback,
      * @return true if segment found and switch occurred
      */
     public boolean switchToSegment(String identifier) {
-        Segment segment = userSegmentList.findSegmentById(identifier);
+        Segment segment = getPlayerSegmentList().findSegmentById(identifier);
         if (segment != null) {
             return switchToSegment(segment);
         }
