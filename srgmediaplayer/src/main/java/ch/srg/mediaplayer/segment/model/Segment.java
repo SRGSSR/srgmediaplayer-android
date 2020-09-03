@@ -3,6 +3,7 @@ package ch.srg.mediaplayer.segment.model;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import java.util.Date;
 
@@ -54,6 +55,13 @@ public class Segment implements Comparable<Segment> {
 
     public Segment(String identifier, String title, long markIn, long marOut, long duration, boolean displayable, String blockingReason) {
         this(identifier, title, null, null, blockingReason, markIn, marOut, duration, displayable, false, false, 0);
+    }
+
+    public static boolean equalIdentifier(@Nullable Segment segment1, @Nullable Segment segment2) {
+        if (segment1 == null || segment2 == null) {
+            return segment1 == segment2;
+        }
+        return TextUtils.equals(segment1.identifier, segment2.identifier);
     }
 
     public String getTitle() {
