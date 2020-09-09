@@ -1,6 +1,8 @@
 ### SRG Media Player ###
 ================
 
+WARNING : This repository is no more maintain, please use SRGLetterbox (https://github.com/SRGSSR/srgletterbox-android).
+
 Features
 --------
 * audio and video
